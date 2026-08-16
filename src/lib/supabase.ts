@@ -17,6 +17,8 @@ export type SignalRecord = {
   visibility?: 'public' | 'followers' | 'private'
 }
 
+export const MAX_UPLOAD_BYTES = Number(import.meta.env.VITE_SUPABASE_MAX_UPLOAD_MB || 500) * 1024 * 1024
+
 export async function getPublicSignals(limit = 24) {
   return supabase.from('signals').select('*').eq('visibility', 'public').order('created_at', { ascending: false }).limit(limit)
 }
@@ -31,6 +33,7 @@ function storageObjectUrl(bucket: string, path: string) {
 
 /** Uploads through the authenticated Storage REST endpoint so XMLHttpRequest can report real bytes transferred. */
 export async function uploadSignalFile(file: File, userId: string, onProgress?: (progress: number, uploadedBytes: number, totalBytes: number) => void) {
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error(`This file is larger than the configured ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB client ceiling. Increase the Supabase bucket limit before uploading larger files.`)
   const bucket = import.meta.env.VITE_SUPABASE_VIDEO_BUCKET || 'videos'
   const path = `${userId}/${crypto.randomUUID()}-${safeFileName(file.name)}`
   const { data: { session } } = await supabase.auth.getSession()
@@ -60,6 +63,10 @@ export async function uploadSignalFile(file: File, userId: string, onProgress?: 
   })
 
   return { data: result.error ? null : { path }, error: result.error, path }
+}
+
+export async function createSignalRecord(record: Omit<SignalRecord, 'id'>) {
+  return supabase.from('signals').insert(record).select().single()
 }
 
 export function getSignalAssetUrl(path: string, bucket = import.meta.env.VITE_SUPABASE_VIDEO_BUCKET || 'videos') {
