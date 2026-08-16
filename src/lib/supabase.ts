@@ -1,10 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://Jpdvunotyykfqmmkhmml.supabase.co'
+const primarySupabaseUrl = 'https://jpdvunotyykfqmmkhmml.supabase.co'
+const originalCaseSupabaseUrl = 'https://Jpdvunotyykfqmmkhmml.supabase.co'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || primarySupabaseUrl
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'Sb_publishable__1sh69umIE7vUSobZfp1Tw__D5ud-2S'
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const isSupabaseConfigured = supabaseUrl.startsWith('https://') && !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder') && supabaseAnonKey.length > 20
+
+export async function testSupabaseConnection() {
+  const urls = [...new Set([supabaseUrl, primarySupabaseUrl, originalCaseSupabaseUrl])]
+  const results = await Promise.all(urls.map(async url => {
+    try {
+      const response = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: supabaseAnonKey } })
+      return { url, ok: response.ok, status: response.status }
+    } catch (error) {
+      return { url, ok: false, status: 0, error: error instanceof Error ? error.message : String(error) }
+    }
+  }))
+  const reachable = results.find(result => result.ok || (result.status > 0 && result.status < 500))
+  if (reachable) console.info('[HkTube] Supabase reachable:', { url: reachable.url, status: reachable.status })
+  else console.error('[HkTube] Supabase connection failed:', results)
+  return { reachable: Boolean(reachable), results }
+}
 
 export function authErrorMessage(error: { message?: string } | null, mode: 'login' | 'signup') {
   const message = error?.message?.toLowerCase() || ''
@@ -18,13 +36,28 @@ export function authErrorMessage(error: { message?: string } | null, mode: 'logi
 
 export async function signInWithEmail(email: string, password: string) {
   if (!isSupabaseConfigured) return { data: { user: null, session: null }, error: new Error('Supabase is not configured.') }
-  return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+  try {
+    const result = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+    if (result.error) console.error('[HkTube] Supabase login error:', result.error)
+    return result
+  } catch (error) {
+    console.error('[HkTube] Supabase login exception:', error)
+    return { data: { user: null, session: null }, error: error instanceof Error ? error : new Error(String(error)) }
+  }
 }
 
 export async function signUpWithEmail(email: string, password: string) {
   if (!isSupabaseConfigured) return { data: { user: null, session: null }, error: new Error('Supabase is not configured.') }
   const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined
-  return supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: redirectTo ? { emailRedirectTo: redirectTo } : undefined })
+  try {
+    const result = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: redirectTo ? { emailRedirectTo: redirectTo } : undefined })
+    if (result.error) console.error('[HkTube] Supabase signup error:', result.error)
+    else console.info('[HkTube] Supabase signup response:', { userCreated: Boolean(result.data.user), sessionCreated: Boolean(result.data.session), confirmationPending: Boolean(result.data.user && !result.data.session) })
+    return result
+  } catch (error) {
+    console.error('[HkTube] Supabase signup exception:', error)
+    return { data: { user: null, session: null }, error: error instanceof Error ? error : new Error(String(error)) }
+  }
 }
 
 
