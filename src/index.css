@@ -1,7 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-:root { color-scheme: dark; }
-body { min-width: 320px; }
-button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
-::selection { background: #b9a0ff; color: #17151e; }
-:focus-visible { outline: 2px solid #88ded0; outline-offset: 3px; }
+:root {
+  color-scheme: dark;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, a, input, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #6c5ce7;
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 2px;
+}
