@@ -18,20 +18,24 @@ export async function testSupabaseConnection() {
       return { url, ok: false, status: 0, error: error instanceof Error ? error.message : String(error) }
     }
   }))
-  const reachable = results.find(result => result.ok || (result.status > 0 && result.status < 500))
-  if (reachable) console.info('[HkTube] Supabase reachable:', { url: reachable.url, status: reachable.status })
+  const reachable = results.find(result => result.status > 0 && result.status < 500)
+  const authenticated = results.find(result => result.ok)
+  if (authenticated) console.info('[HkTube] Supabase reachable and API key accepted:', { url: authenticated.url, status: authenticated.status })
+  else if (reachable) console.error('[HkTube] Supabase endpoint is reachable but the API key was rejected:', results)
   else console.error('[HkTube] Supabase connection failed:', results)
-  return { reachable: Boolean(reachable), results }
+  return { reachable: Boolean(reachable), authenticated: Boolean(authenticated), results }
 }
 
 export function authErrorMessage(error: { message?: string } | null, mode: 'login' | 'signup') {
-  const message = error?.message?.toLowerCase() || ''
-  if (!isSupabaseConfigured || message.includes('failed to fetch') || message.includes('networkerror')) return 'HkTube cannot reach Supabase. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.'
-  if (message.includes('invalid login credentials')) return 'Email or password is incorrect. Check both fields and try again.'
-  if (message.includes('email not confirmed')) return 'Confirm your email from the message sent by Supabase before logging in.'
-  if (message.includes('user already registered')) return 'That email already has an account. Switch to Log in instead.'
-  if (message.includes('password')) return 'Use a password with at least 6 characters.'
-  return mode === 'signup' ? 'We could not create your account. Check the details and try again.' : 'We could not log you in. Check the details and try again.'
+  const rawMessage = error?.message?.trim() || 'Unknown Supabase error'
+  const message = rawMessage.toLowerCase()
+  if (!isSupabaseConfigured || message.includes('failed to fetch') || message.includes('networkerror')) return `HkTube cannot reach Supabase. Raw error: ${rawMessage}`
+  if (message.includes('invalid api key')) return `Supabase rejected the configured publishable key. Raw error: ${rawMessage}`
+  if (message.includes('invalid login credentials')) return `Email or password is incorrect. Raw Supabase error: ${rawMessage}`
+  if (message.includes('email not confirmed')) return `Confirm your email from the message sent by Supabase. Raw error: ${rawMessage}`
+  if (message.includes('user already registered')) return `That email already has an account. Raw error: ${rawMessage}`
+  if (message.includes('password')) return `Password validation failed. Raw Supabase error: ${rawMessage}`
+  return `${mode === 'signup' ? 'Supabase signup failed' : 'Supabase login failed'}. Raw error: ${rawMessage}`
 }
 
 export async function signInWithEmail(email: string, password: string) {
