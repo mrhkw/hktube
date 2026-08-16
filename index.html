@@ -1,99 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HkTube Original - Signal Media Platform</title>
-  <style>
-    :root {
-      --bg-color: #0A0D12;
-      --card-bg: rgba(22, 28, 36, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --accent-lime: #CCFF00;
-      --accent-lime-glow: rgba(204, 255, 0, 0.25);
-      --accent-cyan: #00F0FF;
-      --text-main: #F0F4F8;
-      --text-muted: #8E9BAE;
-      --radius-lg: 24px;
-      --radius-md: 16px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; padding-bottom: 100px; }
-    .nav-header { position: sticky; top: 0; z-index: 100; background: rgba(10, 13, 18, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--card-border); padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
-    .brand-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.25rem; text-decoration: none; color: var(--text-main); }
-    .brand-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent-lime), var(--accent-cyan)); clip-path: polygon(25% 0%, 100% 50%, 25% 100%, 0% 75%, 0% 25%); box-shadow: 0 0 15px var(--accent-lime-glow); }
-    .user-actions { display: flex; align-items: center; gap: 12px; }
-    .btn-create { background: var(--accent-lime); color: #000; font-weight: 700; padding: 8px 18px; border-radius: 20px; border: none; cursor: pointer; }
-    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
-    .spotlight-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; }
-    .spotlight-media { height: 180px; background: #111722; border-radius: var(--radius-md); background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80'); background-size: cover; background-position: center; }
-    .compass-container { background: rgba(18, 24, 34, 0.6); border: 1px solid var(--card-border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 24px; text-align: center; }
-    .compass-dial { display: flex; justify-content: center; gap: 8px; overflow-x: auto; }
-    .compass-pill { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--card-border); padding: 8px 16px; border-radius: 20px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-    .compass-pill.active { background: var(--accent-lime); color: #000; border-color: var(--accent-lime); }
-    .puzzle-grid { display: flex; flex-direction: column; gap: 16px; }
-    .puzzle-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-md); overflow: hidden; display: grid; grid-template-columns: 120px 1fr; }
-    .puzzle-thumb { background-size: cover; background-position: center; }
-    .puzzle-body { padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
-    .bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(18, 24, 34, 0.92); backdrop-filter: blur(20px); border: 1px solid var(--card-border); border-radius: 40px; padding: 8px 20px; display: flex; gap: 24px; z-index: 90; }
-    .nav-item { color: var(--text-muted); text-decoration: none; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; }
-    .nav-item.active { color: var(--accent-lime); }
-    footer { text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 0.75rem; margin-top: 20px; border-top: 1px solid var(--card-border); }
-  </style>
-</head>
-<body>
-  <nav class="nav-header">
-    <a href="#" class="brand-logo">
-      <div class="brand-icon"></div>
-      <span>HkTube<span style="color: var(--accent-lime);">.</span></span>
-    </a>
-    <div class="user-actions">
-      <button class="btn-create" onclick="alert('Studio Creator Ready!')">+ Create</button>
-    </div>
-  </nav>
-
-  <div class="container">
-    <div class="spotlight-card">
-      <div class="spotlight-media"></div>
-      <div style="margin-top: 14px;">
-        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 4px;">Rhythm Live - Ambient Beats</h3>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">@musjinmenan • 175K subscribers</p>
-      </div>
-    </div>
-
-    <div class="compass-container">
-      <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; font-weight: 700;">Signal Compass Hub</div>
-      <div class="compass-dial">
-        <div class="compass-pill active">Signals</div>
-        <div class="compass-pill">Fields</div>
-        <div class="compass-pill">Notes</div>
-        <div class="compass-pill">Reels</div>
-      </div>
-    </div>
-
-    <div class="puzzle-grid">
-      <div class="puzzle-card">
-        <div class="puzzle-thumb" style="background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=300&q=80')"></div>
-        <div class="puzzle-body">
-          <div>
-            <div style="font-size: 0.9rem; font-weight: 700;">Chasing the last light</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">@musjinmenan</div>
-          </div>
-          <span style="color: var(--accent-lime); font-size: 0.7rem; font-weight: 700;">WATCH</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottom-nav">
-    <a href="#" class="nav-item active"><span>🏠</span><span>Home</span></a>
-    <a href="#" class="nav-item"><span>⚡</span><span>Reels</span></a>
-    <a href="#" class="nav-item"><span>👥</span><span>Subs</span></a>
-    <a href="#" class="nav-item"><span>👤</span><span>You</span></a>
-  </div>
-
-  <footer>
-    <p>© 2026 HkTube Original. All Rights Reserved.</p>
-  </footer>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HkTube</title>
+  </head>
+  <body style="background-color: #0A0D12; margin: 0; padding: 0;">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
+
