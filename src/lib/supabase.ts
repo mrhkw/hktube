@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const primarySupabaseUrl = 'https://jpdvunotyykfqmmkhmml.supabase.co'
 const originalCaseSupabaseUrl = 'https://Jpdvunotyykfqmmkhmml.supabase.co'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || primarySupabaseUrl
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'Sb_publishable__1sh69umIE7vUSobZfp1Tw__D5ud-2S'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZHZ1bm90eXlrZnFtbWtobW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NDM0NDksImV4cCI6MjEwMjMxOTQ0OX0.IrHmuKvbhzoqDxWZP9omxck7L29ez0LFFueURlSLSuA'
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const isSupabaseConfigured = supabaseUrl.startsWith('https://') && !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder') && supabaseAnonKey.length > 20
