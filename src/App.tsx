@@ -45,15 +45,31 @@ function AuthPage() {
     if (!normalizedEmail || !password) { setError('Enter both your email and password.'); return }
     if (password.length < 6) { setError('Use a password with at least 6 characters.'); return }
     setBusy(true); setError(''); setMessage('')
-    const result = mode === 'login' ? await signInWithEmail(normalizedEmail, password) : await signUpWithEmail(normalizedEmail, password)
-    setBusy(false)
-    if (result.error) { setError(authErrorMessage(result.error, mode)); return }
-    if (mode === 'signup' && !result.data.session) {
-      setMessage('Account created. Check your email and click the confirmation link before logging in.')
-      setMode('login'); setPassword('')
-    } else if (mode === 'signup') {
-      setMessage('Account created. Opening your private HkTube room…')
+    if (mode === 'login') {
+      const result = await signInWithEmail(normalizedEmail, password)
+      setBusy(false)
+      if (result.error) setError(authErrorMessage(result.error, 'login'))
+      return
     }
+
+    const signup = await signUpWithEmail(normalizedEmail, password)
+    if (signup.error) { setBusy(false); setError(authErrorMessage(signup.error, 'signup')); return }
+
+    // Supabase can create the user successfully while returning no session when email confirmation is enabled.
+    // Try the requested immediate login; if confirmation is enforced, show the actionable confirmation state.
+    if (signup.data.session) {
+      setBusy(false)
+      setMessage('Account created. Opening your private HkTube room…')
+      return
+    }
+    const immediateLogin = await signInWithEmail(normalizedEmail, password)
+    setBusy(false)
+    if (!immediateLogin.error && immediateLogin.data.session) {
+      setMessage('Account created. Opening your private HkTube room…')
+      return
+    }
+    setMode('login'); setPassword('')
+    setMessage('Account created successfully. Check your email for the confirmation link, then log in. If confirmation is disabled in Supabase, you will be logged in automatically.')
   }
 
   return <main className="auth-shell"><div className="auth-orbit" aria-hidden="true"><span /><span /><span /></div><section className="auth-card"><Logo /><p className="kicker">Private viewing room</p><h1>{mode === 'login' ? 'Welcome back.' : 'Start your signal.'}</h1><p className="auth-lead">Sign in before entering HkTube. Your feed, uploads, channel and library stay tied to your Supabase account.</p><form onSubmit={submit} noValidate><label>Email<input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" /></label><label>Password<input type="password" required minLength={6} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" /></label>{error && <p className="form-error" role="alert">{error}</p>}{message && <p className="form-success" role="status">{message}</p>}<button className="button-primary auth-submit" disabled={busy}>{busy ? 'Working…' : mode === 'login' ? 'Log in to HkTube' : 'Create account'}</button></form><button className="auth-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage('') }}>{mode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Log in'}</button></section></main>
