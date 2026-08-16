@@ -2,8 +2,31 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key'
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+export const isSupabaseConfigured = supabaseUrl.startsWith('https://') && !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder') && supabaseAnonKey.length > 20
+
+export function authErrorMessage(error: { message?: string } | null, mode: 'login' | 'signup') {
+  const message = error?.message?.toLowerCase() || ''
+  if (!isSupabaseConfigured || message.includes('failed to fetch') || message.includes('networkerror')) return 'HkTube cannot reach Supabase. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.'
+  if (message.includes('invalid login credentials')) return 'Email or password is incorrect. Check both fields and try again.'
+  if (message.includes('email not confirmed')) return 'Confirm your email from the message sent by Supabase before logging in.'
+  if (message.includes('user already registered')) return 'That email already has an account. Switch to Log in instead.'
+  if (message.includes('password')) return 'Use a password with at least 6 characters.'
+  return mode === 'signup' ? 'We could not create your account. Check the details and try again.' : 'We could not log you in. Check the details and try again.'
+}
+
+export async function signInWithEmail(email: string, password: string) {
+  if (!isSupabaseConfigured) return { data: { user: null, session: null }, error: new Error('Supabase is not configured.') }
+  return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+}
+
+export async function signUpWithEmail(email: string, password: string) {
+  if (!isSupabaseConfigured) return { data: { user: null, session: null }, error: new Error('Supabase is not configured.') }
+  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined
+  return supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: redirectTo ? { emailRedirectTo: redirectTo } : undefined })
+}
+
 
 export type SignalRecord = {
   id: string
