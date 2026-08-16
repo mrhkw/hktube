@@ -1,4 +1,4 @@
-import { Home, Zap, Users, Library, Upload, User, Settings } from 'lucide-react'
+import { Home, Zap, Users, Library, Upload, User, Settings, BarChart3 } from 'lucide-react'
 
 interface SidebarProps {
   active: string
@@ -14,6 +14,7 @@ const navItems = [
 
 const creatorItems = [
   { id: 'create', label: 'Upload', icon: Upload },
+  { id: 'studio', label: 'Studio', icon: BarChart3 },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]

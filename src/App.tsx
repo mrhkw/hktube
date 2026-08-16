@@ -16,10 +16,11 @@ import CreatePost from './components/posts/CreatePost'
 import PostsPage from './components/posts/PostsPage'
 import ProfilePage from './components/profile/ProfilePage'
 import LibraryPage from './components/library/LibraryPage'
+import CreatorStudio from './components/studio/CreatorStudio'
 import type { VideoRecord } from './lib/supabase'
 import './App.css'
 
-type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts'
+type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio'
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> }
 
@@ -110,6 +111,8 @@ function App() {
       case 'upload-video': return <UploadVideo userId={user.id} onComplete={() => setView('home')} onCancel={() => setView('home')} />
       case 'upload-short': return <UploadShort userId={user.id} onComplete={() => setView('shorts')} onCancel={() => setView('home')} />
       case 'create-post': return <CreatePost userId={user.id} onComplete={() => setView('feeds')} onCancel={() => setView('home')} />
+      case 'studio': return <CreatorStudio userId={user.id} onNavigate={navigate} />
+      case 'settings': return <CreatorStudio userId={user.id} onNavigate={navigate} />
       default: return <HomePage onVideoClick={handleVideoClick} />
     }
   }
