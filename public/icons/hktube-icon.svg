@@ -1,42 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">HkTube</title>
-  <desc id="desc">Three colorful rounded vertical bars on a dark rounded-square background.</desc>
+  <title id="title">HkTube signal icon</title>
+  <desc id="desc">Three close, slightly italic rounded signal bars in teal, cyan blue, and amber on a dark navy-purple background.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#151d27"/>
-      <stop offset="0.55" stop-color="#090d13"/>
-      <stop offset="1" stop-color="#05070b"/>
+      <stop offset="0" stop-color="#302c53"/>
+      <stop offset="0.5" stop-color="#242342"/>
+      <stop offset="1" stop-color="#17172f"/>
     </linearGradient>
-    <linearGradient id="green" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#51e89d"/>
-      <stop offset="0.52" stop-color="#a5f27d"/>
-      <stop offset="1" stop-color="#d9ff9a"/>
+    <linearGradient id="teal" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#21b9bb"/>
+      <stop offset="0.55" stop-color="#4be2d3"/>
+      <stop offset="1" stop-color="#92f2dc"/>
     </linearGradient>
-    <linearGradient id="cyan" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#17a9d4"/>
-      <stop offset="0.52" stop-color="#45e6dc"/>
-      <stop offset="1" stop-color="#8cfff0"/>
+    <linearGradient id="blue" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#23a9e8"/>
+      <stop offset="0.55" stop-color="#58d6ef"/>
+      <stop offset="1" stop-color="#a0eff5"/>
     </linearGradient>
-    <linearGradient id="warm" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#ff8c45"/>
-      <stop offset="0.5" stop-color="#ffc258"/>
-      <stop offset="1" stop-color="#ffe18e"/>
+    <linearGradient id="amber" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#f08a43"/>
+      <stop offset="0.55" stop-color="#ffb657"/>
+      <stop offset="1" stop-color="#ffe092"/>
     </linearGradient>
-    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
-      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000" flood-opacity="0.45"/>
-    </filter>
-    <filter id="glow" x="-80%" y="-30%" width="260%" height="160%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="15" flood-color="#080817" flood-opacity="0.5"/>
     </filter>
   </defs>
   <rect x="12" y="12" width="488" height="488" rx="112" fill="url(#bg)" filter="url(#shadow)"/>
-  <rect x="13" y="13" width="486" height="486" rx="111" fill="none" stroke="#334252" stroke-width="3" opacity="0.9"/>
-  <path d="M74 174C116 92 206 59 293 73" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.08" stroke-linecap="round"/>
-  <g filter="url(#glow)">
-    <rect x="112" y="184" width="76" height="190" rx="38" fill="url(#green)"/>
-    <rect x="218" y="122" width="76" height="252" rx="38" fill="url(#cyan)"/>
-    <rect x="324" y="154" width="76" height="220" rx="38" fill="url(#warm)"/>
+  <rect x="13.5" y="13.5" width="485" height="485" rx="110.5" fill="none" stroke="#514d79" stroke-width="3" opacity="0.8"/>
+  <g transform="skewX(-8)" stroke="#fff" stroke-width="6" stroke-opacity="0.16">
+    <rect x="174" y="177" width="78" height="183" rx="39" fill="url(#teal)"/>
+    <rect x="242" y="119" width="78" height="241" rx="39" fill="url(#blue)"/>
+    <rect x="310" y="151" width="78" height="209" rx="39" fill="url(#amber)"/>
   </g>
-  <path d="M132 207v124M238 145v175M344 177v159" stroke="#fff" stroke-width="7" opacity="0.22" stroke-linecap="round"/>
 </svg>
