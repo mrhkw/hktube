@@ -107,7 +107,7 @@ function App() {
       case 'shorts': return <ShortsPage userId={user.id} />
       case 'feeds': return <FeedsPage onVideoClick={handleVideoClick} />
       case 'posts': return <PostsPage userId={user.id} />
-      case 'library': return <LibraryPage userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} />
+      case 'library': return <LibraryPage userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} onSignOut={signOut} />
       case 'profile': return <ProfilePage userId={user.id} onSignOut={signOut} onVideoClick={handleVideoClick} onNavigate={navigate} />
       case 'search': return <SearchPage query={searchQuery} onVideoClick={handleVideoClick} />
       case 'watch': return <WatchPage videoId={watchVideoId} userId={user.id} onBack={() => setView('home')} onNavigate={navigate} />

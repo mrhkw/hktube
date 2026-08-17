@@ -567,3 +567,56 @@ html, body, #root, .app-shell, .app-body, .app-main, .hk-header,
 .ai-prompt { width: 100%; box-sizing: border-box; margin: 16px 0 10px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); resize: vertical; }
 .ai-pro-panel .creator-badge { margin-left: 8px; vertical-align: middle; }
 @media (max-width: 600px) { .settings-choice-grid { grid-template-columns: 1fr; } .library-creator-stats { gap: 10px; } }
+
+
+/* ─── Library Page Redesign ─── */
+.library-redesign { max-width: 760px; padding-bottom: 32px; }
+.library-profile-card { padding: 22px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.library-profile-heading { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.library-profile-avatar { width: 78px; height: 78px; display: grid; place-items: center; flex-shrink: 0; overflow: hidden; border: 3px solid var(--primary); border-radius: 50%; background: var(--surface-2); color: var(--primary); font-size: 24px; font-weight: 800; }
+.library-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.library-profile-heading h1 { margin: 0 0 7px; font-size: 22px; letter-spacing: -.02em; }
+.library-profile-heading p { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 13px; }
+.library-profile-heading p span { color: var(--border); }
+.library-creator-actions { display: flex; flex-direction: column; gap: 8px; }
+.library-action-button { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); font-size: 14px; font-weight: 600; transition: background .16s ease-out, transform .16s ease-out, border-color .16s ease-out; }
+.library-action-button:hover { background: var(--border); border-color: var(--primary); }
+.library-action-button:active { transform: scale(.98); }
+.library-action-button svg { color: var(--accent); }
+.library-redesign .library-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 22px; padding: 0 2px; border-bottom: 1px solid var(--border); }
+.library-redesign .lib-tab { flex-direction: column; gap: 6px; padding: 11px 6px 10px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--text-muted); font-size: 12px; }
+.library-redesign .lib-tab:hover { background: var(--surface-2); }
+.library-redesign .lib-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: transparent; }
+.library-sections { display: flex; flex-direction: column; gap: 20px; }
+.library-section h2, .library-content-heading h2 { margin: 0 0 9px 4px; color: var(--text-muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.library-list-card, .library-account-card { width: 100%; padding: 13px 15px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); box-shadow: 0 3px 14px rgba(0,0,0,.12); }
+.library-list-card { display: flex; align-items: center; gap: 11px; text-align: left; }
+.library-list-card:hover, .library-account-card button:hover { background: var(--surface-2); }
+.library-list-card svg { color: var(--accent); }
+.library-link { margin-left: auto; color: var(--accent); font-size: 12px; }
+.library-account-card { display: flex; flex-direction: column; padding: 3px 15px; }
+.library-account-card button { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); text-align: left; transition: color .15s ease-out; }
+.library-account-card button:last-child { border-bottom: 0; color: var(--danger); }
+.library-account-card button svg { color: var(--text-muted); }
+.library-account-card button:last-child svg { color: var(--danger); }
+.library-theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.library-theme-choice { display: flex; flex-direction: column; gap: 8px; text-align: left; color: var(--text-muted); font-size: 12px; }
+.library-theme-choice.active { color: var(--text); }
+.library-theme-preview { display: flex; align-items: center; justify-content: center; height: 70px; border: 2px solid var(--border); border-radius: var(--radius-sm); }
+.library-theme-preview.light { color: #384455; background: linear-gradient(135deg, #f3f6fb 50%, #b8e8f2 50%); }
+.library-theme-preview.dark { color: #d7b957; background: #171a21; }
+.library-theme-preview.system { color: #dce2eb; background: linear-gradient(135deg, #f0f2f4 50%, #30343b 50%); }
+.library-theme-choice.active .library-theme-preview { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,206,201,.16); }
+.library-content-section { margin-top: 28px; }
+.library-content-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.library-content-heading > span { color: var(--text-muted); font-size: 11px; }
+.btn-settings { color: var(--accent); }
+
+@media (max-width: 600px) {
+  .library-redesign { padding: 0 2px 24px; }
+  .library-profile-card { padding: 17px; }
+  .library-profile-avatar { width: 66px; height: 66px; }
+  .library-profile-heading h1 { font-size: 19px; }
+  .library-theme-grid { gap: 7px; }
+  .library-theme-preview { height: 58px; }
+}
