@@ -43,7 +43,7 @@ export default function Header({ userId, onNavigate, onSearch, installEvent, onI
 
   return (
     <header className="hk-header">
-      <button className="hk-logo" onClick={() => onNavigate('home')}>
+      <button className="hk-logo hk-brand" onClick={() => onNavigate('home')}>
         <span className="logo-hk">Hk</span><span className="logo-tube">Tube</span>
       </button>
 

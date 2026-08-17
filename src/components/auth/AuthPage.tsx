@@ -34,7 +34,7 @@ export default function AuthPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <h1>Hk<span>Tube</span></h1>
+          <h1 className="hk-brand"><span className="logo-hk">Hk</span><span className="logo-tube">Tube</span></h1>
           <p>Watch. Share. Discover.</p>
         </div>
         <h2>{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>

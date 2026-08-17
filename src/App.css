@@ -34,8 +34,9 @@ img { display: block; max-width: 100%; }
 /* ─── Loading ─── */
 .app-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; }
 .loading-brand { font-size: 32px; font-weight: 700; }
+.hk-brand { display: inline-flex; align-items: baseline; letter-spacing: -0.055em; line-height: 1; }
 .logo-hk { color: var(--text); }
-.logo-tube { color: var(--primary); }
+.logo-tube { color: transparent; background: linear-gradient(115deg, var(--primary) 12%, var(--accent) 92%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 850; }
 .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -44,7 +45,6 @@ img { display: block; max-width: 100%; }
 .auth-card { width: 100%; max-width: 420px; padding: 40px 32px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
 .auth-brand { text-align: center; margin-bottom: 32px; }
 .auth-brand h1 { font-size: 36px; font-weight: 800; }
-.auth-brand h1 span { color: var(--primary); }
 .auth-brand p { color: var(--text-muted); margin-top: 4px; }
 .auth-card h2 { font-size: 20px; margin-bottom: 20px; }
 .auth-card form { display: flex; flex-direction: column; gap: 16px; }
@@ -70,7 +70,8 @@ img { display: block; max-width: 100%; }
 
 /* ─── Header ─── */
 .hk-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--header-h); display: flex; align-items: center; gap: 16px; padding: 0 20px; background: var(--surface); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
-.hk-logo { font-size: 22px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+.hk-logo { font-size: 22px; font-weight: 800; white-space: nowrap; flex-shrink: 0; transition: filter 0.2s ease; }
+.hk-logo:hover { filter: brightness(1.14); }
 .hk-search { flex: 1; max-width: 480px; display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 24px; transition: border-color 0.2s; }
 .hk-search:focus-within { border-color: var(--primary); }
 .hk-search input { flex: 1; background: none; border: none; outline: none; font-size: 14px; }

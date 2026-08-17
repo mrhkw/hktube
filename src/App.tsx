@@ -89,7 +89,7 @@ function App() {
   if (loading) {
     return (
       <div className="app-loading">
-        <div className="loading-brand">
+        <div className="loading-brand hk-brand">
           <span className="logo-hk">Hk</span><span className="logo-tube">Tube</span>
         </div>
         <div className="spinner" />
