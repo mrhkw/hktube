@@ -1,4 +1,4 @@
-import { Home, Zap, Plus, Users, Library } from 'lucide-react'
+import { Home, Library, Radio, Users, Zap } from 'lucide-react'
 
 interface BottomNavProps {
   active: string
@@ -8,7 +8,7 @@ interface BottomNavProps {
 const items = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'shorts', label: 'Shorts', icon: Zap },
-  { id: 'create', label: 'Create', icon: Plus },
+  { id: 'live', label: 'LIVE', icon: Radio },
   { id: 'feeds', label: 'Feeds', icon: Users },
   { id: 'library', label: 'Library', icon: Library },
 ]
@@ -18,14 +18,14 @@ export default function BottomNav({ active, onNavigate }: BottomNavProps) {
     <nav className="hk-bottom-nav">
       {items.map(item => {
         const Icon = item.icon
-        const isCreate = item.id === 'create'
+        const isLive = item.id === 'live'
         return (
           <button
             key={item.id}
-            className={`bnav-item ${active === item.id ? 'active' : ''} ${isCreate ? 'bnav-create' : ''}`}
+            className={`bnav-item ${active === item.id ? 'active' : ''} ${isLive ? 'bnav-live' : ''}`}
             onClick={() => onNavigate(item.id)}
           >
-            <Icon size={isCreate ? 24 : 20} />
+            <Icon size={isLive ? 22 : 20} />
             <span>{item.label}</span>
           </button>
         )
