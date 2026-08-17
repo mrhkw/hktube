@@ -125,6 +125,10 @@ export interface VideoRecord {
   allow_comments?: boolean
   video_type?: VideoType
   duration_seconds?: number | null
+  content_hash?: string | null
+  is_ai_generated?: boolean
+  copyright_status?: 'clear' | 'claim' | 'disputed' | null
+  unlisted?: boolean
   views?: number
   likes?: number
   created_at?: string
@@ -150,9 +154,10 @@ export async function createVideoRecord(record: Omit<VideoRecord, 'id'>) {
 
   try {
     let response = await request(firstSession.session.access_token)
-    if (response.status === 401) {
-      const refreshed = await getFreshSession()
-      if (refreshed.session?.access_token) response = await request(refreshed.session.access_token)
+    for (let attempt = 1; attempt < MAX_UPLOAD_ATTEMPTS && (response.status === 401 || response.status === 403); attempt += 1) {
+      const refreshed = await getFreshSession(true)
+      if (!refreshed.session?.access_token) break
+      response = await request(refreshed.session.access_token)
     }
     const payload = await response.json().catch(() => ({})) as { data?: VideoRecord; error?: string }
     if (response.ok && payload.data) return { data: payload.data, error: null }

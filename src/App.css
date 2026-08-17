@@ -763,3 +763,32 @@ input, textarea, select, button { max-width: 100%; }
 .admin-row-actions { display: flex; gap: 6px; }
 .btn-danger { border: 1px solid rgba(255,102,122,.35); background: rgba(255,72,100,.12); color: #ff9ba9; }
 @media (max-width: 760px) { .admin-grid { grid-template-columns: 1fr; } .admin-header { flex-direction: column; } }
+
+/* Public compliance and support surfaces */
+.public-page { max-width: 980px; margin: 0 auto; padding: 34px 20px 120px; }
+.public-back { margin-bottom: 24px; }
+.public-hero { display: flex; align-items: flex-start; gap: 16px; padding: 24px; border: 1px solid rgba(114,95,255,.35); border-radius: var(--radius-lg); background: linear-gradient(145deg, rgba(90,74,194,.2), rgba(25,29,53,.7)); }
+.public-hero > svg { color: var(--accent); flex-shrink: 0; margin-top: 3px; }
+.public-hero h1 { margin: 7px 0; font-size: clamp(28px, 5vw, 42px); }
+.public-hero p { color: var(--text-muted); line-height: 1.7; max-width: 760px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 11px; letter-spacing: .08em; font-weight: 700; }
+.legal-sections { display: grid; gap: 14px; margin-top: 22px; }
+.legal-sections section, .service-card, .contact-card { padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.legal-sections h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; margin-bottom: 8px; }
+.legal-sections h2 svg { color: var(--accent); }
+.legal-sections p { color: var(--text-muted); line-height: 1.75; }
+.legal-disclaimer { margin-top: 20px; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+.public-footer { max-width: 980px; margin: 0 auto; padding: 0 20px 30px; display: flex; flex-wrap: wrap; gap: 14px; color: var(--text-muted); font-size: 12px; }
+.public-footer button { color: var(--accent); }
+.service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+.service-card { position: relative; }
+.service-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: var(--accent); background: rgba(0,206,201,.1); }
+.service-label { position: absolute; top: 20px; right: 20px; color: var(--text-muted); font-size: 11px; }
+.service-card h2 { margin: 18px 0 7px; font-size: 17px; }
+.service-card p { color: var(--text-muted); line-height: 1.65; font-size: 13px; }
+.service-note, .contact-privacy-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 18px; padding: 13px 15px; border: 1px solid rgba(0,206,201,.22); border-radius: var(--radius-sm); color: var(--text-muted); background: rgba(0,206,201,.06); font-size: 13px; line-height: 1.55; }
+.service-note svg, .contact-privacy-note svg { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+.contact-card { max-width: 680px; margin: 22px auto 0; display: grid; gap: 15px; }
+.contact-card textarea { resize: vertical; }
+.contact-card button { justify-self: start; }
+@media (max-width: 700px) { .service-grid { grid-template-columns: 1fr; } .public-page { padding-inline: 14px; } .public-hero { padding: 18px; } .public-footer { padding-inline: 14px; } }

@@ -21,6 +21,8 @@ type VideoPayload = {
   allow_comments?: unknown
   video_type?: unknown
   duration_seconds?: unknown
+  content_hash?: unknown
+  is_ai_generated?: unknown
 }
 
 function json(res: VercelResponse, status: number, body: Record<string, unknown>) {
@@ -62,12 +64,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const duration = typeof body.duration_seconds === 'number' && Number.isFinite(body.duration_seconds) && body.duration_seconds >= 0
       ? Math.round(body.duration_seconds)
       : null
+    const contentHash = typeof body.content_hash === 'string' && /^[a-f0-9]{64}$/i.test(body.content_hash) ? body.content_hash.toLowerCase() : null
+    const isAiGenerated = body.is_ai_generated === true
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
     // The original auth trigger is not guaranteed to have been applied in an existing project.
     // Ensure the FK target exists before inserting the signal.
     const { error: profileError } = await adminClient.from('profiles').upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true })
     if (profileError) return json(res, 500, { error: `Profile preparation failed: ${profileError.message}` })
+
+    let duplicate = false
+    if (!isAiGenerated && contentHash) {
+      const duplicateCheck = await adminClient.from('signals').select('id').eq('content_hash', contentHash).limit(1)
+      if (!duplicateCheck.error && duplicateCheck.data?.length) duplicate = true
+      if (duplicateCheck.error && !duplicateCheck.error.message.toLowerCase().includes('column')) console.warn('[HkTube copyright] duplicate check unavailable', duplicateCheck.error.message)
+    }
 
     const record = {
       title,
@@ -83,14 +94,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       allow_comments: body.allow_comments !== false,
       video_type: videoType,
       duration_seconds: duration,
+      content_hash: isAiGenerated ? null : contentHash,
+      is_ai_generated: isAiGenerated,
+      copyright_status: isAiGenerated ? 'clear' : (duplicate ? 'claim' : 'clear'),
+      unlisted: !isAiGenerated && duplicate,
     }
 
-    const { data, error } = await adminClient.from('signals').insert(record).select().single()
+    let { data, error } = await adminClient.from('signals').insert(record).select().single()
+    if (error && /column|schema cache|does not exist/i.test(error.message)) {
+      const legacyRecord = { ...record }
+      delete (legacyRecord as Record<string, unknown>).content_hash
+      delete (legacyRecord as Record<string, unknown>).is_ai_generated
+      delete (legacyRecord as Record<string, unknown>).copyright_status
+      delete (legacyRecord as Record<string, unknown>).unlisted
+      const legacyInsert = await adminClient.from('signals').insert(legacyRecord).select().single()
+      data = legacyInsert.data
+      error = legacyInsert.error
+    }
     if (error) {
       console.error('[HkTube metadata] signals insert failed', { code: error.code, message: error.message, details: error.details })
       return json(res, 500, { error: `Could not save video details: ${error.message}` })
     }
-    return json(res, 201, { data })
+    return json(res, 201, { data, moderation: duplicate ? { unlisted: true, copyright_status: 'claim' } : { unlisted: false, copyright_status: 'clear' } })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected metadata-save error.'
     return json(res, 500, { error: message })

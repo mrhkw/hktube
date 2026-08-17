@@ -4,6 +4,7 @@ import {
   ensureFreshSession, uploadFileResumable, createVideoRecord, getPublicUrl, deleteFilesViaProxy,
   bucketForVideoType, MAX_UPLOAD_MB
 } from '../../lib/supabase'
+import { sha256File } from '../../lib/copyright'
 
 interface UploadShortProps {
   userId: string
@@ -72,6 +73,7 @@ export default function UploadShort({ userId, onComplete, onCancel }: UploadShor
       duration = Math.round(vid.duration)
     } catch { /* ignore */ }
 
+    const contentHash = await sha256File(file).catch(() => null)
     const videoUrl = getPublicUrl(bucketForVideoType('short'), videoPath)
     const { error: dbErr } = await createVideoRecord({
       title: title.trim(),
@@ -85,6 +87,8 @@ export default function UploadShort({ userId, onComplete, onCancel }: UploadShor
       allow_comments: allowComments,
       video_type: 'short',
       duration_seconds: duration || null,
+      content_hash: contentHash,
+      is_ai_generated: false,
     })
 
     if (dbErr) {

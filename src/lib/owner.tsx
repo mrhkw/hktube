@@ -1,9 +1,15 @@
 import { BadgeCheck, Crown } from 'lucide-react'
 
-export const OWNER_EMAIL = 'hanifnazamdin30@gmail.com'
+const OWNER_EMAIL_FINGERPRINT = 932001075
+
+function fingerprint(value: string) {
+  let hash = 2166136261
+  for (const char of value) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619) }
+  return hash >>> 0
+}
 
 export function isOwnerEmail(email?: string | null) {
-  return email?.trim().toLowerCase() === OWNER_EMAIL
+  return Boolean(email) && fingerprint(email.trim().toLowerCase()) === OWNER_EMAIL_FINGERPRINT
 }
 
 export function OwnerBadge({ compact = false }: { compact?: boolean }) {

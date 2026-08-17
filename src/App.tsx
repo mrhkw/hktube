@@ -23,8 +23,11 @@ import type { VideoRecord } from './lib/supabase'
 import './App.css'
 import ErrorBoundary from './components/ErrorBoundary'
 import AdminPage from './components/admin/AdminPage'
+import LegalPage, { PublicFooter } from './components/public/LegalPage'
+import ServicesPage from './components/public/ServicesPage'
+import ContactPage from './components/public/ContactPage'
 
-type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin'
+type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services'
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> }
 
@@ -100,6 +103,12 @@ function App() {
     )
   }
 
+  const publicPath = window.location.pathname.replace(/\/$/, '')
+  if (publicPath === '/privacy' || publicPath === '/privacy-policy') return <><LegalPage kind="privacy" /><PublicFooter onNavigate={navigate} /></>
+  if (publicPath === '/terms' || publicPath === '/terms-of-service') return <><LegalPage kind="terms" /><PublicFooter onNavigate={navigate} /></>
+  if (publicPath === '/refund-policy') return <><LegalPage kind="refund" /><PublicFooter onNavigate={navigate} /></>
+  if (publicPath === '/services') return <><ServicesPage /><PublicFooter onNavigate={navigate} /></>
+  if (publicPath === '/contact') return <><ContactPage /><PublicFooter onNavigate={navigate} /></>
   if (!user) return <AuthPage />
 
   const renderPage = () => {
@@ -119,6 +128,11 @@ function App() {
       case 'studio': return <CreatorStudio userId={user.id} onNavigate={navigate} />
       case 'settings': return <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />
       case 'admin': return <AdminPage email={user.email} />
+      case 'privacy': return <LegalPage kind="privacy" onNavigate={navigate} />
+      case 'terms': return <LegalPage kind="terms" onNavigate={navigate} />
+      case 'refund': return <LegalPage kind="refund" onNavigate={navigate} />
+      case 'contact': return <ContactPage onNavigate={navigate} />
+      case 'services': return <ServicesPage onNavigate={navigate} />
       default: return <HomePage userId={user.id} onVideoClick={handleVideoClick} />
     }
   }

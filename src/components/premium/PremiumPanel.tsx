@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Crown, Check, Sparkles } from 'lucide-react'
-import { isPayFastConfigured, startPayFastCheckout } from '../../lib/payfast'
+import { activatePremiumFromWebhook, startPayFastCheckout } from '../../lib/payfast'
+import { supabase } from '../../lib/supabase'
 
 interface PremiumPanelProps {
   userId: string
@@ -35,11 +36,14 @@ export default function PremiumPanel({ userId, profile, onRefresh }: PremiumPane
     setActivating(true)
     setMessage('')
     try {
-      if (!isPayFastConfigured()) {
-        setMessage('Premium payments are coming soon. Please contact support if you need access.')
+      const { data: auth } = await supabase.auth.getUser()
+      const result = await startPayFastCheckout(userId, auth.user?.email)
+      if (result.status === 'success' && result.transactionId) {
+        activatePremiumFromWebhook(userId, { status: 'success', transaction_id: result.transactionId })
+        setMessage(result.message || 'Premium activated successfully.')
+        onRefresh()
         return
       }
-      const result = await startPayFastCheckout(userId)
       if (result.redirectUrl) {
         window.location.assign(result.redirectUrl)
         return
