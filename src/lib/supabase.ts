@@ -4,7 +4,13 @@ import * as tus from 'tus-js-client'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZHZ1bm90eXlrZnFtbWtobW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NDM0NDksImV4cCI6MjEwMjMxOTQ0OX0.IrHmuKvbhzoqDxWZP9omxck7L29ez0LFFueURlSLSuA'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})
 export const isSupabaseConfigured = supabaseUrl.startsWith('https://') && supabaseAnonKey.length > 20
 
 // Keep production bucket names available even when Vercel does not define VITE_SUPABASE_*_BUCKET.
@@ -58,16 +64,18 @@ export async function ensureStorageBucket(bucket: string) {
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 // ─── Auth ───
-export async function getFreshSession() {
+export async function ensureFreshSession(forceRefresh = false) {
   const current = await supabase.auth.getSession()
   const session = current.data.session
   const expiresSoon = !session?.expires_at || session.expires_at * 1000 <= Date.now() + 60_000
-  if (session?.access_token && !expiresSoon) return { session, error: null }
+  if (session?.access_token && !expiresSoon && !forceRefresh) return { session, error: null }
 
   const refreshed = await supabase.auth.refreshSession()
   if (refreshed.data.session?.access_token) return { session: refreshed.data.session, error: null }
   return { session: null, error: refreshed.error || new Error('Authentication expired. Please sign in again.') }
 }
+
+export const getFreshSession = ensureFreshSession
 
 export async function signInWithEmail(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
@@ -167,32 +175,45 @@ export async function getUserVideos(userId: string, type?: VideoType) {
 
 // ─── Upload (Vercel proxy + direct fallback) ───
 export async function uploadViaProxy(file: File, bucket: string, path: string, onProgress?: (percent: number) => void): Promise<{ path: string; error: Error | null }> {
-  const { session, error: sessionError } = await getFreshSession()
-  if (!session?.access_token) return { path: '', error: sessionError || new Error('Authentication expired. Please sign in again.') }
-
-  return new Promise(resolve => {
-    const xhr = new XMLHttpRequest()
-    const finishWithError = (message: string) => resolve({ path: '', error: new Error(message) })
-    xhr.upload.addEventListener('progress', event => {
-      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100))
+  let lastError: Error | null = null
+  let forceRefresh = false
+  for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
+    const { session, error: sessionError } = await ensureFreshSession(forceRefresh)
+    forceRefresh = false
+    if (!session?.access_token) {
+      const error = sessionError || new Error('Authentication expired. Please sign in again.')
+      window.dispatchEvent(new CustomEvent('hktube:auth-required', { detail: { reason: error.message } }))
+      return { path: '', error }
+    }
+    const result = await new Promise<{ path: string; error: Error | null; unauthorized: boolean }>(resolve => {
+      const xhr = new XMLHttpRequest()
+      const finish = (error: Error | null, unauthorized = false) => resolve({ path: '', error, unauthorized })
+      xhr.upload.addEventListener('progress', event => {
+        if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100))
+      })
+      xhr.addEventListener('load', () => {
+        let response: { path?: string; error?: string } = {}
+        try { response = JSON.parse(xhr.responseText || '{}') as typeof response } catch { /* use status fallback */ }
+        if (xhr.status >= 200 && xhr.status < 300 && response.path) {
+          onProgress?.(100)
+          resolve({ path: response.path, error: null, unauthorized: false })
+        } else finish(new Error(response.error || `Upload proxy failed with status ${xhr.status}`), xhr.status === 401 || xhr.status === 403)
+      })
+      xhr.addEventListener('error', () => finish(new Error('Network error during upload proxy request')))
+      xhr.addEventListener('abort', () => finish(new Error('Upload proxy request was aborted')))
+      xhr.open('POST', `/api/upload?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`)
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+      xhr.send(file)
     })
-    xhr.addEventListener('load', () => {
-      let response: { path?: string; error?: string } = {}
-      try { response = JSON.parse(xhr.responseText || '{}') as typeof response } catch { /* use status fallback */ }
-      if (xhr.status >= 200 && xhr.status < 300 && response.path) {
-        onProgress?.(100)
-        resolve({ path: response.path, error: null })
-      } else {
-        finishWithError(response.error || `Upload proxy failed with status ${xhr.status}`)
-      }
-    })
-    xhr.addEventListener('error', () => finishWithError('Network error during upload proxy request'))
-    xhr.addEventListener('abort', () => finishWithError('Upload proxy request was aborted'))
-    xhr.open('POST', `/api/upload?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`)
-    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
-    xhr.send(file)
-  })
+    if (!result.error) return { path: result.path, error: null }
+    lastError = result.error
+    if (!result.unauthorized || attempt >= MAX_UPLOAD_ATTEMPTS) break
+    forceRefresh = true
+    await wait(250 * attempt)
+  }
+  if (lastError?.message.toLowerCase().includes('authentication') || lastError?.message.toLowerCase().includes('unauthorized')) window.dispatchEvent(new CustomEvent('hktube:auth-required', { detail: { reason: lastError.message } }))
+  return { path: '', error: lastError || new Error('Upload proxy failed after all retry attempts.') }
 }
 
 export async function deleteFilesViaProxy(bucket: string, paths: string[]) {
@@ -274,17 +295,23 @@ export async function uploadFileResumable(
   if (!proxyResult.error) return proxyResult
   console.warn('[HkTube storage] Upload proxy failed; falling back to direct Supabase upload.', { bucket, path, error: proxyResult.error.message })
 
-  const { session } = await getFreshSession()
-  if (!session?.access_token) return proxyResult
   let lastError = proxyResult.error
-
+  let forceRefresh = false
   for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
+    const { session, error: sessionError } = await ensureFreshSession(forceRefresh)
+    forceRefresh = false
+    if (!session?.access_token) {
+      lastError = sessionError || new Error('Authentication expired. Please sign in again.')
+      window.dispatchEvent(new CustomEvent('hktube:auth-required', { detail: { reason: lastError.message } }))
+      break
+    }
     try {
       await startResumableUpload(file, bucket, path, session.access_token, onProgress)
       return { path, error: null }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Upload failed')
       console.warn(`[HkTube storage] Upload attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS} failed.`, { bucket, path, error: lastError.message })
+      if (/401|403|unauthorized|jwt|token/i.test(lastError.message)) forceRefresh = true
       if (attempt < MAX_UPLOAD_ATTEMPTS) await wait(1000 * 2 ** (attempt - 1))
     }
   }
@@ -303,6 +330,8 @@ export async function uploadSimple(file: File, bucket: string, path: string) {
 
   let result: { data: { path: string } | null; error: { message: string } | null } | undefined
   for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
+    const { session, error: sessionError } = await ensureFreshSession()
+    if (!session?.access_token) return { data: null, error: { message: sessionError?.message || 'Authentication expired. Please sign in again.' } }
     try {
       result = await supabase.storage.from(bucket).upload(path, file, { upsert: false, contentType: file.type })
       if (!result.error) return result

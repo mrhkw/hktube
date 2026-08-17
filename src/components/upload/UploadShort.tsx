@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { Upload, X, RefreshCw, Check, Zap } from 'lucide-react'
 import {
-  getFreshSession, uploadFileResumable, createVideoRecord, getPublicUrl, deleteFilesViaProxy,
+  ensureFreshSession, uploadFileResumable, createVideoRecord, getPublicUrl, deleteFilesViaProxy,
   bucketForVideoType, MAX_UPLOAD_MB
 } from '../../lib/supabase'
 
@@ -44,7 +44,7 @@ export default function UploadShort({ userId, onComplete, onCancel }: UploadShor
     if (!file) { setError('Select a video file first.'); return }
     if (!title.trim()) { setError('Title is required.'); return }
 
-    const { session, error: sessionError } = await getFreshSession()
+    const { session, error: sessionError } = await ensureFreshSession()
     if (!session?.access_token) { setState('error'); setError(sessionError?.message || 'Please sign in again to upload.'); return }
 
     setState('uploading')
@@ -149,7 +149,7 @@ export default function UploadShort({ userId, onComplete, onCancel }: UploadShor
           {state === 'error' && (
             <div className="upload-error">
               <p>{error}</p>
-              <button className="btn-secondary" onClick={() => { setState('idle'); setError('') }}><RefreshCw size={16} /> Retry</button>
+              <button className="btn-secondary" onClick={() => { setProgress(0); setUploaded(0); setError(''); void handleUpload() }}><RefreshCw size={16} /> Retry</button>
             </div>
           )}
 
