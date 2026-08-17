@@ -120,7 +120,31 @@ export async function getVideoById(id: string) {
 }
 
 export async function createVideoRecord(record: Omit<VideoRecord, 'id'>) {
-  try { return await supabase.from('signals').insert(record).select().single() } catch (error) { console.warn('[HkTube] video creation failed', error); return { data: null, error } }
+  const session = (await supabase.auth.getSession()).data.session
+  if (!session?.access_token) return { data: null, error: new Error('Authentication expired. Please sign in again.') }
+
+  try {
+    const response = await fetch('/api/create-video', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(record),
+    })
+    const payload = await response.json().catch(() => ({})) as { data?: VideoRecord; error?: string }
+    if (response.ok && payload.data) return { data: payload.data, error: null }
+
+    // Vite's local dev server does not serve Vercel functions. Keep local development
+    // usable, but never hide a production server error behind a generic message.
+    if (response.status === 404) {
+      const fallback = await supabase.from('signals').insert(record).select().single()
+      return fallback.error ? { data: null, error: fallback.error } : fallback
+    }
+    return { data: null, error: new Error(payload.error || `Metadata endpoint failed with status ${response.status}.`) }
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('Could not reach metadata service.') }
+  }
 }
 
 export async function getUserVideos(userId: string, type?: VideoType) {

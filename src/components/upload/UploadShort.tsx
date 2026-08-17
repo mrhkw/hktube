@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { Upload, X, RefreshCw, Check, Zap } from 'lucide-react'
 import {
-  uploadFileResumable, createVideoRecord, getPublicUrl,
+  uploadFileResumable, createVideoRecord, getPublicUrl, deleteFilesViaProxy,
   bucketForVideoType, MAX_UPLOAD_MB
 } from '../../lib/supabase'
 
@@ -85,8 +85,9 @@ export default function UploadShort({ userId, onComplete, onCancel }: UploadShor
     })
 
     if (dbErr) {
+      await deleteFilesViaProxy(bucketForVideoType('short'), [videoPath])
       setState('error')
-      setError('Short uploaded but failed to save. Try again.')
+      setError(dbErr.message || 'Could not save short details. Please try again.')
       return
     }
 

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { Upload, X, RefreshCw, Check, Film } from 'lucide-react'
 import {
-  uploadFileResumable, uploadSimple, createVideoRecord, getPublicUrl,
+  uploadFileResumable, uploadSimple, createVideoRecord, getPublicUrl, deleteFilesViaProxy,
   bucketForVideoType, THUMBNAIL_BUCKET, MAX_UPLOAD_MB
 } from '../../lib/supabase'
 
@@ -81,8 +81,9 @@ export default function UploadVideo({ userId, onComplete, onCancel }: UploadVide
 
     // Upload thumbnail if provided
     let thumbnailUrl = ''
+    let thumbPath = ''
     if (thumbnail) {
-      const thumbPath = `${userId}/${crypto.randomUUID()}-thumb.${thumbnail.name.split('.').pop()}`
+      thumbPath = `${userId}/${crypto.randomUUID()}-thumb.${thumbnail.name.split('.').pop()}`
       const { error: thumbErr } = await uploadSimple(thumbnail, THUMBNAIL_BUCKET, thumbPath)
       if (!thumbErr) thumbnailUrl = getPublicUrl(THUMBNAIL_BUCKET, thumbPath)
     }
@@ -115,8 +116,10 @@ export default function UploadVideo({ userId, onComplete, onCancel }: UploadVide
     })
 
     if (dbErr) {
+      await deleteFilesViaProxy(bucketForVideoType('video'), [videoPath])
+      if (thumbnail) await deleteFilesViaProxy(THUMBNAIL_BUCKET, [thumbPath])
       setState('error')
-      setError('Video uploaded but failed to save details. Try again.')
+      setError(dbErr.message || 'Could not save video details. Please try again.')
       return
     }
 
