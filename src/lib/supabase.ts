@@ -127,7 +127,52 @@ export async function getUserVideos(userId: string, type?: VideoType) {
   try { let query = supabase.from('signals').select('*').eq('creator_id', userId).order('created_at', { ascending: false }); if (type) query = query.eq('video_type', type); return await query } catch (error) { console.warn('[HkTube] creator videos query unavailable', error); return { data: [], error } }
 }
 
-// ─── Upload (TUS resumable) ───
+// ─── Upload (Vercel proxy + direct fallback) ───
+export async function uploadViaProxy(file: File, bucket: string, path: string, onProgress?: (percent: number) => void): Promise<{ path: string; error: Error | null }> {
+  const session = (await supabase.auth.getSession()).data.session
+  if (!session?.access_token) return { path: '', error: new Error('Not authenticated') }
+
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest()
+    const finishWithError = (message: string) => resolve({ path: '', error: new Error(message) })
+    xhr.upload.addEventListener('progress', event => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100))
+    })
+    xhr.addEventListener('load', () => {
+      let response: { path?: string; error?: string } = {}
+      try { response = JSON.parse(xhr.responseText || '{}') as typeof response } catch { /* use status fallback */ }
+      if (xhr.status >= 200 && xhr.status < 300 && response.path) {
+        onProgress?.(100)
+        resolve({ path: response.path, error: null })
+      } else {
+        finishWithError(response.error || `Upload proxy failed with status ${xhr.status}`)
+      }
+    })
+    xhr.addEventListener('error', () => finishWithError('Network error during upload proxy request'))
+    xhr.addEventListener('abort', () => finishWithError('Upload proxy request was aborted'))
+    xhr.open('POST', `/api/upload?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`)
+    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+    xhr.send(file)
+  })
+}
+
+export async function deleteFilesViaProxy(bucket: string, paths: string[]) {
+  const session = (await supabase.auth.getSession()).data.session
+  if (!session?.access_token) return { error: new Error('Not authenticated') }
+  try {
+    const response = await fetch('/api/delete-file', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bucket, paths }),
+    })
+    const data = await response.json().catch(() => ({})) as { error?: string }
+    return response.ok ? { error: null } : { error: new Error(data.error || `Delete proxy failed with status ${response.status}`) }
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('Network error during delete request') }
+  }
+}
+
 function safeFileName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9.]+/g, '-')
 }
@@ -186,11 +231,14 @@ export async function uploadFileResumable(
     return { path: '', error: bucketCheck.error }
   }
 
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.access_token) return { path: '', error: new Error('Please sign in before uploading.') }
-
   const path = `${userId}/${crypto.randomUUID()}-${safeFileName(file.name)}`
-  let lastError = new Error('Upload failed')
+  const proxyResult = await uploadViaProxy(file, bucket, path, percent => onProgress?.(percent, Math.round((percent / 100) * file.size), file.size))
+  if (!proxyResult.error) return proxyResult
+  console.warn('[HkTube storage] Upload proxy failed; falling back to direct Supabase upload.', { bucket, path, error: proxyResult.error.message })
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return proxyResult
+  let lastError = proxyResult.error
 
   for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
     try {
@@ -210,6 +258,10 @@ export async function uploadFileResumable(
 export async function uploadSimple(file: File, bucket: string, path: string) {
   const bucketCheck = await ensureStorageBucket(bucket)
   if (bucketCheck.error) return { data: null, error: bucketCheck.error }
+
+  const proxyResult = await uploadViaProxy(file, bucket, path)
+  if (!proxyResult.error) return { data: { path: proxyResult.path }, error: null }
+  console.warn('[HkTube storage] Upload proxy failed; falling back to direct simple upload.', { bucket, path, error: proxyResult.error.message })
 
   let result: { data: { path: string } | null; error: { message: string } | null } | undefined
   for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
