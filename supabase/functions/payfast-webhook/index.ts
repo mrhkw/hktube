@@ -39,7 +39,19 @@ Deno.serve(async (request) => {
   const expiresAt = new Date(startedAt)
   expiresAt.setMonth(expiresAt.getMonth() + 1)
 
-  const { error } = await supabase.from('premium_subscriptions').upsert({
+  const { error: transactionError } = await supabase.from('transactions').upsert({
+    user_id: userId,
+    amount,
+    currency: 'PKR',
+    status: 'success',
+    provider: 'payfast',
+    provider_transaction_id: basketId,
+    metadata: payload,
+  }, { onConflict: 'provider_transaction_id' })
+
+  if (transactionError) return json({ error: 'Unable to record payment transaction' }, 500)
+
+  const { error: subscriptionError } = await supabase.from('premium_subscriptions').upsert({
     user_id: userId,
     plan: 'monthly',
     status: 'active',
@@ -47,6 +59,6 @@ Deno.serve(async (request) => {
     expires_at: expiresAt.toISOString(),
   }, { onConflict: 'user_id' })
 
-  if (error) return json({ error: 'Unable to activate premium subscription' }, 500)
+  if (subscriptionError) return json({ error: 'Unable to activate premium subscription' }, 500)
   return json({ ok: true, user_id: userId, transaction_id: basketId, expires_at: expiresAt.toISOString() })
 })

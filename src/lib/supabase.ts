@@ -321,3 +321,76 @@ export async function getUnreadCount(userId: string) {
 export async function searchVideos(query: string, limit = 20) {
   return supabase.from('signals').select('*, profiles(channel_name, avatar_url)').eq('visibility', 'public').or(`title.ilike.%${query}%,description.ilike.%${query}%`).order('created_at', { ascending: false }).limit(limit)
 }
+
+// ─── Monetization, Live & Downloads ───
+export interface ProfileRecord {
+  id: string
+  is_premium?: boolean
+  coins_balance?: number
+  total_earnings?: number
+  [key: string]: unknown
+}
+
+export async function getCreatorProfile(userId: string) {
+  return supabase
+    .from('profiles')
+    .select('*, is_premium, coins_balance, total_earnings')
+    .eq('id', userId)
+    .single<ProfileRecord>()
+}
+
+export type TransactionRecord = {
+  user_id: string
+  amount: number
+  currency?: string
+  status?: string
+  provider?: string
+  provider_transaction_id?: string
+  metadata?: Record<string, unknown>
+}
+
+export function createTransaction(record: TransactionRecord) {
+  return supabase.from('transactions').insert(record).select().single()
+}
+
+export function getUserTransactions(userId: string) {
+  return supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+}
+
+export type LiveStreamRecord = {
+  user_id: string
+  title?: string
+  status?: string
+  started_at?: string
+  ended_at?: string | null
+  viewer_count?: number
+  metadata?: Record<string, unknown>
+}
+
+export function createLiveStream(record: LiveStreamRecord) {
+  return supabase.from('live_streams').insert(record).select().single()
+}
+
+export function updateLiveStream(id: string, updates: Partial<LiveStreamRecord>) {
+  return supabase.from('live_streams').update(updates).eq('id', id).select().single()
+}
+
+export function getUserLiveStreams(userId: string) {
+  return supabase.from('live_streams').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+}
+
+export type VideoDownloadRecord = {
+  video_id: string
+  user_id: string
+  status?: string
+  file_path?: string | null
+  metadata?: Record<string, unknown>
+}
+
+export function recordVideoDownload(record: VideoDownloadRecord) {
+  return supabase.from('video_downloads').insert(record).select().single()
+}
+
+export function getUserVideoDownloads(userId: string) {
+  return supabase.from('video_downloads').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+}

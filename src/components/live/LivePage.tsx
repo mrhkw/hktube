@@ -13,6 +13,7 @@ import {
   isPayFastConfigured,
   startPayFastCheckout,
 } from '../../lib/payfast'
+import { createLiveStream, updateLiveStream } from '../../lib/supabase'
 
 type LivePageProps = { userId: string; userEmail?: string }
 type LiveTab = 'control' | 'analytics' | 'monetization'
@@ -39,6 +40,7 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutMessage, setCheckoutMessage] = useState('')
   const [isLive, setIsLive] = useState(false)
+  const [liveStreamId, setLiveStreamId] = useState<string | null>(null)
   const [micOn, setMicOn] = useState(true)
   const [cameraOn, setCameraOn] = useState(true)
   const [guestMode, setGuestMode] = useState(false)
@@ -77,13 +79,31 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
 
   const previewStyle = useMemo(() => ({ filter: virtualBackground ? 'saturate(1.15) contrast(1.08)' : 'none' }), [virtualBackground])
 
-  const openLive = () => {
+  const openLive = async () => {
     if (!isPremium) {
       setCheckoutMessage('')
       setShowPremiumModal(true)
       return
     }
+    const { data } = await createLiveStream({
+      user_id: userId,
+      status: 'live',
+      started_at: new Date().toISOString(),
+    })
+    setLiveStreamId((data as { id?: string } | null)?.id ?? null)
     setIsLive(true)
+  }
+
+  const endLive = async () => {
+    if (liveStreamId) {
+      await updateLiveStream(liveStreamId, {
+        status: 'ended',
+        ended_at: new Date().toISOString(),
+        viewer_count: viewerCount,
+      })
+    }
+    setLiveStreamId(null)
+    setIsLive(false)
   }
 
   const startCameraPreview = async () => {
@@ -165,7 +185,7 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
         </div>
         <div className="live-header-actions">
           <span className="coin-balance"><Sparkles size={15} /> {coins.toLocaleString()} coins</span>
-          <button className={isLive ? 'live-stop-button' : 'live-primary-button'} onClick={isLive ? () => setIsLive(false) : openLive}>
+          <button className={isLive ? 'live-stop-button' : 'live-primary-button'} onClick={isLive ? endLive : openLive}>
             {isLive ? <><Pause size={16} /> End stream</> : <><Radio size={16} /> Launch stream</>}
           </button>
         </div>

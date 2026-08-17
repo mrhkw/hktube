@@ -3,7 +3,7 @@ import { Heart, MessageCircle, Share2, Bookmark, Download, UserPlus, UserCheck, 
 import {
   getVideoById, toggleLike, hasLiked, getComments, addComment,
   toggleFollow, isFollowing, getFollowerCount, addToHistory,
-  toggleWatchLater, getPublicUrl, VIDEO_BUCKET, type VideoRecord
+  toggleWatchLater, getPublicUrl, VIDEO_BUCKET, recordVideoDownload, type VideoRecord
 } from '../../lib/supabase'
 
 interface WatchPageProps {
@@ -117,7 +117,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
             <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} /> Save
           </button>
           {video.allow_downloads && (
-            <a className="action-btn" href={videoSrc} download target="_blank" rel="noopener">
+            <a className="action-btn" href={videoSrc} download target="_blank" rel="noopener" onClick={() => { void recordVideoDownload({ video_id: videoId, user_id: userId, status: 'started', file_path: video.video_url }) }}>
               <Download size={18} /> Download
             </a>
           )}
