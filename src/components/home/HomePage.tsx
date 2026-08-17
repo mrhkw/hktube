@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getPublicVideos, getProfile, supabase, type VideoRecord } from '../../lib/supabase'
+import { getPublicVideos, type VideoRecord } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
-import AiVideoGenerator from '../ai/AiVideoGenerator'
-import { isOwnerEmail } from '../../lib/owner'
 
 interface HomePageProps {
   userId: string
@@ -11,21 +9,14 @@ interface HomePageProps {
 
 const categories = ['All', 'Music', 'Gaming', 'Education', 'Tech', 'Entertainment', 'Sports', 'News']
 
-export default function HomePage({ userId, onVideoClick }: HomePageProps) {
-  const [isPremium, setIsPremium] = useState(false)
+export default function HomePage({ onVideoClick }: HomePageProps) {
   const [videos, setVideos] = useState<Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }>>([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('All')
 
   useEffect(() => {
     loadVideos()
-    void loadGeneratorAccess()
-  }, [userId])
-
-  const loadGeneratorAccess = async () => {
-    const [{ data: auth }, { data: profile }] = await Promise.all([supabase.auth.getUser(), getProfile(userId)])
-    setIsPremium(isOwnerEmail(auth.user?.email) || Boolean((profile as { is_premium?: boolean } | null)?.is_premium))
-  }
+  }, [])
 
   const loadVideos = async () => {
     setLoading(true)
@@ -43,7 +34,6 @@ export default function HomePage({ userId, onVideoClick }: HomePageProps) {
 
   return (
     <div className="home-page">
-      <AiVideoGenerator isPremium={isPremium} />
       <div className="category-chips">
         {categories.map(cat => (
           <button
