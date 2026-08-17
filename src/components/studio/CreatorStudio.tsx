@@ -7,6 +7,7 @@ import WithdrawPanel from '../monetization/WithdrawPanel'
 import PremiumPanel from '../premium/PremiumPanel'
 import AiProPanel from '../ai/AiProPanel'
 import StudioSettings from '../settings/StudioSettings'
+import { isOwnerEmail } from '../../lib/owner'
 
 interface CreatorStudioProps {
   userId: string
@@ -31,6 +32,7 @@ export default function CreatorStudio({ userId, onNavigate }: CreatorStudioProps
   const [videos, setVideos] = useState<VideoRecord[]>([])
   const [shorts, setShorts] = useState<VideoRecord[]>([])
   const [profile, setProfile] = useState<{ is_monetized?: boolean; is_premium?: boolean; monetization_status?: string; badge?: string } | null>(null)
+  const [isOwner, setIsOwner] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -39,6 +41,8 @@ export default function CreatorStudio({ userId, onNavigate }: CreatorStudioProps
 
   const loadStudioData = async () => {
     setLoading(true)
+    const { data: auth } = await supabase.auth.getUser()
+    setIsOwner(isOwnerEmail(auth.user?.email))
     // Get creator stats via RPC
     const { data: statsData } = await supabase.rpc('get_creator_stats', { creator_uuid: userId })
     if (statsData) setStats(statsData as CreatorStats)
@@ -79,7 +83,7 @@ export default function CreatorStudio({ userId, onNavigate }: CreatorStudioProps
       case 'earnings': return <EarningsPanel userId={userId} stats={stats} />
       case 'withdraw': return <WithdrawPanel userId={userId} stats={stats} profile={profile} />
       case 'premium': return <PremiumPanel userId={userId} profile={profile} onRefresh={loadStudioData} />
-      case 'ai-pro': return <AiProPanel userId={userId} profile={profile} />
+      case 'ai-pro': return <AiProPanel userId={userId} profile={isOwner ? { ...profile, is_premium: true } : profile} />
       case 'settings': return <StudioSettings userId={userId} onNavigate={onNavigate} />
       default: return null
     }

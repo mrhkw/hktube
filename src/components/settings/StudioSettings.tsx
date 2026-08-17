@@ -8,7 +8,7 @@ interface StudioSettingsProps { userId: string; onNavigate: (view: string) => vo
 type SettingsTab = 'theme' | 'playback' | 'creator' | 'live' | 'support' | 'account'
 type ThemeChoice = 'dark' | 'light' | 'system'
 
-type ProfileSettings = { channel_name?: string; avatar_url?: string; banner_url?: string; is_premium?: boolean }
+type ProfileSettings = { channel_name?: string; username?: string; avatar_url?: string; banner_url?: string; is_premium?: boolean }
 
 const tabs: { id: SettingsTab; label: string; icon: typeof Settings }[] = [
   { id: 'theme', label: 'Theme & Display', icon: Palette },
@@ -37,6 +37,7 @@ export default function StudioSettings({ userId, onNavigate, onSignOut }: Studio
   const [streamKey, setStreamKey] = useState('')
   const [serverUrl, setServerUrl] = useState('rtmps://live.hktube.com/app')
   const [channelName, setChannelName] = useState('')
+  const [usernameField, setUsernameField] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [bannerUrl, setBannerUrl] = useState('')
   const [premium, setPremium] = useState(false)
@@ -59,6 +60,7 @@ export default function StudioSettings({ userId, onNavigate, onSignOut }: Studio
         const nextProfile = data as ProfileSettings
         setProfile(nextProfile)
         setChannelName(nextProfile.channel_name || '')
+        setUsernameField(nextProfile.username || nextProfile.channel_name?.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]+/g, '_') || '')
         setAvatarUrl(nextProfile.avatar_url || '')
         setBannerUrl(nextProfile.banner_url || '')
         setPremium(Boolean(nextProfile.is_premium))
@@ -69,10 +71,16 @@ export default function StudioSettings({ userId, onNavigate, onSignOut }: Studio
 
   const saveCreator = async () => {
     setMessage('')
+    const normalizedUsername = usernameField.trim().toLowerCase().replace(/^@/, '')
+    if (!normalizedUsername || !/^[a-z0-9_]{3,32}$/.test(normalizedUsername)) { setMessage('Username must be 3–32 characters using letters, numbers, or underscores.'); return }
     try {
-      await updateProfile(userId, { channel_name: channelName.trim(), avatar_url: avatarUrl.trim(), banner_url: bannerUrl.trim() })
+      const duplicate = await supabase.from('profiles').select('id').eq('username', normalizedUsername).neq('id', userId).maybeSingle()
+      if (duplicate.error && !duplicate.error.message.toLowerCase().includes('column')) throw duplicate.error
+      if (duplicate.data) { setMessage('Username already taken.'); return }
+      const result = await updateProfile(userId, { channel_name: channelName.trim(), username: normalizedUsername, avatar_url: avatarUrl.trim(), banner_url: bannerUrl.trim() })
+      if (result.error) throw result.error
       setMessage('Creator settings saved.')
-    } catch { setMessage('Creator settings saved locally. Connect your profile table to sync them.') }
+    } catch (error) { setMessage(error instanceof Error && error.message.toLowerCase().includes('column') ? 'Run the owner/admin migration to enable unique usernames.' : 'Could not save creator settings. Please try again.') }
   }
 
   const savePlayback = () => {
@@ -109,7 +117,8 @@ export default function StudioSettings({ userId, onNavigate, onSignOut }: Studio
           <div className="settings-choice-grid settings-theme-choices">{themeChoices.map(choice => <button key={choice.id} className={`settings-choice ${theme === choice.id ? 'active' : ''}`} onClick={() => setTheme(choice.id)}><span className={`settings-theme-swatch ${choice.id}`} /><strong>{choice.label}</strong><small>{choice.description}</small></button>)}</div>
         </div>}
         {tab === 'playback' && <div className="settings-section"><h3>Playback &amp; Upload Quality</h3><p className="settings-desc">Tune quality for your connection and creator workflow.</p><Toggle checked={autoplay} onChange={setAutoplay} label="Auto-play videos" description="Start the next video automatically." /><div className="settings-form-grid"><div className="form-field"><label>Playback quality</label><select value={quality} onChange={e => setQuality(e.target.value)}><option value="1080p">1080p · Full HD</option><option value="720p">720p · HD</option></select></div><div className="form-field"><label><Upload size={13} /> Upload quality</label><select value={uploadQuality} onChange={e => setUploadQuality(e.target.value)}><option value="1080p">1080p · Full HD</option><option value="720p">720p · HD</option></select></div></div><Toggle checked={dataSaver} onChange={setDataSaver} label="Data Saver" description="Reduce video quality and previews on mobile data." /><button className="btn-primary btn-sm" onClick={savePlayback}><Save size={14} /> Save Preferences</button></div>}
-        {tab === 'creator' && <div className="settings-section"><h3>Creator Hub &amp; Monetization</h3><div className="settings-status"><span>PayFast Monetization Status</span><strong className={premium ? 'status-approved' : 'status-pending'}>{premium ? 'Active' : 'Not connected'}</strong></div><Toggle checked={advancedAnalytics} onChange={setAdvancedAnalytics} label="Advanced Creator Analytics" description="Show deeper performance trends in Creator Studio." /><div className="form-field"><label>Channel Name</label><input value={channelName} onChange={e => setChannelName(e.target.value)} placeholder="Your channel name" /></div><div className="form-field"><label>Avatar URL</label><input value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="https://..." /></div><div className="form-field"><label>Banner URL</label><input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="https://..." /></div><button className="btn-primary btn-sm" onClick={saveCreator}><Save size={14} /> Save Channel Customization</button><button className="btn-secondary btn-sm" onClick={() => onNavigate('studio')}><Sparkles size={14} /> Open Creator Studio</button></div>}
+        {tab === 'creator' && <div className="settings-section"><h3>Creator Hub &amp; Monetization</h3><div className="settings-status"><span>PayFast Monetization Status</span><strong className={premium ? 'status-approved' : 'status-pending'}>{premium ? 'Active' : 'Not connected'}</strong></div><Toggle checked={advancedAnalytics} onChange={setAdvancedAnalytics} label="Advanced Creator Analytics" description="Show deeper performance trends in Creator Studio." /><div className="form-field"><label>Username</label><input value={usernameField} onChange={e => setUsernameField(e.target.value)} placeholder="your_unique_username" /></div><div className="form-field"><label>
+Channel Name</label><input value={channelName} onChange={e => setChannelName(e.target.value)} placeholder="Your channel name" /></div><div className="form-field"><label>Avatar URL</label><input value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="https://..." /></div><div className="form-field"><label>Banner URL</label><input value={bannerUrl} onChange={e => setBannerUrl(e.target.value)} placeholder="https://..." /></div><button className="btn-primary btn-sm" onClick={saveCreator}><Save size={14} /> Save Channel Customization</button><button className="btn-secondary btn-sm" onClick={() => onNavigate('studio')}><Sparkles size={14} /> Open Creator Studio</button></div>}
         {tab === 'live' && <div className="settings-section"><h3>Live Streaming Tools</h3><div className="form-field"><label>Stream Key</label><input type="password" value={streamKey} onChange={e => setStreamKey(e.target.value)} placeholder="Paste or generate a stream key" /></div><div className="form-field"><label>Server URL</label><input value={serverUrl} onChange={e => setServerUrl(e.target.value)} /></div><Toggle checked={chatModeration} onChange={setChatModeration} label="Chat Moderation" description="Enable blocked words and moderator controls." /><Toggle checked={gifting} onChange={setGifting} label="Gifting & Coins" description="Allow viewers to send creator gifts during live streams." /><button className="btn-secondary btn-sm" onClick={() => onNavigate('live')}>Open Live Studio</button></div>}
         {tab === 'support' && <div className="settings-section"><div className="settings-section-heading"><div><h3>Data Consent &amp; App Info</h3><p className="settings-desc">Control optional analytics and review HkTube information.</p></div><Info size={22} /></div><Toggle checked={dataConsent} onChange={setDataConsent} label="Allow product analytics" description="Help improve performance with privacy-conscious usage data." /><button className="btn-secondary btn-sm" onClick={saveConsent}><Save size={14} /> Save Consent</button><div className="settings-app-info"><strong>HkTube</strong><span>Version 1.0 · Built for creators and communities.</span><span>Supabase and PayFast integrations remain managed by the app services.</span></div><div><h3>Privacy Policies &amp; Legal</h3><div className="legal-links settings-link-list"><button onClick={() => setMessage('Problem report form will open shortly.')}>Report a Problem</button><a href="/privacy-policy">Privacy Policy</a><a href="/terms-of-service">Terms of Service</a><a href="/data-policy">Data Policy</a><a href="/cookie-policy">Cookie Policy</a><a href="/safety-center">Safety Center</a><a href="/community-guidelines">Community Guidelines</a><a href="/help-center">Help Center</a></div></div></div>}
         {tab === 'account' && <div className="settings-section"><div className="settings-section-heading"><div><h3>Account &amp; Security</h3><p className="settings-desc">Manage your HkTube account and creator access.</p></div><Shield size={22} /></div><div className="security-item"><strong>Account protection</strong><p>Your session is protected by Supabase authentication. Use Security from the Library to review account options.</p></div><button className="btn-secondary btn-sm btn-danger settings-logout" onClick={logOut}><LogOut size={14} /> {t('Log Out')}</button></div>}

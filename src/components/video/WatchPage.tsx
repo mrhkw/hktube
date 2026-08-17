@@ -5,6 +5,7 @@ import {
   toggleFollow, isFollowing, getFollowerCount, addToHistory,
   toggleWatchLater, getPublicUrl, VIDEO_BUCKET, recordVideoDownload, type VideoRecord
 } from '../../lib/supabase'
+import { OwnerBadge } from '../../lib/owner'
 
 interface WatchPageProps {
   videoId: string
@@ -14,12 +15,12 @@ interface WatchPageProps {
 }
 
 export default function WatchPage({ videoId, userId, onBack, onNavigate }: WatchPageProps) {
-  const [video, setVideo] = useState<(VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string } }) | null>(null)
+  const [video, setVideo] = useState<(VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string; is_verified?: boolean; is_official?: boolean; role?: string } }) | null>(null)
   const [liked, setLiked] = useState(false)
   const [saved, setSaved] = useState(false)
   const [following, setFollowing] = useState(false)
   const [followers, setFollowers] = useState(0)
-  const [comments, setComments] = useState<Array<{ id: string; content: string; created_at: string; profiles?: { channel_name?: string } }>>([])
+  const [comments, setComments] = useState<Array<{ id: string; content: string; created_at: string; profiles?: { channel_name?: string; is_verified?: boolean; is_official?: boolean; role?: string } }>>([])
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(true)
   const [videoError, setVideoError] = useState('')
@@ -36,7 +37,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
     try {
       const { data } = await getVideoById(videoId)
       if (data) {
-        setVideo(data as VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string } })
+        setVideo(data as VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string; is_verified?: boolean; is_official?: boolean; role?: string } })
         const creatorId = (data as { profiles?: { id?: string } }).profiles?.id
         if (creatorId) {
           getFollowerCount(creatorId).then(setFollowers).catch(() => setFollowers(0))
@@ -124,7 +125,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
               )}
             </div>
             <div>
-              <strong>{video.profiles?.channel_name || 'Creator'}</strong>
+              <strong>{video.profiles?.channel_name || 'Creator'}</strong>{(video.profiles?.is_official || video.profiles?.role === 'owner' || video.profiles?.role === 'super_admin') && <OwnerBadge compact />}
               <small>{followers} followers</small>
             </div>
           </div>
@@ -154,7 +155,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
           <div className="comments-list">
             {comments.map(c => (
               <div key={c.id} className="comment-item">
-                <strong>{c.profiles?.channel_name || 'User'}</strong>
+                <strong>{c.profiles?.channel_name || 'User'}</strong>{(c.profiles?.is_official || c.profiles?.role === 'owner' || c.profiles?.role === 'super_admin') && <OwnerBadge compact />}
                 <p>{c.content}</p>
                 <small>{new Date(c.created_at).toLocaleDateString()}</small>
               </div>

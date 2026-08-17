@@ -22,8 +22,9 @@ import LivePage from './components/live/LivePage'
 import type { VideoRecord } from './lib/supabase'
 import './App.css'
 import ErrorBoundary from './components/ErrorBoundary'
+import AdminPage from './components/admin/AdminPage'
 
-type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live'
+type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin'
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> }
 
@@ -107,7 +108,7 @@ function App() {
       case 'shorts': return <ShortsPage userId={user.id} />
       case 'feeds': return <FeedsPage onVideoClick={handleVideoClick} />
       case 'posts': return <PostsPage userId={user.id} />
-      case 'library': return <LibraryPage userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} onSignOut={signOut} />
+      case 'library': return <LibraryPage userId={user.id} userEmail={user.email} onVideoClick={handleVideoClick} onNavigate={navigate} onSignOut={signOut} />
       case 'profile': return <ProfilePage userId={user.id} onSignOut={signOut} onVideoClick={handleVideoClick} onNavigate={navigate} />
       case 'search': return <SearchPage query={searchQuery} onVideoClick={handleVideoClick} />
       case 'watch': return <WatchPage videoId={watchVideoId} userId={user.id} onBack={() => setView('home')} onNavigate={navigate} />
@@ -117,6 +118,7 @@ function App() {
       case 'live': return <LivePage userId={user.id} userEmail={user.email} />
       case 'studio': return <CreatorStudio userId={user.id} onNavigate={navigate} />
       case 'settings': return <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />
+      case 'admin': return <AdminPage email={user.email} />
       default: return <HomePage onVideoClick={handleVideoClick} />
     }
   }

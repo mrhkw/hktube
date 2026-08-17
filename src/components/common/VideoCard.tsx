@@ -1,8 +1,9 @@
 import { Play } from 'lucide-react'
 import type { VideoRecord } from '../../lib/supabase'
+import { OwnerBadge } from '../../lib/owner'
 
 interface VideoCardProps {
-  video: VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }
+  video: VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; is_verified?: boolean; is_official?: boolean; role?: string } }
   onClick: () => void
 }
 
@@ -51,7 +52,7 @@ export default function VideoCard({ video, onClick }: VideoCardProps) {
         </div>
         <div className="video-card-meta">
           <h3>{video.title}</h3>
-          <p className="video-card-channel">{channelName}</p>
+          <p className="video-card-channel">{channelName}{(video.profiles?.is_official || video.profiles?.role === 'owner' || video.profiles?.role === 'super_admin') && <OwnerBadge compact />}</p>
           <p className="video-card-stats">
             {formatViews(video.views || 0)} views • {video.created_at ? timeAgo(video.created_at) : ''}
           </p>

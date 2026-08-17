@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Shield,
+  Crown,
   Sun,
   Users,
   Wrench,
@@ -20,9 +21,11 @@ import {
 import { getFollowerCount, getHistory, getProfile, getUserVideos, getWatchLater, type VideoRecord } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
 import AiProPanel from '../ai/AiProPanel'
+import { isOwnerEmail } from '../../lib/owner'
 
 interface LibraryPageProps {
   userId: string
+  userEmail?: string | null
   onVideoClick: (video: VideoRecord) => void
   onNavigate?: (view: string) => void
   onSignOut?: () => void
@@ -39,7 +42,7 @@ const tabs: { id: Tab; label: string; icon: typeof History }[] = [
   { id: 'liked', label: 'Likes', icon: Heart },
 ]
 
-export default function LibraryPage({ userId, onVideoClick, onNavigate, onSignOut }: LibraryPageProps) {
+export default function LibraryPage({ userId, userEmail, onVideoClick, onNavigate, onSignOut }: LibraryPageProps) {
   const [tab, setTab] = useState<Tab>('history')
   const [items, setItems] = useState<VideoRecord[]>([])
   const [creatorVideos, setCreatorVideos] = useState<VideoRecord[]>([])
@@ -153,6 +156,7 @@ export default function LibraryPage({ userId, onVideoClick, onNavigate, onSignOu
           <div className="library-account-card">
             <button onClick={() => onNavigate?.('settings')}><Settings size={17} /> Settings</button>
             <button onClick={() => onNavigate?.('settings')}><Shield size={17} /> Security</button>
+            {isOwnerEmail(userEmail) && <button onClick={() => onNavigate?.('admin')}><Crown size={17} /> Admin Dashboard</button>}
             <button onClick={logout}><LogOut size={17} /> Logout</button>
           </div>
         </section>

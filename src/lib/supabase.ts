@@ -123,11 +123,11 @@ export interface VideoRecord {
 }
 
 export async function getPublicVideos(limit = 24, type?: VideoType) {
-  try { let query = supabase.from('signals').select('*, profiles(channel_name, avatar_url)').eq('visibility', 'public').order('created_at', { ascending: false }).limit(limit); if (type) query = query.eq('video_type', type); return await query } catch (error) { console.warn('[HkTube] public videos unavailable', error); return { data: [], error } }
+  try { let query = supabase.from('signals').select('*, profiles(channel_name, avatar_url, is_verified, is_official, role)').eq('visibility', 'public').order('created_at', { ascending: false }).limit(limit); if (type) query = query.eq('video_type', type); return await query } catch (error) { console.warn('[HkTube] public videos unavailable', error); return { data: [], error } }
 }
 
 export async function getVideoById(id: string) {
-  try { return await supabase.from('signals').select('*, profiles(channel_name, avatar_url, id)').eq('id', id).single() } catch (error) { console.warn('[HkTube] video unavailable', error); return { data: null, error } }
+  try { return await supabase.from('signals').select('*, profiles(channel_name, avatar_url, id, is_verified, is_official, role)').eq('id', id).single() } catch (error) { console.warn('[HkTube] video unavailable', error); return { data: null, error } }
 }
 
 export async function createVideoRecord(record: Omit<VideoRecord, 'id'>) {
@@ -332,11 +332,11 @@ export async function hasLiked(videoId: string, userId: string) {
 
 // ─── Comments ───
 export async function getComments(videoId: string) {
-  try { return await supabase.from('comments').select('*, profiles(channel_name, avatar_url)').eq('video_id', videoId).order('created_at', { ascending: false }) } catch (error) { console.warn('[HkTube] comments unavailable', error); return { data: [], error } }
+  try { return await supabase.from('comments').select('*, profiles(channel_name, avatar_url, is_verified, is_official, role)').eq('video_id', videoId).order('created_at', { ascending: false }) } catch (error) { console.warn('[HkTube] comments unavailable', error); return { data: [], error } }
 }
 
 export async function addComment(videoId: string, userId: string, content: string) {
-  try { return await supabase.from('comments').insert({ video_id: videoId, user_id: userId, content }).select('*, profiles(channel_name, avatar_url)').single() } catch (error) { console.warn('[HkTube] comment creation failed', error); return { data: null, error } }
+  try { return await supabase.from('comments').insert({ video_id: videoId, user_id: userId, content }).select('*, profiles(channel_name, avatar_url, is_verified, is_official, role)').single() } catch (error) { console.warn('[HkTube] comment creation failed', error); return { data: null, error } }
 }
 
 // ─── Follows ───
@@ -358,7 +358,7 @@ export async function addToHistory(userId: string, videoId: string) {
 }
 
 export async function getHistory(userId: string, limit = 50) {
-  try { return await supabase.from('watch_history').select('*, signals(*, profiles(channel_name, avatar_url))').eq('user_id', userId).order('watched_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] history query unavailable', error); return { data: [], error } }
+  try { return await supabase.from('watch_history').select('*, signals(*, profiles(channel_name, avatar_url, is_verified, is_official, role))').eq('user_id', userId).order('watched_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] history query unavailable', error); return { data: [], error } }
 }
 
 // ─── Watch Later ───
@@ -367,16 +367,16 @@ export async function toggleWatchLater(userId: string, videoId: string) {
 }
 
 export async function getWatchLater(userId: string) {
-  try { return await supabase.from('watch_later').select('*, signals(*, profiles(channel_name, avatar_url))').eq('user_id', userId).order('created_at', { ascending: false }) } catch (error) { console.warn('[HkTube] watch later query unavailable', error); return { data: [], error } }
+  try { return await supabase.from('watch_later').select('*, signals(*, profiles(channel_name, avatar_url, is_verified, is_official, role))').eq('user_id', userId).order('created_at', { ascending: false }) } catch (error) { console.warn('[HkTube] watch later query unavailable', error); return { data: [], error } }
 }
 
 // ─── Posts ───
 export async function createPost(userId: string, content: string, imageUrl?: string) {
-  try { return await supabase.from('posts').insert({ user_id: userId, content, image_url: imageUrl }).select('*, profiles(channel_name, avatar_url)').single() } catch (error) { console.warn('[HkTube] post creation failed', error); return { data: null, error } }
+  try { return await supabase.from('posts').insert({ user_id: userId, content, image_url: imageUrl }).select('*, profiles(channel_name, avatar_url, is_verified, is_official, role)').single() } catch (error) { console.warn('[HkTube] post creation failed', error); return { data: null, error } }
 }
 
 export async function getPosts(limit = 30) {
-  try { return await supabase.from('posts').select('*, profiles(channel_name, avatar_url)').order('created_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] posts unavailable', error); return { data: [], error } }
+  try { return await supabase.from('posts').select('*, profiles(channel_name, avatar_url, is_verified, is_official, role)').order('created_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] posts unavailable', error); return { data: [], error } }
 }
 
 // ─── Notifications ───
@@ -394,7 +394,7 @@ export async function getUnreadCount(userId: string) {
 
 // ─── Search ───
 export async function searchVideos(query: string, limit = 20) {
-  try { return await supabase.from('signals').select('*, profiles(channel_name, avatar_url)').eq('visibility', 'public').or(`title.ilike.%${query}%,description.ilike.%${query}%`).order('created_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] search unavailable', error); return { data: [], error } }
+  try { return await supabase.from('signals').select('*, profiles(channel_name, avatar_url, is_verified, is_official, role)').eq('visibility', 'public').or(`title.ilike.%${query}%,description.ilike.%${query}%`).order('created_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] search unavailable', error); return { data: [], error } }
 }
 
 // ─── Monetization, Live & Downloads ───
