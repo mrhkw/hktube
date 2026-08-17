@@ -104,7 +104,7 @@ function App() {
 
   const renderPage = () => {
     switch (view) {
-      case 'home': return <HomePage onVideoClick={handleVideoClick} />
+      case 'home': return <HomePage userId={user.id} onVideoClick={handleVideoClick} />
       case 'shorts': return <ShortsPage userId={user.id} />
       case 'feeds': return <FeedsPage onVideoClick={handleVideoClick} />
       case 'posts': return <PostsPage userId={user.id} />
@@ -119,7 +119,7 @@ function App() {
       case 'studio': return <CreatorStudio userId={user.id} onNavigate={navigate} />
       case 'settings': return <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />
       case 'admin': return <AdminPage email={user.email} />
-      default: return <HomePage onVideoClick={handleVideoClick} />
+      default: return <HomePage userId={user.id} onVideoClick={handleVideoClick} />
     }
   }
 

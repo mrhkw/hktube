@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Bell, Plus, Settings, User } from 'lucide-react'
+import { Search, Bell, Plus, User } from 'lucide-react'
 import { getUnreadCount, markNotificationsRead, getNotifications } from '../../lib/supabase'
 
 interface HeaderProps {
@@ -55,7 +55,6 @@ export default function Header({ userId, onNavigate, onSearch, installEvent, onI
       <div className="hk-header-actions">
         {installEvent && <button className="btn-install" onClick={onInstall}>Install</button>}
         <button className="btn-icon btn-create" onClick={() => onNavigate('create')} aria-label="Create"><Plus size={20} /></button>
-        <button className="btn-icon btn-settings" onClick={() => onNavigate('settings')} aria-label="Settings"><Settings size={18} /></button>
         <button className="btn-icon btn-notif" onClick={handleNotifClick} aria-label="Notifications">
           <Bell size={18} />
           {unread > 0 && <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>}

@@ -767,3 +767,7 @@ input, textarea, select, button { max-width: 100%; }
 .admin-row-actions { display: flex; gap: 6px; }
 .btn-danger { border: 1px solid rgba(255,102,122,.35); background: rgba(255,72,100,.12); color: #ff9ba9; }
 @media (max-width: 760px) { .ai-generator-options, .admin-grid { grid-template-columns: 1fr; } .admin-header { flex-direction: column; } }
+.home-page > .ai-video-generator { margin-bottom: 24px; }
+.ai-generator-progress { display: grid; gap: 8px; margin: 12px 0 14px; }
+.ai-generator-progress small { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); }
+.ai-generator-demo-result { padding: 11px 14px; margin-top: 12px; border: 1px solid rgba(0,206,201,.35); border-radius: var(--radius-sm); color: #8df0db; background: rgba(0,206,201,.08); font-size: 13px; }

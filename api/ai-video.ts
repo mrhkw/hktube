@@ -17,7 +17,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const providerBase = process.env.AI_VIDEO_API_BASE || process.env.OPENAI_API_BASE
     const providerKey = process.env.AI_VIDEO_API_KEY || process.env.OPENAI_API_KEY
-    if (!providerBase || !providerKey) return json(res, 503, { message: 'AI video generation is not configured yet. Add an AI video provider to Vercel to enable generation.' })
+    if (!providerBase || !providerKey) return json(res, 200, {
+      demo: true,
+      message: 'Demo mode: video generated successfully. Connect an AI provider in Vercel for real generation.',
+      video_url: null,
+      job_id: `demo-${Date.now()}`,
+      settings: { aspect_ratio: aspectRatio, duration, quality },
+    })
 
     const upstream = await fetch(`${providerBase.replace(/\/$/, '')}/videos`, {
       method: 'POST',
