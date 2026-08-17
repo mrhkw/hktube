@@ -1,79 +1,21 @@
-import { useState, useEffect } from 'react'
-import { Clock, Bookmark, Heart, Upload } from 'lucide-react'
-import { getHistory, getWatchLater, getUserVideos, type VideoRecord } from '../../lib/supabase'
+import { useEffect, useState } from 'react'
+import { Clock, Bookmark, Heart, Upload, BarChart3, Settings, Users, Eye } from 'lucide-react'
+import { getHistory, getWatchLater, getUserVideos, getProfile, getFollowerCount, type VideoRecord } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
 
-interface LibraryPageProps {
-  userId: string
-  onVideoClick: (video: VideoRecord) => void
-}
-
+interface LibraryPageProps { userId: string; onVideoClick: (video: VideoRecord) => void; onNavigate?: (view: string) => void }
 type Tab = 'history' | 'watchlater' | 'liked' | 'uploads'
+type CreatorProfile = { channel_name?: string; description?: string; avatar_url?: string; banner_url?: string; subscribers?: number; total_views?: number }
 
-export default function LibraryPage({ userId, onVideoClick }: LibraryPageProps) {
-  const [tab, setTab] = useState<Tab>('history')
-  const [items, setItems] = useState<VideoRecord[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadTab()
-  }, [tab, userId])
-
-  const loadTab = async () => {
-    setLoading(true)
-    setItems([])
-    switch (tab) {
-      case 'history': {
-        const { data } = await getHistory(userId)
-        if (data) setItems(data.map((d: { signals: VideoRecord }) => d.signals).filter(Boolean))
-        break
-      }
-      case 'watchlater': {
-        const { data } = await getWatchLater(userId)
-        if (data) setItems(data.map((d: { signals: VideoRecord }) => d.signals).filter(Boolean))
-        break
-      }
-      case 'uploads': {
-        const { data } = await getUserVideos(userId)
-        if (data) setItems(data as VideoRecord[])
-        break
-      }
-      default:
-        break
-    }
-    setLoading(false)
-  }
-
-  const tabs = [
-    { id: 'history' as Tab, label: 'History', icon: Clock },
-    { id: 'watchlater' as Tab, label: 'Watch Later', icon: Bookmark },
-    { id: 'liked' as Tab, label: 'Liked', icon: Heart },
-    { id: 'uploads' as Tab, label: 'My Uploads', icon: Upload },
-  ]
-
-  return (
-    <div className="library-page">
-      <h2>Library</h2>
-      <div className="library-tabs">
-        {tabs.map(t => {
-          const Icon = t.icon
-          return (
-            <button key={t.id} className={`lib-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-              <Icon size={16} /> {t.label}
-            </button>
-          )
-        })}
-      </div>
-
-      {loading ? (
-        <div className="loading-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-card" />)}</div>
-      ) : items.length === 0 ? (
-        <div className="empty-state"><p>Nothing here yet</p></div>
-      ) : (
-        <div className="video-grid">
-          {items.map(v => <VideoCard key={v.id} video={v} onClick={() => onVideoClick(v)} />)}
-        </div>
-      )}
-    </div>
-  )
+export default function LibraryPage({ userId, onVideoClick, onNavigate }: LibraryPageProps) {
+  const [tab, setTab] = useState<Tab>('uploads'); const [items, setItems] = useState<VideoRecord[]>([]); const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<CreatorProfile | null>(null); const [followers, setFollowers] = useState(0); const [creatorVideos, setCreatorVideos] = useState<VideoRecord[]>([])
+  useEffect(() => { let mounted = true; const load = async () => { setLoading(true); setItems([]); try { const profileResult = await getProfile(userId); if (mounted && profileResult.data) setProfile(profileResult.data as CreatorProfile); const videosResult = await getUserVideos(userId); if (mounted) { const videos = (videosResult.data || []) as VideoRecord[]; setCreatorVideos(videos); if (tab === 'uploads') setItems(videos) } const count = await getFollowerCount(userId); if (mounted) setFollowers(count) } catch { if (mounted) { setItems([]); setCreatorVideos([]); setFollowers(0) } } try { if (tab === 'history') { const { data } = await getHistory(userId); if (mounted) setItems((data || []).map((d: { signals: VideoRecord }) => d.signals).filter(Boolean)) } else if (tab === 'watchlater') { const { data } = await getWatchLater(userId); if (mounted) setItems((data || []).map((d: { signals: VideoRecord }) => d.signals).filter(Boolean)) } } catch { if (mounted) setItems([]) } finally { if (mounted) setLoading(false) } }; void load(); return () => { mounted = false } }, [tab, userId])
+  const tabs = [{ id: 'uploads' as Tab, label: 'My Uploads', icon: Upload }, { id: 'history' as Tab, label: 'History', icon: Clock }, { id: 'watchlater' as Tab, label: 'Watch Later', icon: Bookmark }, { id: 'liked' as Tab, label: 'Liked', icon: Heart }]
+  const totalViews = creatorVideos.reduce((sum, video) => sum + (video.views || 0), 0)
+  return <div className="library-page">
+    <div className="library-creator-card"><div className="library-creator-banner" style={profile?.banner_url ? { backgroundImage: `url(${profile.banner_url})` } : {}}><div className="library-creator-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <span>{(profile?.channel_name || 'U')[0]?.toUpperCase()}</span>}</div></div><div className="library-creator-info"><h2>{profile?.channel_name || 'My Channel'}</h2><p>{profile?.description || 'Your creator library and personal viewing space.'}</p><div className="library-creator-stats"><span><Users size={14} /> {followers} subscribers</span><span><Eye size={14} /> {totalViews} views</span><span><Upload size={14} /> {creatorVideos.length} uploads</span></div><div className="profile-actions"><button className="btn-primary btn-sm" onClick={() => onNavigate?.('studio')}><BarChart3 size={14} /> Creator Studio</button><button className="btn-secondary btn-sm" onClick={() => onNavigate?.('settings')}><Settings size={14} /> Settings</button></div></div></div>
+    <h2>Library</h2><div className="library-tabs">{tabs.map(t => { const Icon = t.icon; return <button key={t.id} className={`lib-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}><Icon size={16} /> {t.label}</button> })}</div>
+    {loading ? <div className="loading-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-card" />)}</div> : items.length === 0 ? <div className="empty-state"><p>{tab === 'uploads' ? 'Upload your first video to start building your library.' : 'Nothing here yet.'}</p></div> : <div className="video-grid">{items.map(v => <VideoCard key={v.id} video={v} onClick={() => onVideoClick(v)} />)}</div>}
+  </div>
 }

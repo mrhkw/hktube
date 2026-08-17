@@ -17,6 +17,7 @@ import PostsPage from './components/posts/PostsPage'
 import ProfilePage from './components/profile/ProfilePage'
 import LibraryPage from './components/library/LibraryPage'
 import CreatorStudio from './components/studio/CreatorStudio'
+import SettingsPage from './components/settings/StudioSettings'
 import LivePage from './components/live/LivePage'
 import type { VideoRecord } from './lib/supabase'
 import './App.css'
@@ -105,7 +106,7 @@ function App() {
       case 'shorts': return <ShortsPage userId={user.id} />
       case 'feeds': return <FeedsPage onVideoClick={handleVideoClick} />
       case 'posts': return <PostsPage userId={user.id} />
-      case 'library': return <LibraryPage userId={user.id} onVideoClick={handleVideoClick} />
+      case 'library': return <LibraryPage userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} />
       case 'profile': return <ProfilePage userId={user.id} onSignOut={signOut} onVideoClick={handleVideoClick} onNavigate={navigate} />
       case 'search': return <SearchPage query={searchQuery} onVideoClick={handleVideoClick} />
       case 'watch': return <WatchPage videoId={watchVideoId} userId={user.id} onBack={() => setView('home')} onNavigate={navigate} />
@@ -114,7 +115,7 @@ function App() {
       case 'create-post': return <CreatePost userId={user.id} onComplete={() => setView('feeds')} onCancel={() => setView('home')} />
       case 'live': return <LivePage userId={user.id} userEmail={user.email} />
       case 'studio': return <CreatorStudio userId={user.id} onNavigate={navigate} />
-      case 'settings': return <CreatorStudio userId={user.id} onNavigate={navigate} />
+      case 'settings': return <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />
       default: return <HomePage onVideoClick={handleVideoClick} />
     }
   }

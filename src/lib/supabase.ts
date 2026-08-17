@@ -76,11 +76,11 @@ export function authErrorMessage(error: { message?: string } | null, mode: 'logi
 
 // ─── Profile ───
 export async function getProfile(userId: string) {
-  return supabase.from('profiles').select('*').eq('id', userId).single()
+  try { return await supabase.from('profiles').select('*').eq('id', userId).single() } catch (error) { console.warn('[HkTube] profile query unavailable', error); return { data: null, error } }
 }
 
 export async function updateProfile(userId: string, data: Record<string, unknown>) {
-  return supabase.from('profiles').update(data).eq('id', userId).select().single()
+  try { return await supabase.from('profiles').update(data).eq('id', userId).select().single() } catch (error) { console.warn('[HkTube] profile update unavailable', error); return { data: null, error } }
 }
 
 // ─── Videos ───
@@ -121,9 +121,7 @@ export async function createVideoRecord(record: Omit<VideoRecord, 'id'>) {
 }
 
 export async function getUserVideos(userId: string, type?: VideoType) {
-  let query = supabase.from('signals').select('*').eq('creator_id', userId).order('created_at', { ascending: false })
-  if (type) query = query.eq('video_type', type)
-  return query
+  try { let query = supabase.from('signals').select('*').eq('creator_id', userId).order('created_at', { ascending: false }); if (type) query = query.eq('video_type', type); return await query } catch (error) { console.warn('[HkTube] creator videos query unavailable', error); return { data: [], error } }
 }
 
 // ─── Upload (TUS resumable) ───
@@ -266,8 +264,7 @@ export async function isFollowing(followerId: string, followingId: string) {
 }
 
 export async function getFollowerCount(userId: string) {
-  const { count } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId)
-  return count || 0
+  try { const { count } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId); return count || 0 } catch (error) { console.warn('[HkTube] follower count unavailable', error); return 0 }
 }
 
 // ─── Watch History ───
@@ -276,7 +273,7 @@ export async function addToHistory(userId: string, videoId: string) {
 }
 
 export async function getHistory(userId: string, limit = 50) {
-  return supabase.from('watch_history').select('*, signals(*, profiles(channel_name, avatar_url))').eq('user_id', userId).order('watched_at', { ascending: false }).limit(limit)
+  try { return await supabase.from('watch_history').select('*, signals(*, profiles(channel_name, avatar_url))').eq('user_id', userId).order('watched_at', { ascending: false }).limit(limit) } catch (error) { console.warn('[HkTube] history query unavailable', error); return { data: [], error } }
 }
 
 // ─── Watch Later ───
@@ -291,7 +288,7 @@ export async function toggleWatchLater(userId: string, videoId: string) {
 }
 
 export async function getWatchLater(userId: string) {
-  return supabase.from('watch_later').select('*, signals(*, profiles(channel_name, avatar_url))').eq('user_id', userId).order('created_at', { ascending: false })
+  try { return await supabase.from('watch_later').select('*, signals(*, profiles(channel_name, avatar_url))').eq('user_id', userId).order('created_at', { ascending: false }) } catch (error) { console.warn('[HkTube] watch later query unavailable', error); return { data: [], error } }
 }
 
 // ─── Posts ───
@@ -332,11 +329,7 @@ export interface ProfileRecord {
 }
 
 export async function getCreatorProfile(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('*, is_premium, coins_balance, total_earnings')
-    .eq('id', userId)
-    .single<ProfileRecord>()
+  try { return await supabase.from('profiles').select('*, is_premium, coins_balance, total_earnings').eq('id', userId).single<ProfileRecord>() } catch (error) { console.warn('[HkTube] creator profile query unavailable', error); return { data: null, error } }
 }
 
 export type TransactionRecord = {
