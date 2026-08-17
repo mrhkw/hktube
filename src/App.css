@@ -620,3 +620,60 @@ html, body, #root, .app-shell, .app-body, .app-main, .hk-header,
   .library-theme-grid { gap: 7px; }
   .library-theme-preview { height: 58px; }
 }
+
+
+/* ─── Advanced Account and Settings Enhancements ─── */
+.library-premium-banner { display: flex; align-items: center; gap: 13px; padding: 16px; border: 1px solid rgba(244,182,61,.34); border-radius: var(--radius); background: linear-gradient(115deg, rgba(244,182,61,.14), var(--surface)); }
+.library-premium-banner > div:nth-child(2) { flex: 1; min-width: 0; }
+.library-premium-banner h2 { margin: 0 0 4px; color: #f4c85b; font-size: 14px; letter-spacing: 0; }
+.library-premium-banner p { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
+.library-premium-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; color: #f4c85b; background: rgba(244,182,61,.16); }
+.library-ai-section { margin-top: 24px; }
+.library-ai-section .ai-pro-panel { margin: 0; }
+.settings-advanced .settings-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.settings-advanced .settings-section-heading > svg { flex: 0 0 auto; color: var(--primary); }
+.settings-user-card { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+.settings-user-card strong, .settings-user-card small { display: block; }
+.settings-user-card small { margin-top: 4px; color: var(--text-muted); font-size: 11px; }
+.settings-user-avatar { display: grid; place-items: center; width: 48px; height: 48px; overflow: hidden; border: 2px solid var(--primary); border-radius: 50%; color: var(--primary); background: var(--surface-2); }
+.settings-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.settings-theme-choices .settings-choice { min-height: 134px; }
+.settings-theme-swatch { display: block; width: 100%; height: 44px; border: 1px solid var(--border); border-radius: 6px; }
+.settings-theme-swatch.light { background: linear-gradient(135deg, #fffdf3 50%, #c4edf3 50%); }
+.settings-theme-swatch.dark { background: linear-gradient(135deg, #0a0d12 50%, #29213f 50%); }
+.settings-theme-swatch.system { background: linear-gradient(135deg, #fffdf3 50%, #0a0d12 50%); }
+.settings-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.settings-form-grid label { display: flex; align-items: center; gap: 5px; }
+.settings-app-info { display: flex; flex-direction: column; gap: 5px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+.settings-app-info strong { color: var(--text); font-size: 14px; }
+
+/* ─── Mobile overflow hardening ─── */
+html, body, #root, .app-shell { width: 100%; max-width: 100%; overflow-x: hidden; }
+.app-body, .app-main, .settings-content, .library-page, .studio-page { min-width: 0; max-width: 100%; }
+img, video, canvas, iframe { max-width: 100%; }
+input, textarea, select, button { max-width: 100%; }
+@media (max-width: 768px) {
+  .hk-header { gap: 8px; padding: 0 10px; }
+  .hk-logo { font-size: 19px; }
+  .hk-search { min-width: 0; padding: 8px 10px; }
+  .hk-search input { min-width: 0; }
+  .hk-header-actions { gap: 2px; }
+  .btn-install { display: none; }
+  .btn-icon { width: 32px; height: 32px; }
+  .app-main { padding: 16px 12px calc(var(--bnav-h) + 18px); }
+  .library-redesign .library-tabs { overflow: hidden; }
+  .library-redesign .lib-tab { min-width: 0; }
+  .library-redesign .lib-tab span { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+  .settings-form-grid { grid-template-columns: 1fr; }
+  .settings-advanced .settings-theme-choices { grid-template-columns: 1fr; }
+  .settings-advanced .settings-choice { min-height: 0; }
+}
+@media (max-width: 480px) {
+  .library-profile-heading { gap: 11px; }
+  .library-profile-avatar { width: 58px; height: 58px; }
+  .library-profile-heading h1 { font-size: 17px; }
+  .library-premium-banner { align-items: flex-start; flex-wrap: wrap; }
+  .library-premium-banner .btn-primary { margin-left: 55px; }
+  .notif-panel { right: 10px; width: min(320px, calc(100vw - 20px)); }
+  .ai-actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

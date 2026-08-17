@@ -11,6 +11,7 @@ import {
   Monitor,
   Moon,
   Settings,
+  Sparkles,
   Shield,
   Sun,
   Users,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react'
 import { getFollowerCount, getHistory, getProfile, getUserVideos, getWatchLater, type VideoRecord } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
+import AiProPanel from '../ai/AiProPanel'
 
 interface LibraryPageProps {
   userId: string
@@ -28,7 +30,7 @@ interface LibraryPageProps {
 
 type Tab = 'history' | 'watchlater' | 'playlists' | 'liked' | 'uploads'
 type ThemeChoice = 'light' | 'dark' | 'system'
-type CreatorProfile = { channel_name?: string; avatar_url?: string }
+type CreatorProfile = { channel_name?: string; avatar_url?: string; is_premium?: boolean }
 
 const tabs: { id: Tab; label: string; icon: typeof History }[] = [
   { id: 'history', label: 'History', icon: History },
@@ -129,6 +131,11 @@ export default function LibraryPage({ userId, onVideoClick, onNavigate, onSignOu
       </nav>
 
       <div className="library-sections">
+        <section className="library-premium-banner">
+          <div className="library-premium-icon"><Sparkles size={22} /></div>
+          <div><h2>HkTube Premium</h2><p>Unlock ad-free viewing, enhanced creator tools, and HkTube AI Pro.</p></div>
+          <button className="btn-primary btn-sm" onClick={() => onNavigate?.('studio')}>{profile?.is_premium ? 'Manage' : 'Explore'}</button>
+        </section>
         <section className="library-section">
           <h2>RECENT ACTIVITY</h2>
           <button className="library-list-card" onClick={() => setTab('history')}>
@@ -161,6 +168,10 @@ export default function LibraryPage({ userId, onVideoClick, onNavigate, onSignOu
           </div>
         </section>
       </div>
+
+      <section className="library-ai-section">
+        <AiProPanel userId={userId} profile={profile} />
+      </section>
 
       {(tab === 'uploads' || tab === 'history' || tab === 'watchlater') && (
         <section className="library-content-section">
