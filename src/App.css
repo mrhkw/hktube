@@ -677,3 +677,50 @@ input, textarea, select, button { max-width: 100%; }
   .notif-panel { right: 10px; width: min(320px, calc(100vw - 20px)); }
   .ai-actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* ─── Mobile-first vertical Live stage ─── */
+.live-mobile-stage { width: min(100%, 1180px); }
+.live-preview { position: relative; }
+.live-overlay-topbar, .live-overlay-chat-feed, .live-overlay-bottom { display: none; }
+@media (max-width: 768px) {
+  .app-shell:has(.live-mobile-stage) .app-main { padding: 8px 0 calc(var(--bnav-h) + 8px); overflow: hidden; }
+  .live-mobile-stage { display: flex; flex-direction: column; width: 100%; height: calc(100svh - var(--header-h) - var(--bnav-h) - 16px); min-height: 0; max-width: none; overflow: hidden; }
+  .live-mobile-stage .live-page-header, .live-mobile-stage .live-status-strip, .live-mobile-stage .live-tabs { display: none; }
+  .live-mobile-stage .live-workspace { display: flex; flex: 1; min-height: 0; height: 100%; justify-content: center; }
+  .live-mobile-stage .live-preview-column { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 0; }
+  .live-mobile-stage .live-preview { width: min(100%, calc((100svh - var(--header-h) - var(--bnav-h) - 16px) * .5625)); height: 100%; min-height: 0; aspect-ratio: 9 / 16; border: 0; border-radius: 0; box-shadow: 0 20px 70px rgba(0,0,0,.45); }
+  .live-mobile-stage .live-preview video { width: 100%; height: 100%; object-fit: cover; }
+  .live-mobile-stage .preview-label { display: none; }
+  .live-mobile-stage .on-air-label { top: 14px; left: 14px; z-index: 4; }
+  .live-mobile-stage .preview-viewers { top: 14px; right: 14px; z-index: 4; }
+  .live-mobile-stage .live-chat-panel, .live-mobile-stage .preview-controls, .live-mobile-stage .live-tools-grid { display: none; }
+  .live-overlay-topbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 5; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+  .live-overlay-status, .live-overlay-coins { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 16px; color: #fff; background: rgba(7,8,13,.64); backdrop-filter: blur(8px); font-size: 10px; font-weight: 800; letter-spacing: .05em; }
+  .live-overlay-coins { color: #f4c85b; letter-spacing: 0; }
+  .live-overlay-chat-feed { position: absolute; right: 12px; bottom: 178px; left: 12px; z-index: 4; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-height: 130px; overflow: hidden; pointer-events: none; }
+  .live-overlay-chat-message { display: flex; align-items: center; gap: 6px; max-width: 92%; padding: 5px 8px 5px 5px; border-radius: 14px; color: #fff; background: rgba(7,8,13,.58); backdrop-filter: blur(7px); font-size: 10px; line-height: 1.25; }
+  .live-overlay-chat-message .chat-avatar { width: 20px; height: 20px; font-size: 9px; }
+  .live-overlay-chat-message strong { color: #bcb1ff; }
+  .live-overlay-bottom { position: absolute; right: 12px; bottom: 12px; left: 12px; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
+  .live-overlay-controls, .live-overlay-gifts, .live-overlay-chat-input { display: flex; align-items: center; gap: 7px; }
+  .overlay-control, .overlay-gift, .overlay-send-gift, .overlay-go-button, .overlay-end-button { display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.2); color: #fff; background: rgba(7,8,13,.66); backdrop-filter: blur(8px); }
+  .overlay-control { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; }
+  .overlay-control.active { color: var(--accent); border-color: rgba(0,206,201,.65); }
+  .overlay-go-button, .overlay-end-button { gap: 5px; min-height: 34px; padding: 0 11px; border-radius: 18px; font-size: 11px; font-weight: 800; }
+  .overlay-go-button { background: var(--primary); border-color: var(--primary); }
+  .overlay-end-button { background: rgba(230,83,105,.9); border-color: #e65369; }
+  .overlay-gift { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; font-size: 15px; }
+  .overlay-gift.selected { border-color: #f4c85b; background: rgba(244,182,61,.25); }
+  .overlay-send-gift { gap: 5px; min-height: 30px; margin-left: auto; padding: 0 10px; border-radius: 16px; color: #15110a; background: #f4c85b; border-color: #f4c85b; font-size: 10px; font-weight: 800; }
+  .live-overlay-chat-input { padding: 3px; border: 1px solid rgba(255,255,255,.2); border-radius: 20px; background: rgba(7,8,13,.66); backdrop-filter: blur(8px); }
+  .live-overlay-chat-input input { min-width: 0; flex: 1; padding: 7px 9px; border: 0; outline: 0; color: #fff; background: transparent; font-size: 11px; }
+  .live-overlay-chat-input button { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; background: var(--primary); }
+  .live-mobile-stage .gift-received-alert { bottom: 212px; z-index: 7; }
+}
+@media (max-width: 380px) {
+  .live-overlay-controls { gap: 4px; }
+  .overlay-control { width: 31px; height: 31px; flex-basis: 31px; }
+  .overlay-gift { width: 25px; height: 25px; flex-basis: 25px; font-size: 13px; }
+  .overlay-send-gift { padding: 0 7px; }
+}

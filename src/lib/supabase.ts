@@ -33,21 +33,24 @@ export async function ensureStorageBucket(bucket: string) {
     return { error: new Error('Storage bucket is empty. Set the appropriate VITE_SUPABASE_*_BUCKET environment variable.') }
   }
 
-  const { data: buckets, error } = await supabase.storage.listBuckets()
-  if (error) {
-    const diagnostic = new Error(`Unable to verify Supabase Storage bucket "${requestedBucket}": ${error.message}`)
-    console.error('[HkTube storage] Bucket availability check failed.', { bucket: requestedBucket, error: error.message })
-    return { error: diagnostic }
-  }
+  // Bucket listing can be denied by Storage RLS even when the bucket itself exists.
+  // Treat this check as advisory; the upload request is the authoritative test.
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets()
+    if (error) {
+      console.warn('[HkTube storage] Bucket verification unavailable; continuing with upload.', { bucket: requestedBucket, error: error.message })
+      return { error: null }
+    }
 
-  const exists = buckets?.some(candidate => candidate.id === requestedBucket || candidate.name === requestedBucket)
-  if (!exists) {
-    const diagnostic = new Error(`Supabase Storage bucket "${requestedBucket}" was not found. Create it in Supabase Storage or set the matching VITE_SUPABASE_*_BUCKET variable.`)
-    console.error('[HkTube storage] Bucket not found.', {
-      requestedBucket,
-      availableBuckets: buckets?.map(candidate => candidate.id) ?? [],
-    })
-    return { error: diagnostic }
+    const exists = buckets?.some(candidate => candidate.id === requestedBucket || candidate.name === requestedBucket)
+    if (!exists) {
+      console.warn('[HkTube storage] Bucket was not returned by listBuckets; continuing so the upload can report the authoritative error.', {
+        requestedBucket,
+        availableBuckets: buckets?.map(candidate => candidate.id) ?? [],
+      })
+    }
+  } catch (error) {
+    console.warn('[HkTube storage] Bucket verification threw; continuing with upload.', { bucket: requestedBucket, error })
   }
 
   return { error: null }
@@ -208,14 +211,20 @@ export async function uploadSimple(file: File, bucket: string, path: string) {
   const bucketCheck = await ensureStorageBucket(bucket)
   if (bucketCheck.error) return { data: null, error: bucketCheck.error }
 
-  let result
+  let result: { data: { path: string } | null; error: { message: string } | null } | undefined
   for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
-    result = await supabase.storage.from(bucket).upload(path, file, { upsert: false, contentType: file.type })
-    if (!result.error) return result
-    console.warn(`[HkTube storage] Simple upload attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS} failed.`, { bucket, path, error: result.error.message })
+    try {
+      result = await supabase.storage.from(bucket).upload(path, file, { upsert: false, contentType: file.type })
+      if (!result.error) return result
+      console.warn(`[HkTube storage] Simple upload attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS} failed.`, { bucket, path, error: result.error.message })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown Storage error'
+      result = { data: null, error: { message } }
+      console.warn(`[HkTube storage] Simple upload attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS} threw.`, { bucket, path, error: message })
+    }
     if (attempt < MAX_UPLOAD_ATTEMPTS) await wait(1000 * 2 ** (attempt - 1))
   }
-  return result ?? { data: null, error: new Error('Upload failed after all retry attempts.') }
+  return result ?? { data: null, error: { message: 'Upload failed after all retry attempts.' } }
 }
 
 export function getPublicUrl(bucket: string, path: string) {

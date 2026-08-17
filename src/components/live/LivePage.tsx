@@ -176,7 +176,7 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
   }
 
   return (
-    <section className="live-page">
+    <section className="live-page live-mobile-stage">
       <div className="live-page-header">
         <div>
           <div className="live-kicker"><span className="live-wave-mark"><i /><i /><i /><i /></span> HKTUBE LIVE</div>
@@ -212,6 +212,24 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
               <div className="preview-label"><span className="preview-rec-dot" /> PREVIEW</div>
               {isLive && <div className="on-air-label"><Radio size={13} /> ON AIR</div>}
               <div className="preview-viewers"><Users size={14} /> {viewerCount}</div>
+              <div className="live-overlay-topbar">
+                <span className="live-overlay-status"><span className="preview-rec-dot" /> {isLive ? 'LIVE NOW' : 'PREVIEW'}</span>
+                <span className="live-overlay-coins"><Sparkles size={14} /> {coins.toLocaleString()}</span>
+              </div>
+              <div className="live-overlay-chat-feed">
+                {chat.slice(-3).map(message => <div className="live-overlay-chat-message" key={`overlay-${message.id}`}><span className="chat-avatar">{message.name.slice(0, 1)}</span><span><strong>{message.name}</strong> {message.text}</span></div>)}
+              </div>
+              <div className="live-overlay-bottom">
+                <div className="live-overlay-controls">
+                  <button className={cameraOn ? 'overlay-control active' : 'overlay-control'} onClick={toggleCamera} aria-label={cameraOn ? 'Turn camera off' : 'Turn camera on'}>{cameraOn ? <Camera size={17} /> : <VideoOff size={17} />}</button>
+                  <button className={micOn ? 'overlay-control active' : 'overlay-control'} onClick={toggleMic} aria-label={micOn ? 'Mute audio' : 'Unmute audio'}>{micOn ? <Mic size={17} /> : <MicOff size={17} />}</button>
+                  <button className={guestMode ? 'overlay-control active' : 'overlay-control'} onClick={() => setGuestMode(value => !value)} aria-label="Invite guest"><Users size={17} /></button>
+                  <button className={virtualBackground ? 'overlay-control active' : 'overlay-control'} onClick={() => setVirtualBackground(value => !value)} aria-label="Toggle background"><Laptop size={17} /></button>
+                  <button className={isLive ? 'overlay-end-button' : 'overlay-go-button'} onClick={isLive ? endLive : openLive}>{isLive ? <Pause size={15} /> : <Radio size={15} />}{isLive ? 'End' : 'Go Live'}</button>
+                </div>
+                <div className="live-overlay-gifts">{gifts.map(gift => <button key={`overlay-gift-${gift.id}`} className={selectedGift.id === gift.id ? 'overlay-gift selected' : 'overlay-gift'} onClick={() => setSelectedGift(gift)} aria-label={`Select ${gift.name}`}>{gift.icon}</button>)}<button className="overlay-send-gift" onClick={sendGift}><Gift size={15} /> Send</button></div>
+                <div className="live-overlay-chat-input"><input value={chatText} onChange={event => setChatText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendChat()} placeholder="Say something…" /><button onClick={sendChat} aria-label="Send chat message"><Send size={15} /></button></div>
+              </div>
               {giftAlert && <div className="gift-received-alert"><span className="gift-burst">{giftAlert.icon}</span><div><strong>GIFT RECEIVED!</strong><span>{giftAlert.name} · +{giftAlert.coins} coins</span></div></div>}
             </div>
             <div className="preview-controls">
