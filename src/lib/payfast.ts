@@ -10,6 +10,7 @@ export const payFastConfig = {
   secureKey: import.meta.env.VITE_PAYFAST_SECURE_KEY || '',
   checkoutUrl: import.meta.env.VITE_PAYFAST_CHECKOUT_URL || '',
   webhookUrl: import.meta.env.VITE_PAYFAST_WEBHOOK_URL || '/api/payfast/webhook',
+  testMode: import.meta.env.VITE_PAYFAST_TEST_MODE === 'true',
 }
 
 export type PayFastPaymentStatus = 'pending' | 'success' | 'failed'
@@ -30,8 +31,12 @@ export interface PayFastWebhookEvent {
   [key: string]: unknown
 }
 
+export function isPayFastTestMode() {
+  return payFastConfig.testMode
+}
+
 export function isPayFastConfigured() {
-  return Boolean(payFastConfig.merchantId && payFastConfig.secureKey && payFastConfig.checkoutUrl)
+  return payFastConfig.testMode || Boolean(payFastConfig.merchantId && payFastConfig.secureKey && payFastConfig.checkoutUrl)
 }
 
 /**
@@ -39,6 +44,9 @@ export function isPayFastConfigured() {
  * never signs requests or exposes the secure key.
  */
 export async function startPayFastCheckout(userId: string, email?: string): Promise<PayFastCheckoutResponse> {
+  if (isPayFastTestMode()) {
+    return { status: 'success', transactionId: `PF-TEST-${Date.now()}`, message: 'Sandbox payment simulated successfully.' }
+  }
   if (!isPayFastConfigured()) return { status: 'failed', message: 'PayFast is not configured yet.' }
   try {
     const response = await fetch('/api/payfast/create-checkout', {
@@ -51,6 +59,7 @@ export async function startPayFastCheckout(userId: string, email?: string): Prom
     return { status: result.status === 'success' || result.status === 'pending' || result.status === 'failed' ? result.status : 'failed', transactionId: result.transactionId, redirectUrl: result.redirectUrl, message: result.message }
   } catch (error) {
     console.warn('[HkTube] PayFast request failed', error)
+    if (isPayFastTestMode()) return { status: 'success', transactionId: `PF-TEST-${Date.now()}`, message: 'Sandbox payment simulated successfully.' }
     return { status: 'failed', message: 'PayFast checkout is temporarily unavailable.' }
   }
 }

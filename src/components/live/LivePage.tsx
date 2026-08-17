@@ -11,6 +11,7 @@ import {
   activatePremiumFromWebhook,
   hasPremiumLiveStatus,
   isPayFastConfigured,
+  isPayFastTestMode,
   startPayFastCheckout,
 } from '../../lib/payfast'
 import { createLiveStream, updateLiveStream } from '../../lib/supabase'
@@ -141,7 +142,11 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
     try {
       if (isPayFastConfigured()) {
         const response = await startPayFastCheckout(userId, userEmail)
-        if (response.redirectUrl) window.location.assign(response.redirectUrl)
+        if (response.status === 'success' && (isPayFastTestMode() || response.transactionId?.startsWith('PF-TEST-'))) {
+          activatePremiumFromWebhook(userId, { status: 'success', transaction_id: response.transactionId })
+          setCheckoutMessage(response.message || 'Sandbox payment simulated successfully.')
+          setShowPremiumModal(false)
+        } else if (response.redirectUrl) window.location.assign(response.redirectUrl)
         else setCheckoutMessage(response.message || 'Checkout created. Complete payment to activate Live.')
       } else {
         setCheckoutMessage('PayFast is not configured yet. Add the server-side credentials and checkout endpoint, then try again.')

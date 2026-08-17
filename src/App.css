@@ -724,3 +724,19 @@ input, textarea, select, button { max-width: 100%; }
   .overlay-gift { width: 25px; height: 25px; flex-basis: 25px; font-size: 13px; }
   .overlay-send-gift { padding: 0 7px; }
 }
+
+
+/* Focused viewer/creator polish */
+.library-redesign .library-profile-card { border-color: rgba(108,92,231,.42); background: linear-gradient(145deg, rgba(108,92,231,.12), var(--surface) 58%); box-shadow: 0 14px 45px rgba(0,0,0,.22); }
+.library-redesign .library-profile-heading h1 { letter-spacing: -.025em; }
+.library-redesign .library-creator-actions { gap: 9px; }
+.library-redesign .library-action-button { border-color: rgba(255,255,255,.08); background: rgba(255,255,255,.035); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+.library-redesign .library-action-button:hover { border-color: rgba(0,206,201,.45); background: rgba(0,206,201,.08); transform: translateY(-1px); }
+.settings-advanced .settings-section { border-color: rgba(255,255,255,.08); box-shadow: 0 12px 35px rgba(0,0,0,.12); }
+@media (max-width: 768px) {
+  .live-mobile-stage .overlay-control, .live-mobile-stage .overlay-gift, .live-mobile-stage .overlay-send-gift, .live-mobile-stage .overlay-go-button, .live-mobile-stage .overlay-end-button, .live-mobile-stage .live-overlay-chat-input { background: rgba(8,10,16,.38); border-color: rgba(255,255,255,.26); box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 8px 22px rgba(0,0,0,.18); backdrop-filter: blur(16px) saturate(145%); -webkit-backdrop-filter: blur(16px) saturate(145%); }
+  .live-mobile-stage .overlay-go-button { background: rgba(108,92,231,.68); border-color: rgba(174,163,255,.68); }
+  .live-mobile-stage .overlay-end-button { background: rgba(230,83,105,.62); border-color: rgba(255,170,181,.68); }
+  .live-mobile-stage .overlay-send-gift { color: #fff3c8; background: rgba(244,182,61,.42); border-color: rgba(255,219,125,.68); }
+  .live-mobile-stage .live-overlay-topbar > span { background: rgba(8,10,16,.38); border-color: rgba(255,255,255,.22); box-shadow: 0 8px 22px rgba(0,0,0,.16); backdrop-filter: blur(16px) saturate(145%); -webkit-backdrop-filter: blur(16px) saturate(145%); }
+}
