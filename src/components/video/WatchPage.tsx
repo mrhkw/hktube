@@ -30,20 +30,27 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
 
   const loadVideo = async () => {
     setLoading(true)
-    const { data } = await getVideoById(videoId)
-    if (data) {
-      setVideo(data as VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string } })
-      const creatorId = (data as { profiles?: { id?: string } }).profiles?.id
-      if (creatorId) {
-        getFollowerCount(creatorId).then(setFollowers)
-        isFollowing(userId, creatorId).then(setFollowing)
+    setVideo(null)
+    try {
+      const { data } = await getVideoById(videoId)
+      if (data) {
+        setVideo(data as VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string } })
+        const creatorId = (data as { profiles?: { id?: string } }).profiles?.id
+        if (creatorId) {
+          getFollowerCount(creatorId).then(setFollowers).catch(() => setFollowers(0))
+          isFollowing(userId, creatorId).then(setFollowing).catch(() => setFollowing(false))
+        }
+        hasLiked(videoId, userId).then(setLiked).catch(() => setLiked(false))
+        void addToHistory(userId, videoId).catch(() => undefined)
+        const { data: cmts } = await getComments(videoId)
+        if (cmts) setComments(cmts as Array<{ id: string; content: string; created_at: string; profiles?: { channel_name?: string } }>)
       }
-      hasLiked(videoId, userId).then(setLiked)
-      addToHistory(userId, videoId)
-      const { data: cmts } = await getComments(videoId)
-      if (cmts) setComments(cmts as Array<{ id: string; content: string; created_at: string; profiles?: { channel_name?: string } }>)
+    } catch {
+      setVideo(null)
+      setComments([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleLike = async () => {

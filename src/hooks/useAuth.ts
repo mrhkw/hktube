@@ -8,19 +8,26 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+    let mounted = true
+    const applySession = (nextSession: Session | null) => {
+      if (!mounted) return
+      setSession(previous => previous?.access_token === nextSession?.access_token ? previous : nextSession)
+      setUser(previous => previous?.id === nextSession?.user?.id ? previous : (nextSession?.user ?? null))
       setLoading(false)
-    })
+    }
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => applySession(session))
+      .catch(() => applySession(null))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      applySession(session)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {

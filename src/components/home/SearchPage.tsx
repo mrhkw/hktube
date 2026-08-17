@@ -18,9 +18,14 @@ export default function SearchPage({ query, onVideoClick }: SearchPageProps) {
 
   const doSearch = async (q: string) => {
     setLoading(true)
-    const { data } = await searchVideos(q)
-    if (data) setResults(data as Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }>)
-    setLoading(false)
+    try {
+      const { data } = await searchVideos(q)
+      setResults(data as Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }> || [])
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

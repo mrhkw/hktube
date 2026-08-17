@@ -19,9 +19,14 @@ export default function ShortsPage({ userId }: ShortsPageProps) {
 
   const loadShorts = async () => {
     setLoading(true)
-    const { data } = await getPublicVideos(50, 'short')
-    if (data) setShorts(data as Array<VideoRecord & { profiles?: { channel_name?: string } }>)
-    setLoading(false)
+    try {
+      const { data } = await getPublicVideos(50, 'short')
+      setShorts(data as Array<VideoRecord & { profiles?: { channel_name?: string } }> || [])
+    } catch {
+      setShorts([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLike = async (videoId: string) => {

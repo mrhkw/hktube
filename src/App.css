@@ -336,6 +336,20 @@ img { display: block; max-width: 100%; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+/* Prevent mobile zoom/overflow without changing the existing visual design. */
+html, body, #root, .app-shell, .app-body, .app-main, .hk-header,
+.category-chips, .video-grid, .loading-grid {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+.category-chips {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.category-chips::-webkit-scrollbar { display: none; }
+.category-chips .chip { flex-shrink: 0; }
+
 /* ═══════════════════════════════════════════════════
    PHASE 2: Creator Studio, Monetization, Premium, AI
    ═══════════════════════════════════════════════════ */

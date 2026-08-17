@@ -15,9 +15,14 @@ export default function FeedsPage({ onVideoClick }: FeedsPageProps) {
   }, [])
 
   const loadFeed = async () => {
-    const { data } = await getPublicVideos(50)
-    if (data) setVideos(data as Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }>)
-    setLoading(false)
+    try {
+      const { data } = await getPublicVideos(50)
+      setVideos(data as Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }> || [])
+    } catch {
+      setVideos([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

@@ -19,9 +19,14 @@ export default function HomePage({ onVideoClick }: HomePageProps) {
 
   const loadVideos = async () => {
     setLoading(true)
-    const { data } = await getPublicVideos(30, 'video')
-    if (data) setVideos(data as Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }>)
-    setLoading(false)
+    try {
+      const { data } = await getPublicVideos(30, 'video')
+      setVideos(data as Array<VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string } }> || [])
+    } catch {
+      setVideos([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filtered = activeCategory === 'All' ? videos : videos.filter(v => v.category?.toLowerCase() === activeCategory.toLowerCase())

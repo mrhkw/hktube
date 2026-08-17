@@ -26,9 +26,14 @@ export default function PostsPage({ userId }: PostsPageProps) {
 
   const loadPosts = async () => {
     setLoading(true)
-    const { data } = await getPosts()
-    if (data) setPosts(data as Post[])
-    setLoading(false)
+    try {
+      const { data } = await getPosts()
+      setPosts(data as Post[] || [])
+    } catch {
+      setPosts([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handlePost = async (e: React.FormEvent) => {

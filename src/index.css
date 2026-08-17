@@ -4,11 +4,14 @@
   color-scheme: dark;
 }
 
+html,
 body {
   min-width: 320px;
   margin: 0;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
+#root { overflow-x: hidden; }
 
 button, a, input, textarea {
   -webkit-tap-highlight-color: transparent;
