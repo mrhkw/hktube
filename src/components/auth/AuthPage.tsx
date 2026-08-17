@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { signInWithEmail, signUpWithEmail, authErrorMessage } from '../../lib/supabase'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
@@ -8,12 +9,13 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccess('')
-    if (!email || !password) { setError('Please fill all fields.'); return }
+    if (!email || !password) { setError(t('Please fill all fields.')); return }
     setLoading(true)
     try {
       if (mode === 'login') {
@@ -22,10 +24,10 @@ export default function AuthPage() {
       } else {
         const { data, error } = await signUpWithEmail(email, password)
         if (error) setError(authErrorMessage(error, 'signup'))
-        else if (data.user && !data.session) setSuccess('Check your email to confirm your account.')
+        else if (data.user && !data.session) setSuccess(t('Check your email to confirm your account.'))
       }
     } catch {
-      setError('Something went wrong. Try again.')
+      setError(t('Something went wrong. Try again.'))
     }
     setLoading(false)
   }
@@ -37,20 +39,20 @@ export default function AuthPage() {
           <h1 className="hk-brand"><span className="logo-hk">Hk</span><span className="logo-tube">Tube</span></h1>
           <p>Watch. Share. Discover.</p>
         </div>
-        <h2>{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
+        <h2>{mode === 'login' ? t('Welcome back') : t('Create account')}</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-field">
-            <label>Email</label>
+            <label>{t('Email')}</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
           </div>
           <div className="form-field">
-            <label>Password</label>
+            <label>{t('Password')}</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
           </div>
           {error && <div className="form-error">{error}</div>}
           {success && <div className="form-success">{success}</div>}
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+            {loading ? t('Please wait...') : mode === 'login' ? t('Sign In') : t('Sign Up')}
           </button>
         </form>
         <button className="auth-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setSuccess('') }}>

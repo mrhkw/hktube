@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Crown, Check, Sparkles } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { isPayFastConfigured, startPayFastCheckout } from '../../lib/payfast'
 
 interface PremiumPanelProps {
   userId: string
@@ -34,31 +34,24 @@ export default function PremiumPanel({ userId, profile, onRefresh }: PremiumPane
   const handleActivate = async () => {
     setActivating(true)
     setMessage('')
-
-    // In production, this would go through a payment flow
-    // For now, we record the subscription request
-    const { error } = await supabase.from('premium_subscriptions').insert({
-      user_id: userId,
-      plan: 'monthly',
-      status: 'active',
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    })
-
-    if (error) {
-      if (error.message.includes('duplicate')) {
-        setMessage('You already have a premium subscription.')
-      } else {
-        setMessage('Failed to activate. Try again.')
+    try {
+      if (!isPayFastConfigured()) {
+        setMessage('Premium payments are coming soon. Please contact support if you need access.')
+        return
       }
+      const result = await startPayFastCheckout(userId)
+      if (result.redirectUrl) {
+        window.location.assign(result.redirectUrl)
+        return
+      }
+      setMessage(result.message || 'Payment is being prepared. Please try again shortly.')
+      onRefresh()
+    } catch (error) {
+      console.warn('[HkTube] PayFast checkout unavailable', error)
+      setMessage('Premium payments are temporarily unavailable. Please contact support.')
+    } finally {
       setActivating(false)
-      return
     }
-
-    // Update profile
-    await supabase.from('profiles').update({ is_premium: true, badge: 'Gold Creator' }).eq('id', userId)
-    setMessage('Premium activated! Enjoy all premium features.')
-    setActivating(false)
-    onRefresh()
   }
 
   return (
@@ -94,7 +87,7 @@ export default function PremiumPanel({ userId, profile, onRefresh }: PremiumPane
           </ul>
           {!isPremium && (
             <button className="btn-primary btn-premium" onClick={handleActivate} disabled={activating}>
-              {activating ? 'Activating...' : 'Upgrade to Premium'}
+              {activating ? 'Opening secure checkout...' : 'Upgrade to Premium'}
             </button>
           )}
           {isPremium && <span className="plan-current-label">Current Plan</span>}
@@ -104,7 +97,7 @@ export default function PremiumPanel({ userId, profile, onRefresh }: PremiumPane
       {message && <div className={message.includes('Failed') ? 'form-error' : 'form-success'}>{message}</div>}
 
       <p className="premium-note">
-        Note: In production, premium activation requires payment processing. Current activation is for demonstration of the feature flow.
+        Premium payments are processed securely through PayFast when available. If checkout is not configured yet, contact support for access.
       </p>
     </div>
   )

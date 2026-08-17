@@ -21,6 +21,7 @@ import SettingsPage from './components/settings/StudioSettings'
 import LivePage from './components/live/LivePage'
 import type { VideoRecord } from './lib/supabase'
 import './App.css'
+import ErrorBoundary from './components/ErrorBoundary'
 
 type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live'
 
@@ -134,7 +135,7 @@ function App() {
       <div className="app-body">
         {!isFullscreen && <Sidebar active={view} onNavigate={navigate} />}
         <main className="app-main">
-          {renderPage()}
+          <ErrorBoundary>{renderPage()}</ErrorBoundary>
         </main>
       </div>
       <BottomNav active={view} onNavigate={navigate} />

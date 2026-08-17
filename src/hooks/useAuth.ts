@@ -16,9 +16,9 @@ export function useAuth() {
       setLoading(false)
     }
 
-    supabase.auth.getSession()
+    void supabase.auth.getSession()
       .then(({ data: { session } }) => applySession(session))
-      .catch(() => applySession(null))
+      .catch(error => { console.warn('[HkTube] Session restore failed', error); applySession(null) })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       applySession(session)
@@ -31,9 +31,15 @@ export function useAuth() {
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setSession(null)
-    setUser(null)
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) console.warn('[HkTube] Remote sign-out failed', error)
+    } catch (error) {
+      console.warn('[HkTube] Sign-out failed; clearing local session', error)
+    } finally {
+      setSession(null)
+      setUser(null)
+    }
   }
 
   return { session, user, loading, signOut }

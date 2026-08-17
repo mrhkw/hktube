@@ -22,6 +22,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
   const [comments, setComments] = useState<Array<{ id: string; content: string; created_at: string; profiles?: { channel_name?: string } }>>([])
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(true)
+  const [videoError, setVideoError] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
   const loadVideo = async () => {
     setLoading(true)
     setVideo(null)
+    setVideoError('')
     try {
       const { data } = await getVideoById(videoId)
       if (data) {
@@ -54,38 +56,27 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
   }
 
   const handleLike = async () => {
-    const result = await toggleLike(videoId, userId)
-    setLiked(result)
+    try { setLiked(await toggleLike(videoId, userId)) } catch { /* helper already falls back */ }
   }
 
   const handleSave = async () => {
-    const result = await toggleWatchLater(userId, videoId)
-    setSaved(result)
+    try { setSaved(await toggleWatchLater(userId, videoId)) } catch { /* helper already falls back */ }
   }
 
   const handleFollow = async () => {
     const creatorId = video?.profiles?.id
     if (!creatorId) return
-    const result = await toggleFollow(userId, creatorId)
-    setFollowing(result)
-    setFollowers(prev => result ? prev + 1 : prev - 1)
+    try { const result = await toggleFollow(userId, creatorId); setFollowing(result); setFollowers(prev => result ? prev + 1 : Math.max(0, prev - 1)) } catch { /* helper already falls back */ }
   }
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newComment.trim()) return
-    const { data } = await addComment(videoId, userId, newComment.trim())
-    if (data) setComments(prev => [data as { id: string; content: string; created_at: string; profiles?: { channel_name?: string } }, ...prev])
-    setNewComment('')
+    try { const { data } = await addComment(videoId, userId, newComment.trim()); if (data) setComments(prev => [data as { id: string; content: string; created_at: string; profiles?: { channel_name?: string } }, ...prev]); setNewComment('') } catch { /* helper already falls back */ }
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/?watch=${videoId}`
-    if (navigator.share) {
-      await navigator.share({ title: video?.title, url })
-    } else {
-      await navigator.clipboard.writeText(url)
-    }
+    try { const url = `${window.location.origin}/?watch=${videoId}`; if (navigator.share) await navigator.share({ title: video?.title, url }); else await navigator.clipboard.writeText(url) } catch (error) { console.warn('[HkTube] Share unavailable', error) }
   }
 
   if (loading) return <div className="watch-loading"><div className="spinner" /></div>
@@ -96,14 +87,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
   return (
     <div className="watch-page">
       <div className="watch-player">
-        <video
-          ref={videoRef}
-          src={videoSrc}
-          controls
-          autoPlay
-          playsInline
-          className="hk-video-player"
-        />
+        {videoError ? <div className="watch-error"><p>{videoError}</p><button onClick={() => { setVideoError(''); videoRef.current?.load() }}>Retry playback</button></div> : <video ref={videoRef} src={videoSrc} controls autoPlay playsInline className="hk-video-player" onError={() => setVideoError('This video could not be played. It may be unavailable, unsupported, or experiencing a network problem.')}><track kind="captions" /></video>}
       </div>
 
       <div className="watch-details">

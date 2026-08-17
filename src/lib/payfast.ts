@@ -39,23 +39,20 @@ export function isPayFastConfigured() {
  * never signs requests or exposes the secure key.
  */
 export async function startPayFastCheckout(userId: string, email?: string): Promise<PayFastCheckoutResponse> {
-  const response = await fetch('/api/payfast/create-checkout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      userId,
-      email,
-      amount: PREMIUM_MONTHLY_PRICE,
-      currency: PREMIUM_CURRENCY,
-      description: 'HkTube LIVE Creator Premium - Monthly',
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Unable to start PayFast checkout')
+  if (!isPayFastConfigured()) return { status: 'failed', message: 'PayFast is not configured yet.' }
+  try {
+    const response = await fetch('/api/payfast/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, email, amount: PREMIUM_MONTHLY_PRICE, currency: PREMIUM_CURRENCY, description: 'HkTube LIVE Creator Premium - Monthly' }),
+    })
+    if (!response.ok) throw new Error(`PayFast checkout returned ${response.status}`)
+    const result = await response.json() as Partial<PayFastCheckoutResponse>
+    return { status: result.status === 'success' || result.status === 'pending' || result.status === 'failed' ? result.status : 'failed', transactionId: result.transactionId, redirectUrl: result.redirectUrl, message: result.message }
+  } catch (error) {
+    console.warn('[HkTube] PayFast request failed', error)
+    return { status: 'failed', message: 'PayFast checkout is temporarily unavailable.' }
   }
-
-  return response.json() as Promise<PayFastCheckoutResponse>
 }
 
 export function isSuccessfulPayFastWebhook(event: PayFastWebhookEvent) {
