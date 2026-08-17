@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { ArrowLeft, CheckCircle2, Mail, MessageSquare, ShieldAlert } from 'lucide-react'
 
 export default function ContactPage({ onNavigate }: { onNavigate?: (view: string) => void }) {

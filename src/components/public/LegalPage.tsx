@@ -54,7 +54,7 @@ export default function LegalPage({ kind, onNavigate }: LegalPageProps) {
   </article>
 }
 
-export function PublicFooter({ onNavigate }: { onNavigate: (view: string) => void }) {
+export function PublicFooter(_props: { onNavigate: (view: string) => void }) {
   const go = (view: string) => window.location.assign(`/${view}`)
   return <footer className="public-footer"><span>© {new Date().getFullYear()} HkTube</span><button onClick={() => go('privacy')}>Privacy</button><button onClick={() => go('terms')}>Terms</button><button onClick={() => go('refund-policy')}>Refunds</button><button onClick={() => go('contact')}>Contact Support</button><button onClick={() => go('services')}>Services</button></footer>
 }

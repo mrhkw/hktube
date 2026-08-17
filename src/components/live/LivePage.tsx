@@ -152,11 +152,6 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
     }
   }
 
-  const simulateWebhookConfirmation = () => {
-    activatePremiumFromWebhook(userId, { status: 'success', transaction_id: `PF-${Date.now()}` })
-    setShowPremiumModal(false)
-  }
-
   const sendChat = () => {
     const text = chatText.trim()
     if (!text) return
@@ -258,7 +253,7 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
       {activeTab === 'analytics' && <AnalyticsPanel viewerCount={viewerCount} goalOne={goalOne} goalTwo={goalTwo} onClip={() => setClipSaved(true)} clipSaved={clipSaved} />}
       {activeTab === 'monetization' && <MonetizationPanel coins={coins} onWithdraw={() => setCheckoutMessage('Withdrawal review opened. Connect your payout details in Studio Settings.')} message={checkoutMessage} />}
 
-      {showPremiumModal && <div className="premium-modal-backdrop" role="dialog" aria-modal="true"><div className="premium-modal"><button className="modal-close" onClick={() => setShowPremiumModal(false)} aria-label="Close"><X size={18} /></button><div className="premium-crown"><Crown size={26} /></div><span className="eyebrow">HKTUBE LIVE PREMIUM</span><h2>Unlock your creator stage</h2><p>Launch streams, invite guests, receive gifts, and turn your community into an income stream.</p><div className="premium-price"><strong>{PREMIUM_CURRENCY} {PREMIUM_MONTHLY_PRICE}</strong><span>/ month</span></div><div className="premium-features"><span><Check size={15} /> Go Live & creator controls</span><span><Check size={15} /> Gifts, coins, polls, and Q&A</span><span><Check size={15} /> Withdraw eligible creator earnings</span></div><button className="payfast-button" onClick={handleCheckout} disabled={checkoutLoading}><Lock size={15} /> {checkoutLoading ? 'Connecting to PayFast…' : 'Continue with PayFast'}</button><small className="payment-methods">JazzCash · EasyPaisa · Debit/Credit Cards · Bank Transfer</small>{checkoutMessage && <div className="checkout-message">{checkoutMessage}</div>}{!isPayFastConfigured() && <button className="demo-confirm-button" onClick={simulateWebhookConfirmation}>Simulate successful webhook for local testing</button>}</div></div>}
+      {showPremiumModal && <div className="premium-modal-backdrop" role="dialog" aria-modal="true"><div className="premium-modal"><button className="modal-close" onClick={() => setShowPremiumModal(false)} aria-label="Close"><X size={18} /></button><div className="premium-crown"><Crown size={26} /></div><span className="eyebrow">HKTUBE LIVE PREMIUM</span><h2>Unlock your creator stage</h2><p>Launch streams, invite guests, receive gifts, and turn your community into an income stream.</p><div className="premium-price"><strong>{PREMIUM_CURRENCY} {PREMIUM_MONTHLY_PRICE}</strong><span>/ month</span></div><div className="premium-features"><span><Check size={15} /> Go Live & creator controls</span><span><Check size={15} /> Gifts, coins, polls, and Q&A</span><span><Check size={15} /> Withdraw eligible creator earnings</span></div><button className="payfast-button" onClick={handleCheckout} disabled={checkoutLoading}><Lock size={15} /> {checkoutLoading ? 'Connecting to PayFast…' : 'Continue with PayFast'}</button><small className="payment-methods">JazzCash · EasyPaisa · Debit/Credit Cards · Bank Transfer</small>{checkoutMessage && <div className="checkout-message">{checkoutMessage}</div>}</div></div>}
     </section>
   )
 }

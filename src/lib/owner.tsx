@@ -9,7 +9,8 @@ function fingerprint(value: string) {
 }
 
 export function isOwnerEmail(email?: string | null) {
-  return Boolean(email) && fingerprint(email.trim().toLowerCase()) === OWNER_EMAIL_FINGERPRINT
+  if (!email) return false
+  return fingerprint(email.trim().toLowerCase()) === OWNER_EMAIL_FINGERPRINT
 }
 
 export function OwnerBadge({ compact = false }: { compact?: boolean }) {
