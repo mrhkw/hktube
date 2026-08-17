@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, X, RefreshCw, Check, Film } from 'lucide-react'
 import {
   uploadFileResumable, uploadSimple, createVideoRecord, getPublicUrl,
-  VIDEO_BUCKET, THUMBNAIL_BUCKET, MAX_UPLOAD_MB
+  bucketForVideoType, THUMBNAIL_BUCKET, MAX_UPLOAD_MB
 } from '../../lib/supabase'
 
 interface UploadVideoProps {
@@ -66,7 +66,7 @@ export default function UploadVideo({ userId, onComplete, onCancel }: UploadVide
 
     // Upload video
     const { path: videoPath, error: uploadErr } = await uploadFileResumable(
-      file, VIDEO_BUCKET, userId,
+      file, bucketForVideoType('video'), userId,
       (pct, up, tot) => { setProgress(pct); setUploaded(up); setTotal(tot) },
       (err) => { setError(err.message); setState('error') }
     )
@@ -97,7 +97,7 @@ export default function UploadVideo({ userId, onComplete, onCancel }: UploadVide
     } catch { /* ignore */ }
 
     // Create DB record
-    const videoUrl = getPublicUrl(VIDEO_BUCKET, videoPath)
+    const videoUrl = getPublicUrl(bucketForVideoType('video'), videoPath)
     const { error: dbErr } = await createVideoRecord({
       title: title.trim(),
       description: description.trim() || null,

@@ -7,9 +7,49 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export const isSupabaseConfigured = supabaseUrl.startsWith('https://') && supabaseAnonKey.length > 20
 
-export const VIDEO_BUCKET = import.meta.env.VITE_SUPABASE_VIDEO_BUCKET || 'videos'
-export const THUMBNAIL_BUCKET = import.meta.env.VITE_SUPABASE_THUMBNAIL_BUCKET || 'thumbnails'
+export const VIDEO_BUCKET = (import.meta.env.VITE_SUPABASE_VIDEO_BUCKET || 'videos').trim()
+export const SHORTS_BUCKET = (import.meta.env.VITE_SUPABASE_SHORTS_BUCKET || 'shorts').trim()
+export const THUMBNAIL_BUCKET = (import.meta.env.VITE_SUPABASE_THUMBNAIL_BUCKET || 'thumbnails').trim()
 export const MAX_UPLOAD_MB = Number(import.meta.env.VITE_SUPABASE_MAX_UPLOAD_MB || 500)
+const MAX_UPLOAD_ATTEMPTS = 3
+
+export type StorageBucketKind = 'video' | 'short' | 'thumbnail'
+
+export function bucketForVideoType(type: StorageBucketKind) {
+  if (type === 'short') return SHORTS_BUCKET
+  if (type === 'thumbnail') return THUMBNAIL_BUCKET
+  return VIDEO_BUCKET
+}
+
+function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export async function ensureStorageBucket(bucket: string) {
+  const requestedBucket = bucket.trim()
+  if (!requestedBucket) {
+    return { error: new Error('Storage bucket is empty. Set the appropriate VITE_SUPABASE_*_BUCKET environment variable.') }
+  }
+
+  const { data: buckets, error } = await supabase.storage.listBuckets()
+  if (error) {
+    const diagnostic = new Error(`Unable to verify Supabase Storage bucket "${requestedBucket}": ${error.message}`)
+    console.error('[HkTube storage] Bucket availability check failed.', { bucket: requestedBucket, error: error.message })
+    return { error: diagnostic }
+  }
+
+  const exists = buckets?.some(candidate => candidate.id === requestedBucket || candidate.name === requestedBucket)
+  if (!exists) {
+    const diagnostic = new Error(`Supabase Storage bucket "${requestedBucket}" was not found. Create it in Supabase Storage or set the matching VITE_SUPABASE_*_BUCKET variable.`)
+    console.error('[HkTube storage] Bucket not found.', {
+      requestedBucket,
+      availableBuckets: buckets?.map(candidate => candidate.id) ?? [],
+    })
+    return { error: diagnostic }
+  }
+
+  return { error: null }
+}
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 // ─── Auth ───
@@ -91,25 +131,19 @@ function safeFileName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9.]+/g, '-')
 }
 
-export async function uploadFileResumable(
+async function startResumableUpload(
   file: File,
   bucket: string,
-  userId: string,
+  path: string,
+  accessToken: string,
   onProgress?: (percent: number, uploaded: number, total: number) => void,
-  onError?: (err: Error) => void
-): Promise<{ path: string; error: Error | null }> {
-  if (file.size > MAX_UPLOAD_BYTES) return { path: '', error: new Error(`File exceeds ${MAX_UPLOAD_MB}MB limit.`) }
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.access_token) return { path: '', error: new Error('Please sign in before uploading.') }
-
-  const path = `${userId}/${crypto.randomUUID()}-${safeFileName(file.name)}`
-
-  return new Promise((resolve) => {
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
     const upload = new tus.Upload(file, {
       endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
       retryDelays: [0, 1000, 3000, 5000],
       headers: {
-        authorization: `Bearer ${session.access_token}`,
+        authorization: `Bearer ${accessToken}`,
         apikey: supabaseAnonKey,
       },
       uploadDataDuringCreation: true,
@@ -121,28 +155,69 @@ export async function uploadFileResumable(
         cacheControl: '3600',
       },
       chunkSize: 6 * 1024 * 1024,
-      onError: (error) => {
-        const err = new Error(error.message || 'Upload failed')
-        onError?.(err)
-        resolve({ path: '', error: err })
-      },
+      onError: error => reject(new Error(error.message || 'Upload failed')),
       onProgress: (bytesUploaded, bytesTotal) => {
-        const percent = Math.round((bytesUploaded / bytesTotal) * 100)
+        const percent = bytesTotal ? Math.round((bytesUploaded / bytesTotal) * 100) : 0
         onProgress?.(percent, bytesUploaded, bytesTotal)
       },
-      onSuccess: () => {
-        resolve({ path, error: null })
-      },
+      onSuccess: () => resolve(),
     })
-    upload.findPreviousUploads().then((prev) => {
-      if (prev.length) upload.resumeFromPreviousUpload(prev[0])
+
+    upload.findPreviousUploads().then(previousUploads => {
+      if (previousUploads.length) upload.resumeFromPreviousUpload(previousUploads[0])
       upload.start()
-    })
+    }).catch(reject)
   })
 }
 
+export async function uploadFileResumable(
+  file: File,
+  bucket: string,
+  userId: string,
+  onProgress?: (percent: number, uploaded: number, total: number) => void,
+  onError?: (err: Error) => void
+): Promise<{ path: string; error: Error | null }> {
+  if (file.size > MAX_UPLOAD_BYTES) return { path: '', error: new Error(`File exceeds ${MAX_UPLOAD_MB}MB limit.`) }
+
+  const bucketCheck = await ensureStorageBucket(bucket)
+  if (bucketCheck.error) {
+    onError?.(bucketCheck.error)
+    return { path: '', error: bucketCheck.error }
+  }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return { path: '', error: new Error('Please sign in before uploading.') }
+
+  const path = `${userId}/${crypto.randomUUID()}-${safeFileName(file.name)}`
+  let lastError = new Error('Upload failed')
+
+  for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
+    try {
+      await startResumableUpload(file, bucket, path, session.access_token, onProgress)
+      return { path, error: null }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Upload failed')
+      console.warn(`[HkTube storage] Upload attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS} failed.`, { bucket, path, error: lastError.message })
+      if (attempt < MAX_UPLOAD_ATTEMPTS) await wait(1000 * 2 ** (attempt - 1))
+    }
+  }
+
+  onError?.(lastError)
+  return { path: '', error: lastError }
+}
+
 export async function uploadSimple(file: File, bucket: string, path: string) {
-  return supabase.storage.from(bucket).upload(path, file, { upsert: false, contentType: file.type })
+  const bucketCheck = await ensureStorageBucket(bucket)
+  if (bucketCheck.error) return { data: null, error: bucketCheck.error }
+
+  let result
+  for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt += 1) {
+    result = await supabase.storage.from(bucket).upload(path, file, { upsert: false, contentType: file.type })
+    if (!result.error) return result
+    console.warn(`[HkTube storage] Simple upload attempt ${attempt}/${MAX_UPLOAD_ATTEMPTS} failed.`, { bucket, path, error: result.error.message })
+    if (attempt < MAX_UPLOAD_ATTEMPTS) await wait(1000 * 2 ** (attempt - 1))
+  }
+  return result ?? { data: null, error: new Error('Upload failed after all retry attempts.') }
 }
 
 export function getPublicUrl(bucket: string, path: string) {
