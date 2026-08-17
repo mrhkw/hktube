@@ -58,6 +58,17 @@ export async function ensureStorageBucket(bucket: string) {
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 // ─── Auth ───
+export async function getFreshSession() {
+  const current = await supabase.auth.getSession()
+  const session = current.data.session
+  const expiresSoon = !session?.expires_at || session.expires_at * 1000 <= Date.now() + 60_000
+  if (session?.access_token && !expiresSoon) return { session, error: null }
+
+  const refreshed = await supabase.auth.refreshSession()
+  if (refreshed.data.session?.access_token) return { session: refreshed.data.session, error: null }
+  return { session: null, error: refreshed.error || new Error('Authentication expired. Please sign in again.') }
+}
+
 export async function signInWithEmail(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
 }
@@ -120,18 +131,21 @@ export async function getVideoById(id: string) {
 }
 
 export async function createVideoRecord(record: Omit<VideoRecord, 'id'>) {
-  const session = (await supabase.auth.getSession()).data.session
-  if (!session?.access_token) return { data: null, error: new Error('Authentication expired. Please sign in again.') }
+  const firstSession = await getFreshSession()
+  if (!firstSession.session?.access_token) return { data: null, error: firstSession.error || new Error('Authentication expired. Please sign in again.') }
+
+  const request = async (accessToken: string) => fetch('/api/create-video', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(record),
+  })
 
   try {
-    const response = await fetch('/api/create-video', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(record),
-    })
+    let response = await request(firstSession.session.access_token)
+    if (response.status === 401) {
+      const refreshed = await getFreshSession()
+      if (refreshed.session?.access_token) response = await request(refreshed.session.access_token)
+    }
     const payload = await response.json().catch(() => ({})) as { data?: VideoRecord; error?: string }
     if (response.ok && payload.data) return { data: payload.data, error: null }
 
@@ -153,8 +167,8 @@ export async function getUserVideos(userId: string, type?: VideoType) {
 
 // ─── Upload (Vercel proxy + direct fallback) ───
 export async function uploadViaProxy(file: File, bucket: string, path: string, onProgress?: (percent: number) => void): Promise<{ path: string; error: Error | null }> {
-  const session = (await supabase.auth.getSession()).data.session
-  if (!session?.access_token) return { path: '', error: new Error('Not authenticated') }
+  const { session, error: sessionError } = await getFreshSession()
+  if (!session?.access_token) return { path: '', error: sessionError || new Error('Authentication expired. Please sign in again.') }
 
   return new Promise(resolve => {
     const xhr = new XMLHttpRequest()
@@ -260,7 +274,7 @@ export async function uploadFileResumable(
   if (!proxyResult.error) return proxyResult
   console.warn('[HkTube storage] Upload proxy failed; falling back to direct Supabase upload.', { bucket, path, error: proxyResult.error.message })
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { session } = await getFreshSession()
   if (!session?.access_token) return proxyResult
   let lastError = proxyResult.error
 
