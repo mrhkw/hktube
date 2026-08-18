@@ -1,8 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
+// Vite-prefixed env vars (VITE_SUPABASE_*) are exposed only to the client build;
+// Vercel serverless functions receive the plain (unprefixed) variants. Fall back
+// to the hardcoded defaults so the proxy never fails with "Invalid token" in prod.
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZHZ1bm90eXlrZnFtbWtobW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NDM0NDksImV4cCI6MjEwMjMxOTQ0OX0.IrHmuKvbhzoqDxWZP9omxck7L29ez0LFFueURlSLSuA'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const allowedBuckets = new Set(['videos', 'shorts', 'thumbnails', 'avatars'])
 

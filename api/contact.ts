@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
 const destination = process.env.CONTACT_DESTINATION_EMAIL || 'hanifnazamdin30@gmail.com'
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const resendKey = process.env.RESEND_API_KEY || ''
 

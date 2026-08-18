@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
+// Vite-prefixed env vars exist only in the client build; serverless functions
+// receive plain SUPABASE_* variants. Resolve both so owner verification and
+// the service client never silently fail in production.
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZHZ1bm90eXlrZnFtbWtobW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NDM0NDksImV4cCI6MjEwMjMxOTQ0OX0.IrHmuKvbhzoqDxWZP9omxck7L29ez0LFFueURlSLSuA'
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const OWNER_EMAIL = 'hanifnazamdin30@gmail.com'
 
@@ -11,11 +14,13 @@ function json(res: VercelResponse, status: number, body: Record<string, unknown>
 
 async function ownerFromRequest(req: VercelRequest) {
   const authorization = req.headers.authorization
-  if (!authorization?.startsWith('Bearer ') || !supabaseAnonKey || !serviceKey) return null
+  if (!authorization?.startsWith('Bearer ')) return { error: 'Missing authorization header.' }
+  if (!supabaseAnonKey || !serviceKey) return { error: 'Server credentials are not configured.' }
   const userClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authorization } } })
-  const { data: authData } = await userClient.auth.getUser()
+  const { data: authData, error } = await userClient.auth.getUser()
   const user = authData.user
-  if (!user || user.email?.toLowerCase() !== OWNER_EMAIL) return null
+  if (error || !user) return { error: error?.message || 'Invalid session.' }
+  if (user.email?.toLowerCase() !== OWNER_EMAIL) return { error: 'This account is not the platform owner.' }
   return { user, admin: createClient(supabaseUrl, serviceKey) }
 }
 
@@ -23,14 +28,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' })
   try {
     const context = await ownerFromRequest(req)
-    if (!context) return json(res, 403, { error: 'Owner access required.' })
+    if (!context || !context.admin) return json(res, 403, { error: context?.error || 'Owner access required.' })
     const { admin } = context
     const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {}) as { action?: string; id?: string; query?: string; reason?: string }
 
     if (req.method === 'GET') {
       const q = typeof req.query?.q === 'string' ? req.query.q.trim() : ''
       const [profiles, videos, totalVideos, channels, subscribers, shorts, liveStreams] = await Promise.all([
-        admin.from('profiles').select('id,channel_name,username,avatar_url,role,is_verified,is_official,is_banned,ban_reason,created_at,is_premium,is_monetized').ilike('channel_name', q ? `%${q}%` : '%').order('created_at', { ascending: false }).limit(200),
+        admin.from('profiles').select('id,channel_name,username,avatar_url,role,is_verified,is_official,is_banned,ban_reason,created_at,is_premium,is_monetized').or(q ? `channel_name.ilike.%${q}%,username.ilike.%${q}%` : 'channel_name.not.is.null,username.not.is.null').order('created_at', { ascending: false }).limit(200),
         admin.from('signals').select('id,title,creator_id,video_url,video_type,visibility,status,views,likes_count,created_at').ilike('title', q ? `%${q}%` : '%').order('created_at', { ascending: false }).limit(200),
         admin.from('signals').select('views', { count: 'exact' }).limit(20000),
         admin.from('channels').select('id,owner_id,handle,name,avatar_url,subscriber_count,created_at').order('created_at', { ascending: false }).limit(200),
@@ -59,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         admin.from('signals').select('id', { count: 'exact', head: true }).eq('creator_id', body.id),
         admin.rpc('get_creator_likes', { creator_uuid: body.id }).catch(() => ({ data: null, error: { message: 'likes unavailable' } })),
         admin.from('comments').select('id', { count: 'exact', head: true }).eq('user_id', body.id),
-        admin.from('follows').select('id', { count: 'exact', head: true }).eq('following_id', body.id),
+        admin.from('subscriptions').select('id', { count: 'exact', head: true }).eq('channel_id', body.id),
       ])
       return json(res, 200, { stats: { ...(statsRpc.data as object) || {}, videos: videoCount.count, likes: likesCount.data, comments: commentsCount.count, followers: followersCount.count }, profile: profile.data, errors: [statsRpc.error?.message, likesCount.error?.message].filter(Boolean) })
     }
