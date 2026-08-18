@@ -79,7 +79,7 @@ export default function CreatorStudio({ userId, onNavigate }: CreatorStudioProps
     { id: 'ads', label: 'Ads', icon: DollarSign },
     { id: 'live', label: 'Live architecture', icon: Radio },
     { id: 'ai-pro', label: 'AI Pro', icon: Sparkles },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'settings', label: 'Studio Settings', icon: Settings },
   ]
 
   const renderContent = () => {

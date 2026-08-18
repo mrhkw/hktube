@@ -26,7 +26,7 @@ import LegalPages from './pages/LegalPages'
 // initial JavaScript bundle and makes the app respond noticeably faster on
 // mobile networks. Frequently used pages stay eagerly imported.
 const CreatorStudio = lazy(() => import('./components/studio/CreatorStudio'))
-const SettingsPage = lazy(() => import('./components/settings/StudioSettings'))
+const SettingsPage = lazy(() => import('./components/settings/Settings'))
 const LivePage = lazy(() => import('./components/live/LivePage'))
 const AdminPage = lazy(() => import('./components/admin/AdminPage'))
 const AdminControlCenter = lazy(() => import('./pages/AdminControlCenter'))
