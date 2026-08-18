@@ -27,6 +27,7 @@ import LegalPage, { PublicFooter } from './components/public/LegalPage'
 import ServicesPage from './components/public/ServicesPage'
 import ContactPage from './components/public/ContactPage'
 import LegalPages from './pages/LegalPages'
+import AdminControlCenter from './pages/AdminControlCenter'
 
 type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services' | 'disclaimer' | 'copyright'
 
@@ -105,6 +106,10 @@ function App() {
   }
 
   const publicPath = window.location.pathname.replace(/\/$/, '')
+  if (publicPath === '/admin/ai-control') {
+    if (!user) return <AuthPage />
+    return <AdminControlCenter userId={user.id} />
+  }
   if (publicPath === '/privacy' || publicPath === '/privacy-policy') return <><LegalPage kind="privacy" /><PublicFooter onNavigate={navigate} /></>
   if (publicPath === '/terms' || publicPath === '/terms-of-service') return <><LegalPage kind="terms" /><PublicFooter onNavigate={navigate} /></>
   if (publicPath === '/refund-policy') return <><LegalPage kind="refund" /><PublicFooter onNavigate={navigate} /></>

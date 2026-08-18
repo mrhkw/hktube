@@ -1,88 +1,31 @@
+import { getFreshSession } from './supabase'
+
+export const PAYFAST_CURRENCY = 'PKR'
+export const PREMIUM_CURRENCY = PAYFAST_CURRENCY
 export const PREMIUM_MONTHLY_PRICE = 500
-export const PREMIUM_CURRENCY = 'PKR'
-import { isOwnerEmail } from './owner'
 
-/**
- * Public configuration only. The secure key must be used by a server-side
- * checkout/webhook handler and should never be shipped to the browser.
- */
-export const payFastConfig = {
-  merchantId: import.meta.env.VITE_PAYFAST_MERCHANT_ID || '',
-  secureKey: import.meta.env.VITE_PAYFAST_SECURE_KEY || '',
-  checkoutUrl: import.meta.env.VITE_PAYFAST_CHECKOUT_URL || '',
-  webhookUrl: import.meta.env.VITE_PAYFAST_WEBHOOK_URL || '/api/payfast/webhook',
-  testMode: import.meta.env.VITE_PAYFAST_TEST_MODE === 'true',
-}
+type CheckoutResult = { checkoutUrl?: string; redirectUrl?: string; simulated?: boolean; transactionId?: string; status?: 'success' | 'pending' | 'error'; message?: string; error?: string }
+export type PayFastCheckout = CheckoutResult
 
-export type PayFastPaymentStatus = 'pending' | 'success' | 'failed'
-
-export interface PayFastCheckoutResponse {
-  status: PayFastPaymentStatus
-  transactionId?: string
-  redirectUrl?: string
-  message?: string
-}
-
-export interface PayFastWebhookEvent {
-  transaction_id?: string
-  basket_id?: string
-  status?: string
-  code?: string
-  user_id?: string
-  [key: string]: unknown
-}
-
-export function isPayFastTestMode() {
-  return payFastConfig.testMode
-}
-
-export function isPayFastConfigured() {
-  return payFastConfig.testMode || Boolean(payFastConfig.merchantId && payFastConfig.secureKey && payFastConfig.checkoutUrl)
-}
-
-/**
- * Starts a hosted PayFast checkout through the application server. The browser
- * never signs requests or exposes the secure key.
- */
-export async function startPayFastCheckout(userId: string, email?: string): Promise<PayFastCheckoutResponse> {
-  if (isOwnerEmail(email)) return { status: 'success', transactionId: `PF-OWNER-${Date.now()}`, message: 'Owner access activated successfully.' }
-  if (isPayFastTestMode() || !isPayFastConfigured()) {
-    return { status: 'success', transactionId: `PF-SIM-${Date.now()}`, message: 'Demo checkout completed successfully. PayFast live mode can be enabled later.' }
-  }
+/** Client-safe PayFast bridge. Secrets stay in the server endpoint; simulation is explicit and never unlocks production features. */
+export async function startPayFastCheckout(purpose: 'premium' | 'promotion', amount: number, metadata?: Record<string, unknown>): Promise<PayFastCheckout>
+export async function startPayFastCheckout(userId: string, email?: string): Promise<PayFastCheckout>
+export async function startPayFastCheckout(first: string, second?: number | string, metadata: Record<string, unknown> = {}) {
+  const isModernCall = first === 'premium' || first === 'promotion'
+  const purpose = isModernCall ? first as 'premium' | 'promotion' : 'premium'
+  const amount = isModernCall && typeof second === 'number' ? second : PREMIUM_MONTHLY_PRICE
+  const requestMetadata = isModernCall ? metadata : { ...metadata, legacyUserId: first, legacyEmail: typeof second === 'string' ? second : undefined }
   try {
-    const response = await fetch('/api/payfast/create-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, email, amount: PREMIUM_MONTHLY_PRICE, currency: PREMIUM_CURRENCY, description: 'HkTube LIVE Creator Premium - Monthly' }),
-    })
-    if (!response.ok) throw new Error(`PayFast checkout returned ${response.status}`)
-    const result = await response.json() as Partial<PayFastCheckoutResponse>
-    return { status: result.status === 'success' || result.status === 'pending' || result.status === 'failed' ? result.status : 'failed', transactionId: result.transactionId, redirectUrl: result.redirectUrl, message: result.message }
-  } catch (error) {
-    console.warn('[HkTube] PayFast request failed', error)
-    return { status: 'success', transactionId: `PF-SIM-${Date.now()}`, message: 'Demo checkout completed successfully. PayFast live mode can be enabled later.' }
-  }
+    const { session, error } = await getFreshSession()
+    if (!session?.access_token) return { status: 'error' as const, error: error?.message || 'Please sign in again.', message: error?.message || 'Please sign in again.' }
+    const response = await fetch('/api/payments/payfast/create', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ purpose, amount, currency: PAYFAST_CURRENCY, metadata: requestMetadata }) })
+    const result = await response.json().catch(() => ({})) as CheckoutResult
+    if (!response.ok) return { ...result, status: 'error' as const, error: result.error || 'Payment service unavailable.', message: result.message || result.error || 'Payment service unavailable.' }
+    return { ...result, status: result.simulated ? 'pending' as const : result.status || 'pending' as const, message: result.message || (result.simulated ? 'DEVELOPMENT/SIMULATION mode: no real payment was processed.' : 'Checkout created. Complete payment to activate the feature.') }
+  } catch (error) { const message = error instanceof Error ? error.message : 'Payment service unavailable.'; return { status: 'error' as const, error: message, message } }
 }
 
-export function isSuccessfulPayFastWebhook(event: PayFastWebhookEvent) {
-  const normalized = String(event.status || event.code || '').toLowerCase()
-  return ['success', 'successful', '00', 'paid', 'completed'].includes(normalized)
-}
-
-export function getPremiumActivationKey(userId: string) {
-  return `hktube:premium-live:${userId}`
-}
-
-export function activatePremiumFromWebhook(userId: string, event: PayFastWebhookEvent) {
-  if (!isSuccessfulPayFastWebhook(event)) return false
-  localStorage.setItem(getPremiumActivationKey(userId), JSON.stringify({
-    activatedAt: new Date().toISOString(),
-    transactionId: event.transaction_id || event.basket_id || 'payfast-confirmed',
-  }))
-  window.dispatchEvent(new CustomEvent('hktube:premium-activated', { detail: event }))
-  return true
-}
-
-export function hasPremiumLiveStatus(userId: string) {
-  return Boolean(localStorage.getItem(getPremiumActivationKey(userId)))
-}
+/** Deprecated compatibility hook. Premium unlocks only through verified server webhook state. */
+export function activatePremiumFromWebhook(_userId: string, _payload: Record<string, unknown>) { return false }
+/** Live access is server-authorized; this client helper never grants access from local storage. */
+export function hasPremiumLiveStatus(_userId: string) { return false }

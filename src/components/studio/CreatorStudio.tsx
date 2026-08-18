@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Film, Zap, Users, Clock, DollarSign, Sparkles, Settings, TrendingUp } from 'lucide-react'
+import { BarChart3, Film, Zap, Users, Clock, DollarSign, Sparkles, Settings, TrendingUp, Radio } from 'lucide-react'
 import { supabase, getUserVideos, type VideoRecord } from '../../lib/supabase'
 import MonetizationPanel from '../monetization/MonetizationPanel'
 import EarningsPanel from '../monetization/EarningsPanel'
@@ -8,13 +8,19 @@ import PremiumPanel from '../premium/PremiumPanel'
 import AiProPanel from '../ai/AiProPanel'
 import StudioSettings from '../settings/StudioSettings'
 import { isOwnerEmail } from '../../lib/owner'
+import MonetizationDashboard from '../monetization/MonetizationDashboard'
+import WithdrawalSystem from '../monetization/WithdrawalSystem'
+import PremiumSystem from '../premium/PremiumSystem'
+import AdSystem from '../ads/AdSystem'
+import CreatorPromotion from '../promotion/CreatorPromotion'
+import LiveModule from '../live/LiveModule'
 
 interface CreatorStudioProps {
   userId: string
   onNavigate: (view: string) => void
 }
 
-type StudioTab = 'overview' | 'videos' | 'shorts' | 'posts' | 'analytics' | 'monetization' | 'earnings' | 'withdraw' | 'premium' | 'ai-pro' | 'settings'
+type StudioTab = 'overview' | 'videos' | 'shorts' | 'posts' | 'analytics' | 'monetization' | 'earnings' | 'withdraw' | 'premium' | 'promotion' | 'ads' | 'live' | 'ai-pro' | 'settings'
 
 interface CreatorStats {
   subscribers: number
@@ -69,6 +75,9 @@ export default function CreatorStudio({ userId, onNavigate }: CreatorStudioProps
     { id: 'earnings', label: 'Earnings', icon: DollarSign },
     { id: 'withdraw', label: 'Withdraw', icon: DollarSign },
     { id: 'premium', label: 'Premium', icon: Sparkles },
+    { id: 'promotion', label: 'Promote', icon: TrendingUp },
+    { id: 'ads', label: 'Ads', icon: DollarSign },
+    { id: 'live', label: 'Live architecture', icon: Radio },
     { id: 'ai-pro', label: 'AI Pro', icon: Sparkles },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
@@ -79,10 +88,13 @@ export default function CreatorStudio({ userId, onNavigate }: CreatorStudioProps
       case 'videos': return <StudioVideoList videos={videos} type="video" />
       case 'shorts': return <StudioVideoList videos={shorts} type="short" />
       case 'analytics': return <StudioAnalytics stats={stats} />
-      case 'monetization': return <MonetizationPanel userId={userId} stats={stats} profile={profile} onRefresh={loadStudioData} />
+      case 'monetization': return <><MonetizationDashboard userId={userId} stats={stats} /><MonetizationPanel userId={userId} stats={stats} profile={profile} onRefresh={loadStudioData} /></>
       case 'earnings': return <EarningsPanel userId={userId} stats={stats} />
-      case 'withdraw': return <WithdrawPanel userId={userId} stats={stats} profile={profile} />
-      case 'premium': return <PremiumPanel userId={userId} profile={profile} onRefresh={loadStudioData} />
+      case 'withdraw': return <><WithdrawalSystem userId={userId} /><WithdrawPanel userId={userId} stats={stats} profile={profile} /></>
+      case 'premium': return <><PremiumSystem userId={userId} onRefresh={loadStudioData} /><PremiumPanel userId={userId} profile={profile} onRefresh={loadStudioData} /></>
+      case 'promotion': return <CreatorPromotion userId={userId} />
+      case 'ads': return <AdSystem userId={userId} />
+      case 'live': return <LiveModule userId={userId} />
       case 'ai-pro': return <AiProPanel userId={userId} profile={isOwner ? { ...profile, is_premium: true } : profile} />
       case 'settings': return <StudioSettings userId={userId} onNavigate={onNavigate} />
       default: return null
