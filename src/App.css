@@ -32,7 +32,7 @@ a { color: var(--accent); text-decoration: none; }
 img { display: block; max-width: 100%; }
 
 /* ─── Loading ─── */
-.app-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; }
+.app-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; min-height: 100vh; gap: 20px; background: var(--bg); position: fixed; inset: 0; z-index: 1; }
 .loading-brand { font-size: 32px; font-weight: 700; }
 .hk-brand { display: inline-flex; align-items: baseline; letter-spacing: -0.055em; line-height: 1; }
 .logo-hk { color: var(--text); }

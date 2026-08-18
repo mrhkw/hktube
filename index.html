@@ -11,7 +11,16 @@
     <title>HkTube — Watch. Share. Discover.</title>
   </head>
   <body style="background-color: #0A0D12; margin: 0; padding: 0;">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-rendered themed shell: shows instantly before JS loads (no white/dark flash) -->
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;gap:18px;background:#0A0D12;font-family:Inter,system-ui,-apple-system,sans-serif;">
+        <span style="font-size:32px;font-weight:700;letter-spacing:-0.055em;line-height:1;">
+          <span style="color:#E8ECF1;">Hk</span><span style="background:linear-gradient(115deg,#6c5ce7 12%,#00cec9 92%);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:850;">Tube</span>
+        </span>
+        <span style="width:32px;height:32px;border:3px solid #252d3a;border-top-color:#6c5ce7;border-radius:50%;animation:hktube-spin 0.8s linear infinite;"></span>
+      </div>
+      <style>@keyframes hktube-spin{to{transform:rotate(360deg)}}</style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

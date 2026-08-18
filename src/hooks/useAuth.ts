@@ -9,11 +9,23 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true
+    // Flush pending session updates in a single microtask tick. Supabase fires
+    // onAuthStateChange multiple times in quick succession (INITIAL_SESSION ->
+    // SIGNED_IN); batching prevents repeated unmount/remount flicker.
+    let pending: Session | null | undefined
+    const flush = () => {
+      if (!mounted || pending === undefined) return
+      const next = pending
+      pending = undefined
+      setSession(previous => previous?.access_token === next?.access_token ? previous : next)
+      setUser(previous => previous?.id === next?.user?.id ? previous : (next?.user ?? null))
+      setLoading(false)
+    }
     const applySession = (nextSession: Session | null) => {
       if (!mounted) return
-      setSession(previous => previous?.access_token === nextSession?.access_token ? previous : nextSession)
-      setUser(previous => previous?.id === nextSession?.user?.id ? previous : (nextSession?.user ?? null))
-      setLoading(false)
+      pending = nextSession
+      // Defer the state update; rapid successive auth events merge into one render.
+      queueMicrotask(flush)
     }
 
     void supabase.auth.getSession()
@@ -26,6 +38,7 @@ export function useAuth() {
 
     return () => {
       mounted = false
+      pending = undefined
       subscription.unsubscribe()
     }
   }, [])
