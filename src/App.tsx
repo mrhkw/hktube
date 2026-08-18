@@ -28,8 +28,12 @@ import ServicesPage from './components/public/ServicesPage'
 import ContactPage from './components/public/ContactPage'
 import LegalPages from './pages/LegalPages'
 import AdminControlCenter from './pages/AdminControlCenter'
+import AIChatInterface from './components/ai/AIChatInterface'
+import DoItForMe from './components/ai/DoItForMe'
+import AIWorkspace from './components/ai/AIWorkspace'
+import AIMarketplace from './components/ai/AIMarketplace'
 
-type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services' | 'disclaimer' | 'copyright'
+type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'ai-chat' | 'ai-do-it' | 'ai-workspace' | 'ai-marketplace' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services' | 'disclaimer' | 'copyright'
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> }
 
@@ -106,6 +110,11 @@ function App() {
   }
 
   const publicPath = window.location.pathname.replace(/\/$/, '')
+  if (publicPath === '/ai/chat' || publicPath === '/ai/do-it-for-me' || publicPath === '/ai/workspace' || publicPath === '/ai/marketplace') {
+    if (!user) return <AuthPage />
+    const aiPage = publicPath === '/ai/chat' ? <AIChatInterface userId={user.id} /> : publicPath === '/ai/do-it-for-me' ? <DoItForMe userId={user.id} /> : publicPath === '/ai/workspace' ? <AIWorkspace /> : <AIMarketplace />
+    return <div className="app-shell"><Header userId={user.id} onNavigate={navigate} onSearch={handleSearch} installEvent={installEvent} onInstall={handleInstall} /><main className="app-main ai-route-page">{aiPage}</main></div>
+  }
   if (publicPath === '/admin/ai-control') {
     if (!user) return <AuthPage />
     return <AdminControlCenter userId={user.id} />
@@ -136,6 +145,10 @@ function App() {
       case 'studio': return <CreatorStudio userId={user.id} onNavigate={navigate} />
       case 'settings': return <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />
       case 'admin': return <AdminPage email={user.email} />
+      case 'ai-chat': return <AIChatInterface userId={user.id} />
+      case 'ai-do-it': return <DoItForMe userId={user.id} />
+      case 'ai-workspace': return <AIWorkspace />
+      case 'ai-marketplace': return <AIMarketplace />
       case 'privacy': return <LegalPage kind="privacy" onNavigate={navigate} />
       case 'terms': return <LegalPage kind="terms" onNavigate={navigate} />
       case 'refund': return <LegalPage kind="refund" onNavigate={navigate} />

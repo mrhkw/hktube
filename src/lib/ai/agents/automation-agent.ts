@@ -1,0 +1,3 @@
+import type { Agent } from './types'
+import { genericResult } from './types'
+export const automation_agent: Agent = { slug: 'automation-agent', name: 'Automation Agent', description: 'metadata, organization, SEO, and publishing checklists', canHandle: request => /(automate|metadata|organize|publish|checklist|upload)/i.test(request), run: async (request, _context) => { return { ...genericResult('automation', request, ['Analyze the approved workflow.', 'Prepare reversible steps.', 'Request approval for sensitive actions.']), suggestions: ['Safe repetitive preparation can be automated; destructive or sensitive actions cannot run silently.'] } } }

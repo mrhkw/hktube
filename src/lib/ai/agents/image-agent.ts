@@ -1,0 +1,3 @@
+import type { Agent } from './types'
+import { genericResult } from './types'
+export const image_agent: Agent = { slug: 'image-agent', name: 'Image Agent', description: 'thumbnail, banner, logo, and design prompt assistance', canHandle: request => /(image|thumbnail|banner|logo|graphic|design)/i.test(request), run: async (request, _context) => { return { ...genericResult('image', request, ['Define composition and visual hierarchy.', 'Prepare an original generation prompt.', 'Use a connected image service only after approval.']), suggestions: ['AI output is not automatically copyright-free.'] } } }

@@ -1,0 +1,7 @@
+import { supabase } from '../supabase'
+const sensitive = /(password|secret|api[_ -]?key|token|credential|payment|private[_ -]?key)/i
+export type AIMemory = { id: string; user_id: string; memory_type: string; memory_key: string; value: Record<string, unknown>; enabled: boolean; created_at: string; updated_at: string }
+export async function storeMemory(userId: string, memoryType: string, memoryKey: string, value: Record<string, unknown>) { if (!userId || sensitive.test(memoryKey) || sensitive.test(JSON.stringify(value))) return { data: null, error: new Error('Sensitive credentials and payment information are never stored in AI memory.') }; return supabase.from('ai_memory').upsert({ user_id: userId, memory_type: memoryType, memory_key: memoryKey, value, enabled: true }, { onConflict: 'user_id,memory_type,memory_key' }).select().single() }
+export async function getMemory(userId: string, memoryType?: string) { let query = supabase.from('ai_memory').select('*').eq('user_id', userId).eq('enabled', true).order('updated_at', { ascending: false }); if (memoryType) query = query.eq('memory_type', memoryType); const result = await query; return { data: (result.data ?? []) as AIMemory[], error: result.error } }
+export async function deleteMemory(userId: string, id: string) { return supabase.from('ai_memory').delete().eq('id', id).eq('user_id', userId) }
+export async function setMemoryEnabled(userId: string, enabled: boolean) { return supabase.from('ai_memory').update({ enabled }).eq('user_id', userId) }
