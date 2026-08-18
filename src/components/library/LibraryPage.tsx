@@ -18,7 +18,7 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
-import { getFollowerCount, getHistory, getProfile, getUserVideos, getWatchLater, type VideoRecord } from '../../lib/supabase'
+import { getSubscriberCount, getHistory, getProfile, getUserVideos, getWatchLater, type VideoRecord } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
 import AiProPanel from '../ai/AiProPanel'
 import { isOwnerEmail } from '../../lib/owner'
@@ -65,7 +65,7 @@ export default function LibraryPage({ userId, userEmail, onVideoClick, onNavigat
         const [profileResult, videosResult, followerCount] = await Promise.all([
           getProfile(userId),
           getUserVideos(userId),
-          getFollowerCount(userId),
+          getSubscriberCount(userId),
         ])
         if (!mounted) return
         setProfile((profileResult.data || null) as CreatorProfile | null)

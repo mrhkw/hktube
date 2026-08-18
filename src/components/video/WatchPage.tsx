@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Heart, MessageCircle, Share2, Bookmark, Download, UserPlus, UserCheck, Send } from 'lucide-react'
 import {
   getVideoById, toggleLike, hasLiked, getComments, addComment,
-  toggleFollow, isFollowing, getFollowerCount, addToHistory,
+  toggleSubscription, isSubscribed, getSubscriberCount, addToHistory,
   toggleWatchLater, getPublicUrl, VIDEO_BUCKET, recordVideoDownload, type VideoRecord
 } from '../../lib/supabase'
 import { OwnerBadge } from '../../lib/owner'
@@ -40,8 +40,8 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
         setVideo(data as VideoRecord & { profiles?: { channel_name?: string; avatar_url?: string; id?: string; is_verified?: boolean; is_official?: boolean; role?: string } })
         const creatorId = (data as { profiles?: { id?: string } }).profiles?.id
         if (creatorId) {
-          getFollowerCount(creatorId).then(setFollowers).catch(() => setFollowers(0))
-          isFollowing(userId, creatorId).then(setFollowing).catch(() => setFollowing(false))
+          getSubscriberCount(creatorId).then(setFollowers).catch(() => setFollowers(0))
+          isSubscribed(userId, creatorId).then(setFollowing).catch(() => setFollowing(false))
         }
         hasLiked(videoId, userId).then(setLiked).catch(() => setLiked(false))
         void addToHistory(userId, videoId).catch(() => undefined)
@@ -67,7 +67,7 @@ export default function WatchPage({ videoId, userId, onBack, onNavigate }: Watch
   const handleFollow = async () => {
     const creatorId = video?.profiles?.id
     if (!creatorId) return
-    try { const result = await toggleFollow(userId, creatorId); setFollowing(result); setFollowers(prev => result ? prev + 1 : Math.max(0, prev - 1)) } catch { /* helper already falls back */ }
+    try { const result = await toggleSubscription(userId, creatorId); setFollowing(result); setFollowers(prev => result ? prev + 1 : Math.max(0, prev - 1)) } catch { /* helper already falls back */ }
   }
 
   const handleComment = async (e: React.FormEvent) => {

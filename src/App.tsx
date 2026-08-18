@@ -16,6 +16,7 @@ import CreatePost from './components/posts/CreatePost'
 import PostsPage from './components/posts/PostsPage'
 import ProfilePage from './components/profile/ProfilePage'
 import LibraryPage from './components/library/LibraryPage'
+import ChannelPage from './components/channel/ChannelPage'
 import type { VideoRecord } from './lib/supabase'
 import './App.css'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -45,7 +46,7 @@ function LazyPage({ render }: { render: () => React.ReactNode }) {
   )
 }
 
-type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'ai-chat' | 'ai-do-it' | 'ai-workspace' | 'ai-marketplace' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services' | 'disclaimer' | 'copyright'
+type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'channel' | 'ai-chat' | 'ai-do-it' | 'ai-workspace' | 'ai-marketplace' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services' | 'disclaimer' | 'copyright'
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> }
 
@@ -56,6 +57,11 @@ function App() {
   const [watchVideoId, setWatchVideoId] = useState('')
   const [showCreateMenu, setShowCreateMenu] = useState(false)
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null)
+  const [channelSlug, setChannelSlug] = useState(() => {
+    const path = window.location.pathname.replace(/\/$/, '')
+    if (path.startsWith('/c/') && path.length > 3) return decodeURIComponent(path.slice(3))
+    return ''
+  })
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -131,6 +137,10 @@ function App() {
     if (!user) return <AuthPage />
     return <LazyPage render={() => <AdminControlCenter userId={user.id} />} />
   }
+  if (publicPath.startsWith('/c/') && publicPath.length > 3 && !channelSlug) {
+    setChannelSlug(decodeURIComponent(publicPath.slice(3)))
+    setView('channel')
+  }
   if (publicPath === '/privacy' || publicPath === '/privacy-policy') return <><LegalPage kind="privacy" /><PublicFooter onNavigate={navigate} /></>
   if (publicPath === '/terms' || publicPath === '/terms-of-service') return <><LegalPage kind="terms" /><PublicFooter onNavigate={navigate} /></>
   if (publicPath === '/refund-policy') return <><LegalPage kind="refund" /><PublicFooter onNavigate={navigate} /></>
@@ -156,6 +166,7 @@ function App() {
       case 'live': return <LazyPage render={() => <LivePage userId={user.id} userEmail={user.email} />} />
       case 'studio': return <LazyPage render={() => <CreatorStudio userId={user.id} onNavigate={navigate} />} />
       case 'settings': return <LazyPage render={() => <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />} />
+      case 'channel': return <ChannelPage slug={channelSlug} userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} />
       case 'admin': return <LazyPage render={() => <AdminPage email={user.email} />} />
       case 'ai-chat': return <LazyPage render={() => <AIChatInterface userId={user.id} />} />
       case 'ai-do-it': return <LazyPage render={() => <DoItForMe userId={user.id} />} />

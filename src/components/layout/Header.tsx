@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Bell, Plus, User, Settings as SettingsIcon } from 'lucide-react'
+import { Search, Bell, Plus, Settings as SettingsIcon } from 'lucide-react'
 import { getUnreadCount, markNotificationsRead, getNotifications } from '../../lib/supabase'
 
 interface HeaderProps {
@@ -16,7 +16,7 @@ export default function Header({ userId, onNavigate, onSearch, installEvent, onI
   const [searchQuery, setSearchQuery] = useState('')
   const [unread, setUnread] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
-  const [notifications, setNotifications] = useState<Array<{ id: string; message: string; read: boolean; created_at: string }>>([])
+  const [notifications, setNotifications] = useState<Array<{ id: string; title?: string; body?: string; read_at?: string | null; created_at: string }>>([])
 
   useEffect(() => {
     if (userId) {
@@ -30,7 +30,7 @@ export default function Header({ userId, onNavigate, onSearch, installEvent, onI
     setShowNotif(!showNotif)
     if (!showNotif && userId) {
       const { data } = await getNotifications(userId)
-      if (data) setNotifications(data as Array<{ id: string; message: string; read: boolean; created_at: string }>)
+      if (data) setNotifications(data as Array<{ id: string; title?: string; body?: string; read_at?: string | null; created_at: string }>)
       await markNotificationsRead(userId)
       setUnread(0)
     }
@@ -59,14 +59,13 @@ export default function Header({ userId, onNavigate, onSearch, installEvent, onI
           <Bell size={18} />
           {unread > 0 && <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>}
         </button>
-        <button className="btn-icon btn-avatar" onClick={() => onNavigate('profile')} aria-label="Profile"><User size={18} /></button>
         <button className="btn-icon btn-settings" onClick={() => onNavigate('settings')} aria-label="Settings"><SettingsIcon size={18} /></button>
       </div>
 
       {showNotif && (
         <div className="notif-panel">
           <h3>Notifications</h3>
-          {notifications.length === 0 ? <p className="notif-empty">No notifications yet</p> : <ul>{notifications.map(n => <li key={n.id} className={n.read ? '' : 'unread'}><p>{n.message}</p><small>{new Date(n.created_at).toLocaleDateString()}</small></li>)}</ul>}
+          {notifications.length === 0 ? <p className="notif-empty">No notifications yet</p> : <ul>{notifications.map(n => <li key={n.id} className={n.read_at ? '' : 'unread'}><p><strong>{n.title || 'Notification'}</strong>{n.body ? <span> — {n.body}</span> : null}</p><small>{new Date(n.created_at).toLocaleDateString()}</small></li>)}</ul>}
         </div>
       )}
     </header>

@@ -495,6 +495,29 @@ html, body, #root, .app-shell, .app-body, .app-main, .hk-header,
 .ai-restrictions li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
 .ai-restrictions li svg { color: var(--danger); }
 
+/* ─── Channel Page ─── */
+.channel-page { padding: 16px 20px 80px; }
+.channel-banner { position: relative; height: 150px; border-radius: var(--radius); background: linear-gradient(135deg, #6c5ce733, #111124); border: 1px solid var(--border); margin-bottom: 16px; }
+.channel-back { position: absolute; top: 12px; left: 12px; }
+.channel-info { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.channel-avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 3px solid var(--surface-2); background: var(--primary); }
+.channel-identity { flex: 1; min-width: 200px; }
+.channel-identity h2 { margin: 0 0 4px; font-size: 20px; }
+.channel-identity p { margin: 0; font-size: 13px; color: var(--text-muted); }
+.channel-actions { display: flex; gap: 8px; }
+.channel-description { margin: 14px 0; font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.channel-stats { display: flex; gap: 18px; color: var(--text-muted); font-size: 12px; margin-bottom: 20px; }
+.channel-stats span { display: inline-flex; align-items: center; gap: 6px; }
+.channel-videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.channel-videos .video-thumb { position: relative; aspect-ratio: 16/9; background: var(--surface-2); border-radius: var(--radius-sm); overflow: hidden; }
+.channel-videos .video-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.channel-videos .thumb-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #6c5ce733, #0b0b10); }
+.channel-videos .video-type { position: absolute; top: 8px; left: 8px; padding: 3px 7px; border-radius: 4px; background: #080810aa; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.channel-videos .video-meta { padding: 9px 2px 0; }
+.channel-videos .video-meta strong { display: block; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel-videos .video-meta small { font-size: 11px; color: var(--text-muted); }
+@media (max-width: 560px) { .channel-banner { height: 110px; } .channel-avatar { width: 64px; height: 64px; } .channel-actions { width: 100%; margin-top: 8px; } .channel-actions button { flex: 1; justify-content: center; } }
+
 /* ─── Settings Page ─── */
 .settings-page h2 { display: flex; align-items: center; gap: 8px; font-size: 20px; margin-bottom: 0; }
 .settings-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
@@ -548,10 +571,10 @@ html, body, #root, .app-shell, .app-body, .app-main, .hk-header,
   .settings-layout { flex-direction: column; }
   .settings-tabs { width: 100%; flex-direction: row; overflow-x: auto; gap: 4px; }
   .settings-tab span { display: none; }
-  .settings-categories { width: 100%; flex-direction: row; overflow-x: auto; gap: 4px; }
-  .settings-category-btn { flex-shrink: 0; padding: 9px 11px; font-size: 12px; }
-  .settings-category-btn.active { border-left: 0; border-bottom: 3px solid var(--primary); padding-left: 11px; }
-  .settings-chevron { display: none; }
+  .settings-categories { width: 100%; flex-direction: column; overflow-x: visible; overflow-y: visible; }
+  .settings-category-btn { flex-shrink: 0; padding: 10px 12px; font-size: 13px; }
+  .settings-category-btn.active { border-left: 3px solid var(--primary); border-bottom: 0; padding-left: 9px; }
+  .settings-chevron { display: inline; }
   .plans-comparison { grid-template-columns: 1fr; }
   .ai-actions-grid { grid-template-columns: 1fr; }
   .earnings-cards { grid-template-columns: 1fr; }
@@ -777,7 +800,24 @@ input, textarea, select, button { max-width: 100%; }
 .admin-row small { color: #9da4ba; }
 .admin-row-actions { display: flex; gap: 6px; }
 .btn-danger { border: 1px solid rgba(255,102,122,.35); background: rgba(255,72,100,.12); color: #ff9ba9; }
-@media (max-width: 760px) { .admin-grid { grid-template-columns: 1fr; } .admin-header { flex-direction: column; } }
+.admin-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
+.admin-tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.admin-stat-strip { display: flex; gap: 18px; flex-wrap: wrap; margin: 12px 0 16px; font-size: 12px; color: var(--text-muted); }
+.admin-stat-strip span { display: inline-flex; align-items: center; gap: 6px; }
+.admin-row-channel { align-items: flex-start; }
+.admin-channel-identity { display: flex; gap: 10px; flex: 1; min-width: 0; }
+.admin-channel-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--primary); flex-shrink: 0; }
+.admin-channel-identity > div { display: flex; flex-direction: column; gap: 3px; }
+.admin-channel-identity strong { font-size: 13px; }
+.admin-channel-identity small { color: var(--text-muted); font-size: 11px; }
+.admin-channel-links { display: flex; gap: 12px; }
+.admin-channel-detail { margin-top: 18px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.admin-channel-detail h3 { font-size: 15px; margin: 0 0 12px; }
+.admin-channel-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; font-size: 12px; color: var(--text-muted); }
+.admin-notify-form { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
+.admin-notify-form .form-field { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-family: inherit; font-size: 13px; resize: vertical; }
+.admin-section h3 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 18px 0 10px; }
+@media (max-width: 760px) { .admin-grid { grid-template-columns: 1fr; } .admin-header { flex-direction: column; } .admin-row-actions { flex-wrap: wrap; } }
 
 /* Public compliance and support surfaces */
 .public-page { max-width: 980px; margin: 0 auto; padding: 34px 20px 120px; }
@@ -883,3 +923,20 @@ input, textarea, select, button { max-width: 100%; }
 .marketplace-list { display:flex; flex-direction:column; gap:10px; margin:20px 0; } .marketplace-item { justify-content:space-between; padding:14px; background:var(--surface-2); border-radius:9px; } .marketplace-item > div:nth-child(2) { flex:1; } .marketplace-item span { display:block; font-size:12px; margin-top:3px; } .marketplace-icon { display:grid; place-items:center; width:34px; height:34px; border-radius:8px; background:rgba(75,130,255,.12); color:var(--primary); }
 .admin-ai-panel { margin-bottom:18px; } .admin-ai-panel textarea { display:block; margin-bottom:12px; }
 @media (max-width: 640px) { .ai-input-row { flex-direction:column; } .marketplace-item { align-items:flex-start; flex-wrap:wrap; } .marketplace-item button { margin-left:44px; } }
+
+/* ─── Admin dashboard extras ─── */
+.admin-stat-error { color: var(--danger) !important; }
+.admin-analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin: 8px 0 18px; }
+.admin-analytics-card { background: rgba(108, 92, 231, 0.06); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.admin-analytics-card svg { color: var(--primary); }
+.admin-analytics-card h3 { font-size: 13px; color: var(--text-muted); margin: 0; }
+.admin-analytics-card p { font-size: 15px; margin: 0; }
+.admin-analytics-card strong { font-size: 22px; }
+.admin-flag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+.admin-flag.premium { background: rgba(255, 209, 102, 0.14); color: #ffd166; }
+.admin-flag.monetized { background: rgba(46, 213, 115, 0.14); color: #2ed573; }
+.admin-flag.banned { background: rgba(231, 76, 60, 0.14); color: #e74c3c; }
+.admin-handle-edit { display: inline-flex; gap: 6px; align-items: center; }
+.admin-handle-edit input { width: 160px; height: 28px; }
+.admin-channel-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 3px; }
+.profile-channel-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 13px; }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Settings, Edit2, LogOut } from 'lucide-react'
-import { getProfile, updateProfile, getUserVideos, getFollowerCount, type VideoRecord } from '../../lib/supabase'
+import { Settings, Edit2, LogOut, Copy } from 'lucide-react'
+import { getProfile, updateProfile, getUserVideos, getSubscriberCount, upsertMyChannel, type VideoRecord } from '../../lib/supabase'
 import { supabase } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
 
@@ -12,7 +12,7 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigate }: ProfilePageProps) {
-  const [profile, setProfile] = useState<{ channel_name?: string; description?: string; avatar_url?: string; banner_url?: string } | null>(null)
+  const [profile, setProfile] = useState<{ channel_name?: string; username?: string; description?: string; avatar_url?: string; banner_url?: string } | null>(null)
   const [videos, setVideos] = useState<VideoRecord[]>([])
   const [shorts, setShorts] = useState<VideoRecord[]>([])
   const [followers, setFollowers] = useState(0)
@@ -44,7 +44,7 @@ export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigat
     if (vids) setVideos(vids as VideoRecord[])
     const { data: sh } = await getUserVideos(userId, 'short')
     if (sh) setShorts(sh as VideoRecord[])
-    getFollowerCount(userId).then(setFollowers)
+    getSubscriberCount(userId).then(setFollowers)
   }
 
   const handleSave = async () => {
@@ -67,6 +67,12 @@ export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigat
       })
       if (error) throw error
       if (data) setProfile(data)
+      // Keep the real channels table in sync so /c/:handle always resolves.
+      const handleCandidate = normalizedUsername || channelName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') || ''
+      if (handleCandidate) {
+        const { error: channelError } = await upsertMyChannel({ owner_id: userId, handle: handleCandidate, name: channelName.trim() || 'My Channel', description: description.trim() || null, avatar_url: avatarUrl.trim() || null, banner_url: bannerUrl.trim() || null })
+        if (channelError) console.warn('[HkTube] channels sync failed', channelError)
+      }
       setEditing(false)
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save profile. Please try again.') }
   }
@@ -97,6 +103,7 @@ export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigat
           <>
             <h2>{profile?.channel_name || 'My Channel'}</h2>
             <p className="profile-stats">{followers} followers • {videos.length} videos • {shorts.length} shorts</p>
+            {profile?.username ? <button className="text-button profile-channel-link" onClick={() => void (async () => { try { await navigator.clipboard.writeText(`${window.location.origin}/c/${profile.username}`); setMessage('Channel link copied!') } catch { setMessage('Could not copy link.') } })()}><Copy size={13} /> /c/{profile.username}</button> : null}
             {profile?.description && <p className="profile-desc">{profile.description}</p>}
             <div className="profile-actions">
               <button className="btn-secondary btn-sm" onClick={() => setEditing(true)}><Edit2 size={14} /> Edit</button>

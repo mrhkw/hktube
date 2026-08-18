@@ -419,11 +419,37 @@ export async function getNotifications(userId: string, limit = 30) {
 }
 
 export async function markNotificationsRead(userId: string) {
-  return supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false)
+  return supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId).is('read_at', null)
 }
 
 export async function getUnreadCount(userId: string) {
-  try { const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('read', false); return count || 0 } catch (error) { console.warn('[HkTube] unread count unavailable', error); return 0 }
+  try { const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null); return count || 0 } catch (error) { console.warn('[HkTube] unread count unavailable', error); return 0 }
+}
+
+// ─── Channels (real table) ───
+export async function getChannelByHandle(handle: string) {
+  try { return await supabase.from('channels').select('*').eq('handle', handle.toLowerCase()).maybeSingle() } catch (error) { console.warn('[HkTube] channel lookup failed', error); return { data: null, error } }
+}
+
+export async function upsertMyChannel(payload: { owner_id: string; handle: string; name: string; description?: string | null; avatar_url?: string | null; banner_url?: string | null }) {
+  return supabase.from('channels').upsert({ ...payload, handle: payload.handle.toLowerCase() }, { onConflict: 'owner_id' })
+}
+
+export async function getMyChannel(ownerId: string) {
+  try { return await supabase.from('channels').select('*').eq('owner_id', ownerId).maybeSingle() } catch (error) { console.warn('[HkTube] my channel lookup failed', error); return { data: null, error } }
+}
+
+// ─── Subscriptions (real table: subscriber_id, channel_id) ───
+export async function toggleSubscription(subscriberId: string, channelId: string) {
+  try { const { data } = await supabase.from('subscriptions').select('id').eq('subscriber_id', subscriberId).eq('channel_id', channelId).single(); if (data) { await supabase.from('subscriptions').delete().eq('id', data.id); return false }; await supabase.from('subscriptions').insert({ subscriber_id: subscriberId, channel_id: channelId }); return true } catch (error) { console.warn('[HkTube] subscription action failed', error); return false }
+}
+
+export async function isSubscribed(subscriberId: string, channelId: string) {
+  try { const { data } = await supabase.from('subscriptions').select('id').eq('subscriber_id', subscriberId).eq('channel_id', channelId).single(); return !!data } catch (error) { console.warn('[HkTube] subscription status unavailable', error); return false }
+}
+
+export async function getSubscriberCount(channelId: string) {
+  try { const { count } = await supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('channel_id', channelId); return count || 0 } catch (error) { console.warn('[HkTube] subscriber count unavailable', error); return 0 }
 }
 
 // ─── Search ───
