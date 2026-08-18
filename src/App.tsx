@@ -16,7 +16,7 @@ import CreatePost from './components/posts/CreatePost'
 import PostsPage from './components/posts/PostsPage'
 import ProfilePage from './components/profile/ProfilePage'
 import LibraryPage from './components/library/LibraryPage'
-import ChannelPage from './components/channel/ChannelPage'
+const ChannelPage = lazy(() => import('./components/channel/ChannelPage'))
 import type { VideoRecord } from './lib/supabase'
 import './App.css'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -166,7 +166,7 @@ function App() {
       case 'live': return <LazyPage render={() => <LivePage userId={user.id} userEmail={user.email} />} />
       case 'studio': return <LazyPage render={() => <CreatorStudio userId={user.id} onNavigate={navigate} />} />
       case 'settings': return <LazyPage render={() => <SettingsPage userId={user.id} onNavigate={navigate} onSignOut={signOut} />} />
-      case 'channel': return <ChannelPage slug={channelSlug} userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} />
+      case 'channel': return <LazyPage render={() => <ChannelPage slug={channelSlug} userId={user.id} onVideoClick={handleVideoClick} onNavigate={navigate} />} />
       case 'admin': return <LazyPage render={() => <AdminPage email={user.email} />} />
       case 'ai-chat': return <LazyPage render={() => <AIChatInterface userId={user.id} />} />
       case 'ai-do-it': return <LazyPage render={() => <DoItForMe userId={user.id} />} />
