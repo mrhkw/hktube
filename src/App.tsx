@@ -26,8 +26,9 @@ import AdminPage from './components/admin/AdminPage'
 import LegalPage, { PublicFooter } from './components/public/LegalPage'
 import ServicesPage from './components/public/ServicesPage'
 import ContactPage from './components/public/ContactPage'
+import LegalPages from './pages/LegalPages'
 
-type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services'
+type View = 'home' | 'shorts' | 'feeds' | 'library' | 'profile' | 'settings' | 'search' | 'watch' | 'upload-video' | 'upload-short' | 'create-post' | 'create' | 'posts' | 'studio' | 'live' | 'admin' | 'privacy' | 'terms' | 'refund' | 'contact' | 'services' | 'disclaimer' | 'copyright'
 
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> }
 
@@ -109,6 +110,8 @@ function App() {
   if (publicPath === '/refund-policy') return <><LegalPage kind="refund" /><PublicFooter onNavigate={navigate} /></>
   if (publicPath === '/services') return <><ServicesPage /><PublicFooter onNavigate={navigate} /></>
   if (publicPath === '/contact') return <><ContactPage /><PublicFooter onNavigate={navigate} /></>
+  if (publicPath === '/disclaimer') return <LegalPages kind="disclaimer" />
+  if (publicPath === '/copyright') return <LegalPages kind="copyright" />
   if (!user) return <AuthPage />
 
   const renderPage = () => {
@@ -133,6 +136,8 @@ function App() {
       case 'refund': return <LegalPage kind="refund" onNavigate={navigate} />
       case 'contact': return <ContactPage onNavigate={navigate} />
       case 'services': return <ServicesPage onNavigate={navigate} />
+      case 'disclaimer': return <LegalPages kind="disclaimer" />
+      case 'copyright': return <LegalPages kind="copyright" />
       default: return <HomePage userId={user.id} onVideoClick={handleVideoClick} />
     }
   }

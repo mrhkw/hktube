@@ -2,8 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jpdvunotyykfqmmkhmml.supabase.co'
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzIiwicmVmIjoianBkdnVub3R5eWtmcW1ta21tbCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg2NzQzNDQ0LCJleHAiOjIxMDIzMTk0NDl9.IrHmuKvbhzoqDxWZP9omxck7L29ez0LFFueURlSLSuA'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Njc0MzQ0NCwiZXhwIjoyMTAyMzE5NDQ0fQ.q6d-w6dZx_-0ylh8qDMVQm8HZHOYKthDTpaeM1x8Z_o'
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 const allowedVisibility = new Set(['public', 'followers', 'private'])
 const allowedVideoTypes = new Set(['video', 'short'])
