@@ -1,225 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Home, PlaySquare, Radio, Compass, Menu, Search, Bell, 
-  ThumbsUp, MessageSquare, Share2, Download, ShieldAlert, 
-  Settings, DollarSign, BarChart2, Lock, Cpu, Globe, Send
+import { useMemo, useState } from 'react';
+import {
+  Activity, ArrowDownToLine, ArrowLeft, ArrowUpRight, Bell, Bookmark, Bot,
+  Check, ChevronDown, ChevronRight, CircleDollarSign, Clock3, CloudUpload,
+  Command, Crown, Download, Eye, Flag, Gift, Heart, Home, Image as ImageIcon,
+  LayoutDashboard, LifeBuoy, LineChart, LockKeyhole, Menu as MenuIcon, MessageCircle,
+  Mic, MoreHorizontal, Play, Plus, Radio, Rocket, Search, Send, Settings,
+  ShieldCheck, Sparkles, ThumbsUp, TrendingUp, Upload, Users, Video, WandSparkles,
+  X, Zap
 } from 'lucide-react';
 
-export default function HkTubeCompleteApp() {
+const images = {
+  robot: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=85',
+  cat: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=600&q=85',
+  creator: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=180&q=85',
+  studio: 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=700&q=85',
+  gaming: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=85',
+  server: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=700&q=85',
+  camera: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=85',
+  city: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=700&q=85',
+};
+
+const navItems = [
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'shorts', label: 'Shorts', icon: Play },
+  { id: 'feeds', label: 'Feeds', icon: Users },
+  { id: 'menu', label: 'Menu', icon: MenuIcon },
+];
+
+function App() {
   const [activeTab, setActiveTab] = useState('home');
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isLiveOpen, setIsLiveOpen] = useState(false);
-  const [isAdsenseModalOpen, setIsAdsenseModalOpen] = useState(false);
-  const [errorLog, setErrorLog] = useState([]);
-  const [systemStatus, setSystemStatus] = useState('Supabase Connected | Vercel Live Build Active');
-  
-  const [publisherId, setPublisherId] = useState('pub-1234567890');
-  const [adPlacements, setAdPlacements] = useState({
-    videoAds: true,
-    shortsAds: true,
-    communityAds: false,
-    liveOverlayAds: true
-  });
+  const [overlay, setOverlay] = useState(null);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [followed, setFollowed] = useState(false);
+  const [toast, setToast] = useState('');
 
-  useEffect(() => {
-    const handleGlobalError = (event) => {
-      event.preventDefault();
-      const errMessage = event.message || 'Runtime Exception Caught';
-      setErrorLog(prev => [...prev, { time: new Date().toLocaleTimeString(), error: errMessage }]);
-      setSystemStatus('AI Guardian: Exception Auto-Corrected');
-    };
-    window.addEventListener('error', handleGlobalError);
-    return () => window.removeEventListener('error', handleGlobalError);
-  }, []);
+  const notify = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2200);
+  };
+
+  const go = (tab) => {
+    setActiveTab(tab);
+    setOverlay(null);
+    setAdminOpen(false);
+  };
 
   return (
-    <div className="min-h-screen bg-[#0b0b14] text-white font-sans flex flex-col justify-between select-none relative overflow-x-hidden">
-      <header className="flex items-center justify-between px-4 py-3 bg-[#12121e]/90 backdrop-blur-md sticky top-0 z-50 border-b border-purple-900/30">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-tr from-purple-600 to-cyan-400 rounded-lg flex items-center justify-center font-bold text-lg shadow-lg shadow-purple-500/30">
-            H
-          </div>
-          <span className="text-xl font-black tracking-wider bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-            HkTube
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-3 w-1/2 max-w-md bg-black/40 border border-purple-500/30 rounded-full px-3 py-1.5">
-          <Search className="w-4 h-4 text-purple-400" />
-          <input 
-            type="text" 
-            placeholder="Search simulations, AI feeds, shorts..." 
-            className="bg-transparent text-xs text-white focus:outline-none w-full placeholder-purple-300/40"
-          />
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => setIsAdminOpen(true)} 
-            className="p-2 rounded-full bg-purple-900/40 border border-purple-500/40 hover:bg-purple-800 transition relative"
-          >
-            <ShieldAlert className="w-4 h-4 text-cyan-400" />
-            {errorLog.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[8px] flex items-center justify-center font-bold">
-                {errorLog.length}
-              </span>
-            )}
-          </button>
-          <Bell className="w-5 h-5 text-purple-300 cursor-pointer" />
-          <div className="w-8 h-8 rounded-full border border-cyan-400 overflow-hidden cursor-pointer">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" alt="Profile" className="w-full h-full object-cover" />
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 pb-20">
-        {activeTab === 'home' && <HomeFeed onOpenLive={() => setIsLiveOpen(true)} onOpenAdsense={() => setIsAdsenseModalOpen(true)} />}
-        {activeTab === 'shorts' && <ShortsFeed />}
-        {activeTab === 'live' && <LiveStreamView onOpenLive={() => setIsLiveOpen(true)} />}
-        {activeTab === 'feeds' && <FeedsCommunity />}
-        {activeTab === 'menu' && <MenuDashboard onOpenAdmin={() => setIsAdminOpen(true)} onOpenAdsense={() => setIsAdsenseModalOpen(true)} />}
-      </main>
-
-      {isAdminOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#141424] border border-cyan-500/60 rounded-2xl w-full max-w-xl p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-purple-900/50 pb-3 mb-4">
-              <div className="flex items-center space-x-2">
-                <Cpu className="w-6 h-6 text-cyan-400 animate-pulse" />
-                <h2 className="text-base font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                  HKTube Admin & AI Guardian Panel
-                </h2>
-              </div>
-              <button onClick={() => setIsAdminOpen(false)} className="text-gray-400 hover:text-white font-bold text-lg">✕</button>
-            </div>
-            
-            <div className="space-y-4 text-xs">
-              <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 space-y-1">
-                <div className="flex justify-between items-center text-cyan-400 font-semibold">
-                  <span>System Architecture Status</span>
-                  <span className="text-[10px] bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full border border-green-500/30">ONLINE</span>
-                </div>
-                <p className="text-[11px] text-gray-300">Cloudinary preset and Supabase database fully connected.</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-black/80 border border-cyan-500/20 font-mono text-[11px] space-y-1 max-h-32 overflow-y-auto">
-                <p className="text-green-400">{'>'}[OK] Supabase Auth & Database tables initialized</p>
-                <p className="text-green-400">{'>'}[OK] Vercel Deployment configuration validated</p>
-                {errorLog.map((item, idx) => (
-                  <p key={idx} className="text-yellow-400">{'>'}[RESOLVED] {item.time}: {item.error}</p>
-                ))}
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button onClick={() => setIsAdminOpen(false)} className="px-5 py-2 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-xl text-white font-bold text-xs">
-                  Close Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isAdsenseModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#141424] border border-cyan-500/60 rounded-2xl w-full max-w-lg p-5 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-purple-900/50 pb-3 mb-4">
-              <h2 className="text-base font-bold text-cyan-300">Google AdSense Policy & Setup</h2>
-              <button onClick={() => setIsAdsenseModalOpen(false)} className="text-gray-400 hover:text-white font-bold text-lg">✕</button>
-            </div>
-            <div className="space-y-4 text-xs">
-              <input type="text" value={publisherId} onChange={(e) => setPublisherId(e.target.value)} className="w-full bg-black/50 border border-purple-500/40 rounded-xl px-3 py-2 text-white" />
-              <button onClick={() => setIsAdsenseModalOpen(false)} className="w-full py-2 bg-purple-600 rounded-xl font-bold">Save Configuration</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isLiveOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4">
-          <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-purple-500/30">
-            <span className="font-bold text-sm text-red-400">LIVE STREAMING ACTIVE</span>
-            <button onClick={() => setIsLiveOpen(false)} className="text-white px-3 py-1 bg-white/10 rounded-xl text-xs">Exit Live</button>
-          </div>
-          <div className="flex flex-col items-center justify-center flex-1 space-y-4">
-            <h3 className="text-lg font-bold">Robotix Labs Live Physics Simulation</h3>
-          </div>
-        </div>
-      )}
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#12121e]/95 backdrop-blur-lg border-t border-purple-900/40 flex justify-around items-center py-2 z-40">
-        <NavButton icon={<Home className="w-5 h-5" />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-        <NavButton icon={<PlaySquare className="w-5 h-5" />} label="Shorts" active={activeTab === 'shorts'} onClick={() => setActiveTab('shorts')} />
-        <button onClick={() => setActiveTab('live')} className="flex flex-col items-center -mt-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-600 via-pink-500 to-cyan-400 flex items-center justify-center shadow-lg border-2 border-[#0b0b14]">
-            <Radio className="w-6 h-6 text-white animate-pulse" />
-          </div>
-          <span className="text-[10px] text-cyan-400 font-bold mt-0.5">LIVE</span>
-        </button>
-        <NavButton icon={<Compass className="w-5 h-5" />} label="Feeds" active={activeTab === 'feeds'} onClick={() => setActiveTab('feeds')} />
-        <NavButton icon={<Menu className="w-5 h-5" />} label="Menu" active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
-      </nav>
+    <div className="hk-app">
+      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} onAdmin={() => setAdminOpen(true)} onNotify={notify} />
+      <div className="hk-layout">
+        <Sidebar activeTab={activeTab} go={go} onPremium={() => setOverlay('premium')} onAdmin={() => setAdminOpen(true)} />
+        <main className="hk-main">
+          {activeTab === 'home' && <HomeFeed onLive={() => go('live')} onOpen={setOverlay} onNotify={notify} />}
+          {activeTab === 'shorts' && <ShortsPage onNotify={notify} />}
+          {activeTab === 'live' && <LivePage onNotify={notify} />}
+          {activeTab === 'feeds' && <FeedsPage onNotify={notify} />}
+          {activeTab === 'menu' && <MenuPage onOpen={setOverlay} onAdmin={() => setAdminOpen(true)} onNotify={notify} followed={followed} setFollowed={setFollowed} />}
+        </main>
+      </div>
+      <BottomNav activeTab={activeTab} go={go} />
+      {overlay === 'premium' && <PremiumModal onClose={() => setOverlay(null)} onNotify={notify} />}
+      {overlay === 'adsense' && <AdsenseModal onClose={() => setOverlay(null)} onNotify={notify} />}
+      {adminOpen && <AdminGuardian onClose={() => setAdminOpen(false)} onNotify={notify} />}
+      {toast && <div className="hk-toast"><Check size={16} />{toast}</div>}
     </div>
   );
 }
 
-function NavButton({ icon, label, active, onClick }) {
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center space-y-1 transition ${active ? 'text-cyan-400 font-bold' : 'text-gray-400'}`}>
-      {icon}
-      <span className="text-[10px]">{label}</span>
-    </button>
-  );
+function Header({ menuOpen, setMenuOpen, onAdmin, onNotify }) {
+  return <header className="hk-header">
+    <div className="brand-mark"><span className="brand-play"><Play size={17} fill="currentColor" /></span><span><b>HK</b><strong>TUBE</strong></span></div>
+    <div className="header-search"><Search size={17} /><input placeholder="Search simulations, creators, shorts..." /><Mic size={17} /><button onClick={() => onNotify('Search index is synced with AI recommendations')}><ArrowUpRight size={15} /></button></div>
+    <div className="header-right"><span className="ai-status"><i /> AI STATUS: <b>ACTIVE</b></span><button className="icon-button" onClick={() => onNotify('You are all caught up')}><Bell size={19} /><em>3</em></button><button className="avatar-button" onClick={() => setMenuOpen(!menuOpen)}><img src={images.creator} alt="MrHkw profile" /></button></div>
+    {menuOpen && <div className="profile-popover"><button onClick={() => onNotify('Profile preview opened')}><Users size={18} />View Profile</button><button onClick={() => onNotify('Channel settings ready')}><Settings size={18} />Channel Settings</button><button className="popover-upload" onClick={() => onNotify('Upload workspace opened')}><CloudUpload size={18} />Upload a Video</button></div>}
+  </header>;
 }
 
-function HomeFeed({ onOpenLive, onOpenAdsense }) {
-  return (
-    <div className="p-4 space-y-4">
-      <div className="bg-gradient-to-r from-purple-900/40 to-cyan-900/40 border border-purple-500/30 rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-cyan-300">Welcome back, MrHkw</h2>
-          <p className="text-[11px] text-gray-300">Supabase Synced & Ready.</p>
-        </div>
-        <button onClick={onOpenLive} className="px-3 py-1.5 bg-purple-600 text-xs font-bold rounded-xl">Go LIVE</button>
-      </div>
-    </div>
-  );
+function Sidebar({ activeTab, go, onPremium, onAdmin }) {
+  return <aside className="hk-sidebar"><div className="sidebar-label">Workspace</div>{navItems.map(({ id, label, icon: Icon }) => <button key={id} className={`side-link ${activeTab === id ? 'active' : ''}`} onClick={() => go(id)}><Icon size={18} />{label}{id === 'feeds' && <span className="new-badge">new</span>}</button>)}<div className="sidebar-divider" /><div className="sidebar-label">Creator tools</div><button className="side-link" onClick={() => go('menu')}><LayoutDashboard size={18} />Studio</button><button className="side-link" onClick={onPremium}><Crown size={18} />Premium</button><button className="side-link" onClick={onAdmin}><ShieldCheck size={18} />AI Guardian</button><div className="sidebar-health"><div><span className="pulse-dot" />Systems healthy</div><small>Supabase connected</small><small>Vercel live build OK</small></div></aside>;
 }
 
-function ShortsFeed() {
-  return <div className="p-4 text-center text-xs text-gray-400">Shorts Feed Component Loaded</div>;
+function BottomNav({ activeTab, go }) {
+  return <nav className="bottom-nav"><button className={activeTab === 'home' ? 'active' : ''} onClick={() => go('home')}><Home size={19} /><span>Home</span></button><button className={activeTab === 'shorts' ? 'active' : ''} onClick={() => go('shorts')}><Play size={19} /><span>Shorts</span></button><button className={`live-orb ${activeTab === 'live' ? 'active' : ''}`} onClick={() => go('live')}><Radio size={25} /><span>LIVE</span></button><button className={activeTab === 'feeds' ? 'active' : ''} onClick={() => go('feeds')}><Users size={19} /><span>Feeds <i>new</i></span></button><button className={activeTab === 'menu' ? 'active' : ''} onClick={() => go('menu')}><MenuIcon size={19} /><span>Menu</span></button></nav>;
 }
 
-function LiveStreamView({ onOpenLive }) {
-  return <div className="p-4 text-center text-xs text-gray-400"><button onClick={onOpenLive} className="px-4 py-2 bg-purple-600 rounded-xl">Launch Live</button></div>;
+function SectionTitle({ eyebrow, title, action }) { return <div className="section-title"><div><span>{eyebrow}</span><h2>{title}</h2></div>{action && <button className="text-action">{action}<ChevronRight size={15} /></button>}</div>; }
+function Toggle({ on = true }) { return <span className={`toggle ${on ? 'on' : ''}`}><i /></span>; }
+function Avatar({ src = images.creator, label = 'avatar' }) { return <img className="mini-avatar" src={src} alt={label} />; }
+
+function HomeFeed({ onLive, onOpen, onNotify }) {
+  const shorts = [{ image: images.creator, title: 'How to Expect Nomination', views: '302K views' }, { image: images.cat, title: 'How to Identify: Videos Competition', views: '318K views' }, { image: images.gaming, title: 'Game Relay: The Manual Games', views: '91.1K views' }, { image: images.city, title: 'What Cities Will Feel Like', views: '88K views' }];
+  return <div className="page-shell"><div className="category-row"><button className="selected">Home</button><button>Shorts</button><button>Trending</button><button>Subscriptions</button><button>Library</button><button>AI Control Panel</button></div><section className="hero-video"><div className="hero-image"><img src={images.robot} alt="Robot physics simulation" /><span className="play-badge"><Play size={15} fill="currentColor" /></span><span className="video-time">12:49</span><div className="player-controls"><div className="progress"><i /></div><div className="player-row"><span><Play size={16} fill="white" /></span><span><ArrowDownToLine size={15} /></span><span><VolumeIcon /></span><small>0:00 / 12:49</small><span className="controls-spacer" /><span>CC</span><Settings size={16} /><span>□</span></div></div></div><div className="video-heading"><div><h1>AI Animated Short #01 <b>|</b> Physics Simulation Videos</h1><p>Robot marbles sorting, full physics simulation. Thoughtful systems design in motion. <span>...more</span></p></div><button className="more-button" onClick={() => onNotify('Video actions opened')}><MoreHorizontal size={21} /></button></div></section><div className="home-grid"><div className="home-primary"><AdminPanel onOpen={onOpen} onNotify={onNotify} /><SectionTitle eyebrow="DISCOVER" title="Featured Shorts" action="View all" /><div className="shorts-carousel">{shorts.map((s) => <div className="short-card" key={s.title}><img src={s.image} alt="" /><div className="short-gradient" /><strong>{s.title}</strong><div><Avatar />{s.views}</div></div>)}</div><SectionTitle eyebrow="YOUR SIGNAL" title="Next Up: Custom Video Feed" action="AI Recommends" /><div className="next-feed">{[[images.camera, 'How to Identify: Videos Competition', '16:9', '318K views'], [images.server, 'Tech news, explained with signal', '4:3', '204K views']].map(([image, title, ratio, views]) => <article className="next-card" key={title}><img src={image} alt="" /><span>{ratio}</span><div><h3>{title}</h3><p>{views} · Robotix Labs</p></div><MoreHorizontal size={18} /></article>)}</div></div><AgentPanel onNotify={onNotify} /></div><div className="status-bar"><span className="pulse-dot" /> STATUS: <b>Connected to Supabase</b><i>|</i> Vercel Live Build: <b>OK</b><button onClick={onLive}><Radio size={14} /> Join LIVE</button></div></div>;
 }
 
-function FeedsCommunity() {
-  return <div className="p-4 text-center text-xs text-gray-400">Community Feed Component Loaded</div>;
-}
+function VolumeIcon() { return <span className="volume-icon">◖</span>; }
+function AdminPanel({ onOpen, onNotify }) { return <section className="admin-panel"><div className="panel-heading"><div><span className="eyebrow">AI CONTROL</span><h2>Admin & AI Control Panel</h2></div><button onClick={() => onNotify('Terminal collapsed')}><ChevronDown size={18} /></button></div><div className="terminal-input"><Command size={17} /><input placeholder="Terminal input..." /><button onClick={() => onNotify('AI command queued')}><Send size={15} /></button></div><div className="terminal-log"><p><b>[INFO: R0H]</b> Execution connect Supabase <span>| OK</span></p><p><b>[INFO: R0H]</b> Connected to deployment manager</p><p><b>[INFO: R0T]</b> Code logs: Running on code...</p><p><b>[INFO: R0H]</b> Watching code for changes.</p></div><button className="gradient-button wide" onClick={onOpen}><Rocket size={16} />Deployment Manager</button></section>; }
+function AgentPanel({ onNotify }) { return <section className="agent-panel"><div className="panel-heading"><div><span className="eyebrow">AUTOMATION</span><h2>AI Agentic Features</h2></div><Bot size={19} /></div>{['Auto-Video Generation', 'Smart Subtitles', 'SEO Tag Optimization', 'Database Self-Healing'].map((label) => <button className="feature-toggle" key={label} onClick={() => onNotify(`${label} is enabled`)}><span>{label}</span><Toggle /></button>)}</section>; }
 
-function MenuDashboard({ onOpenAdmin, onOpenAdsense }) {
-  return (
-    <div className="p-4 space-y-4">
-      <div className="bg-gradient-to-r from-purple-900/50 to-indigo-950/50 p-4 rounded-2xl border border-cyan-500/30 flex items-center space-x-3">
-        <div className="w-12 h-12 rounded-full border border-cyan-400 overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" alt="Avatar" className="w-full h-full object-cover" />
-        </div>
-        <div>
-          <h3 className="text-sm font-bold">MrHkw</h3>
-          <p className="text-[10px] text-cyan-300">Pro Creator Verified</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div onClick={onOpenAdmin} className="bg-[#141424] border border-purple-900/40 p-3 rounded-xl cursor-pointer">
-          <h4 className="text-xs font-bold text-cyan-400">AI Admin Panel</h4>
-          <p className="text-[10px] text-gray-400">Guardian & security</p>
-        </div>
-        <div onClick={onOpenAdsense} className="bg-[#141424] border border-purple-900/40 p-3 rounded-xl cursor-pointer">
-          <h4 className="text-xs font-bold text-green-400">AdSense Hub</h4>
-          <p className="text-[10px] text-gray-400">Policies & placements</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+function ShortsPage({ onNotify }) { return <div className="shorts-page"><div className="shorts-stage"><img src={images.robot} alt="Robot marbles sorting" /><div className="shorts-top"><span className="live-chip">SHORTS</span><span>1 / 12</span></div><div className="shorts-copy"><div className="creator-row"><Avatar /><div><b>Robotix Labs <Check size={13} /></b><small>1.8M followers</small></div><button className="follow-button" onClick={() => onNotify('Follow request sent')}>Follow</button></div><h1>Robot Marbles sorting, full physics simulation.</h1><p>#HkTube #HkAutomation #PhysicsInMotion</p></div><div className="short-actions">{[[ThumbsUp, '1.5M'], [Bookmark, '900K'], [Download, '600K'], [Share, '800K'], [Flag, 'Report'], [MessageCircle, '100K']].map(([Icon, count]) => <button key={count} onClick={() => onNotify(`${count === 'Report' ? 'Report' : 'Action'} recorded`)}><span className="short-action-icon"><Icon size={20} /></span><small>{count}</small></button>)}</div><div className="short-progress"><i /></div></div><div className="shorts-caption"><Sparkles size={15} /><span>AI-curated from Robotix Labs</span><button onClick={() => onNotify('More Shorts loaded')}>Next short <ChevronRight size={15} /></button></div></div>; }
+function Share({ size }) { return <ArrowUpRight size={size} />; }
+
+function LivePage({ onNotify }) { const [showGifts, setShowGifts] = useState(true); return <div className="live-page"><div className="live-stage"><img src={images.robot} alt="Robotix Labs live simulation" /><div className="live-top"><span className="live-chip"><i /> LIVE</span><span>1.2K Viewers · 9126m</span><button onClick={() => onNotify('Stream details opened')}><MoreHorizontal size={21} /></button></div><div className="chat-stack">{[['Marble Cannon', 'Wanhah'], ['WhatsApp', 'Hey sons'], ['Mansall2', 'Wrahhby'], ['Namyh', 'Oh wraite']].map(([name, text]) => <div className="chat-bubble" key={name}><Avatar /> <span><b>{name}</b>{text}</span></div>)}</div>{showGifts && <div className="gift-panel"><div><div><Gift className="gift-icon" size={17} /><b>Gift Center</b></div><button onClick={() => setShowGifts(false)}><X size={16} /></button></div><div className="gift-grid">{[['Marble Cannon', '50', '◈'], ['Supabase Crystal', '50', '◇'], ['Robot Arm Wave', '50', '◉'], ['Welcome Wave', '50', '◌'], ['Nervom Rermalve', '10', '✦'], ['AI Core', '50', '✧']].map(([name, coins, icon]) => <button key={name} onClick={() => onNotify(`${name} sent for ${coins} HKCoins`)}><span>{icon}</span><small>{name}</small><em>{coins} HKCoins</em></button>)}</div><button className="see-more" onClick={() => onNotify('Gift catalog opened')}>See more</button></div>}<div className="live-actions">{[[MessageCircle, 'Chat'], [ThumbsUp, 'Like'], [Share, 'Share'], [Gift, 'Gift'], [Activity, 'Details']].map(([Icon, label]) => <button key={label} onClick={() => label === 'Gift' ? setShowGifts(true) : onNotify(`${label} panel opened`)}><Icon size={20} /><small>{label}</small></button>)}</div><div className="live-bottom"><div className="creator-row"><Avatar /><div><b>Robotix Labs <Check size={13} /></b><small>Live physics experiments</small></div><button className="follow-button" onClick={() => onNotify('Follow request sent')}>Follow</button></div><h1>Robot Marbles — live physics simulation</h1><div className="live-progress"><i /></div></div></div><div className="live-underbar"><span><Radio size={15} /> LIVE now</span><span>Gift creators with HKCoins</span><button onClick={() => setShowGifts(true)}>Open Gift Center <Gift size={15} /></button></div></div>; }
+
+function FeedsPage({ onNotify }) { const [tab, setTab] = useState('Subscriptions'); const posts = [{ channel: 'Robotix Labs', image: images.robot, copy: 'A quiet look at the physics behind our marble sorting system.', stats: '2.1M views · 28m ago', live: true }, { channel: 'Tech_Trendz', image: images.server, copy: 'AI infrastructure is moving from the cloud to every edge.', stats: '17K reactions · 1h ago', live: false }, { channel: 'HkAutomation', image: images.gaming, copy: 'The tiny details that make a simulation feel human-led.', stats: '82K views · 3h ago', live: false }]; return <div className="page-shell feeds-page"><div className="feed-head"><div><span className="eyebrow">COMMUNITY</span><h1>Feeds</h1></div><button className="icon-button" onClick={() => onNotify('Compose menu opened')}><Plus size={20} /></button></div><div className="feed-tabs"><button className={tab === 'Subscriptions' ? 'active' : ''} onClick={() => setTab('Subscriptions')}>Subscriptions</button><button className={tab === 'AI Recommended' ? 'active' : ''} onClick={() => setTab('AI Recommended')}>AI Recommended <Sparkles size={14} /></button></div><div className="feed-masonry">{posts.map((post, i) => <article className={`feed-card ${i === 1 ? 'light-card' : ''}`} key={post.channel}><div className="post-head"><Avatar src={i === 1 ? images.creator : images.creator} /><div><b>{post.channel} <Check size={13} /></b><small>{post.live ? 'LIVE now · ' : ''}Verified creator</small></div><button><MoreHorizontal size={18} /></button></div><img className="post-image" src={post.image} alt="" />{post.live && <span className="post-live"><i /> LIVE</span>}<p>{post.copy}</p><div className="post-tags">#HkTube #AI #HumanLed</div><div className="post-stats"><span><Eye size={15} />{post.stats}</span><button onClick={() => onNotify('Post liked')}><Heart size={16} /> 12K</button><button onClick={() => onNotify('Comment composer opened')}><MessageCircle size={16} /> 246</button><button onClick={() => onNotify('Post saved')}><Bookmark size={16} /></button></div></article>)}</div><div className="mini-assistant"><Bot size={18} /><span><b>Mini-AI Assistant</b><small>Summarize your community feed</small></span><ChevronRight size={17} /></div></div>; }
+
+function MenuPage({ onOpen, onAdmin, onNotify, followed, setFollowed }) { const toolCards = [['Channel Dashboard', 'Analytics overview', LayoutDashboard], ['Content Manager', 'Videos, shorts, live', Video], ['Analytics Hub', 'Detailed metrics', LineChart], ['Comments & Community', 'Moderate conversations', MessageCircle], ['Monetization Tools', 'HKCoins & gifting', CircleDollarSign], ['Customization & SEO', 'Make your signal clear', WandSparkles]]; return <div className="page-shell menu-page"><div className="menu-heading"><div><span className="eyebrow">ACCOUNT CENTER</span><h1>Menu</h1></div><span className="verified-pill"><ShieldCheck size={14} /> Pro Creator</span></div><section className="account-card"><div className="account-profile"><div className="profile-avatar-wrap"><Avatar src={images.creator} /><span>HA</span></div><div><h2>HkUser_HA <Check size={15} /></h2><p>@mrhkw · Verified creator</p><small>2.4M followers · 148 videos</small></div></div><div className="quick-actions">{[['Video Upload', Upload], ['Shorts Creator', Play], ['Community Post', Users], ['Go LIVE', Radio]].map(([label, Icon]) => <button key={label} onClick={() => onNotify(`${label} workspace opened`)}><Icon size={18} /><span>{label}</span></button>)}</div><div className="followed-row"><b>Followed Creators</b>{['Robotix Labs', 'Robotix Labs', 'Tech_Trendz'].map((name, i) => <button key={`${name}-${i}`} onClick={() => setFollowed(!followed)}><Avatar src={i === 2 ? images.creator : images.creator} /><span>{name}</span><Check size={13} /></button>)}</div></section><div className="menu-columns"><section className="menu-card profile-options"><SectionTitle eyebrow="PROFILE" title="Account options" />{[['MY CHANNEL', 'Creator identity', Users], ['HKTUBE STUDIO', 'Control room', LayoutDashboard], ['Subscriptions', 'Your followed channels', Radio], ['Settings', 'Privacy & account', Settings], ['Time Watched', 'Your viewing rhythm', Clock3], ['Purchases & Memberships', 'Plans and HKCoins', Crown], ['Downloaded Videos', 'Watch offline', Download]].map(([label, sub, Icon], i) => <button className={`option-row ${i < 2 ? 'feature-row' : ''}`} key={label} onClick={() => onNotify(`${label} opened`)}><span className="option-icon"><Icon size={18} /></span><span><b>{label}</b><small>{sub}</small></span><ChevronRight size={16} /></button>)}</section><section className="menu-card studio-overview"><SectionTitle eyebrow="CREATOR STUDIO" title="Studio overview" action="Open studio" /> <div className="assistant-bar"><Bot size={19} /><span><b>Mini-AI Studio Assistant</b><small>Ask about your channel, revenue, or reach</small></span><Sparkles size={16} /></div><div className="studio-grid">{toolCards.map(([label, sub, Icon]) => <button key={label} onClick={() => onNotify(`${label} opened`)}><Icon size={19} /><b>{label}</b><small>{sub}</small></button>)}</div><div className="studio-footer"><div><Crown size={17} /><span><b>Premium creator tools</b><small>Unlock advanced AI and no ads</small></span></div><button className="gradient-button" onClick={() => onOpen('premium')}>Compare plans</button></div></section></div><section className="studio-lower"><div><SectionTitle eyebrow="MONETIZATION" title="Creator Studio" action="Detailed view" /><RevenueChart /><div className="revenue-grid">{[['Ad Revenue', 'from videos', CircleDollarSign], ['Gifting & HKCoins', 'live creator gifts', Gift], ['Memberships', 'tiered subscriptions', Users], ['Merch Shelf', 'integration ready', Rocket], ['HkPay & Payouts', 'secure creator payouts', LockKeyhole]].map(([label, sub, Icon]) => <button key={label} onClick={() => onNotify(`${label} opened`)}><Icon size={18} /><b>{label}</b><small>{sub}</small></button>)}</div></div><div><SectionTitle eyebrow="ANALYTICS" title="Studio tools & insights" action="View analytics" /><AnalyticsCards /></div></section><div className="menu-footer-actions"><button onClick={() => onOpen('adsense')}><CircleDollarSign size={16} />AdSense Agreement Setup</button><button onClick={onAdmin}><ShieldCheck size={16} />Open AI Guardian</button></div></div>; }
+
+function RevenueChart() { return <div className="revenue-chart"><div><b>HK$ 300K</b><small>estimated creator revenue</small></div><svg viewBox="0 0 400 110" preserveAspectRatio="none"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#9b6bff" stopOpacity=".45" /><stop offset="1" stopColor="#9b6bff" stopOpacity="0" /></linearGradient></defs><path d="M0 85 C40 50 55 78 88 62 S140 24 170 50 S216 67 245 34 S300 72 335 30 S380 42 400 12 V110 H0Z" fill="url(#chartFill)" /><path d="M0 85 C40 50 55 78 88 62 S140 24 170 50 S216 67 245 34 S300 72 335 30 S380 42 400 12" fill="none" stroke="#a77bff" strokeWidth="3" /></svg><div className="chart-axis"><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span></div></div>; }
+function AnalyticsCards() { return <div className="analytics-cards">{[['Real-time Views', '148K', '+18.2%', 'up'], ['Audience Reach', '2.4M', '+12.6%', 'up'], ['Engagement Metrics', '8.6%', '+2.1%', 'up'], ['Traffic Sources', 'Search', 'Organic', 'neutral'], ['Content Performance', '82%', 'Top 10%', 'up']].map(([label, value, delta, type]) => <div className="analytics-card" key={label}><small>{label}</small><b>{value}</b><span className={type}>{delta}</span><div className="micro-chart"><i /><i /><i /><i /><i /></div></div>)}</div>; }
+
+function PremiumModal({ onClose, onNotify }) { return <div className="modal-backdrop"><div className="modal-card premium-modal"><button className="modal-close" onClick={onClose}><X size={19} /></button><div className="premium-hero"><Crown size={27} /><span className="eyebrow">HKTUBE PREMIUM</span><h1>Keep your signal clear.</h1><p>More control for watching, creating, and growing a community without noise.</p></div><div className="plan-grid"><div className="plan-card"><span>Free</span><b>HK$0</b><small>For discovering creators</small>{['Watch community videos', 'Mini-AI Assistant limited', 'Ad-supported viewing', 'Standard upload tools'].map((x) => <p key={x}><Check size={15} />{x}</p>)}<button className="secondary-button" onClick={() => onNotify('You are already on the Free plan')}>Current plan</button></div><div className="plan-card premium"><span>Premium <Crown size={14} /></span><b>HK$49 <small>/ month</small></b><small>For serious signal makers</small>{['Unlimited Mini-AI Assistant', 'No ads across HKTube', 'AI thumbnail & dubbing tools', 'Pro verified creator badge', 'Priority live gifting support'].map((x) => <p key={x}><Check size={15} />{x}</p>)}<button className="gradient-button wide" onClick={() => onNotify('Premium checkout is ready')}>Start Premium <ArrowUpRight size={15} /></button></div></div></div></div>; }
+function AdsenseModal({ onClose, onNotify }) { const [checked, setChecked] = useState(false); return <div className="modal-backdrop"><div className="modal-card adsense-modal"><button className="modal-close" onClick={onClose}><X size={19} /></button><div className="modal-icon"><CircleDollarSign size={24} /></div><span className="eyebrow">CREATOR MONETIZATION</span><h1>AdSense Agreement Setup</h1><p>Connect your creator revenue profile and confirm the agreement before serving ads on eligible videos and live streams.</p><div className="agreement-box"><div><span className="google-mark">G</span><span><b>Google AdSense</b><small>Publisher account · Ready to connect</small></span></div><span className="status-tag">PENDING</span></div><label className="check-row"><input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} /><span>I agree to the HkTube Creator Monetization Agreement and understand that payments are subject to policy review.</span></label><button disabled={!checked} className="gradient-button wide" onClick={() => onNotify('Agreement submitted for review')}>Save & continue <ChevronRight size={16} /></button></div></div>; }
+
+function AdminGuardian({ onClose, onNotify }) { const modules = [['AI Co-Pilot System', 'Zero-error deployment monitoring is active.', Bot, 'System integrity 100%'], ['Content & Copyright Management', 'Cross-platform copyright scan completed.', ShieldCheck, '2 items awaiting review'], ['Security Wards & Hacking Detection', 'DDoS mitigation and IP blacklisting enabled.', LockKeyhole, 'No breaches detected'], ['Admin Access Control', 'Role-based access and biometric auth ready.', Users, '4 verified admins'], ['Appeals & Dispute Hub', 'AI review queue is clear and operational.', LifeBuoy, '3 appeals in review']]; return <div className="modal-backdrop admin-backdrop"><div className="admin-modal"><div className="admin-header"><div className="brand-mark"><span className="brand-play"><Play size={15} fill="currentColor" /></span><span><b>HK</b><strong>TUBE</strong></span></div><div><span className="eyebrow">AI GUARDIAN</span><h1>HKTube AI Admin Guardian <ShieldCheck size={18} /></h1><p>Zero Hack Deployment · Operational Control Center</p></div><button className="modal-close" onClick={onClose}><X size={19} /></button></div><div className="guardian-summary"><div><span className="pulse-dot" />All systems online</div><span>Last scan 2m ago</span><span>Admins 4</span><span>Threat score <b>0.02</b></span></div><div className="guardian-grid">{modules.map(([title, copy, Icon, stat], i) => <section className={`guardian-module module-${i}`} key={title}><div className="guardian-module-head"><Icon size={24} /><div><h2>{title}</h2><small>{i % 2 ? 'Security & policy operations' : 'Advanced security focus'}</small></div><MoreHorizontal size={18} /></div><p>{copy}</p><div className="guardian-stat"><b>{stat}</b><span className="mini-bars"><i /><i /><i /><i /><i /></span></div><div className="guardian-actions">{i === 0 && <button onClick={() => onNotify('AI co-pilot is ready')}>Ask Co-Pilot</button>}{i === 1 && <><button onClick={() => onNotify('Copyright strike issued')}>Issue Strike</button><button onClick={() => onNotify('Content review opened')}>Review queue</button></>}{i === 2 && <button onClick={() => onNotify('Security logs opened')}>View Logs</button>}{i === 3 && <><button onClick={() => onNotify('Admin access revoked')}>Revoke Access</button><button onClick={() => onNotify('New admin form opened')}>Add New Admin</button></>}{i === 4 && <><button onClick={() => onNotify('Appeal accepted and unsuspended')}>Accept Appeal</button><button onClick={() => onNotify('Appeal denied')}>Deny Appeal</button></>}</div></section>)}</div><div className="guardian-footer"><span><Activity size={15} /> HkTube Guardian AI: full system integration</span><button className="gradient-button" onClick={() => onNotify('Guardian report exported')}>Export report <ArrowDownToLine size={15} /></button></div></div></div>; }
+
+export default App;

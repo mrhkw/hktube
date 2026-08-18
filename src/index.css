@@ -1,46 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-:root {
-  color-scheme: dark;
-}
-
-html,
-body {
-  min-width: 320px;
-  margin: 0;
-  -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
-}
-#root { overflow-x: hidden; }
-
-button, a, input, textarea {
-  -webkit-tap-highlight-color: transparent;
-}
-
-::selection {
-  background: #6c5ce7;
-  color: #fff;
-}
-
-:focus-visible {
-  outline: 2px solid #6c5ce7;
-  outline-offset: 2px;
-}
-
-/* Phase 1 mobile safety utilities: layout remains unchanged; controls gain safe-area breathing room. */
-body { padding-bottom: env(safe-area-inset-bottom); }
-button, a, select, input, textarea { min-height: 40px; }
-@media (max-width: 640px) {
-  .app-main { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
-  .video-frame video { width: 100%; max-height: 75vh; object-fit: contain; }
-  .video-controls, .video-actions { flex-wrap: wrap; gap: 8px; }
-  .search-form { display: flex; gap: 8px; }
-  .search-form input { min-width: 0; flex: 1; }
-}
+:root { color-scheme: dark; }
+html, body, #root { min-width: 320px; min-height: 100%; }
+body { overflow-x: hidden; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+::selection { background: #8a52ff; color: #fff; }
+:focus-visible { outline: 2px solid #67e7ef; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
