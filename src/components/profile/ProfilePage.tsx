@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Settings, Edit2, LogOut } from 'lucide-react'
 import { getProfile, updateProfile, getUserVideos, getFollowerCount, type VideoRecord } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import VideoCard from '../common/VideoCard'
 
 interface ProfilePageProps {
@@ -19,6 +20,7 @@ export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigat
   const [editing, setEditing] = useState(false)
   const [channelName, setChannelName] = useState('')
   const [description, setDescription] = useState('')
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
     loadProfile()
@@ -39,9 +41,15 @@ export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigat
   }
 
   const handleSave = async () => {
-    await updateProfile(userId, { channel_name: channelName.trim(), description: description.trim() })
-    setProfile(prev => prev ? { ...prev, channel_name: channelName.trim(), description: description.trim() } : prev)
-    setEditing(false)
+    try {
+      // Guarantee the profile row exists (older accounts may not have one).
+      const exists = await supabase.from('profiles').select('id').eq('id', userId).maybeSingle()
+      if (!exists.data) await supabase.from('profiles').insert({ id: userId }).then(({ error }) => { if (error) console.warn('[HkTube] profile seed failed', error) })
+      const { data, error } = await updateProfile(userId, { channel_name: channelName.trim(), description: description.trim() })
+      if (error) throw error
+      if (data) setProfile(data)
+      setEditing(false)
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save profile. Please try again.') }
   }
 
   return (
@@ -58,9 +66,10 @@ export default function ProfilePage({ userId, onSignOut, onVideoClick, onNavigat
             <input value={channelName} onChange={e => setChannelName(e.target.value)} placeholder="Channel name" />
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="About you" rows={2} />
             <div className="profile-edit-actions">
-              <button className="btn-primary btn-sm" onClick={handleSave}>Save</button>
+              <button className="btn-primary btn-sm" onClick={() => void handleSave()}>Save</button>
               <button className="btn-secondary btn-sm" onClick={() => setEditing(false)}>Cancel</button>
             </div>
+            {message ? <p className="form-success">{message}</p> : null}
           </div>
         ) : (
           <>

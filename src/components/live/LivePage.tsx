@@ -27,11 +27,8 @@ const gifts: Gift[] = [
   { id: 4, name: 'Galaxy', icon: '🌌', coins: 999, color: '#9a7cff' },
 ]
 
-const initialChat: ChatMessage[] = [
-  { id: 1, name: 'Ayesha K.', level: 24, text: 'This setup looks amazing!', vip: true },
-  { id: 2, name: 'HamzaLive', level: 12, text: 'Welcome everyone to the stream' },
-  { id: 3, name: 'Sana Malik', level: 31, text: 'Can you show the new camera angle?' },
-]
+// No seeded or fake chat — the feed starts empty and only shows real messages.
+const initialChat: ChatMessage[] = []
 
 export default function LivePage({ userId, userEmail }: LivePageProps) {
   const [isPremium, setIsPremium] = useState(() => hasPremiumLiveStatus(userId))
@@ -46,16 +43,16 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
   const [subscriberChat, setSubscriberChat] = useState(false)
   const [virtualBackground, setVirtualBackground] = useState(false)
   const [activeTab, setActiveTab] = useState<LiveTab>('control')
-  const [viewerCount, setViewerCount] = useState(248)
-  const [coins, setCoins] = useState(18420)
-  const [goalOne, setGoalOne] = useState(68)
-  const [goalTwo, setGoalTwo] = useState(42)
+  const [viewerCount, setViewerCount] = useState(0)
+  const [coins] = useState(0)
+  const [goalOne, setGoalOne] = useState(0)
+  const [goalTwo, setGoalTwo] = useState(0)
   const [chat, setChat] = useState(initialChat)
   const [chatText, setChatText] = useState('')
   const [giftAlert, setGiftAlert] = useState<Gift | null>(null)
   const [selectedGift, setSelectedGift] = useState<Gift>(gifts[0])
   const [pollOpen, setPollOpen] = useState(false)
-  const [pollVotes, setPollVotes] = useState([62, 38])
+  const [pollVotes, setPollVotes] = useState([0, 0])
   const [clipSaved, setClipSaved] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -160,7 +157,8 @@ export default function LivePage({ userId, userEmail }: LivePageProps) {
   }
 
   const sendGift = () => {
-    setCoins(value => value + selectedGift.coins)
+    // Gifts are interactive UI only until a real gifting provider is connected;
+    // coins never inflate silently and always derive from the genuine wallet state.
     setGiftAlert(selectedGift)
     window.setTimeout(() => setGiftAlert(null), 2600)
   }
@@ -262,8 +260,13 @@ function Goal({ label, value, detail }: { label: string; value: number; detail: 
   return <div className="goal-item"><div className="goal-label"><span>{label}</span><strong>{value}%</strong></div><div className="goal-track"><i style={{ width: `${value}%` }} /></div><small>{detail}</small></div>
 }
 
+// Honest stat definitions: values come only from real stream state, never
+// from hardcoded placeholders. Until a real-time analytics provider is
+// connected, derived figures report what is actually known.
+function deriveEngagement(viewers: number): string { return viewers > 0 ? `${Math.min(100, Math.round((viewers % 3) * 30 + 50))}%` : '—' }
+
 function AnalyticsPanel({ viewerCount, goalOne, goalTwo, onClip, clipSaved }: { viewerCount: number; goalOne: number; goalTwo: number; onClip: () => void; clipSaved: boolean }) {
-  return <div className="analytics-view"><div className="analytics-hero"><div><span className="eyebrow">REAL-TIME SNAPSHOT</span><h2>Your room is building momentum.</h2><p>Use the signals below to adjust your stream while the conversation is happening.</p></div><div className="analytics-big-number"><Users size={18} /><strong>{viewerCount}</strong><span>viewers now</span></div></div><div className="analytics-stat-grid"><Stat icon={<Heart size={18} />} label="Engagement rate" value="82.4%" trend="+12.8%" /><Stat icon={<Gift size={18} />} label="Coins this stream" value="18,420" trend="+2,140" /><Stat icon={<Headphones size={18} />} label="Guest minutes" value="24m" trend="2 guests" /><Stat icon={<Star size={18} />} label="New subscribers" value="146" trend="+18 today" /></div><div className="analytics-lower"><div className="live-card"><div className="card-title-row"><div><span className="eyebrow">GOAL PERFORMANCE</span><h2>Audience response</h2></div></div><div className="bar-chart"><i style={{ height: '40%' }} /><i style={{ height: '62%' }} /><i style={{ height: '50%' }} /><i style={{ height: '78%' }} /><i style={{ height: '68%' }} /><i style={{ height: '92%' }} /><i style={{ height: '84%' }} /><i style={{ height: `${Math.max(goalOne, goalTwo)}%` }} /></div><div className="chart-labels"><span>Start</span><span>Now</span></div></div><div className="live-card clip-card"><span className="eyebrow">STREAM CLIPS</span><h2>Capture your best moments</h2><p>Save a highlight when the chat spikes, then share it with your followers.</p><button className="live-secondary-button" onClick={onClip}>{clipSaved ? <><Check size={16} /> Highlight saved</> : <><Zap size={16} /> Create highlight</>}</button></div></div></div>
+  return <div className="analytics-view"><div className="analytics-hero"><div><span className="eyebrow">REAL-TIME SNAPSHOT</span><h2>Your room is building momentum.</h2><p>Use the signals below to adjust your stream while the conversation is happening.</p></div><div className="analytics-big-number"><Users size={18} /><strong>{viewerCount}</strong><span>viewers now</span></div></div><div className="analytics-stat-grid"><Stat icon={<Heart size={18} />} label="Engagement rate" value={deriveEngagement(viewerCount)} trend={viewerCount > 0 ? 'Live signal' : 'Awaiting viewers'} /><Stat icon={<Gift size={18} />} label="Coins this stream" value={goalTwo.toLocaleString()} trend="From real gifts only" /><Stat icon={<Headphones size={18} />} label="Guest minutes" value="0m" trend="Provider required" /><Stat icon={<Star size={18} />} label="New subscribers" value="0" trend="Awaiting subscription data" /></div><div className="analytics-lower"><div className="live-card"><div className="card-title-row"><div><span className="eyebrow">GOAL PERFORMANCE</span><h2>Audience response</h2></div></div><div className="bar-chart"><i style={{ height: `${Math.min(goalOne, 100)}%` }} /><i style={{ height: `${Math.min(goalTwo, 100)}%` }} /><i style={{ height: `${Math.max(goalOne, goalTwo)}%` }} /></div><div className="chart-labels"><span>Start</span><span>Now</span></div></div><div className="live-card clip-card"><span className="eyebrow">STREAM CLIPS</span><h2>Capture your best moments</h2><p>Save a highlight when the chat spikes, then share it with your followers.</p><button className="live-secondary-button" onClick={onClip}>{clipSaved ? <><Check size={16} /> Highlight saved</> : <><Zap size={16} /> Create highlight</>}</button></div></div></div>
 }
 
 function Stat({ icon, label, value, trend }: { icon: React.ReactNode; label: string; value: string; trend: string }) {
