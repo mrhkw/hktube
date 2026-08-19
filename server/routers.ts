@@ -2,8 +2,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { adminProcedure, publicProcedure, router } from "./_core/trpc";
-import { createVideo, getRelatedVideos, getVideoById, incrementVideoView, listAdminVideos, listVideos, removeVideo } from "./db";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { createVideo, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listVideos, removeVideo, toggleVideoLike } from "./db";
 
 const videoCategory = z.enum(["regular", "shorts"]);
 const mediaUrl = z.string().trim().refine(value => {
@@ -58,6 +58,8 @@ export const appRouter = router({
       getRelatedVideos(input.id, input.category),
     ),
     recordView: publicProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => incrementVideoView(input.id)),
+    engagement: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ ctx, input }) => getVideoEngagement(input.id, ctx.user?.id)),
+    toggleLike: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => toggleVideoLike(input.id, ctx.user.id)),
     create: adminProcedure.input(videoInputSchema).mutation(({ ctx, input }) =>
       createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, uploadedById: ctx.user.id }),
     ),

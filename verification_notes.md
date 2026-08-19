@@ -23,3 +23,5 @@ The supplied Menu/Settings references confirm a dark card-based account center w
 After adding policy pages, the public Advertising Disclosure route correctly states that no advertising network, AdSense tag, sponsored placement, or advertising metric is active. The signed-out Creator Studio route continues to render an access-restricted state without upload controls.
 
 Post-compliance verification confirmed that the public Privacy route renders on desktop and mobile app shells. The active viewport remains `maximum-scale=1, user-scalable=no, viewport-fit=cover`; both document and body horizontal overflow are clipped, touch action is set to manipulation, and the app root keeps a 100% minimum height.
+
+Production-hardening verification confirmed the public Contact route, policy footer links, and mailto contact flow are reachable when signed out. The active mobile viewport retains maximum-scale=1 and user-scalable=no; document/body horizontal overflow is clipped, touch action is manipulation, and no horizontal scroll was detected.

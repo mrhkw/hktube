@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertVideo, users, videos } from "../drizzle/schema";
+import { InsertUser, InsertVideo, users, videoLikes, videos } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -163,4 +163,31 @@ export async function removeVideo(id: number) {
   if (!existing) return false;
   await db.delete(videos).where(eq(videos.id, id));
   return true;
+}
+
+export async function getVideoEngagement(videoId: number, userId?: number) {
+  const db = await getDb();
+  if (!db) return { likeCount: 0, likedByViewer: false };
+  const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(videoLikes).where(eq(videoLikes.videoId, videoId));
+  let likedByViewer = false;
+  if (userId) {
+    const viewerLike = await db.select({ id: videoLikes.id }).from(videoLikes).where(and(eq(videoLikes.videoId, videoId), eq(videoLikes.userId, userId))).limit(1);
+    likedByViewer = viewerLike.length > 0;
+  }
+  return { likeCount: Number(countRow?.count ?? 0), likedByViewer };
+}
+
+export async function toggleVideoLike(videoId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable.");
+  return db.transaction(async tx => {
+    const target = await tx.select({ id: videos.id }).from(videos).where(eq(videos.id, videoId)).limit(1);
+    if (!target.length) throw new Error("Video not found.");
+    const existing = await tx.select({ id: videoLikes.id }).from(videoLikes).where(and(eq(videoLikes.videoId, videoId), eq(videoLikes.userId, userId))).limit(1);
+    const likedByViewer = existing.length === 0;
+    if (likedByViewer) await tx.insert(videoLikes).values({ videoId, userId });
+    else await tx.delete(videoLikes).where(eq(videoLikes.id, existing[0].id));
+    const [countRow] = await tx.select({ count: sql<number>`count(*)` }).from(videoLikes).where(eq(videoLikes.videoId, videoId));
+    return { likeCount: Number(countRow?.count ?? 0), likedByViewer };
+  });
 }

@@ -1,4 +1,4 @@
-import { index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { index, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -54,3 +54,19 @@ export const videos = mysqlTable(
 
 export type Video = typeof videos.$inferSelect;
 export type InsertVideo = typeof videos.$inferInsert;
+
+export const videoLikes = mysqlTable(
+  "video_likes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    videoId: int("videoId").notNull(),
+    userId: int("userId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("video_likes_video_id_idx").on(table.videoId),
+    uniqueIndex("video_likes_video_user_unique").on(table.videoId, table.userId),
+  ],
+);
+
+export type VideoLike = typeof videoLikes.$inferSelect;

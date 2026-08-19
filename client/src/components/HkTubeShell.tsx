@@ -120,6 +120,7 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
       <main className="relative pb-24 lg:pb-14 lg:pl-64">
         {(title || subtitle) && <div className="border-b border-white/7 px-5 py-7 sm:px-8 lg:px-10"><h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>{subtitle && <p className="mt-1.5 text-sm text-slate-400">{subtitle}</p>}</div>}
         <div className="px-5 py-6 sm:px-8 lg:px-10">{children}</div>
+        <footer className="border-t border-white/7 px-5 py-7 text-xs text-slate-500 sm:px-8 lg:px-10"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><p>© {new Date().getFullYear()} HKTUBE. Authentic content only.</p><nav className="flex flex-wrap gap-x-4 gap-y-2" aria-label="Platform policies"><Link href="/privacy" className="hover:text-fuchsia-200">Privacy</Link><Link href="/terms" className="hover:text-fuchsia-200">Terms</Link><Link href="/cookies" className="hover:text-fuchsia-200">Cookies</Link><Link href="/community" className="hover:text-fuchsia-200">Guidelines</Link><Link href="/advertising" className="hover:text-fuchsia-200">Advertising</Link><Link href="/contact" className="hover:text-fuchsia-200">Contact</Link></nav></div></footer>
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/9 bg-[#0b0b15]/95 px-1 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">

@@ -2,7 +2,7 @@ import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BadgeCheck, Cookie, FileText, Loader2, LogOut, Megaphone, Scale, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, BadgeCheck, Cookie, FileText, Loader2, LogOut, Mail, Megaphone, Scale, ShieldCheck, UsersRound } from "lucide-react";
 import { Link } from "wouter";
 
 const policyLinks = [
@@ -11,6 +11,7 @@ const policyLinks = [
   { href: "/cookies", icon: Cookie, title: "Cookie Notice", description: "Essential session and preference cookies" },
   { href: "/community", icon: UsersRound, title: "Community Guidelines", description: "Rules for uploaded and shared content" },
   { href: "/advertising", icon: Megaphone, title: "Advertising Disclosure", description: "Ad and AdSense readiness information" },
+  { href: "/contact", icon: Mail, title: "Contact Us", description: "Privacy, content, and platform support" },
 ];
 
 export default function Settings() {

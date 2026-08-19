@@ -1,8 +1,14 @@
 {
   "name": "HKTUBE",
   "short_name": "HKTUBE",
+  "id": "/",
+  "description": "HKTUBE is a real-data video platform for watching, sharing, and publishing authorized video content.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "en",
   "background_color": "#080810",
-  "theme_color": "#080810"
+  "theme_color": "#080810",
+  "prefer_related_applications": false
 }

@@ -25,9 +25,13 @@
 - [x] Prepare the current HKTUBE project source for manual upload to github.com/mrhkw/hktube rather than attempting an unauthorized push.
 - [x] Defer Vercel auto-deploy verification until the owner uploads the supplied source archive to the connected GitHub repository.
 - [x] Create and verify a clean HKTUBE source ZIP archive for manual GitHub upload, excluding generated files and development dependencies.
-- [ ] Verify the provided credential has authorized write access to github.com/mrhkw/hktube and identify its deployment branch.
-- [ ] Push the current secret-free HKTUBE source to the authorized GitHub deployment branch.
-- [ ] Verify the post-push repository state and the connected Vercel deployment outcome without exposing the credential.
+- [x] Verify the provided credential has authorized write access to github.com/mrhkw/hktube and identify its deployment branch.
+- [x] Push the current secret-free HKTUBE source to the authorized GitHub deployment branch.
+- [x] Verify the post-push repository state and report that Vercel is still serving its prior build rather than the new main-branch commit.
+- [x] Audit the current production build for backend/database, auth/session, S3 upload, player, PWA, and Vercel compatibility gaps without introducing fabricated content.
+- [x] Harden the verified HKTUBE backend, session boundaries, upload validation, player loading/error states, and accessible share controls.
+- [x] Complete Contact Us, policy navigation, and PWA metadata while preserving no-zoom safeguards and real-data-only experiences.
+- [ ] Run the complete automated and browser validation suite, then document owner-controlled external configuration requirements.
 - [x] Complete release validation without seeding any videos, thumbnails, captions, or fabricated data.
 - [x] Create a final release checkpoint for the empty-but-production-ready HKTUBE catalog.
 - [x] Verify responsive UI, live database states, authentication behavior, and error/empty-state experiences.

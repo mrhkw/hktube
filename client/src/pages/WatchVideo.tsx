@@ -1,11 +1,15 @@
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Heart, Loader2, Share2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useRoute } from "wouter";
+import { toast } from "sonner";
 
 export default function WatchVideo() {
   const [, params] = useRoute("/watch/:id");
@@ -14,7 +18,10 @@ export default function WatchVideo() {
   const video = videoQuery.data as VideoRecord | undefined;
   const viewedVideoId = useRef<number | null>(null);
   const recordView = trpc.videos.recordView.useMutation();
+  const { user } = useAuth();
   const utils = trpc.useUtils();
+  const engagementQuery = trpc.videos.engagement.useQuery({ id }, { enabled: Boolean(video) });
+  const likeMutation = trpc.videos.toggleLike.useMutation();
   const relatedQuery = trpc.videos.related.useQuery({ id: id || 1, category: video?.category || "regular" }, { enabled: Boolean(video) });
   const related = (relatedQuery.data ?? []) as VideoRecord[];
 
@@ -26,6 +33,20 @@ export default function WatchVideo() {
 
   if (videoQuery.isLoading) return <HkTubeShell><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-7 animate-spin text-fuchsia-300" /></div></HkTubeShell>;
   if (!video) return <HkTubeShell title="Video unavailable"><EmptyVideos title="This video is not available" copy="It may have been removed from the HKTUBE catalog or the link is incorrect." /></HkTubeShell>;
+  const activeVideo = video;
+
+  async function shareVideo() {
+    const url = new URL(`/watch/${activeVideo.id}`, window.location.origin).toString();
+    try {
+      if (navigator.share) await navigator.share({ title: activeVideo.title, text: activeVideo.description || undefined, url });
+      else { await navigator.clipboard.writeText(url); toast.success("Video link copied."); }
+    } catch (error) { if ((error as DOMException | undefined)?.name !== "AbortError") toast.error("Unable to share this video from this browser."); }
+  }
+
+  function toggleLike() {
+    if (!user) return startLogin();
+    likeMutation.mutate({ id: activeVideo.id }, { onSuccess: engagement => { utils.videos.engagement.setData({ id: activeVideo.id }, engagement); }, onError: error => toast.error(error.message || "Unable to update like.") });
+  }
 
   return <HkTubeShell>
     <div className="mx-auto max-w-[1560px] xl:grid xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-7">
@@ -33,6 +54,7 @@ export default function WatchVideo() {
         <VideoPlayer video={video} />
         <div className="border-b border-white/8 py-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-semibold uppercase tracking-[.17em] text-cyan-300">{video.category === "shorts" ? "HKTUBE Short" : "HKTUBE Video"}</span><h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">{video.title}</h1></div><span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/8 px-3 py-1.5 text-xs font-medium text-violet-100"><Eye className="size-3.5" />{formatViews(video.viewCount)}</span></div>
+          <div className="mt-4 flex flex-wrap items-center gap-2"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-fuchsia-300/35 bg-fuchsia-500/15 text-fuchsia-100 hover:bg-fuchsia-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button><Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />Share</Button></div>
           <p className="mt-4 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-slate-400">{video.description || "No description was provided for this video."}</p>
           <p className="mt-3 text-xs text-slate-600">Published {formatDate(video.uploadedAt)}</p>
         </div>

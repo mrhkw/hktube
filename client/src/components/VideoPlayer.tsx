@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { formatDuration, VideoRecord } from "@/lib/video";
-import { Captions, Maximize, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { AlertTriangle, Captions, Loader2, Maximize, Pause, Play, RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; autoPlay?: boolean }) {
@@ -11,17 +11,21 @@ export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; a
   const [duration, setDuration] = useState(video.durationSeconds || 0);
   const [volume, setVolume] = useState(0.9);
   const [captionsOn, setCaptionsOn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(video.durationSeconds || 0);
+    setIsLoading(true);
+    setPlaybackError(null);
   }, [video.id, video.durationSeconds]);
 
   function togglePlayback() {
     const element = videoRef.current;
     if (!element) return;
-    if (element.paused) void element.play(); else element.pause();
+    if (element.paused) void element.play().catch(() => setPlaybackError("Playback could not start. Check the media URL and browser permissions.")); else element.pause();
   }
 
   function changeTime(value: number) {
@@ -47,14 +51,24 @@ export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; a
     setCaptionsOn(show);
   }
 
+  function retryPlayback() {
+    const element = videoRef.current;
+    if (!element) return;
+    setPlaybackError(null);
+    setIsLoading(true);
+    element.load();
+  }
+
   return (
     <div ref={containerRef} className="overflow-hidden rounded-2xl border border-violet-400/20 bg-black shadow-[0_0_45px_rgba(139,92,246,.13)]">
       <div className="relative aspect-video bg-[#05050a]">
-        <video ref={videoRef} src={video.videoUrl} poster={video.thumbnailUrl || undefined} autoPlay={autoPlay} playsInline onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onLoadedMetadata={event => setDuration(event.currentTarget.duration || video.durationSeconds || 0)} onTimeUpdate={event => setCurrentTime(event.currentTarget.currentTime)} className="size-full object-contain">
+        <video ref={videoRef} src={video.videoUrl} poster={video.thumbnailUrl || undefined} autoPlay={autoPlay} playsInline preload="metadata" onLoadStart={() => setIsLoading(true)} onCanPlay={() => setIsLoading(false)} onWaiting={() => setIsLoading(true)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onError={() => { setIsLoading(false); setPlaybackError("This media could not be loaded. The source may be unavailable or unsupported."); }} onLoadedMetadata={event => setDuration(event.currentTarget.duration || video.durationSeconds || 0)} onTimeUpdate={event => setCurrentTime(event.currentTarget.currentTime)} className="size-full object-contain">
           {video.captionUrl && <track kind="captions" src={video.captionUrl} srcLang="en" label="English captions" />}
           Your browser does not support HTML5 video playback.
         </video>
-        {!isPlaying && <Button onClick={togglePlayback} aria-label="Play video" className="absolute left-1/2 top-1/2 size-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/90 p-0 text-white shadow-[0_0_35px_rgba(217,70,239,.55)] hover:bg-fuchsia-400"><Play className="size-6 fill-current" /></Button>}
+        {isLoading && !playbackError && <div className="absolute inset-0 grid place-items-center bg-black/35" aria-live="polite"><span className="inline-flex items-center gap-2 rounded-full bg-black/65 px-3 py-2 text-xs font-medium text-white"><Loader2 className="size-4 animate-spin" />Loading media</span></div>}
+        {playbackError && <div className="absolute inset-0 grid place-items-center bg-black/75 p-5 text-center"><div><AlertTriangle className="mx-auto size-7 text-amber-300" /><p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-white">{playbackError}</p><Button onClick={retryPlayback} className="mt-4 bg-fuchsia-500 text-white hover:bg-fuchsia-400"><RefreshCw className="mr-2 size-4" />Retry playback</Button></div></div>}
+        {!isPlaying && !isLoading && !playbackError && <Button onClick={togglePlayback} aria-label="Play video" className="absolute left-1/2 top-1/2 size-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/90 p-0 text-white shadow-[0_0_35px_rgba(217,70,239,.55)] hover:bg-fuchsia-400"><Play className="size-6 fill-current" /></Button>}
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/10 bg-[#0b0b15] px-3 py-2.5 sm:px-4">
         <Button variant="ghost" size="icon" onClick={togglePlayback} className="size-8 text-white hover:bg-white/10" aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current" />}</Button>

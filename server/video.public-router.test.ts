@@ -4,10 +4,12 @@ const repository = vi.hoisted(() => ({
   createVideo: vi.fn(),
   getRelatedVideos: vi.fn(),
   getVideoById: vi.fn(),
+  getVideoEngagement: vi.fn(),
   incrementVideoView: vi.fn(),
   listAdminVideos: vi.fn(),
   listVideos: vi.fn(),
   removeVideo: vi.fn(),
+  toggleVideoLike: vi.fn(),
 }));
 
 vi.mock("./db", () => repository);
@@ -62,6 +64,20 @@ describe("HKTUBE public video router", () => {
     repository.incrementVideoView.mockResolvedValueOnce({ id: 9, viewCount: 3 });
     await appRouter.createCaller(contextFor(null)).videos.recordView({ id: 9 });
     expect(repository.incrementVideoView).toHaveBeenLastCalledWith(9);
+  });
+
+  it("returns real engagement with no fabricated viewer state for a visitor", async () => {
+    repository.getVideoEngagement.mockResolvedValueOnce({ likeCount: 2, likedByViewer: false });
+    const result = await appRouter.createCaller(contextFor(null)).videos.engagement({ id: 9 });
+    expect(result).toEqual({ likeCount: 2, likedByViewer: false });
+    expect(repository.getVideoEngagement).toHaveBeenLastCalledWith(9, undefined);
+  });
+
+  it("allows signed-in viewers to toggle only their own video like", async () => {
+    repository.toggleVideoLike.mockResolvedValueOnce({ likeCount: 3, likedByViewer: true });
+    const result = await appRouter.createCaller(contextFor("user")).videos.toggleLike({ id: 9 });
+    expect(result).toEqual({ likeCount: 3, likedByViewer: true });
+    expect(repository.toggleVideoLike).toHaveBeenLastCalledWith(9, 15);
   });
 
   it("allows the owner role to publish an authorized video record", async () => {

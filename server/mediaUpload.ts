@@ -4,16 +4,25 @@ import { sdk } from "./_core/sdk";
 import { storagePut } from "./storage";
 
 const MAX_UPLOAD_BYTES = 250 * 1024 * 1024;
+const MAX_THUMBNAIL_BYTES = 12 * 1024 * 1024;
+const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 function safeFilename(value: string) {
   const sanitized = value.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-");
   return sanitized.slice(0, 120) || "upload";
 }
 
-function allowedContentType(kind: "video" | "thumbnail" | "caption", contentType: string) {
-  if (kind === "video") return contentType.startsWith("video/");
-  if (kind === "thumbnail") return contentType.startsWith("image/");
-  return contentType === "text/vtt";
+export function allowedContentType(kind: "video" | "thumbnail" | "caption", contentType: string) {
+  const type = contentType.toLowerCase().split(";", 1)[0];
+  if (kind === "video") return ["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-m4v", "video/x-msvideo"].includes(type);
+  if (kind === "thumbnail") return ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"].includes(type);
+  return type === "text/vtt";
+}
+
+export function maxBytesForKind(kind: "video" | "thumbnail" | "caption") {
+  if (kind === "video") return MAX_UPLOAD_BYTES;
+  if (kind === "thumbnail") return MAX_THUMBNAIL_BYTES;
+  return MAX_CAPTION_BYTES;
 }
 
 async function requireAdmin(req: Request) {
@@ -43,6 +52,9 @@ export function registerMediaUploadRoute(app: Express) {
 
         if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
           return res.status(400).json({ message: "The upload file was empty or unreadable." });
+        }
+        if (req.body.length > maxBytesForKind(kind)) {
+          return res.status(413).json({ message: `This ${kind} exceeds the HKTUBE upload size limit.` });
         }
 
         const folder = kind === "video" ? "videos" : kind === "thumbnail" ? "thumbnails" : "captions";

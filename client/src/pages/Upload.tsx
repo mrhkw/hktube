@@ -11,23 +11,34 @@ import { FileVideo, ImagePlus, Loader2, ShieldCheck, Trash2, UploadCloud } from 
 import { ChangeEvent, FormEvent, useState } from "react";
 import { toast } from "sonner";
 
-async function uploadMedia(file: File, kind: "video" | "thumbnail" | "caption") {
-  const url = new URL("/api/admin/media-upload", window.location.origin);
-  url.searchParams.set("kind", kind);
-  url.searchParams.set("filename", file.name);
-  url.searchParams.set("contentType", file.type);
-  const previewToken = sessionStorage.getItem("manus-cookie");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/octet-stream",
-      ...(previewToken ? { Authorization: `Bearer ${previewToken}` } : {}),
-    },
-    body: file,
+const maxBytesByKind = { video: 250 * 1024 * 1024, thumbnail: 12 * 1024 * 1024, caption: 2 * 1024 * 1024 } as const;
+
+function assertUploadable(file: File, kind: "video" | "thumbnail" | "caption") {
+  if (!file.size) throw new Error("Choose a non-empty file.");
+  if (file.size > maxBytesByKind[kind]) throw new Error(`${kind === "video" ? "Video" : kind === "thumbnail" ? "Thumbnail" : "Caption"} exceeds the HKTUBE size limit.`);
+}
+
+async function uploadMedia(file: File, kind: "video" | "thumbnail" | "caption", onProgress: (progress: number) => void) {
+  assertUploadable(file, kind);
+  return new Promise<{ key: string; url: string }>((resolve, reject) => {
+    const url = new URL("/api/admin/media-upload", window.location.origin);
+    url.searchParams.set("kind", kind);
+    url.searchParams.set("filename", file.name);
+    url.searchParams.set("contentType", file.type);
+    const request = new XMLHttpRequest();
+    request.open("POST", url);
+    request.setRequestHeader("Content-Type", "application/octet-stream");
+    const previewToken = sessionStorage.getItem("manus-cookie");
+    if (previewToken) request.setRequestHeader("Authorization", `Bearer ${previewToken}`);
+    request.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100)); };
+    request.onerror = () => reject(new Error("Network error while uploading media."));
+    request.onload = () => {
+      const payload = (() => { try { return JSON.parse(request.responseText); } catch { return null; } })();
+      if (request.status < 200 || request.status >= 300 || !payload?.url) reject(new Error(payload?.message || "Upload failed."));
+      else resolve(payload as { key: string; url: string });
+    };
+    request.send(file);
   });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok || !payload?.url) throw new Error(payload?.message || "Upload failed.");
-  return payload as { key: string; url: string };
 }
 
 async function readVideoDuration(file: File) {
@@ -54,6 +65,7 @@ export default function Upload() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [captionFile, setCaptionFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const utils = trpc.useUtils();
   const createMutation = trpc.videos.create.useMutation();
   const videosQuery = trpc.videos.adminList.useQuery(undefined, { enabled: isAdmin });
@@ -71,15 +83,15 @@ export default function Upload() {
     if (!videoFile && !videoUrl.trim()) return toast.error("Choose a video file or provide a video URL.");
     setIsSubmitting(true);
     try {
-      const uploadedVideo = videoFile ? await uploadMedia(videoFile, "video") : null;
-      const uploadedThumbnail = thumbnailFile ? await uploadMedia(thumbnailFile, "thumbnail") : null;
-      const uploadedCaption = captionFile ? await uploadMedia(captionFile, "caption") : null;
+      const uploadedVideo = videoFile ? await uploadMedia(videoFile, "video", setUploadProgress) : null;
+      const uploadedThumbnail = thumbnailFile ? await uploadMedia(thumbnailFile, "thumbnail", setUploadProgress) : null;
+      const uploadedCaption = captionFile ? await uploadMedia(captionFile, "caption", setUploadProgress) : null;
       await createMutation.mutateAsync({ title, description, category, durationSeconds, videoUrl: uploadedVideo?.url || videoUrl.trim(), videoStorageKey: uploadedVideo?.key, thumbnailUrl: uploadedThumbnail?.url || thumbnailUrl.trim() || undefined, thumbnailStorageKey: uploadedThumbnail?.key, captionUrl: uploadedCaption?.url, captionStorageKey: uploadedCaption?.key });
       toast.success("Video published to the live HKTUBE catalog.");
       setTitle(""); setDescription(""); setVideoUrl(""); setThumbnailUrl(""); setVideoFile(null); setThumbnailFile(null); setCaptionFile(null); setDurationSeconds(0);
       void utils.videos.adminList.invalidate(); void utils.videos.latest.invalidate(); void utils.videos.shorts.invalidate(); void utils.videos.trending.invalidate();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Video publishing failed."); }
-    finally { setIsSubmitting(false); }
+    finally { setIsSubmitting(false); setUploadProgress(null); }
   }
 
   if (loading) return <HkTubeShell><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-7 animate-spin text-fuchsia-300" /></div></HkTubeShell>;
@@ -97,7 +109,8 @@ export default function Upload() {
           <div className="space-y-2"><Label htmlFor="thumbnail-file">Custom thumbnail file</Label><Input id="thumbnail-file" type="file" accept="image/*" onChange={event => setThumbnailFile(event.target.files?.[0] || null)} className="border-white/10 bg-white/[.045] file:mr-3 file:border-0 file:bg-cyan-400/15 file:text-cyan-100" /></div><div className="space-y-2"><Label htmlFor="thumbnail-url">Or thumbnail URL</Label><Input id="thumbnail-url" type="url" value={thumbnailUrl} onChange={event => setThumbnailUrl(event.target.value)} placeholder="https://..." className="border-white/10 bg-white/[.045] focus-visible:ring-cyan-300/35" /></div>
           <div className="space-y-2 sm:col-span-2"><Label htmlFor="caption-file">Caption track (optional)</Label><Input id="caption-file" type="file" accept="text/vtt,.vtt" onChange={event => setCaptionFile(event.target.files?.[0] || null)} className="border-white/10 bg-white/[.045] file:mr-3 file:border-0 file:bg-violet-500/15 file:text-violet-100" /><p className="text-[11px] text-slate-500">Upload an authorized WebVTT (.vtt) caption file to enable the player CC control for this video.</p></div>
         </div>
-        <div className="mt-7 flex justify-end"><Button disabled={isSubmitting} className="min-w-36 bg-gradient-to-r from-violet-500 to-fuchsia-500 font-bold text-white hover:from-violet-400 hover:to-fuchsia-400">{isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <FileVideo className="mr-2 size-4" />}{isSubmitting ? "Publishing" : "Publish video"}</Button></div>
+        {uploadProgress !== null && <div className="mt-6" aria-live="polite"><div className="mb-2 flex justify-between text-xs text-slate-400"><span>Uploading authorized media</span><span>{uploadProgress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-fuchsia-400 transition-[width] duration-200" style={{ width: `${uploadProgress}%` }} /></div></div>}
+        <div className="mt-7 flex justify-end"><Button disabled={isSubmitting} className="min-w-36 bg-gradient-to-r from-violet-500 to-fuchsia-500 font-bold text-white hover:from-violet-400 hover:to-fuchsia-400">{isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <FileVideo className="mr-2 size-4" />}{isSubmitting ? (uploadProgress !== null ? `Uploading ${uploadProgress}%` : "Publishing") : "Publish video"}</Button></div>
       </form>
       <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[.035] p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-cyan-300" /><div><h2 className="font-bold text-cyan-100">Owner-only controls</h2><p className="mt-1 text-sm leading-6 text-slate-400">Your current account has the <strong className="font-semibold text-slate-200">admin</strong> role. Viewer accounts cannot open this screen, create records, upload files, or delete published videos.</p></div></div><div className="mt-5 border-t border-white/8 pt-5"><h3 className="text-xs font-bold uppercase tracking-[.16em] text-slate-400">Publishing checklist</h3><p className="mt-2 text-sm leading-6 text-slate-500">Use content you are authorized to publish. Supply direct media files or URLs, accurate metadata, and a custom thumbnail if appropriate. HKTUBE never substitutes demo imagery or fabricated metrics.</p></div></section>
     </div>
