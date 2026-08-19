@@ -1,3 +1,0 @@
-import type { Agent } from './types'
-import { genericResult } from './types'
-export const security_agent: Agent = { slug: 'security-agent', name: 'Security Agent', description: 'security monitoring, alerts, and defensive review', canHandle: request => /(security|alert|attack|permission|auth|privacy|injection)/i.test(request), run: async (request, _context) => { return { ...genericResult('security', request, ['Collect non-secret diagnostic context.', 'Assess risk and affected scope.', 'Recommend containment and owner approval where required.']), suggestions: ['I can help defend systems, but not bypass or attack them.'] } } }

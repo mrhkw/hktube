@@ -1,3 +1,0 @@
-import type { Agent } from './types'
-import { genericResult } from './types'
-export const video_agent: Agent = { slug: 'video-agent', name: 'Video Agent', description: 'scripts, metadata, captions, chapters, and video ideas', canHandle: request => /(video|short|script|caption|chapter|title|description|tags)/i.test(request), run: async (request, _context) => { return { ...genericResult('video', request, ['Draft original title and description.', 'Generate tags and chapter structure.', 'Validate upload metadata.']), suggestions: ['I will not claim video generation unless a connected model exists.', 'Original creative work is preferred over reproducing copyrighted material.'] } } }

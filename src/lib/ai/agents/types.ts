@@ -1,4 +1,0 @@
-export type AgentContext = { userId?: string; projectId?: string; memory?: Record<string, unknown>[] }
-export type AgentResult = { agent: string; summary: string; suggestions: string[]; steps: string[]; confidence: 'high' | 'medium' | 'low'; verified: boolean; metadata?: Record<string, unknown> }
-export type Agent = { slug: string; name: string; description: string; canHandle: (request: string) => boolean; run: (request: string, context: AgentContext) => Promise<AgentResult> }
-export const genericResult = (agent: string, request: string, steps: string[] = []): AgentResult => ({ agent, summary: `I can help prepare this ${agent} workflow, but no external execution is connected yet.`, suggestions: [`Clarify the desired outcome for: ${request}`], steps, confidence: 'medium', verified: false })
