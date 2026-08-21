@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatDuration, formatViews, VideoRecord } from "@/lib/video";
-import { Clock3, Play, Sparkles } from "lucide-react";
+import { Inbox, Play, Sparkles, type LucideIcon } from "lucide-react";
 import { Link } from "wouter";
 
 export function VideoCard({ video, compact = false }: { video: VideoRecord; compact?: boolean }) {
@@ -23,6 +23,6 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
   );
 }
 
-export function EmptyVideos({ title, copy }: { title: string; copy: string }) {
-  return <div className="rounded-2xl border border-dashed border-white/12 bg-white/[.025] px-6 py-14 text-center"><Clock3 className="mx-auto size-7 text-fuchsia-300/70" /><h2 className="mt-4 text-base font-semibold text-white">{title}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{copy}</p></div>;
+export function EmptyVideos({ title, copy, icon: Icon = Inbox }: { title: string; copy: string; icon?: LucideIcon }) {
+  return <div className="rounded-2xl border border-dashed border-white/12 bg-white/[.025] px-6 py-14 text-center"><Icon className="mx-auto size-7 text-fuchsia-300/70" aria-hidden="true" /><h2 className="mt-4 text-base font-semibold text-white">{title}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{copy}</p></div>;
 }

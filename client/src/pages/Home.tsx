@@ -10,7 +10,7 @@ const tabs = [
   { label: "Home", href: "/" },
   { label: "Shorts", href: "/shorts" },
   { label: "Trending", href: "/trending" },
-  { label: "Subscriptions", href: "/subscriptions" },
+  { label: "Following", href: "/subscriptions" },
 ];
 
 export default function Home() {

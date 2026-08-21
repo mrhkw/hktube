@@ -20,7 +20,7 @@ const primaryNav = [
   { label: "Posts", href: "/posts", icon: Sparkles },
   { label: "Live", href: "/live", icon: Radio },
   { label: "Trending", href: "/trending", icon: Flame },
-  { label: "Subscriptions", href: "/subscriptions", icon: Compass },
+  { label: "Following", href: "/subscriptions", icon: Compass },
   { label: "Library", href: "/library", icon: Library },
   { label: "History", href: "/history", icon: MonitorPlay },
   { label: "Playlists", href: "/playlists", icon: Library },

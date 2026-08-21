@@ -22,7 +22,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/shorts"}>{() => <VideoCollection kind="shorts" />}</Route>
       <Route path={"/trending"}>{() => <VideoCollection kind="trending" />}</Route>
-      <Route path={"/subscriptions"}>{() => <VideoCollection kind="subscriptions" />}</Route>
+      <Route path={"/subscriptions"}>{() => <PlatformSection kind="subscriptions" />}</Route>
       <Route path={"/library"}>{() => <PlatformSection kind="library" />}</Route>
       <Route path={"/posts"}>{() => <PlatformSection kind="posts" />}</Route>
       <Route path={"/live"}>{() => <PlatformSection kind="live" />}</Route>
