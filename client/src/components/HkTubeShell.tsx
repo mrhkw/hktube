@@ -66,25 +66,23 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
       </div>
 
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#0a0a13]/90 backdrop-blur-xl">
-        <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
-          <Button variant="ghost" size="icon" className="lg:hidden text-slate-300 hover:bg-white/8" onClick={() => setMobileOpen(value => !value)} aria-label="Open navigation">
+        <div className="flex h-[70px] items-center gap-2 px-3 sm:gap-3 sm:px-6">
+          <Button variant="ghost" size="icon" className="shrink-0 lg:hidden text-slate-300 hover:bg-white/8" onClick={() => setMobileOpen(value => !value)} aria-label="Open navigation">
             <MenuIcon className="size-5" />
           </Button>
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="HKTUBE home">
-            <img src="/icon-48.png" alt="" className="size-8 rounded-[10px] shadow-[0_0_24px_rgba(168,85,247,.55)]" />
-            <span className="text-base font-black tracking-tight text-white"><span className="text-cyan-200">Hk</span><span className="bg-gradient-to-r from-fuchsia-300 via-violet-300 to-cyan-200 bg-clip-text text-transparent">Tube</span></span>
+          <Link href="/" className="flex shrink-0 items-center" aria-label="HKTUBE home">
+            <img src="/brand/hktube-mark.webp" alt="HkTube" className="size-11 rounded-xl shadow-[0_0_22px_rgba(139,92,246,.38)] ring-1 ring-violet-200/20" />
           </Link>
 
-          <form onSubmit={submitSearch} className="mx-auto hidden w-full max-w-xl md:block">
+          <form onSubmit={submitSearch} className="min-w-0 flex-1 max-w-xl">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fuchsia-300" />
-              <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search videos, topics, and creators" className="h-10 rounded-xl border-white/10 bg-white/[.045] pl-10 pr-4 text-sm text-white placeholder:text-slate-500 focus-visible:border-fuchsia-400/60 focus-visible:ring-fuchsia-400/25" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search videos…" className="h-10 rounded-full border-white/10 bg-black/25 pl-10 pr-3 text-sm text-white placeholder:text-slate-500 shadow-inner shadow-black/20 focus-visible:border-violet-300/60 focus-visible:ring-violet-300/20" />
             </div>
           </form>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <span className="hidden text-[11px] font-semibold uppercase tracking-[.14em] text-cyan-200 sm:block">Watch. Share. Discover.</span>
-            <Button variant="ghost" size="icon" className="text-slate-300 hover:bg-white/8 md:hidden" onClick={() => setMobileSearchOpen(value => !value)} aria-label="Search HKTUBE"><Search className="size-4" /></Button>
             <Link href="/notifications" className="grid size-9 place-items-center rounded-lg text-slate-300 hover:bg-white/8" aria-label="Notifications"><Bell className="size-4" /></Link>
             <Button variant="ghost" size="icon" className="text-slate-300 hover:bg-white/8" onClick={toggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}>{theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button>
             <select defaultValue="en" aria-label="Language" onChange={event => { const value = event.target.value; localStorage.setItem("language", value); document.documentElement.dir = value === "ur" ? "rtl" : "ltr"; }} className="hidden h-8 rounded-lg border border-white/10 bg-white/[.045] px-2 text-xs text-slate-300 sm:block"><option value="en">EN</option><option value="ur">اردو</option><option value="hi">हिन्दी</option></select>
