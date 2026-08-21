@@ -4,9 +4,10 @@
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
   "framework": null,
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/manus-storage/(.*)", "destination": "/api/storage?path=$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "/api" },
+    { "src": "/manus-storage/(.*)", "dest": "/api/storage?path=$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
