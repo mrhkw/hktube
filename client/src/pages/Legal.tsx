@@ -8,28 +8,28 @@ type LegalSection = { heading: string; paragraphs: string[]; bullets?: string[] 
 
 const pages: Record<LegalKind, { icon: typeof FileText; label: string; title: string; intro: string; sections: LegalSection[] }> = {
   privacy: {
-    icon: ShieldCheck, label: "Privacy", title: "Privacy Policy", intro: "This policy explains the information HKTUBE processes to operate signed-in accounts, video publishing, and the public video catalog.",
+    icon: ShieldCheck, label: "Privacy", title: "Privacy Policy", intro: "This policy explains what HKTUBE collects, why it is used, how it is protected, and the choices available to visitors, viewers, and creators.",
     sections: [
       { heading: "Information HKTUBE processes", paragraphs: ["HKTUBE processes account details provided through the configured sign-in service, including an account identifier and any available name or email address. When the owner publishes a video, HKTUBE stores the video metadata required to display it, including its title, description, category, duration, media URLs, thumbnail URL, caption URL, upload time, and view count."] },
-      { heading: "How information is used", paragraphs: ["Account information is used to maintain sign-in sessions and enforce role-based access. Video and media information is used to show the catalog, play authorized media, search titles and descriptions, and provide owner-only publishing tools."] },
+      { heading: "How information is used", paragraphs: ["Account information is used to maintain sign-in sessions and enforce role-based access. Video and media information is used to show the catalog, play authorized media, search titles and descriptions, and provide owner-only publishing tools. HKTUBE does not sell personal information."], bullets: ["We use essential session data to authenticate accounts and prevent unauthorized access.", "We use content and activity data only for requested platform functions, safety, moderation, and aggregate service improvement.", "If advertising is enabled later, advertising partners may process device or usage information only as described in an updated notice and after any consent required by applicable law."] },
       { heading: "Storage and access", paragraphs: ["Uploaded media is stored through the configured object-storage workflow and linked from the HKTUBE database. Only the owner/admin role can publish or remove video records through Creator Studio. Public visitors can view published catalog data and media intended for public playback."] },
-      { heading: "Contact", paragraphs: ["For privacy questions relating to HKTUBE, contact hanifnazamdin17@gmail.com. This policy should be reviewed whenever new account, advertising, comments, or analytics features are activated."] },
+      { heading: "Retention, choices, and contact", paragraphs: ["HKTUBE keeps account, content, and moderation records only for as long as needed to provide the service, meet legal obligations, resolve disputes, and protect the platform. You may request access, correction, deletion, or clarification of personal information, subject to legal and security limits, by contacting hanifnazamdin17@gmail.com. This policy is updated before material account, advertising, comments, analytics, or tracking features are activated."] },
     ],
   },
   terms: {
-    icon: Scale, label: "Terms", title: "Terms of Use", intro: "These terms set the basic rules for using HKTUBE and publishing content through the platform.",
+    icon: Scale, label: "Terms", title: "Terms of Use", intro: "These terms set the rules for using HKTUBE, publishing content, interacting with creators, and viewing any future advertising or sponsored placements.",
     sections: [
       { heading: "Using HKTUBE", paragraphs: ["By accessing HKTUBE, you agree to use the service lawfully and in accordance with these terms and the Community Guidelines. HKTUBE may change or suspend features while the platform is developed and maintained."] },
       { heading: "Account responsibility", paragraphs: ["You are responsible for activity performed through your signed-in account and for keeping your access credentials secure. Owner/admin access is reserved for authorized platform management and video publishing."] },
       { heading: "Content rights", paragraphs: ["Only upload media that you own or are authorized to publish. You remain responsible for your title, description, thumbnail, video, and caption materials, and for ensuring that your content does not infringe another party’s rights."] },
-      { heading: "Enforcement", paragraphs: ["HKTUBE may restrict access to content or accounts that violate these terms, applicable law, or the Community Guidelines. Contact hanifnazamdin17@gmail.com with a platform or content concern."] },
+      { heading: "Advertising and enforcement", paragraphs: ["HKTUBE may restrict access to content or accounts that violate these terms, applicable law, or the Community Guidelines. Any advertising or sponsored content will be identified clearly and will not be presented as an endorsement unless the relationship is real. Contact hanifnazamdin17@gmail.com with a platform or content concern."] },
     ],
   },
   cookies: {
     icon: Cookie, label: "Cookies", title: "Cookie Notice", intro: "HKTUBE uses essential session mechanisms needed to keep signed-in accounts working securely.",
     sections: [
       { heading: "Essential cookies and storage", paragraphs: ["HKTUBE uses authentication session data to recognize a signed-in account and enforce owner-only publishing access. Local browser storage may be used to support the signed-in preview experience where browser cookie rules require it."] },
-      { heading: "Advertising cookies", paragraphs: ["Advertising and AdSense are not enabled in the current HKTUBE build. If advertising is introduced later, this notice and the Privacy Policy must be updated to describe any required consent and advertising technology."] },
+      { heading: "Advertising cookies and consent", paragraphs: ["Advertising and AdSense are not enabled in the current HKTUBE build. If advertising is introduced later, HKTUBE will update this notice and the Privacy Policy before activation, disclose the provider and purposes, obtain consent where required, and provide a way to withdraw or change consent. Non-essential advertising cookies will not be set before the applicable consent choice."] },
       { heading: "Your controls", paragraphs: ["You can clear cookies and local browser storage through your browser settings. Doing so may sign you out of HKTUBE or remove locally stored preferences."] },
     ],
   },

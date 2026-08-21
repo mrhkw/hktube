@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Bell, Compass, Flame, Home, Library, LogOut, Menu as MenuIcon, MonitorPlay, Moon, PlusCircle, Radio, Search, Sparkles, Sun, UserRound } from "lucide-react";
-import { FormEvent, ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -29,8 +29,8 @@ const primaryNav = [
 const mobileDock = [
   { label: "Home", href: "/", icon: Home },
   { label: "Shorts", href: "/shorts", icon: MonitorPlay },
-  { label: "Studio", href: "/upload", icon: Radio, featured: true },
-  { label: "Subs", href: "/subscriptions", icon: Compass },
+  { label: "LIVE", href: "/live", icon: Radio, featured: true },
+  { label: "Feeds", href: "/posts", icon: Sparkles },
   { label: "Menu", href: "/menu", icon: MenuIcon },
 ];
 
@@ -41,6 +41,8 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [familyMode, setFamilyMode] = useState(false);
+  useEffect(() => { setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled"); }, []);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,9 +53,10 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
     }
   }
 
+  const visiblePrimaryNav = familyMode ? primaryNav.filter(item => item.href !== "/shorts") : primaryNav;
   const nav = user?.role === "admin"
-    ? [...primaryNav, { label: "Upload", href: "/upload", icon: PlusCircle }]
-    : primaryNav;
+    ? [...visiblePrimaryNav, { label: "Upload", href: "/upload", icon: PlusCircle }]
+    : visiblePrimaryNav;
 
   return (
     <div className="min-h-[100dvh] bg-[#080810] text-slate-100 selection:bg-fuchsia-500/35">
@@ -69,7 +72,7 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
           </Button>
           <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="HKTUBE home">
             <img src="/icon-48.png" alt="" className="size-8 rounded-[10px] shadow-[0_0_24px_rgba(168,85,247,.55)]" />
-            <span className="text-base font-black tracking-tight text-white">HK<span className="text-fuchsia-400">TUBE</span></span>
+            <span className="text-base font-black tracking-tight text-white"><span className="text-cyan-200">Hk</span><span className="bg-gradient-to-r from-fuchsia-300 via-violet-300 to-cyan-200 bg-clip-text text-transparent">Tube</span></span>
           </Link>
 
           <form onSubmit={submitSearch} className="mx-auto hidden w-full max-w-xl md:block">
@@ -95,7 +98,7 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
         </div>
         {mobileSearchOpen && <form onSubmit={submitSearch} className="border-t border-white/8 bg-[#0a0a13] p-3 md:hidden"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fuchsia-300" /><Input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search HKTUBE" className="h-11 rounded-xl border-white/10 bg-white/[.055] pl-10 text-base text-white placeholder:text-slate-500 focus-visible:border-fuchsia-400/60 focus-visible:ring-fuchsia-400/25" /></div></form>}
         <nav className="flex gap-7 overflow-x-auto border-t border-white/6 px-5 py-3 text-sm [scrollbar-width:none] lg:hidden" aria-label="Mobile section navigation">
-          {primaryNav.map(item => {
+          {visiblePrimaryNav.map(item => {
             const active = item.href === "/" ? location === "/" : location.startsWith(item.href);
             return <Link key={item.href} href={item.href} className={cn("relative shrink-0 pb-1 font-medium transition", active ? "text-white" : "text-slate-500 hover:text-slate-200")}>{item.label}{active && <span className="absolute inset-x-0 -bottom-3 h-0.5 rounded-full bg-fuchsia-300 shadow-[0_0_10px_#e879f9]" />}</Link>;
           })}
@@ -114,10 +117,6 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
         <div className="mt-7 border-t border-white/7 pt-6">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-slate-600">Creator tools</p>
           {user?.role === "admin" ? <Link href="/upload" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-cyan-200 hover:bg-cyan-400/10"><PlusCircle className="size-4 text-cyan-300" />Studio upload</Link> : <p className="px-3 text-xs leading-5 text-slate-500">Sign in as an authorized creator to manage HKTUBE content.</p>}
-        </div>
-        <div className="absolute bottom-5 left-3 right-3 rounded-xl border border-violet-400/15 bg-violet-400/[.055] p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-violet-200"><Sparkles className="size-3.5 text-fuchsia-300" />Authentic content only</div>
-          <p className="mt-1 text-[11px] leading-4 text-slate-500">HKTUBE shows only records saved in the live database.</p>
         </div>
       </aside>
 

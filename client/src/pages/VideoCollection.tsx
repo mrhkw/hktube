@@ -1,25 +1,36 @@
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { VideoRecord } from "@/lib/video";
+import { Button } from "@/components/ui/button";
+import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
+import { Bookmark, Download, Flag, Heart, MessageCircle, Play, Radio, Send, Volume2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "wouter";
+import { toast } from "sonner";
 
 export function VideoCollection({ kind }: { kind: "shorts" | "trending" | "subscriptions" | "library" }) {
-  const isShorts = kind === "shorts";
+  if (kind === "shorts") return <ShortsFeed />;
   const isTrending = kind === "trending";
-  const query = isShorts ? trpc.videos.shorts.useQuery({ limit: 36 }) : isTrending ? trpc.videos.trending.useQuery({ limit: 36 }) : null;
+  const query = isTrending ? trpc.videos.trending.useQuery({ limit: 36 }) : null;
   const videos = (query?.data ?? []) as VideoRecord[];
-  const labels = {
-    shorts: { title: "Shorts", subtitle: "Vertical, fast-moving videos from the HKTUBE catalog.", empty: "There are no authentic shorts in the catalog yet." },
-    trending: { title: "Trending", subtitle: "Videos ordered by their current live view count.", empty: "Trending will appear as viewers watch published HKTUBE videos." },
-    subscriptions: { title: "Subscriptions", subtitle: "Subscriptions will appear here when this feature is enabled for signed-in viewers.", empty: "No subscriptions to show yet." },
-    library: { title: "Library", subtitle: "Your personal saved-video library will appear here when this feature is enabled.", empty: "Your library is empty." },
-  }[kind];
-
-  return <HkTubeShell title={labels.title} subtitle={labels.subtitle}>
-    {kind === "subscriptions" || kind === "library" ? <EmptyVideos title={labels.title === "Subscriptions" ? "Nothing to show yet" : "No saved videos"} copy={labels.empty} /> : query?.isLoading ? <VideoGridSkeleton /> : query?.isError ? <EmptyVideos title="Videos could not be loaded" copy="Please refresh the page. The catalog is read directly from the live HKTUBE database." /> : videos.length ? <div className={isShorts ? "grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 xl:grid-cols-5" : "grid gap-x-4 gap-y-7 sm:grid-cols-2 xl:grid-cols-4"}>{videos.map(video => <VideoCard key={video.id} video={video} compact={isShorts} />)}</div> : <EmptyVideos title="No videos published" copy={labels.empty} />}
-  </HkTubeShell>;
+  const labels = { trending: { title: "Trending", subtitle: "Videos ordered by authentic engagement and recency.", empty: "Trending will appear as viewers watch published HKTUBE videos." }, subscriptions: { title: "Subscriptions", subtitle: "Channels you follow on HKTUBE.", empty: "No subscriptions to show yet." }, library: { title: "Library", subtitle: "Your saved HKTUBE videos.", empty: "Your library is empty." } }[kind];
+  return <HkTubeShell title={labels.title} subtitle={labels.subtitle}>{!isTrending ? <EmptyVideos title="Nothing to show yet" copy={labels.empty} /> : query?.isLoading ? <VideoGridSkeleton /> : query?.isError ? <EmptyVideos title="Videos could not be loaded" copy="Please refresh the page. The catalog is read directly from the live HKTUBE database." /> : videos.length ? <div className="grid gap-x-4 gap-y-7 sm:grid-cols-2 xl:grid-cols-4">{videos.map(video => <VideoCard key={video.id} video={video} />)}</div> : <EmptyVideos title="No videos published" copy={labels.empty} />}</HkTubeShell>;
 }
 
-function VideoGridSkeleton() {
-  return <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <div key={index} className="animate-pulse"><div className="aspect-video rounded-xl bg-white/5" /><div className="mt-3 h-4 w-4/5 rounded bg-white/6" /><div className="mt-2 h-3 w-1/2 rounded bg-white/5" /></div>)}</div>;
+function ShortsFeed() {
+  const [familyMode, setFamilyMode] = useState(false);
+  useEffect(() => { setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled"); }, []);
+  const query = trpc.videos.shorts.useQuery({ limit: 36 }, { enabled: !familyMode });
+  const videos = (query.data ?? []) as VideoRecord[];
+  return <HkTubeShell title="Shorts" subtitle="Immersive vertical videos from the live HKTUBE catalog."><div className="mx-auto max-w-md">{familyMode ? <EmptyVideos title="Shorts are hidden" copy="Family Mode is enabled in Settings for this browser." /> : query.isLoading ? <div className="grid min-h-[70vh] place-items-center"><Radio className="size-8 animate-pulse text-fuchsia-300" /></div> : query.isError ? <EmptyVideos title="Shorts could not load" copy="Refresh and try again. HKTUBE does not substitute demo content." /> : videos.length ? <div className="space-y-6">{videos.map(video => <ShortCard key={video.id} video={video} />)}</div> : <EmptyVideos title="No Shorts published" copy="Real vertical videos will appear here when creators publish them." />}</div></HkTubeShell>;
 }
+
+function ShortCard({ video }: { video: VideoRecord }) {
+  const { user } = useAuth(); const utils = trpc.useUtils(); const engagement = trpc.videos.engagement.useQuery({ id: video.id }); const comments = trpc.comments.list.useQuery({ videoId: video.id }); const like = trpc.videos.toggleLike.useMutation({ onSuccess: data => utils.videos.engagement.setData({ id: video.id }, data), onError: error => toast.error(error.message) }); const save = trpc.library.toggleSaved.useMutation({ onError: error => toast.error(error.message) }); const report = trpc.reports.create.useMutation({ onSuccess: () => toast.success("Report submitted."), onError: error => toast.error(error.message) }); const [muted, setMuted] = useState(true);
+  const requireLogin = () => { if (!user) { startLogin(); return false; } return true; };
+  return <article className="relative aspect-[9/16] overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl shadow-violet-950/30"><video className="absolute inset-0 size-full object-cover" src={video.videoUrl} poster={video.thumbnailUrl ?? undefined} autoPlay loop muted={muted} playsInline controls={false} onClick={event => { const element = event.currentTarget; if (element.paused) void element.play(); else element.pause(); }} /><div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/15" /><div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-4"><ShortAction icon={Heart} label={formatViews(engagement.data?.likeCount ?? 0)} active={Boolean(engagement.data?.likedByViewer)} onClick={() => { if (requireLogin()) like.mutate({ id: video.id }); }} /><ShortAction icon={Bookmark} label="Save" onClick={() => { if (requireLogin()) save.mutate({ videoId: video.id }); }} /><ShortAction icon={MessageCircle} label={String(comments.data?.length ?? 0)} onClick={() => document.getElementById(`short-comments-${video.id}`)?.scrollIntoView({ behavior: "smooth" })} /><ShortAction icon={Send} label="Share" onClick={() => { void navigator.clipboard?.writeText(new URL(`/watch/${video.id}`, window.location.origin).toString()); toast.success("Link copied."); }} /><ShortAction icon={Download} label="Download" onClick={() => { const link = document.createElement("a"); link.href = video.videoUrl; link.download = `hktube-${video.id}`; link.click(); }} /><ShortAction icon={Flag} label="Report" onClick={() => { if (requireLogin()) report.mutate({ videoId: video.id, reason: "User report" }); }} /></div><div className="absolute inset-x-4 bottom-5 pr-16"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full border border-white/30 bg-violet-500/60 text-sm font-bold text-white">Hk</span><div className="min-w-0"><p className="font-bold text-white">HkTube creator</p><p className="text-xs text-slate-300">Published {formatDate(video.uploadedAt)}</p></div></div><h2 className="mt-3 line-clamp-2 text-lg font-bold text-white">{video.title}</h2>{video.description && <p className="mt-1 line-clamp-3 text-sm leading-5 text-slate-200">{video.description}</p>}<div className="mt-4 h-1 overflow-hidden rounded-full bg-white/25"><div className="h-full w-1/3 rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400" /></div></div><button className="absolute bottom-20 left-4 grid size-9 place-items-center rounded-full bg-black/40 text-white" onClick={() => setMuted(value => !value)} aria-label={muted ? "Unmute" : "Mute"}>{muted ? <Play className="size-4" /> : <Volume2 className="size-4" />}</button><div id={`short-comments-${video.id}`} className="sr-only" /></article>;
+}
+function ShortAction({ icon: Icon, label, onClick, active }: { icon: typeof Heart; label: string; onClick: () => void; active?: boolean }) { return <button onClick={onClick} className="flex flex-col items-center gap-1 text-[11px] font-semibold text-white drop-shadow-md" aria-label={label}><span className={`grid size-11 place-items-center rounded-full bg-black/45 backdrop-blur ${active ? "text-fuchsia-300" : "text-white"}`}><Icon className={`size-5 ${active ? "fill-current" : ""}`} /></span><span>{label}</span></button>; }
+function VideoGridSkeleton() { return <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <div key={index} className="animate-pulse"><div className="aspect-video rounded-xl bg-white/5" /><div className="mt-3 h-4 w-4/5 rounded bg-white/6" /><div className="mt-2 h-3 w-1/2 rounded bg-white/5" /></div>)}</div>; }
