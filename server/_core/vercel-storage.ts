@@ -1,4 +1,3 @@
-import "dotenv/config";
 import type { Request, Response } from "express";
 import { createApiApp } from "./app";
 
