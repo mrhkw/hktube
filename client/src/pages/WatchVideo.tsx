@@ -6,8 +6,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Eye, Heart, Loader2, Share2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Eye, Heart, Loader2, MessageCircle, Share2 } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { toast } from "sonner";
 
@@ -18,18 +18,23 @@ export default function WatchVideo() {
   const video = videoQuery.data as VideoRecord | undefined;
   const viewedVideoId = useRef<number | null>(null);
   const recordView = trpc.videos.recordView.useMutation();
+  const recordHistory = trpc.watch_history.record.useMutation();
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const engagementQuery = trpc.videos.engagement.useQuery({ id }, { enabled: Boolean(video) });
   const likeMutation = trpc.videos.toggleLike.useMutation();
   const relatedQuery = trpc.videos.related.useQuery({ id: id || 1, category: video?.category || "regular" }, { enabled: Boolean(video) });
   const related = (relatedQuery.data ?? []) as VideoRecord[];
+  const commentsQuery = trpc.comments.list.useQuery({ videoId: id }, { enabled: Boolean(video) });
+  const [commentBody, setCommentBody] = useState("");
+  const createComment = trpc.comments.create.useMutation({ onSuccess: () => { setCommentBody(""); void commentsQuery.refetch(); toast.success("Comment published."); }, onError: error => toast.error(error.message) });
 
   useEffect(() => {
     if (!video || viewedVideoId.current === video.id) return;
     viewedVideoId.current = video.id;
     recordView.mutate({ id: video.id }, { onSuccess: updatedVideo => { utils.videos.byId.setData({ id: video.id }, updatedVideo); } });
-  }, [video, recordView, utils]);
+    if (user) recordHistory.mutate({ videoId: video.id });
+  }, [video, recordHistory, recordView, user, utils]);
 
   if (videoQuery.isLoading) return <HkTubeShell><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-7 animate-spin text-fuchsia-300" /></div></HkTubeShell>;
   if (!video) return <HkTubeShell title="Video unavailable"><EmptyVideos title="This video is not available" copy="It may have been removed from the HKTUBE catalog or the link is incorrect." /></HkTubeShell>;
@@ -48,6 +53,13 @@ export default function WatchVideo() {
     likeMutation.mutate({ id: activeVideo.id }, { onSuccess: engagement => { utils.videos.engagement.setData({ id: activeVideo.id }, engagement); }, onError: error => toast.error(error.message || "Unable to update like.") });
   }
 
+  function submitComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!commentBody.trim()) return;
+    if (!user) return startLogin();
+    createComment.mutate({ videoId: activeVideo.id, body: commentBody.trim() });
+  }
+
   return <HkTubeShell>
     <div className="mx-auto max-w-[1560px] xl:grid xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-7">
       <section className="min-w-0">
@@ -58,6 +70,11 @@ export default function WatchVideo() {
           <p className="mt-4 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-slate-400">{video.description || "No description was provided for this video."}</p>
           <p className="mt-3 text-xs text-slate-600">Published {formatDate(video.uploadedAt)}</p>
         </div>
+        <section className="border-b border-white/8 py-6">
+          <div className="flex items-center gap-2"><MessageCircle className="size-4 text-fuchsia-300" /><h2 className="text-sm font-bold uppercase tracking-[.16em] text-slate-300">Comments</h2><span className="text-xs text-slate-500">{commentsQuery.data?.length ?? 0}</span></div>
+          <form onSubmit={submitComment} className="mt-4 flex gap-2"><input value={commentBody} onChange={event => setCommentBody(event.target.value)} placeholder={user ? "Share your thoughts" : "Sign in to comment"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.045] px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-fuchsia-400/60" /><Button type="submit" disabled={createComment.isPending || !commentBody.trim()} size="sm">Post</Button></form>
+          <div className="mt-5 space-y-4">{commentsQuery.data?.length ? commentsQuery.data.map(comment => <article key={comment.id} className="rounded-xl border border-white/7 bg-white/[.025] p-4"><p className="text-sm leading-6 text-slate-300">{comment.body}</p><p className="mt-2 text-xs text-slate-600">{formatDate(comment.createdAt)}</p></article>) : <p className="py-6 text-sm text-slate-500">No comments yet. Be the first to contribute a real comment.</p>}</div>
+        </section>
       </section>
       <aside className="mt-7 xl:mt-0"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="space-y-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
     </div>

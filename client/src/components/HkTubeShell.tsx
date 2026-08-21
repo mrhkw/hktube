@@ -3,9 +3,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Bell, Compass, Flame, Home, Library, LogOut, Menu as MenuIcon, MonitorPlay, PlusCircle, Radio, Search, Sparkles, UserRound, Video } from "lucide-react";
+import { Bell, Compass, Flame, Home, Library, LogOut, Menu as MenuIcon, MonitorPlay, Moon, PlusCircle, Radio, Search, Sparkles, Sun, UserRound } from "lucide-react";
 import { FormEvent, ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type HkTubeShellProps = {
   children: ReactNode;
@@ -16,9 +17,13 @@ type HkTubeShellProps = {
 const primaryNav = [
   { label: "Home", href: "/", icon: Home },
   { label: "Shorts", href: "/shorts", icon: MonitorPlay },
+  { label: "Posts", href: "/posts", icon: Sparkles },
+  { label: "Live", href: "/live", icon: Radio },
   { label: "Trending", href: "/trending", icon: Flame },
   { label: "Subscriptions", href: "/subscriptions", icon: Compass },
   { label: "Library", href: "/library", icon: Library },
+  { label: "History", href: "/history", icon: MonitorPlay },
+  { label: "Playlists", href: "/playlists", icon: Library },
 ];
 
 const mobileDock = [
@@ -32,6 +37,7 @@ const mobileDock = [
 export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
   const [location, navigate] = useLocation();
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -62,9 +68,7 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
             <MenuIcon className="size-5" />
           </Button>
           <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="HKTUBE home">
-            <span className="grid size-8 place-items-center rounded-[10px] bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-[0_0_24px_rgba(168,85,247,.55)]">
-              <Video className="size-4 fill-white text-white" />
-            </span>
+            <img src="/icon-48.png" alt="" className="size-8 rounded-[10px] shadow-[0_0_24px_rgba(168,85,247,.55)]" />
             <span className="text-base font-black tracking-tight text-white">HK<span className="text-fuchsia-400">TUBE</span></span>
           </Link>
 
@@ -78,7 +82,9 @@ export function HkTubeShell({ children, title, subtitle }: HkTubeShellProps) {
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-[11px] font-semibold uppercase tracking-[.14em] text-cyan-200 sm:block">Watch. Share. Discover.</span>
             <Button variant="ghost" size="icon" className="text-slate-300 hover:bg-white/8 md:hidden" onClick={() => setMobileSearchOpen(value => !value)} aria-label="Search HKTUBE"><Search className="size-4" /></Button>
-            <Button variant="ghost" size="icon" className="text-slate-300 hover:bg-white/8" aria-label="Notifications"><Bell className="size-4" /></Button>
+            <Link href="/notifications" className="grid size-9 place-items-center rounded-lg text-slate-300 hover:bg-white/8" aria-label="Notifications"><Bell className="size-4" /></Link>
+            <Button variant="ghost" size="icon" className="text-slate-300 hover:bg-white/8" onClick={toggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}>{theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button>
+            <select defaultValue="en" aria-label="Language" onChange={event => { const value = event.target.value; localStorage.setItem("language", value); document.documentElement.dir = value === "ur" ? "rtl" : "ltr"; }} className="hidden h-8 rounded-lg border border-white/10 bg-white/[.045] px-2 text-xs text-slate-300 sm:block"><option value="en">EN</option><option value="ur">اردو</option><option value="hi">हिन्दी</option></select>
             {loading ? <div className="size-8 animate-pulse rounded-full bg-white/10" /> : isAuthenticated ? (
               <div className="flex items-center gap-1.5">
                 <Link href="/menu" className="grid size-9 place-items-center rounded-full border border-fuchsia-400/35 bg-gradient-to-br from-violet-500/40 to-cyan-400/25 text-xs font-black text-fuchsia-50 shadow-[0_0_18px_rgba(217,70,239,.2)]" aria-label="Open account menu">{(user?.name || "H").slice(0, 1).toUpperCase()}</Link>

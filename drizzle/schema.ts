@@ -1,72 +1,60 @@
 import { index, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  name: text("name"), email: varchar("email", { length: 320 }), loginMethod: varchar("loginMethod", { length: 64 }),
+  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(), avatarUrl: text("avatarUrl"), bio: text("bio"),
+  language: mysqlEnum("language", ["en", "ur", "hi"]).default("en").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(), lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-
+export const creatorVerificationValues = ["unverified", "pending", "verified", "rejected"] as const;
 export const videoCategoryValues = ["regular", "shorts"] as const;
 
-export const videos = mysqlTable(
-  "videos",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    title: varchar("title", { length: 255 }).notNull(),
-    description: text("description"),
-    videoUrl: text("videoUrl").notNull(),
-    videoStorageKey: varchar("videoStorageKey", { length: 512 }),
-    thumbnailUrl: text("thumbnailUrl"),
-    thumbnailStorageKey: varchar("thumbnailStorageKey", { length: 512 }),
-    captionUrl: text("captionUrl"),
-    captionStorageKey: varchar("captionStorageKey", { length: 512 }),
-    durationSeconds: int("durationSeconds").notNull().default(0),
-    viewCount: int("viewCount").notNull().default(0),
-    category: mysqlEnum("category", videoCategoryValues).notNull().default("regular"),
-    uploadedById: int("uploadedById").notNull(),
-    uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
-  },
-  table => [
-    index("videos_category_uploaded_at_idx").on(table.category, table.uploadedAt),
-    index("videos_view_count_idx").on(table.viewCount),
-    index("videos_uploaded_by_idx").on(table.uploadedById),
-  ],
-);
+export const channels = mysqlTable("channels", {
+  id: int("id").autoincrement().primaryKey(), ownerId: int("ownerId").notNull(), handle: varchar("handle", { length: 64 }).notNull(), displayName: varchar("displayName", { length: 255 }).notNull(), description: text("description"), avatarUrl: text("avatarUrl"), bannerUrl: text("bannerUrl"), verificationStatus: mysqlEnum("verificationStatus", creatorVerificationValues).default("unverified").notNull(), subscriberCount: int("subscriberCount").default(0).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex("channels_handle_unique").on(table.handle), index("channels_owner_idx").on(table.ownerId)]);
+export type Channel = typeof channels.$inferSelect;
+export type InsertChannel = typeof channels.$inferInsert;
 
+export const videos = mysqlTable("videos", {
+  id: int("id").autoincrement().primaryKey(), title: varchar("title", { length: 255 }).notNull(), description: text("description"), videoUrl: text("videoUrl").notNull(), videoStorageKey: varchar("videoStorageKey", { length: 512 }), thumbnailUrl: text("thumbnailUrl"), thumbnailStorageKey: varchar("thumbnailStorageKey", { length: 512 }), captionUrl: text("captionUrl"), captionStorageKey: varchar("captionStorageKey", { length: 512 }), durationSeconds: int("durationSeconds").notNull().default(0), viewCount: int("viewCount").notNull().default(0), category: mysqlEnum("category", videoCategoryValues).notNull().default("regular"), channelId: int("channelId"), uploadedById: int("uploadedById").notNull(), uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+}, table => [index("videos_category_uploaded_at_idx").on(table.category, table.uploadedAt), index("videos_view_count_idx").on(table.viewCount), index("videos_uploaded_by_idx").on(table.uploadedById), index("videos_channel_idx").on(table.channelId)]);
 export type Video = typeof videos.$inferSelect;
 export type InsertVideo = typeof videos.$inferInsert;
 
-export const videoLikes = mysqlTable(
-  "video_likes",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    videoId: int("videoId").notNull(),
-    userId: int("userId").notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-  },
-  table => [
-    index("video_likes_video_id_idx").on(table.videoId),
-    uniqueIndex("video_likes_video_user_unique").on(table.videoId, table.userId),
-  ],
-);
-
+export const videoLikes = mysqlTable("video_likes", { id: int("id").autoincrement().primaryKey(), videoId: int("videoId").notNull(), userId: int("userId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("video_likes_video_id_idx").on(table.videoId), uniqueIndex("video_likes_video_user_unique").on(table.videoId, table.userId)]);
 export type VideoLike = typeof videoLikes.$inferSelect;
+
+export const subscriptions = mysqlTable("subscriptions", { id: int("id").autoincrement().primaryKey(), subscriberId: int("subscriberId").notNull(), channelId: int("channelId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("subscriptions_user_channel_unique").on(table.subscriberId, table.channelId), index("subscriptions_channel_idx").on(table.channelId)]);
+export const comments = mysqlTable("comments", { id: int("id").autoincrement().primaryKey(), videoId: int("videoId"), postId: int("postId"), authorId: int("authorId").notNull(), parentId: int("parentId"), body: text("body").notNull(), status: mysqlEnum("status", ["visible", "hidden", "removed"]).default("visible").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull() }, table => [index("comments_video_idx").on(table.videoId, table.createdAt), index("comments_post_idx").on(table.postId, table.createdAt), index("comments_author_idx").on(table.authorId)]);
+export const playlists = mysqlTable("playlists", { id: int("id").autoincrement().primaryKey(), ownerId: int("ownerId").notNull(), title: varchar("title", { length: 255 }).notNull(), description: text("description"), visibility: mysqlEnum("visibility", ["public", "unlisted", "private"]).default("private").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull() }, table => [index("playlists_owner_idx").on(table.ownerId)]);
+export const playlistItems = mysqlTable("playlist_items", { id: int("id").autoincrement().primaryKey(), playlistId: int("playlistId").notNull(), videoId: int("videoId").notNull(), position: int("position").default(0).notNull(), addedAt: timestamp("addedAt").defaultNow().notNull() }, table => [uniqueIndex("playlist_items_unique").on(table.playlistId, table.videoId), index("playlist_items_playlist_idx").on(table.playlistId, table.position)]);
+export const watchHistory = mysqlTable("watch_history", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), videoId: int("videoId").notNull(), watchedSeconds: int("watchedSeconds").default(0).notNull(), watchedAt: timestamp("watchedAt").defaultNow().notNull() }, table => [uniqueIndex("watch_history_user_video_unique").on(table.userId, table.videoId), index("watch_history_user_time_idx").on(table.userId, table.watchedAt)]);
+export const notifications = mysqlTable("notifications", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), type: varchar("type", { length: 64 }).notNull(), title: varchar("title", { length: 255 }).notNull(), body: text("body"), href: varchar("href", { length: 512 }), readAt: timestamp("readAt"), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("notifications_user_created_idx").on(table.userId, table.createdAt), index("notifications_unread_idx").on(table.userId, table.readAt)]);
+export const posts = mysqlTable("posts", { id: int("id").autoincrement().primaryKey(), authorId: int("authorId").notNull(), channelId: int("channelId"), body: text("body").notNull(), mediaUrl: text("mediaUrl"), linkUrl: text("linkUrl"), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull() }, table => [index("posts_author_created_idx").on(table.authorId, table.createdAt), index("posts_channel_created_idx").on(table.channelId, table.createdAt)]);
+export const postLikes = mysqlTable("post_likes", { id: int("id").autoincrement().primaryKey(), postId: int("postId").notNull(), userId: int("userId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("post_likes_post_user_unique").on(table.postId, table.userId), index("post_likes_post_idx").on(table.postId)]);
+export const reports = mysqlTable("reports", { id: int("id").autoincrement().primaryKey(), reporterId: int("reporterId").notNull(), videoId: int("videoId"), postId: int("postId"), commentId: int("commentId"), reason: varchar("reason", { length: 120 }).notNull(), details: text("details"), status: mysqlEnum("status", ["open", "reviewing", "resolved", "dismissed"]).default("open").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("reports_status_created_idx").on(table.status, table.createdAt), index("reports_reporter_idx").on(table.reporterId)]);
+export const verificationRequests = mysqlTable("verification_requests", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), channelId: int("channelId"), statement: text("statement").notNull(), status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(), reviewedAt: timestamp("reviewedAt"), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("verification_requests_user_idx").on(table.userId), index("verification_requests_status_idx").on(table.status)]);
+export const coinsTransactions = mysqlTable("coins_transactions", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), type: mysqlEnum("type", ["purchase", "gift", "refund", "adjustment"]).notNull(), amount: int("amount").notNull(), referenceId: varchar("referenceId", { length: 128 }), metadata: text("metadata"), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("coins_transactions_user_created_idx").on(table.userId, table.createdAt)]);
+export const gifts = mysqlTable("gifts", { id: int("id").autoincrement().primaryKey(), senderId: int("senderId").notNull(), recipientId: int("recipientId").notNull(), liveStreamId: int("liveStreamId"), giftType: varchar("giftType", { length: 64 }).notNull(), coinAmount: int("coinAmount").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("gifts_recipient_created_idx").on(table.recipientId, table.createdAt), index("gifts_stream_idx").on(table.liveStreamId)]);
+export const liveStreams = mysqlTable("live_streams", { id: int("id").autoincrement().primaryKey(), channelId: int("channelId").notNull(), title: varchar("title", { length: 255 }).notNull(), description: text("description"), streamUrl: text("streamUrl"), thumbnailUrl: text("thumbnailUrl"), status: mysqlEnum("status", ["scheduled", "live", "ended"]).default("scheduled").notNull(), viewerCount: int("viewerCount").default(0).notNull(), startedAt: timestamp("startedAt"), endedAt: timestamp("endedAt"), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("live_streams_status_viewers_idx").on(table.status, table.viewerCount), index("live_streams_channel_idx").on(table.channelId)]);
+export const categories = mysqlTable("categories", { id: int("id").autoincrement().primaryKey(), name: varchar("name", { length: 120 }).notNull(), slug: varchar("slug", { length: 120 }).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("categories_slug_unique").on(table.slug)]);
+export const tags = mysqlTable("tags", { id: int("id").autoincrement().primaryKey(), name: varchar("name", { length: 120 }).notNull(), slug: varchar("slug", { length: 120 }).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("tags_slug_unique").on(table.slug)]);
+export const videoTags = mysqlTable("video_tags", { id: int("id").autoincrement().primaryKey(), videoId: int("videoId").notNull(), tagId: int("tagId").notNull() }, table => [uniqueIndex("video_tags_unique").on(table.videoId, table.tagId), index("video_tags_tag_idx").on(table.tagId)]);
+export const savedVideos = mysqlTable("saved_videos", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), videoId: int("videoId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("saved_videos_user_video_unique").on(table.userId, table.videoId), index("saved_videos_user_created_idx").on(table.userId, table.createdAt)]);
+export const blockedUsers = mysqlTable("blocked_users", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), blockedUserId: int("blockedUserId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("blocked_users_unique").on(table.userId, table.blockedUserId)]);
+export const sessions = mysqlTable("sessions", { id: varchar("id", { length: 128 }).primaryKey(), userId: int("userId").notNull(), expiresAt: timestamp("expiresAt").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull() }, table => [index("sessions_user_idx").on(table.userId), index("sessions_expiry_idx").on(table.expiresAt)]);
+export const auditLogs = mysqlTable("audit_logs", { id: int("id").autoincrement().primaryKey(), actorId: int("actorId"), action: varchar("action", { length: 120 }).notNull(), entityType: varchar("entityType", { length: 80 }).notNull(), entityId: int("entityId"), metadata: text("metadata"), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = typeof comments.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = typeof posts.$inferInsert;
+export type Playlist = typeof playlists.$inferSelect;
+export type InsertPlaylist = typeof playlists.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type LiveStream = typeof liveStreams.$inferSelect;
+export type InsertLiveStream = typeof liveStreams.$inferInsert;

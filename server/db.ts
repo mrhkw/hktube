@@ -1,193 +1,55 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertVideo, users, videoLikes, videos } from "../drizzle/schema";
+import { InsertUser, InsertVideo, auditLogs, channels, comments, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
-
 let _db: ReturnType<typeof drizzle> | null = null;
-
-// Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
-  }
-  return _db;
-}
-
+export async function getDb() { if (!_db && process.env.DATABASE_URL) { try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; } } return _db; }
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
-
-  try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
-
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
-  } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
-  }
+  if (!user.openId) throw new Error("User openId is required for upsert");
+  const db = await getDb(); if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
+  const values: InsertUser = { openId: user.openId }; const updateSet: Record<string, unknown> = {};
+  const textFields = ["name", "email", "loginMethod", "avatarUrl", "bio"] as const;
+  for (const field of textFields) { const value = user[field]; if (value !== undefined) { values[field] = value ?? null; updateSet[field] = value ?? null; } }
+  if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
+  if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; } else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
+  if (user.language !== undefined) { values.language = user.language; updateSet.language = user.language; }
+  if (!values.lastSignedIn) values.lastSignedIn = new Date(); if (!Object.keys(updateSet).length) updateSet.lastSignedIn = new Date();
+  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
-
-export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
-}
-
-function escapeLike(value: string) {
-  return value.replace(/[\\%_]/g, "\\$&");
-}
-
+export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1); return result[0]; }
+function escapeLike(value: string) { return value.replace(/[\\%_]/g, "\\$&"); }
 export type VideoListMode = "latest" | "trending";
-
-export async function listVideos(options: {
-  category?: "regular" | "shorts";
-  mode?: VideoListMode;
-  search?: string;
-  limit?: number;
-}) {
-  const db = await getDb();
-  if (!db) return [];
-
-  const filters = [];
-  if (options.category) filters.push(eq(videos.category, options.category));
-  const search = options.search?.trim();
-  if (search) {
-    const term = `%${escapeLike(search)}%`;
-    filters.push(or(like(videos.title, term), like(videos.description, term))!);
-  }
-
-  const where = filters.length ? and(...filters) : undefined;
-  const ordering = options.mode === "trending" ? [desc(videos.viewCount), desc(videos.uploadedAt)] : [desc(videos.uploadedAt)];
-
-  return db.select().from(videos).where(where).orderBy(...ordering).limit(Math.min(options.limit ?? 24, 60));
+export async function listVideos(options: { category?: "regular" | "shorts"; mode?: VideoListMode; search?: string; limit?: number }) {
+  const db = await getDb(); if (!db) return []; const filters = [];
+  if (options.category) filters.push(eq(videos.category, options.category)); const search = options.search?.trim();
+  if (search) { const term = `%${escapeLike(search)}%`; filters.push(or(like(videos.title, term), like(videos.description, term))!); }
+  const where = filters.length ? and(...filters) : undefined; const score = sql<number>`(${videos.viewCount} * 2) - (timestampdiff(hour, ${videos.uploadedAt}, now()) / 24)`;
+  return db.select().from(videos).where(where).orderBy(...(options.mode === "trending" ? [desc(score), desc(videos.viewCount), desc(videos.uploadedAt)] : [desc(videos.uploadedAt)])).limit(Math.min(options.limit ?? 24, 60));
 }
+export async function getVideoById(id: number) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(videos).where(eq(videos.id, id)).limit(1); return result[0]; }
+export async function createVideo(video: InsertVideo) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const result = await db.insert(videos).values(video); return getVideoById(Number(result[0].insertId)); }
+export async function incrementVideoView(id: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); await db.update(videos).set({ viewCount: sql`${videos.viewCount} + 1` }).where(eq(videos.id, id)); return getVideoById(id); }
+export async function getRelatedVideos(videoId: number, category: "regular" | "shorts") { const db = await getDb(); if (!db) return []; return db.select().from(videos).where(and(eq(videos.category, category), sql`${videos.id} <> ${videoId}`)).orderBy(desc(videos.uploadedAt)).limit(8); }
+export async function listAdminVideos() { const db = await getDb(); if (!db) return []; return db.select().from(videos).orderBy(desc(videos.uploadedAt)).limit(100); }
+export async function removeVideo(id: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const existing = await getVideoById(id); if (!existing) return false; await db.delete(videos).where(eq(videos.id, id)); return true; }
+export async function getVideoEngagement(videoId: number, userId?: number) { const db = await getDb(); if (!db) return { likeCount: 0, likedByViewer: false }; const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(videoLikes).where(eq(videoLikes.videoId, videoId)); let likedByViewer = false; if (userId) { const row = await db.select({ id: videoLikes.id }).from(videoLikes).where(and(eq(videoLikes.videoId, videoId), eq(videoLikes.userId, userId))).limit(1); likedByViewer = row.length > 0; } return { likeCount: Number(countRow?.count ?? 0), likedByViewer }; }
+export async function toggleVideoLike(videoId: number, userId: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); return db.transaction(async tx => { const target = await tx.select({ id: videos.id }).from(videos).where(eq(videos.id, videoId)).limit(1); if (!target.length) throw new Error("Video not found."); const existing = await tx.select({ id: videoLikes.id }).from(videoLikes).where(and(eq(videoLikes.videoId, videoId), eq(videoLikes.userId, userId))).limit(1); const likedByViewer = existing.length === 0; if (likedByViewer) await tx.insert(videoLikes).values({ videoId, userId }); else await tx.delete(videoLikes).where(eq(videoLikes.id, existing[0].id)); const [countRow] = await tx.select({ count: sql<number>`count(*)` }).from(videoLikes).where(eq(videoLikes.videoId, videoId)); return { likeCount: Number(countRow?.count ?? 0), likedByViewer }; }); }
 
-export async function getVideoById(id: number) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(videos).where(eq(videos.id, id)).limit(1);
-  return result[0];
-}
-
-export async function createVideo(video: InsertVideo) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is unavailable.");
-  const result = await db.insert(videos).values(video);
-  return getVideoById(Number(result[0].insertId));
-}
-
-export async function incrementVideoView(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is unavailable.");
-  await db.update(videos).set({ viewCount: sql`${videos.viewCount} + 1` }).where(eq(videos.id, id));
-  return getVideoById(id);
-}
-
-export async function getRelatedVideos(videoId: number, category: "regular" | "shorts") {
-  const db = await getDb();
-  if (!db) return [];
-  return db
-    .select()
-    .from(videos)
-    .where(and(eq(videos.category, category), sql`${videos.id} <> ${videoId}`))
-    .orderBy(desc(videos.uploadedAt))
-    .limit(8);
-}
-
-export async function listAdminVideos() {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(videos).orderBy(desc(videos.uploadedAt)).limit(100);
-}
-
-export async function removeVideo(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is unavailable.");
-  const existing = await getVideoById(id);
-  if (!existing) return false;
-  await db.delete(videos).where(eq(videos.id, id));
-  return true;
-}
-
-export async function getVideoEngagement(videoId: number, userId?: number) {
-  const db = await getDb();
-  if (!db) return { likeCount: 0, likedByViewer: false };
-  const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(videoLikes).where(eq(videoLikes.videoId, videoId));
-  let likedByViewer = false;
-  if (userId) {
-    const viewerLike = await db.select({ id: videoLikes.id }).from(videoLikes).where(and(eq(videoLikes.videoId, videoId), eq(videoLikes.userId, userId))).limit(1);
-    likedByViewer = viewerLike.length > 0;
-  }
-  return { likeCount: Number(countRow?.count ?? 0), likedByViewer };
-}
-
-export async function toggleVideoLike(videoId: number, userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is unavailable.");
-  return db.transaction(async tx => {
-    const target = await tx.select({ id: videos.id }).from(videos).where(eq(videos.id, videoId)).limit(1);
-    if (!target.length) throw new Error("Video not found.");
-    const existing = await tx.select({ id: videoLikes.id }).from(videoLikes).where(and(eq(videoLikes.videoId, videoId), eq(videoLikes.userId, userId))).limit(1);
-    const likedByViewer = existing.length === 0;
-    if (likedByViewer) await tx.insert(videoLikes).values({ videoId, userId });
-    else await tx.delete(videoLikes).where(eq(videoLikes.id, existing[0].id));
-    const [countRow] = await tx.select({ count: sql<number>`count(*)` }).from(videoLikes).where(eq(videoLikes.videoId, videoId));
-    return { likeCount: Number(countRow?.count ?? 0), likedByViewer };
-  });
-}
+export async function listComments(target: { videoId?: number; postId?: number }) { const db = await getDb(); if (!db) return []; const filter = target.videoId ? eq(comments.videoId, target.videoId) : target.postId ? eq(comments.postId, target.postId) : undefined; return db.select().from(comments).where(filter).orderBy(desc(comments.createdAt)).limit(100); }
+export async function createComment(input: { authorId: number; body: string; videoId?: number; postId?: number; parentId?: number }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const result = await db.insert(comments).values({ ...input, videoId: input.videoId ?? null, postId: input.postId ?? null, parentId: input.parentId ?? null }); const rows = await db.select().from(comments).where(eq(comments.id, Number(result[0].insertId))).limit(1); return rows[0]; }
+export async function listChannelSubscriptions(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(subscriptions).where(eq(subscriptions.subscriberId, userId)).orderBy(desc(subscriptions.createdAt)); }
+export async function toggleChannelSubscription(channelId: number, subscriberId: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const existing = await db.select({ id: subscriptions.id }).from(subscriptions).where(and(eq(subscriptions.channelId, channelId), eq(subscriptions.subscriberId, subscriberId))).limit(1); if (existing.length) { await db.delete(subscriptions).where(eq(subscriptions.id, existing[0].id)); await db.update(channels).set({ subscriberCount: sql`greatest(${channels.subscriberCount} - 1, 0)` }).where(eq(channels.id, channelId)); return { subscribed: false }; } await db.insert(subscriptions).values({ channelId, subscriberId }); await db.update(channels).set({ subscriberCount: sql`${channels.subscriberCount} + 1` }).where(eq(channels.id, channelId)); return { subscribed: true }; }
+export async function listPlaylists(ownerId: number) { const db = await getDb(); if (!db) return []; return db.select().from(playlists).where(eq(playlists.ownerId, ownerId)).orderBy(desc(playlists.updatedAt)); }
+export async function createPlaylist(input: { ownerId: number; title: string; description?: string; visibility?: "public" | "unlisted" | "private" }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const result = await db.insert(playlists).values({ ...input, description: input.description ?? null, visibility: input.visibility ?? "private" }); const rows = await db.select().from(playlists).where(eq(playlists.id, Number(result[0].insertId))).limit(1); return rows[0]; }
+export async function addVideoToPlaylist(input: { playlistId: number; videoId: number; ownerId: number }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const owner = await db.select({ id: playlists.id }).from(playlists).where(and(eq(playlists.id, input.playlistId), eq(playlists.ownerId, input.ownerId))).limit(1); if (!owner.length) throw new Error("Playlist not found."); await db.insert(playlistItems).values({ playlistId: input.playlistId, videoId: input.videoId, position: 0 }).onDuplicateKeyUpdate({ set: { addedAt: new Date() } }); return { success: true } as const; }
+export async function listWatchHistory(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ history: watchHistory, video: videos }).from(watchHistory).innerJoin(videos, eq(watchHistory.videoId, videos.id)).where(eq(watchHistory.userId, userId)).orderBy(desc(watchHistory.watchedAt)).limit(100); }
+export async function recordWatchHistory(input: { userId: number; videoId: number; watchedSeconds?: number }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); await db.insert(watchHistory).values({ ...input, watchedSeconds: input.watchedSeconds ?? 0 }).onDuplicateKeyUpdate({ set: { watchedSeconds: input.watchedSeconds ?? 0, watchedAt: new Date() } }); return { success: true } as const; }
+export async function listNotifications(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt)).limit(100); }
+export async function markNotificationRead(id: number, userId: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.id, id), eq(notifications.userId, userId))); return { success: true } as const; }
+export async function listPosts(limit = 50) { const db = await getDb(); if (!db) return []; return db.select().from(posts).orderBy(desc(posts.createdAt)).limit(Math.min(limit, 100)); }
+export async function createPost(input: { authorId: number; body: string; channelId?: number; mediaUrl?: string; linkUrl?: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const result = await db.insert(posts).values({ ...input, channelId: input.channelId ?? null, mediaUrl: input.mediaUrl ?? null, linkUrl: input.linkUrl ?? null }); const rows = await db.select().from(posts).where(eq(posts.id, Number(result[0].insertId))).limit(1); return rows[0]; }
+export async function togglePostLike(postId: number, userId: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const existing = await db.select({ id: postLikes.id }).from(postLikes).where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId))).limit(1); if (existing.length) await db.delete(postLikes).where(eq(postLikes.id, existing[0].id)); else await db.insert(postLikes).values({ postId, userId }); const [count] = await db.select({ count: sql<number>`count(*)` }).from(postLikes).where(eq(postLikes.postId, postId)); return { liked: existing.length === 0, likeCount: Number(count?.count ?? 0) }; }
+export async function createReport(input: { reporterId: number; reason: string; details?: string; videoId?: number; postId?: number; commentId?: number }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); await db.insert(reports).values({ ...input, details: input.details ?? null, videoId: input.videoId ?? null, postId: input.postId ?? null, commentId: input.commentId ?? null }); return { success: true } as const; }
+export async function toggleSavedVideo(videoId: number, userId: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const existing = await db.select({ id: savedVideos.id }).from(savedVideos).where(and(eq(savedVideos.videoId, videoId), eq(savedVideos.userId, userId))).limit(1); if (existing.length) await db.delete(savedVideos).where(eq(savedVideos.id, existing[0].id)); else await db.insert(savedVideos).values({ videoId, userId }); return { saved: existing.length === 0 }; }
+export async function listSavedVideos(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ saved: savedVideos, video: videos }).from(savedVideos).innerJoin(videos, eq(savedVideos.videoId, videos.id)).where(eq(savedVideos.userId, userId)).orderBy(desc(savedVideos.createdAt)).limit(100); }
+export async function writeAuditLog(input: { actorId?: number; action: string; entityType: string; entityId?: number; metadata?: string }) { const db = await getDb(); if (!db) return; await db.insert(auditLogs).values({ ...input, actorId: input.actorId ?? null, entityId: input.entityId ?? null, metadata: input.metadata ?? null }); }

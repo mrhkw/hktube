@@ -13,6 +13,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import { PlatformSection } from "./pages/PlatformSection";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -22,7 +23,14 @@ function Router() {
       <Route path={"/shorts"}>{() => <VideoCollection kind="shorts" />}</Route>
       <Route path={"/trending"}>{() => <VideoCollection kind="trending" />}</Route>
       <Route path={"/subscriptions"}>{() => <VideoCollection kind="subscriptions" />}</Route>
-      <Route path={"/library"}>{() => <VideoCollection kind="library" />}</Route>
+      <Route path={"/library"}>{() => <PlatformSection kind="library" />}</Route>
+      <Route path={"/posts"}>{() => <PlatformSection kind="posts" />}</Route>
+      <Route path={"/live"}>{() => <PlatformSection kind="live" />}</Route>
+      <Route path={"/notifications"}>{() => <PlatformSection kind="notifications" />}</Route>
+      <Route path={"/playlists"}>{() => <PlatformSection kind="playlists" />}</Route>
+      <Route path={"/history"}>{() => <PlatformSection kind="history" />}</Route>
+      <Route path={"/studio"}>{() => <PlatformSection kind="studio" />}</Route>
+      <Route path={"/profile"}>{() => <PlatformSection kind="profile" />}</Route>
       <Route path={"/watch/:id"} component={WatchVideo} />
       <Route path={"/search"} component={SearchResults} />
       <Route path={"/upload"} component={Upload} />
@@ -51,7 +59,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="dark"
-        // switchable
+        switchable
       >
         <TooltipProvider>
           <Toaster />

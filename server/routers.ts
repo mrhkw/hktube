@@ -3,69 +3,30 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createVideo, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listVideos, removeVideo, toggleVideoLike } from "./db";
-
+import { addVideoToPlaylist, createComment, createPlaylist, createPost, createReport, createVideo, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listChannelSubscriptions, listComments, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markNotificationRead, recordWatchHistory, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
 const videoCategory = z.enum(["regular", "shorts"]);
-const mediaUrl = z.string().trim().refine(value => {
-  if (value.startsWith("/manus-storage/")) return true;
-  try {
-    return Boolean(new URL(value));
-  } catch {
-    return false;
-  }
-}, "Provide a valid external URL or stored media path.");
-export const videoInputSchema = z.object({
-  title: z.string().trim().min(1).max(255),
-  description: z.string().trim().max(5000).optional().default(""),
-  videoUrl: mediaUrl,
-  videoStorageKey: z.string().trim().max(512).optional(),
-  thumbnailUrl: mediaUrl.optional(),
-  thumbnailStorageKey: z.string().trim().max(512).optional(),
-  captionUrl: mediaUrl.optional(),
-  captionStorageKey: z.string().trim().max(512).optional(),
-  durationSeconds: z.number().int().min(0).max(86_400).default(0),
-  category: videoCategory.default("regular"),
-});
-
+const mediaUrl = z.string().trim().refine(value => { if (value.startsWith("/manus-storage/")) return true; try { return Boolean(new URL(value)); } catch { return false; } }, "Provide a valid external URL or stored media path.");
+export const videoInputSchema = z.object({ title: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional().default(""), videoUrl: mediaUrl, videoStorageKey: z.string().trim().max(512).optional(), thumbnailUrl: mediaUrl.optional(), thumbnailStorageKey: z.string().trim().max(512).optional(), captionUrl: mediaUrl.optional(), captionStorageKey: z.string().trim().max(512).optional(), durationSeconds: z.number().int().min(0).max(86400).default(0), category: videoCategory.default("regular") });
+const commentInput = z.object({ body: z.string().trim().min(1).max(2000), videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional(), parentId: z.number().int().positive().optional() }).refine(value => Boolean(value.videoId || value.postId), "A video or post is required.");
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
-  auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
-    }),
-  }),
+  auth: router({ me: publicProcedure.query(opts => opts.ctx.user), logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }) }),
   videos: router({
-    latest: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(60).optional() }).optional()).query(({ input }) =>
-      listVideos({ mode: "latest", limit: input?.limit }),
-    ),
-    shorts: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(60).optional() }).optional()).query(({ input }) =>
-      listVideos({ category: "shorts", mode: "latest", limit: input?.limit }),
-    ),
-    trending: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(60).optional() }).optional()).query(({ input }) =>
-      listVideos({ mode: "trending", limit: input?.limit }),
-    ),
-    search: publicProcedure.input(z.object({ query: z.string().trim().max(120), limit: z.number().int().min(1).max(60).optional() })).query(({ input }) =>
-      input.query ? listVideos({ search: input.query, mode: "latest", limit: input.limit }) : [],
-    ),
-    byId: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => getVideoById(input.id)),
-    related: publicProcedure.input(z.object({ id: z.number().int().positive(), category: videoCategory })).query(({ input }) =>
-      getRelatedVideos(input.id, input.category),
-    ),
-    recordView: publicProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => incrementVideoView(input.id)),
-    engagement: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ ctx, input }) => getVideoEngagement(input.id, ctx.user?.id)),
-    toggleLike: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => toggleVideoLike(input.id, ctx.user.id)),
-    create: adminProcedure.input(videoInputSchema).mutation(({ ctx, input }) =>
-      createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, uploadedById: ctx.user.id }),
-    ),
-    adminList: adminProcedure.query(() => listAdminVideos()),
-    remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => removeVideo(input.id)),
+    latest: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(60).optional() }).optional()).query(({ input }) => listVideos({ mode: "latest", limit: input?.limit })),
+    shorts: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(60).optional() }).optional()).query(({ input }) => listVideos({ category: "shorts", mode: "latest", limit: input?.limit })),
+    trending: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(60).optional() }).optional()).query(({ input }) => listVideos({ mode: "trending", limit: input?.limit })),
+    search: publicProcedure.input(z.object({ query: z.string().trim().max(120), limit: z.number().int().min(1).max(60).optional() })).query(({ input }) => input.query ? listVideos({ search: input.query, mode: "latest", limit: input.limit }) : []),
+    byId: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => getVideoById(input.id)), related: publicProcedure.input(z.object({ id: z.number().int().positive(), category: videoCategory })).query(({ input }) => getRelatedVideos(input.id, input.category)), recordView: publicProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => incrementVideoView(input.id)), engagement: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ ctx, input }) => getVideoEngagement(input.id, ctx.user?.id)), toggleLike: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => toggleVideoLike(input.id, ctx.user.id)),
+    create: adminProcedure.input(videoInputSchema).mutation(({ ctx, input }) => createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, uploadedById: ctx.user.id })), adminList: adminProcedure.query(() => listAdminVideos()), remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => removeVideo(input.id)),
   }),
+  comments: router({ list: publicProcedure.input(z.object({ videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional() })).query(({ input }) => listComments(input)), create: protectedProcedure.input(commentInput).mutation(({ ctx, input }) => createComment({ ...input, authorId: ctx.user.id })) }),
+  subscriptions: router({ mine: protectedProcedure.query(({ ctx }) => listChannelSubscriptions(ctx.user.id)), toggle: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => toggleChannelSubscription(input.channelId, ctx.user.id)) }),
+  playlists: router({ mine: protectedProcedure.query(({ ctx }) => listPlaylists(ctx.user.id)), create: protectedProcedure.input(z.object({ title: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional(), visibility: z.enum(["public", "unlisted", "private"]).optional() })).mutation(({ ctx, input }) => createPlaylist({ ...input, ownerId: ctx.user.id })), add: protectedProcedure.input(z.object({ playlistId: z.number().int().positive(), videoId: z.number().int().positive() })).mutation(({ ctx, input }) => addVideoToPlaylist({ ...input, ownerId: ctx.user.id })) }),
+  watch_history: router({ mine: protectedProcedure.query(({ ctx }) => listWatchHistory(ctx.user.id)), record: protectedProcedure.input(z.object({ videoId: z.number().int().positive(), watchedSeconds: z.number().int().min(0).max(86400).optional() })).mutation(({ ctx, input }) => recordWatchHistory({ ...input, userId: ctx.user.id })) }),
+  notifications: router({ mine: protectedProcedure.query(({ ctx }) => listNotifications(ctx.user.id)), markRead: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => markNotificationRead(input.id, ctx.user.id)) }),
+  posts: router({ latest: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(100).optional() }).optional()).query(({ input }) => listPosts(input?.limit)), create: protectedProcedure.input(z.object({ body: z.string().trim().min(1).max(5000), channelId: z.number().int().positive().optional(), mediaUrl: mediaUrl.optional(), linkUrl: mediaUrl.optional() })).mutation(({ ctx, input }) => createPost({ ...input, authorId: ctx.user.id })), toggleLike: protectedProcedure.input(z.object({ postId: z.number().int().positive() })).mutation(({ ctx, input }) => togglePostLike(input.postId, ctx.user.id)) }),
+  reports: router({ create: protectedProcedure.input(z.object({ reason: z.string().trim().min(1).max(120), details: z.string().trim().max(2000).optional(), videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional(), commentId: z.number().int().positive().optional() }).refine(value => Boolean(value.videoId || value.postId || value.commentId), "A report target is required.")).mutation(({ ctx, input }) => createReport({ ...input, reporterId: ctx.user.id })) }),
+  library: router({ saved: protectedProcedure.query(({ ctx }) => listSavedVideos(ctx.user.id)), toggleSaved: protectedProcedure.input(z.object({ videoId: z.number().int().positive() })).mutation(({ ctx, input }) => toggleSavedVideo(input.videoId, ctx.user.id)) }),
+  creator_studio: router({ dashboard: protectedProcedure.query(async ({ ctx }) => ({ userId: ctx.user.id, videos: await listVideos({ mode: "latest", limit: 100 }), history: await listWatchHistory(ctx.user.id) })) }),
 });
-
 export type AppRouter = typeof appRouter;
