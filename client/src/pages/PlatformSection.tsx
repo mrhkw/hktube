@@ -2,6 +2,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { LiveRoom } from "@/components/LiveRoom";
 import { LibraryHub } from "@/components/LibraryHub";
+import { CreatorStudioHub } from "@/components/CreatorStudioHub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { startLogin } from "@/const";
@@ -110,6 +111,12 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
     if (library.isLoading || history.isLoading || playlists.isLoading || following.isLoading) return <HkTubeShell title="Library"><LoadingState /></HkTubeShell>;
     if (library.isError || history.isError || playlists.isError || following.isError) return <HkTubeShell title="Library"><EmptyVideos title="Library could not load" copy="Please refresh and try again. HkTube only shows records belonging to your account." icon={Inbox} /></HkTubeShell>;
     return <HkTubeShell><LibraryHub saved={library.data ?? []} history={history.data ?? []} playlists={playlists.data ?? []} following={following.data ?? []} /></HkTubeShell>;
+  }
+  if (kind === "studio") {
+    if (!isAuthed) return <HkTubeShell title="Creator Studio" subtitle="Manage creator-owned HkTube content."><SignInState /></HkTubeShell>;
+    if (studio.isLoading) return <HkTubeShell title="Creator Studio"><LoadingState /></HkTubeShell>;
+    if (studio.isError) return <HkTubeShell title="Creator Studio"><EmptyVideos title="Creator Studio could not load" copy="Please refresh and try again. This workspace only reads content belonging to your account." icon={Inbox} /></HkTubeShell>;
+    return <HkTubeShell><CreatorStudioHub videos={studio.data?.videos ?? []} analytics={studio.data?.analytics ?? { totalViews: 0, contentCount: 0, regularCount: 0, shortsCount: 0 }} /></HkTubeShell>;
   }
 
   let content: ReactNode;
