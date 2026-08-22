@@ -1,6 +1,7 @@
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { LiveRoom } from "@/components/LiveRoom";
+import { LibraryHub } from "@/components/LibraryHub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { startLogin } from "@/const";
@@ -72,11 +73,11 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   const isAuthed = Boolean(auth.data);
   const posts = trpc.posts.latest.useQuery({ limit: 50 }, { enabled: kind === "posts" });
   const notifications = trpc.notifications.mine.useQuery(undefined, { enabled: isAuthed && kind === "notifications" });
-  const playlists = trpc.playlists.mine.useQuery(undefined, { enabled: isAuthed && kind === "playlists" });
-  const history = trpc.watch_history.mine.useQuery(undefined, { enabled: isAuthed && kind === "history" });
+  const playlists = trpc.playlists.mine.useQuery(undefined, { enabled: isAuthed && (kind === "playlists" || kind === "library") });
+  const history = trpc.watch_history.mine.useQuery(undefined, { enabled: isAuthed && (kind === "history" || kind === "library") });
   const library = trpc.library.saved.useQuery(undefined, { enabled: isAuthed && kind === "library" });
   const studio = trpc.creator_studio.dashboard.useQuery(undefined, { enabled: isAuthed && kind === "studio" });
-  const following = trpc.subscriptions.mine.useQuery(undefined, { enabled: isAuthed && kind === "subscriptions" });
+  const following = trpc.subscriptions.mine.useQuery(undefined, { enabled: isAuthed && (kind === "subscriptions" || kind === "library") });
   const live = trpc.live.latest.useQuery({ limit: 36 }, { enabled: kind === "live" });
   const [title, setTitle] = useState("");
   const createPlaylist = trpc.playlists.create.useMutation({
@@ -103,6 +104,12 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
 
   if (kind === "live") {
     return <HkTubeShell><LiveRoom items={live.data ?? []} loading={live.isLoading} error={live.isError} /></HkTubeShell>;
+  }
+  if (kind === "library") {
+    if (!isAuthed) return <HkTubeShell title="Library" subtitle="Your saved videos, history, and collections."><SignInState /></HkTubeShell>;
+    if (library.isLoading || history.isLoading || playlists.isLoading || following.isLoading) return <HkTubeShell title="Library"><LoadingState /></HkTubeShell>;
+    if (library.isError || history.isError || playlists.isError || following.isError) return <HkTubeShell title="Library"><EmptyVideos title="Library could not load" copy="Please refresh and try again. HkTube only shows records belonging to your account." icon={Inbox} /></HkTubeShell>;
+    return <HkTubeShell><LibraryHub saved={library.data ?? []} history={history.data ?? []} playlists={playlists.data ?? []} following={following.data ?? []} /></HkTubeShell>;
   }
 
   let content: ReactNode;
