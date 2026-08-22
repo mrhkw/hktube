@@ -3,6 +3,7 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
+import { ENV } from "./env";
 import { sdk } from "./sdk";
 
 function getQueryParam(req: Request, key: string): string | undefined {
@@ -17,6 +18,18 @@ export function registerOAuthRoutes(app: Express) {
 
     if (!code || !state) {
       res.status(400).json({ error: "code and state are required" });
+      return;
+    }
+
+    const missingRuntimeConfig = [
+      !ENV.cookieSecret && "JWT_SECRET",
+      !ENV.databaseUrl && "DATABASE_URL",
+    ].filter(Boolean);
+    if (missingRuntimeConfig.length > 0) {
+      console.error("[OAuth] Production authentication is not configured:", missingRuntimeConfig.join(", "));
+      res.status(503).json({
+        error: "Authentication is temporarily unavailable. The service configuration is incomplete.",
+      });
       return;
     }
 

@@ -54049,10 +54049,13 @@ var auditLogs = mysqlTable("audit_logs", { id: int("id").autoincrement().primary
 
 // server/_core/env.ts
 var ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
+  // OAuth client identifiers and service base URL are public configuration.
+  // Keep explicit Vercel variables as the preferred source; the fallback keeps
+  // a missing build/runtime public setting from breaking the exchange endpoint.
+  appId: process.env.VITE_APP_ID ?? "oW2FhxeMWaMQ3fzfsPSX4q",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
+  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "https://api.manus.im",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
@@ -54158,6 +54161,12 @@ async function listAdminVideos() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(videos).orderBy(desc(videos.uploadedAt)).limit(100);
+}
+async function getCreatorStudioDashboard(userId) {
+  const db = await getDb();
+  if (!db) return { videos: [], analytics: { totalViews: 0, contentCount: 0, regularCount: 0, shortsCount: 0 } };
+  const creatorVideos = await db.select().from(videos).where(eq(videos.uploadedById, userId)).orderBy(desc(videos.uploadedAt)).limit(100);
+  return { videos: creatorVideos, analytics: { totalViews: creatorVideos.reduce((sum, video) => sum + (video.viewCount || 0), 0), contentCount: creatorVideos.length, regularCount: creatorVideos.filter((video) => video.category === "regular").length, shortsCount: creatorVideos.filter((video) => video.category === "shorts").length } };
 }
 async function removeVideo(id) {
   const db = await getDb();
@@ -59395,6 +59404,17 @@ function registerOAuthRoutes(app) {
     const state = getQueryParam(req, "state");
     if (!code || !state) {
       res.status(400).json({ error: "code and state are required" });
+      return;
+    }
+    const missingRuntimeConfig = [
+      !ENV.cookieSecret && "JWT_SECRET",
+      !ENV.databaseUrl && "DATABASE_URL"
+    ].filter(Boolean);
+    if (missingRuntimeConfig.length > 0) {
+      console.error("[OAuth] Production authentication is not configured:", missingRuntimeConfig.join(", "));
+      res.status(503).json({
+        error: "Authentication is temporarily unavailable. The service configuration is incomplete."
+      });
       return;
     }
     const { nonce } = decodeOAuthState(state);
@@ -72306,7 +72326,7 @@ var appRouter = router({
   posts: router({ latest: publicProcedure.input(external_exports.object({ limit: external_exports.number().int().min(1).max(100).optional() }).optional()).query(({ input }) => listPosts(input?.limit)), create: protectedProcedure.input(external_exports.object({ body: external_exports.string().trim().min(1).max(5e3), channelId: external_exports.number().int().positive().optional(), mediaUrl: mediaUrl.optional(), linkUrl: mediaUrl.optional() })).mutation(({ ctx, input }) => createPost({ ...input, authorId: ctx.user.id })), toggleLike: protectedProcedure.input(external_exports.object({ postId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => togglePostLike(input.postId, ctx.user.id)) }),
   reports: router({ create: protectedProcedure.input(external_exports.object({ reason: external_exports.string().trim().min(1).max(120), details: external_exports.string().trim().max(2e3).optional(), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), commentId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId || value.postId || value.commentId), "A report target is required.")).mutation(({ ctx, input }) => createReport({ ...input, reporterId: ctx.user.id })) }),
   library: router({ saved: protectedProcedure.query(({ ctx }) => listSavedVideos(ctx.user.id)), toggleSaved: protectedProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => toggleSavedVideo(input.videoId, ctx.user.id)) }),
-  creator_studio: router({ dashboard: protectedProcedure.query(async ({ ctx }) => ({ userId: ctx.user.id, videos: await listVideos({ mode: "latest", limit: 100 }), history: await listWatchHistory(ctx.user.id) })) })
+  creator_studio: router({ dashboard: protectedProcedure.query(({ ctx }) => getCreatorStudioDashboard(ctx.user.id)) })
 });
 
 // server/_core/context.ts
