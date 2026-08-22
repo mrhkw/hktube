@@ -1,5 +1,6 @@
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
+import { LiveRoom } from "@/components/LiveRoom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { startLogin } from "@/const";
@@ -100,6 +101,10 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   const queryLoading = kind === "posts" ? posts.isLoading : kind === "live" ? live.isLoading : Boolean(privateQuery?.isLoading);
   const queryError = kind === "posts" ? posts.isError : kind === "live" ? live.isError : Boolean(privateQuery?.isError);
 
+  if (kind === "live") {
+    return <HkTubeShell><LiveRoom items={live.data ?? []} loading={live.isLoading} error={live.isError} /></HkTubeShell>;
+  }
+
   let content: ReactNode;
   if (!isAuthed && ["subscriptions", "notifications", "playlists", "history", "library", "studio", "profile"].includes(kind)) {
     content = <SignInState />;
@@ -109,8 +114,6 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
     content = <EmptyVideos title={`${meta.title} could not load`} copy="Please refresh and try again. This section reads only from HkTube's live database." icon={Inbox} />;
   } else if (kind === "posts") {
     content = <PostsFeed posts={posts.data ?? []} />;
-  } else if (kind === "live") {
-    content = live.data?.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{live.data.map(item => <article key={item.stream.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]"><div className="flex aspect-video items-center justify-center bg-gradient-to-br from-rose-500/20 via-violet-500/10 to-cyan-400/10"><Radio className="size-10 text-rose-300" aria-hidden="true" /></div><div className="p-5"><h2 className="font-semibold text-white">{item.stream.title}</h2><p className="mt-2 text-sm text-slate-400">{item.channel.displayName} · {item.stream.viewerCount} watching</p>{item.stream.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-500">{item.stream.description}</p>}</div></article>)}</div> : <EmptyVideos title="No live streams available" copy="Live discovery will appear when creators publish real live sessions." icon={Radio} />;
   } else if (kind === "subscriptions") {
     content = following.data?.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{following.data.map(item => <article key={item.subscription.id} className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><div className="flex items-center gap-3">{item.channel.avatarUrl ? <img src={item.channel.avatarUrl} alt="" className="size-11 rounded-full object-cover" /> : <span className="grid size-11 place-items-center rounded-full bg-fuchsia-500/15 text-fuchsia-200"><UsersRound className="size-5" aria-hidden="true" /></span>}<div className="min-w-0"><h2 className="truncate font-semibold text-white">{item.channel.displayName}</h2><p className="truncate text-xs text-slate-500">@{item.channel.handle}</p></div></div><p className="mt-4 text-sm text-slate-400">{item.channel.subscriberCount} followers</p></article>)}</div> : <EmptyVideos title="No channels followed yet" copy="Follow channels to keep their latest activity close at hand." icon={UsersRound} />;
   } else if (kind === "notifications") {
