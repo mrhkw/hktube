@@ -72,11 +72,6 @@ const BADGE = {
   blue:"#3EA6FF", gold:"#FFB800", purple:"#AA44FF",
   cyan:"#00CCFF", platinum:"#B0B0C0"
 };
-const POSTS = [
-  {id:1,creator:"TechWithHanif",av:"T",badge:"gold",ago:"2h",text:"Just shipped the biggest update to the channel! Next.js 15 full course is finally live after 3 months of work. Drop your questions below! 🚀 The backend series starts next month.",likes:8420,comments:342,hasImg:false},
-  {id:2,creator:"PakTravels",av:"P",badge:"blue",ago:"5h",text:"Planning a winter trip to Swat Valley next month 🏔️ Who wants to join? The views are absolutely unreal this time of year. Full vlog coming soon!",likes:3201,comments:187,hasImg:true,g:"travel"},
-  {id:3,creator:"DesiKitchen",av:"D",badge:null,ago:"1d",text:"New recipe dropping tomorrow! Hint: it's everyone's favourite winter food 🍲 First person to guess correctly in the comments gets a shoutout!",likes:5890,comments:624,hasImg:false},
-];
 const NOTIFS = [
   {id:1,icon:"👤",text:"TechWithHanif started following you",time:"2m",read:false},
   {id:2,icon:"❤️",text:"Your video got 1,000 likes!",time:"15m",read:false},
@@ -591,7 +586,7 @@ function SectionHd({ title, t, onMore }) {
   );
 }
 
-function CatChips({ t }) {
+function CatChips({ t, setShowMenu }) {
   const [a,setA]=useState("All");
   return (
     <div style={{
@@ -600,7 +595,7 @@ function CatChips({ t }) {
       borderBottom:`1px solid ${t.bdr}`
     }}>
       {CATS.map(c=>(
-        <button key={c} onClick={()=>setA(c)} style={{
+        <button key={c} type="button" onClick={()=>setA(c)} style={{
           flexShrink:0, padding:"5px 14px", borderRadius:20,
           border:`1px solid ${a===c?t.pri:t.bdr}`,
           background:a===c?t.priDim:t.hover,
@@ -609,14 +604,15 @@ function CatChips({ t }) {
           cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap"
         }}>{c}</button>
       ))}
+      <button type="button" onClick={()=>setShowMenu(true)} style={{flexShrink:0,padding:"5px 14px",borderRadius:20,border:`1px solid ${t.pri}`,background:t.priDim,color:t.pri,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",gap:6}}><Settings size={14}/>Settings</button>
     </div>
   );
 }
 
-function HomePage({ t, setPage, videos=[], shorts=[], loading=false, error=false }) {
+function HomePage({ t, setPage, setShowMenu, videos=[], shorts=[], loading=false, error=false }) {
   return (
     <div style={{paddingBottom:90}}>
-      <CatChips t={t}/>
+      <CatChips t={t} setShowMenu={setShowMenu}/>
       {shorts.length > 0 && <div style={{marginTop:16, marginBottom:4}}>
         <SectionHd title="Shorts" t={t} onMore={()=>setPage("shorts")}/>
         <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 16px 12px",scrollbarWidth:"none"}}>
@@ -648,11 +644,12 @@ function ShortsPage({ t, shorts=[] }) {
   const [liked,setLiked]=useState({});
   const [saved,setSaved]=useState({});
   const items=shorts;
-  if(!items.length) return <div style={{minHeight:"calc(100dvh - 56px)",display:"grid",placeItems:"center",background:"#000",color:"#aaa",textAlign:"center",padding:24}}><div><ImageOff size={34} color="#666"/><div style={{marginTop:12,fontWeight:700,color:"#fff"}}>No real Shorts published yet</div><div style={{marginTop:6,fontSize:13}}>Upload an authorized vertical video to see it here.</div></div></div>;
+    if(!items.length) return <div style={{minHeight:"100dvh",display:"grid",placeItems:"center",background:"#000",color:"#aaa",textAlign:"center",padding:24}}>
+<div><ImageOff size={34} color="#666"/><div style={{marginTop:12,fontWeight:700,color:"#fff"}}>No real Shorts published yet</div><div style={{marginTop:6,fontSize:13}}>Upload an authorized vertical video to see it here.</div></div></div>;
   const s=items[cur];
   return (
     <div style={{
-      height:"calc(100vh - 56px)", overflow:"hidden",
+      height:"100dvh", overflow:"hidden",
       background:"#000",
       display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center",
@@ -660,8 +657,8 @@ function ShortsPage({ t, shorts=[] }) {
     }}>
       {/* Main Shorts player */}
       <div style={{
-        height:"100%", maxHeight:"calc(100vh - 56px)",
-        aspectRatio:"9/16", maxWidth:420,
+        height:"100%", maxHeight:"100dvh",
+        aspectRatio:"9/16", maxWidth:420, width:"100%",
         background:t.elev, position:"relative", overflow:"hidden"
       }}>
         <>{s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="Short thumbnail" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}} /> : <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:"#666"}}><ImageOff size={42}/><span style={{fontSize:12}}>No thumbnail available</span></div>}</>
@@ -754,35 +751,18 @@ function ShortsPage({ t, shorts=[] }) {
 // 📰  FEEDS PAGE
 // ─────────────────────────────────────────
 function FeedsPage({ t }) {
+  const postsQuery=trpc.posts.latest.useQuery({limit:50});
+  const posts=(postsQuery.data??[]).map(post=>({id:post.id,creator:"HkTube creator",av:"H",badge:null,ago:formatDate(post.createdAt),text:post.body,likes:0,comments:0,imageUrl:null}));
   return (
     <div style={{maxWidth:640,margin:"0 auto",padding:"0 16px 100px"}}>
-      {/* Compose */}
-      <div style={{
-        display:"flex",alignItems:"center",gap:10,
-        padding:"14px 0",borderBottom:`1px solid ${t.bdr}`
-      }}>
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
         <Av char="U" size={38} seed={99}/>
-        <div style={{
-          flex:1,background:t.input,border:`1px solid ${t.bdr}`,
-          borderRadius:20,padding:"9px 16px",color:t.t3,fontSize:14,cursor:"pointer"
-        }}>Share something with your followers...</div>
+        <div style={{flex:1,background:t.input,border:`1px solid ${t.bdr}`,borderRadius:20,padding:"9px 16px",color:t.t3,fontSize:14}}>Real posts from the HkTube feed</div>
       </div>
-
-      {/* Filter */}
       <div style={{display:"flex",gap:8,padding:"12px 0",borderBottom:`1px solid ${t.bdr}`,marginBottom:4}}>
-        {["Following","Trending","All"].map((tab,i)=>(
-          <button key={tab} style={{
-            padding:"6px 16px",borderRadius:20,
-            border:`1px solid ${i===0?t.pri:t.bdr}`,
-            background:i===0?t.priDim:t.hover,
-            color:i===0?t.pri:t.t2,
-            fontSize:13,fontWeight:i===0?600:400,cursor:"pointer",
-            transition:"all 0.15s"
-          }}>{tab}</button>
-        ))}
+        {['Following','Trending','All'].map((tab,i)=><button key={tab} type="button" style={{padding:"6px 16px",borderRadius:20,border:`1px solid ${i===0?t.pri:t.bdr}`,background:i===0?t.priDim:t.hover,color:i===0?t.pri:t.t2,fontSize:13,fontWeight:i===0?600:400,cursor:"pointer"}}>{tab}</button>)}
       </div>
-
-      {POSTS.map(p=><FeedPost key={p.id} p={p} t={t}/>)}
+      {postsQuery.isLoading ? <div style={{minHeight:220,display:"grid",placeItems:"center",color:t.t3,fontSize:13}}>Loading real posts…</div> : postsQuery.isError ? <div style={{minHeight:220,display:"grid",placeItems:"center",textAlign:"center",color:t.t3,fontSize:13,padding:24}}>Posts could not load. Refresh and try again.</div> : posts.length ? posts.map(p=><FeedPost key={p.id} p={p} t={t}/>) : <div style={{minHeight:220,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><FileText size={30} color={t.t3}/><div style={{color:t.t1,fontWeight:700,fontSize:16,marginTop:10}}>No posts yet</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Real creator posts will appear here after they are published.</div></div></div>}
     </div>
   );
 }
@@ -945,7 +925,7 @@ function StudioPage({ t }) {
 // ─────────────────────────────────────────
 // ⚙️  SETTINGS PAGE
 // ─────────────────────────────────────────
-function SettingsPage({ t, themeId, onTheme }) {
+function SettingsPage({ t, themeId, onTheme, setPage }) {
   const [activeId,setActiveId]=useState(null);
   const defaults={push:true,email:false,follows:true,likes:true,comments:true,gifts:true,twoFA:false,loginAlerts:true,autoplay:true,hdWifi:true,saveData:false,showActivity:true,publicLikes:false,captions:false,restricted:false,personalized:true};
   const [tog,setTog]=useState(()=>{try{const raw=localStorage.getItem("hktube-settings");return {...defaults,...(raw?JSON.parse(raw):{})};}catch{return defaults;}});
@@ -966,12 +946,12 @@ function SettingsPage({ t, themeId, onTheme }) {
   };
   const themes=[{id:"dark",icon:"🌙",l:"Dark",d:"HkTube dark theme"},{id:"amoled",icon:"⚡",l:"AMOLED",d:"True black theme"},{id:"light",icon:"☀️",l:"Light",d:"Bright theme"}];
   if(active) return <div style={{paddingBottom:100}}>
-    <button onClick={()=>setActiveId(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",color:t.t2,fontSize:14,cursor:"pointer",padding:"14px 16px",width:"100%",textAlign:"left"}}><ChevronLeft size={18}/> Settings</button>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><button type="button" onClick={()=>setActiveId(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",color:t.t2,fontSize:14,cursor:"pointer",padding:"4px 0"}}><ChevronLeft size={18}/> Settings</button><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div>
     <div style={{padding:"0 16px 16px"}}><h2 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 16px"}}>{active.icon} {active.label}</h2>
       {rows[active.id] ? <div style={{display:"flex",flexDirection:"column",gap:1}}>{rows[active.id].map(item=><div key={item.k} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}><div style={{flex:1,minWidth:0}}><div style={{color:t.t1,fontSize:14}}>{item.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2,lineHeight:1.45}}>{item.d}</div></div><Toggle on={Boolean(tog[item.k])} onChange={()=>toggle(item.k)} t={t}/></div>)}</div> : active.id==="theme" ? <div style={{display:"flex",flexDirection:"column",gap:8}}>{themes.map(th=><button key={th.id} onClick={()=>onTheme(th.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px",borderRadius:10,background:themeId===th.id?t.priDim:t.hover,border:`1px solid ${themeId===th.id?t.pri:t.bdr}`,cursor:"pointer",textAlign:"left",width:"100%"}}><span style={{fontSize:22}}>{th.icon}</span><div style={{flex:1}}><div style={{color:t.t1,fontSize:14,fontWeight:600}}>{th.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div></div>{themeId===th.id?<Check size={18} color={t.pri}/>:<ChevronRight size={16} color={t.t3}/>}</button>)}</div> : active.id==="playback" ? <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${t.bdr}`}}><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>Preferred video quality</label><select value={quality} onChange={e=>{setQuality(e.target.value);save("hktube-quality",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>auto</option><option>2160p</option><option>1080p</option><option>720p</option><option>480p</option><option>360p</option></select></div> : active.id==="language" ? <div><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>App language</label><select value={language} onChange={e=>{setLanguage(e.target.value);save("hktube-language",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>English</option><option>Urdu</option><option>Hindi</option></select></div> : <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:10,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>{active.icon}</div><div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div><div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>This control is ready in the settings layout. Account or payment changes require the corresponding authenticated provider.</div></div>}
     </div>
   </div>;
-  return <div style={{paddingBottom:100}}><h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0,padding:"16px 16px 12px",borderBottom:`1px solid ${t.bdr}`}}>Settings</h1><div style={{color:t.t3,fontSize:12,padding:"12px 16px 0",lineHeight:1.5}}>YouTube-style controls for playback, notifications, privacy, appearance, data usage, and account safety.</div>{SETTINGS_GROUPS.map((group,gi)=><div key={gi}><div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>{group.items.map(item=><button key={item.id} onClick={()=>setActiveId(item.id)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${t.bdr}`,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span><div style={{flex:1,minWidth:0}}><div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div></div><ChevronRight size={15} color={t.t3}/></button>)}</div>)}</div>;
+  return <div style={{paddingBottom:100}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0}}>Settings</h1><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div><div style={{color:t.t3,fontSize:12,padding:"12px 16px 0",lineHeight:1.5}}>YouTube-style controls for playback, notifications, privacy, appearance, data usage, and account safety.</div>{SETTINGS_GROUPS.map((group,gi)=><div key={gi}><div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>{group.items.map(item=><button key={item.id} onClick={()=>setActiveId(item.id)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${t.bdr}`,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span><div style={{flex:1,minWidth:0}}><div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div></div><ChevronRight size={15} color={t.t3}/></button>)}</div>)}</div>;
 }
 
 // ─────────────────────────────────────────
@@ -1092,7 +1072,7 @@ function NotifPanel({ t, onClose }) {
 }
 
 // ─────────────────────────────────────────
-// 👤  MENU / PROFILE MODAL (bottom sheet)
+// 👤  MENU / PROFILE MODAL (full-screen YouTube-style panel)
 // ─────────────────────────────────────────
 function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
   const themes=[
@@ -1117,18 +1097,17 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
   return (
     <div style={{
       position:"fixed",inset:0,zIndex:500,
-      background:"rgba(0,0,0,0.65)",
-      display:"flex",alignItems:"flex-end",justifyContent:"center"
-    }} onClick={onClose}>
+      background:t.bg,
+      display:"flex",alignItems:"stretch",justifyContent:"stretch"
+    }}>
       <div onClick={e=>e.stopPropagation()} style={{
-        width:"100%",maxWidth:480,
-        background:t.surf,borderRadius:"16px 16px 0 0",
-        border:`1px solid ${t.bdr}`,overflow:"hidden",
-        maxHeight:"92vh",overflowY:"auto"
+        width:"100%",maxWidth:"none",height:"100dvh",
+        background:t.surf,borderRadius:0,
+        border:0,overflow:"hidden auto"
       }}>
-        {/* Handle bar */}
-        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 4px"}}>
-          <div style={{width:36,height:4,borderRadius:2,background:t.bdr}}/>
+        <div style={{position:"sticky",top:0,zIndex:2,display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:t.surf,borderBottom:`1px solid ${t.bdr}`}}>
+          <button type="button" onClick={onClose} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={20}/></button>
+          <div style={{color:t.t1,fontWeight:700,fontSize:16}}>Settings & more</div>
         </div>
 
         {/* Profile */}
@@ -1149,9 +1128,6 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
               ))}
             </div>
           </div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:t.t3,cursor:"pointer",alignSelf:"flex-start"}}>
-            <X size={20}/>
-          </button>
         </div>
 
         {/* Theme */}
@@ -1282,18 +1258,18 @@ export default function HkTube() {
   const unread=NOTIFS.filter(n=>!n.read).length;
 
   const pages={
-    home:<HomePage t={t} setPage={setPage} videos={videos} shorts={shorts} loading={videoQuery.isLoading||shortsQuery.isLoading} error={videoQuery.isError||shortsQuery.isError}/>,
+    home:<HomePage t={t} setPage={setPage} setShowMenu={setShowMenu} videos={videos} shorts={shorts} loading={videoQuery.isLoading||shortsQuery.isLoading} error={videoQuery.isError||shortsQuery.isError}/>,
     shorts:<ShortsPage t={t} shorts={shorts}/>,
     feeds:<FeedsPage t={t}/>,
     studio:<StudioPage t={t}/>,
     monetization:<StudioPage t={t}/>,
     coins:<StudioPage t={t}/>,
-    settings:<SettingsPage t={t} themeId={themeId} onTheme={changeTheme}/>,
+    settings:<SettingsPage t={t} themeId={themeId} onTheme={changeTheme} setPage={setPage}/>,
     verification:<VerificationPage t={t}/>,
   };
 
   return (
-    <div style={{
+    <div className={`hk-app ${page==="shorts"?"hk-shorts-mode":""} ${page==="settings"?"hk-settings-mode":""}`} style={{
       fontFamily:"-apple-system,'Roboto',system-ui,sans-serif",
       background:t.bg,color:t.t1,minHeight:"100vh"
     }}>
@@ -1309,6 +1285,8 @@ export default function HkTube() {
         scrollbar-width:none;
         .hk-sidebar{display:none!important;}
         .hk-bottom-nav{display:flex!important;}
+        .hk-shorts-mode .hk-header,.hk-shorts-mode .hk-bottom-nav,.hk-shorts-mode .hk-sidebar,.hk-settings-mode .hk-header,.hk-settings-mode .hk-bottom-nav,.hk-settings-mode .hk-sidebar{display:none!important;}
+        .hk-shorts-mode main,.hk-settings-mode main{min-height:100dvh!important;padding-bottom:0!important;}
         .hk-txt{display:none;}
         /* Desktop layout */
         @media(min-width:768px){
