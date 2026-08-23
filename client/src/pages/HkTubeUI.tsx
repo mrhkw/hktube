@@ -2,7 +2,7 @@
 // ╔═══════════════════════════════════════════════════════════╗
 // ║   HkTube — App UI v4  |  YouTube-style · No Zoom        ║
 // ║   Nav: Home · Shorts · ➕ · Feeds · Menu                 ║
-// ║   Themes: Dark · AMOLED · Light  |  Live Removed        ║
+// ║   Themes: Dark · AMOLED · Light  |  Streaming Removed  ║
 // ╚═══════════════════════════════════════════════════════════╝
 
 import { useState, useEffect, useRef } from "react";
@@ -73,7 +73,7 @@ const BADGE = {
   blue:"#3EA6FF", gold:"#FFB800", purple:"#AA44FF",
   cyan:"#00CCFF", platinum:"#B0B0C0"
 };
-const CATS = ["All","Trending","Gaming","Music","Sports","Education","Technology","Live","Following","Posts"];
+const CATS = ["All","Trending","Gaming","Music","Sports","Education","Technology","Following","Posts"];
 const SETTINGS_GROUPS = [
   {group:"Account & Identity",items:[
     {id:"account",icon:"👤",label:"Account",desc:"Username, email, phone"},
@@ -633,10 +633,10 @@ function AgenticToolsCard({ t }) {
   </section>;
 }
 
-function LiveStatus({ t, loading, error, videos, shorts }) {
+function BuildStatus({ t, loading, error, videos, shorts }) {
   const state=loading?"Loading real data":error?"Data unavailable":videos.length||shorts.length?"Connected to HkTube data":"Connected · no published content";
   const color=loading?t.warn:error?t.live:videos.length||shorts.length?t.ok:t.t2;
-  return <div style={{borderTop:`1px solid ${t.bdr}`,borderBottom:`1px solid ${t.bdr}`,padding:"8px 16px",textAlign:"center",color:t.t3,fontSize:11}}>STATUS: <span style={{color}}>{state}</span> <span style={{opacity:.5}}> | </span> Vercel: <span style={{color:t.ok}}>Live build</span></div>;
+  return <div style={{borderTop:`1px solid ${t.bdr}`,borderBottom:`1px solid ${t.bdr}`,padding:"8px 16px",textAlign:"center",color:t.t3,fontSize:11}}>STATUS: <span style={{color}}>{state}</span> <span style={{opacity:.5}}> | </span> Vercel: <span style={{color:t.ok}}>Production build</span></div>;
 }
 
 function HomePage({ t, setPage, setShowMenu, videos=[], shorts=[], loading=false, error=false }) {
@@ -651,7 +651,7 @@ function HomePage({ t, setPage, setShowMenu, videos=[], shorts=[], loading=false
         {next.length > 0 && <div style={{marginTop:6}}><SectionHd title="Next Up" t={t} onMore={()=>setPage("home")}/><div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">{next.map(v=><div key={v.id} style={{marginBottom:20}} className="hk-video-item"><VideoCard v={v} t={t} fullWidth={true}/></div>)}</div></div>}
         {!hero&&!shorts.length&&<div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><ImageOff size={30} color={t.t3}/><div style={{color:t.t1,fontWeight:700,fontSize:16,marginTop:10}}>No real videos published yet</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Upload an authorized video to make it appear here.</div></div></div>}
       </>}
-      <LiveStatus t={t} loading={loading} error={error} videos={videos} shorts={shorts}/>
+      <BuildStatus t={t} loading={loading} error={error} videos={videos} shorts={shorts}/>
     </div>
   );
 }
