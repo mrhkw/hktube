@@ -515,13 +515,19 @@ function Sidebar({ t, page, setPage }) {
 // ─────────────────────────────────────────
 // 📱  BOTTOM NAV — Home · Shorts · ➕ · Feeds · Menu
 // ─────────────────────────────────────────
+function HomeGlyph({ color="currentColor", size=24 }) { return <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true"><path d="M3.5 13.5 14 4l10.5 9.5M6.5 11.3v11.2h15V11.3M11 22.5v-6h6v6" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 13.1 14 4l10 9.1v10.2a1.7 1.7 0 0 1-1.7 1.7H5.7A1.7 1.7 0 0 1 4 23.3V13.1Z" fill={color} opacity=".10"/></svg>; }
+function ShortsGlyph({ color="currentColor", size=24 }) { return <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true"><path d="m9 5 10 5.2c1.6.8 1.6 3.1 0 3.9L9 19.3c-1.7.9-3.7-.3-3.7-2.2V7.2C5.3 5.3 7.3 4.1 9 5Z" fill={color} opacity=".12" stroke={color} strokeWidth="2"/><path d="m13 8.2 3.4 1.8M11 19.8l3.5-1.8" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>; }
+function CreateGlyph({ color="white", size=38 }) { return <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill={color} opacity=".14"/><circle cx="20" cy="20" r="13" fill="none" stroke={color} strokeWidth="1.8"/><path d="M20 12v16M12 20h16" stroke={color} strokeWidth="2.4" strokeLinecap="round"/></svg>; }
+function FeedsGlyph({ color="currentColor", size=24 }) { return <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true"><rect x="4" y="5" width="20" height="18" rx="3" fill="none" stroke={color} strokeWidth="2"/><path d="M8 10h12M8 14h8M8 18h10" stroke={color} strokeWidth="2" strokeLinecap="round"/><circle cx="20" cy="18" r="2" fill={color}/></svg>; }
+function MenuGlyph({ color="currentColor", size=24 }) { return <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="9" r="4" fill={color} opacity=".14" stroke={color} strokeWidth="2"/><path d="M6 23c.8-4 3.5-6 8-6s7.2 2 8 6" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>; }
+
 function BottomNav({ t, page, setPage, setShowMenu, setShowCreate }) {
   const items=[
-    {id:"home",   icon:<Home size={22}/>,  label:"Home"},
-    {id:"shorts", icon:<Play size={22}/>,  label:"Shorts"},
+    {id:"home",   icon:HomeGlyph,  label:"Home"},
+    {id:"shorts", icon:ShortsGlyph,  label:"Shorts"},
     {id:"create", isPlus:true},
-    {id:"feeds",  icon:<Rss size={22}/>,   label:"Feeds"},
-    {id:"menu",   icon:<Menu size={22}/>,  label:"Menu"},
+    {id:"feeds",  icon:FeedsGlyph,   label:"Feeds"},
+    {id:"menu",   icon:MenuGlyph,  label:"Menu"},
   ];
   return (
     <nav className="hk-bottom-nav" style={{
@@ -538,12 +544,12 @@ function BottomNav({ t, page, setPage, setShowMenu, setShowCreate }) {
             background:"none", border:"none", cursor:"pointer", padding:"2px 0"
           }}>
             <div style={{
-              width:44, height:44, borderRadius:12,
+              width:48, height:48, borderRadius:16,
               background:`linear-gradient(135deg,${t.pri},${t.sec})`,
               display:"flex", alignItems:"center", justifyContent:"center",
-              boxShadow:`0 2px 12px ${t.priGlow}`
+              boxShadow:`0 4px 16px ${t.priGlow}`
             }}>
-              <Plus size={22} color="white" strokeWidth={2.5}/>
+              <CreateGlyph size={42}/>
             </div>
           </button>
         );
@@ -558,7 +564,7 @@ function BottomNav({ t, page, setPage, setShowMenu, setShowCreate }) {
             cursor:"pointer", padding:"4px 0", position:"relative",
             transition:"color 0.15s"
           }}>
-            {item.icon}
+            {(() => { const Icon = item.icon; return <Icon color={active?t.pri:t.t3} size={23}/>; })()}
             <span style={{fontSize:10,fontWeight:active?700:400}}>{item.label}</span>
             {active && <div style={{
               position:"absolute", bottom:0,
