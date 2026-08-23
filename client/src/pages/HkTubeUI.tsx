@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatDate, formatDuration, formatViews } from "@/lib/video";
+import { useLocation } from "wouter";
 import {
   Home, Play, Search, Bell, Plus, Users, Heart,
   MessageCircle, Share2, Bookmark, MoreVertical,
@@ -240,10 +241,14 @@ function Thumb({ src, dur, aspect="16/9", radius=0, t }) {
 // ─────────────────────────────────────────
 function VideoCard({ v, t, fullWidth=false }) {
   const [hov,setHov]=useState(false);
+  const [,navigate]=useLocation();
   return (
     <div
       onMouseEnter={()=>setHov(true)}
       onMouseLeave={()=>setHov(false)}
+      onClick={()=>navigate(`/watch/${v.id}`)}
+      onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate(`/watch/${v.id}`);}}}
+      role="link" tabIndex={0}
       style={{
         cursor:"pointer",
         background:hov?t.hover:t.card,
@@ -287,10 +292,14 @@ function VideoCard({ v, t, fullWidth=false }) {
 // ─────────────────────────────────────────
 function ShortCard({ s, t }) {
   const [hov,setHov]=useState(false);
+  const [,navigate]=useLocation();
   return (
     <div
       onMouseEnter={()=>setHov(true)}
       onMouseLeave={()=>setHov(false)}
+      onClick={()=>navigate(`/watch/${s.id}`)}
+      onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate(`/watch/${s.id}`);}}}
+      role="link" tabIndex={0}
       style={{
         width:140, flexShrink:0, cursor:"pointer",
         borderRadius:8, overflow:"hidden",

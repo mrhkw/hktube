@@ -60,8 +60,8 @@ export default function WatchVideo() {
     createComment.mutate({ videoId: activeVideo.id, body: commentBody.trim() });
   }
 
-  return <HkTubeShell>
-    <div className="mx-auto max-w-[1560px] xl:grid xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-7">
+  return <HkTubeShell immersive={video.category === "shorts"}>
+    <div className="mx-auto w-full max-w-[1560px]">
       <section className="min-w-0">
         <VideoPlayer video={video} />
         <div className="border-b border-white/8 py-5">
@@ -76,7 +76,7 @@ export default function WatchVideo() {
           <div className="mt-5 space-y-4">{commentsQuery.data?.length ? commentsQuery.data.map(comment => <article key={comment.id} className="rounded-xl border border-white/7 bg-white/[.025] p-4"><p className="text-sm leading-6 text-slate-300">{comment.body}</p><p className="mt-2 text-xs text-slate-600">{formatDate(comment.createdAt)}</p></article>) : <p className="py-6 text-sm text-slate-500">No comments yet. Be the first to contribute a real comment.</p>}</div>
         </section>
       </section>
-      <aside className="mt-7 xl:mt-0"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="space-y-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
+      <aside className="mt-8 border-t border-white/8 pt-7"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
     </div>
   </HkTubeShell>;
 }
