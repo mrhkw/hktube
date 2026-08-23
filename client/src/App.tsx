@@ -25,7 +25,9 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={HkTubeUI} />
-      <Route path={"/app"} component={Home} />
+      <Route path={"/home"} component={HkTubeUI} />
+      <Route path={"/index.html"} component={HkTubeUI} />
+      <Route path={"/app"} component={HkTubeUI} />
       <Route path={"/shorts"}>{() => <VideoCollection kind="shorts" />}</Route>
       <Route path={"/trending"}>{() => <VideoCollection kind="trending" />}</Route>
       <Route path={"/subscriptions"}>{() => <PlatformSection kind="subscriptions" />}</Route>
