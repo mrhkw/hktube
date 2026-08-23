@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import { startLogin } from "@/const";
 import { formatDate, formatDuration, formatViews } from "@/lib/video";
 import { useLocation } from "wouter";
 import {
@@ -1096,7 +1097,7 @@ function NotifPanel({ t, onClose, items=[] }) {
 // ─────────────────────────────────────────
 // 👤  MENU / PROFILE MODAL (full-screen YouTube-style panel)
 // ─────────────────────────────────────────
-function MenuModal({ t, curTheme, onTheme, onClose, setPage, user }) {
+function MenuModal({ t, curTheme, onTheme, onClose, setPage, user, navigate }) {
   const themes=[
     {id:"system",icon:"🌓",l:"System"},
     {id:"dark",icon:"🌙",l:"Dark"},
@@ -1104,6 +1105,9 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage, user }) {
     {id:"light",icon:"☀️",l:"Light"},
   ];
   const items=[
+    {icon:"👤",l:"Profile / My Channel",route:"/profile"},
+    {icon:"📺",l:"Create Channel",route:"/channel/create"},
+    {icon:"⬆️",l:"Upload Video",route:"/upload"},
     {icon:"🎬",l:"Creator Studio",p:"studio"},
     {icon:"📊",l:"Analytics",p:"analytics"},
     {icon:"📰",l:"Feeds",p:"feeds"},
@@ -1144,6 +1148,12 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage, user }) {
             <div style={{color:t.t2,fontSize:12,marginTop:2,overflowWrap:"anywhere"}}>{user?.email || "Sign in to manage your account"}</div>
           </div>
         </div>
+        <div style={{display:"flex",gap:8,padding:"0 16px 14px",borderBottom:`1px solid ${t.bdr}`}}>
+          {user ? <>
+            <button onClick={()=>{navigate("/profile");onClose();}} style={{flex:1,padding:"9px 10px",borderRadius:10,border:`1px solid ${t.bdr}`,background:t.hover,color:t.t1,cursor:"pointer",fontSize:12}}>Profile / My Channel</button>
+            <button onClick={()=>{navigate("/channel/create");onClose();}} style={{flex:1,padding:"9px 10px",borderRadius:10,border:`1px solid ${t.pri}`,background:t.priDim,color:t.pri,cursor:"pointer",fontSize:12}}>Create Channel</button>
+          </> : <button onClick={startLogin} style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`1px solid ${t.pri}`,background:t.priDim,color:t.pri,cursor:"pointer",fontSize:13,fontWeight:700}}>Sign in / Sign up</button>}
+        </div>
 
         {/* Theme */}
         <div style={{padding:"12px 16px",borderBottom:`1px solid ${t.bdr}`}}>
@@ -1170,7 +1180,7 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage, user }) {
         {/* Menu items grid */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"8px 8px 28px"}}>
           {items.map((item,i)=>(
-            <button key={i} onClick={()=>{if(item.p){setPage(item.p);onClose();}}} style={{
+            <button key={i} onClick={()=>{if(item.route){navigate(item.route);onClose();} else if(item.p){setPage(item.p);onClose();} else if(item.l==="Sign Out"){onClose();}}} style={{
               display:"flex",alignItems:"center",gap:10,
               padding:"13px 12px",borderRadius:10,
               background:"none",border:"none",
@@ -1194,12 +1204,13 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage, user }) {
 // ─────────────────────────────────────────
 // ➕  CREATE MODAL
 // ─────────────────────────────────────────
-function CreateModal({ t, onClose }) {
+function CreateModal({ t, onClose, navigate }) {
   const opts=[
-    {icon:"🎬",l:"Upload Video",d:"Long-form · tutorials · vlogs",col:t.pri},
-    {icon:"▶️",l:"Create Short",d:"Vertical 9:16 video · up to 60s",col:t.sec},
-    {icon:"📝",l:"Write Post",d:"Text · images · polls · links",col:"#00BBFF"},
-    {icon:"💬",l:"Go Live",d:"Real-time stream with chat",col:"#FF0000"},
+    {icon:"🎬",l:"Upload Video",d:"Long-form · tutorials · vlogs",col:t.pri,route:"/upload"},
+    {icon:"▶️",l:"Create Short",d:"Vertical 9:16 video · up to 60s",col:t.sec,route:"/upload?category=shorts"},
+    {icon:"📝",l:"Write Post",d:"Text · images · polls · links",col:"#00BBFF",route:"/posts?compose=1"},
+    {icon:"💬",l:"Go Live",d:"Real-time stream with chat",col:"#FF0000",route:"/live?create=1"},
+    {icon:"📺",l:"Create Channel",d:"Set up your creator identity",col:"#00BBFF",route:"/channel/create"},
   ];
   return (
     <div style={{
@@ -1221,7 +1232,7 @@ function CreateModal({ t, onClose }) {
         </div>
         <div style={{padding:"8px 8px 28px"}}>
           {opts.map((o,i)=>(
-            <button key={i} onClick={onClose} style={{
+            <button key={i} onClick={()=>{if(o.route){navigate(o.route);onClose();}else onClose();}} style={{
               display:"flex",alignItems:"center",gap:14,
               width:"100%",padding:"14px 12px",borderRadius:10,
               background:"none",border:"none",cursor:"pointer",textAlign:"left",
@@ -1265,6 +1276,7 @@ export default function HkTube() {
   const [showMenu,setShowMenu]=useState(false);
   const [showCreate,setShowCreate]=useState(false);
   const [showNotif,setShowNotif]=useState(false);
+  const [,navigate]=useLocation();
   const auth=trpc.auth.me.useQuery();
   const notificationsQuery=trpc.notifications.mine.useQuery(undefined,{enabled:Boolean(auth.data)});
   const videoQuery=trpc.videos.latest.useQuery({limit:20});
@@ -1370,8 +1382,8 @@ export default function HkTube() {
       />
 
       {showNotif && <NotifPanel t={t} items={notifications} onClose={()=>setShowNotif(false)}/>}
-      {showMenu  && <MenuModal  t={t} user={auth.data} curTheme={themeId} onTheme={changeTheme} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
-      {showCreate&& <CreateModal t={t} onClose={()=>setShowCreate(false)}/>}
+      {showMenu  && <MenuModal  t={t} user={auth.data} curTheme={themeId} onTheme={changeTheme} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}} navigate={navigate}/>}
+      {showCreate&& <CreateModal t={t} onClose={()=>setShowCreate(false)} navigate={navigate}/>}
     </div>
   );
 }

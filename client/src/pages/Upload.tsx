@@ -9,6 +9,7 @@ import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
 import { FileVideo, ImagePlus, Loader2, ShieldCheck, Trash2, UploadCloud } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
+import { Link } from "wouter";
 import { toast } from "sonner";
 
 const maxBytesByKind = { video: 250 * 1024 * 1024, thumbnail: 12 * 1024 * 1024, caption: 2 * 1024 * 1024 } as const;
@@ -58,6 +59,7 @@ export default function Upload() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<"regular" | "shorts">(() => new URLSearchParams(window.location.search).get("category") === "shorts" ? "shorts" : "regular");
+  const [channelId, setChannelId] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [durationSeconds, setDurationSeconds] = useState(0);
@@ -69,6 +71,7 @@ export default function Upload() {
   const utils = trpc.useUtils();
   const createMutation = trpc.videos.create.useMutation();
   const videosQuery = trpc.videos.adminList.useQuery(undefined, { enabled: isAdmin });
+  const channelsQuery = trpc.channels.mine.useQuery(undefined, { enabled: isAdmin });
   const removeMutation = trpc.videos.remove.useMutation({ onSuccess: () => { void utils.videos.adminList.invalidate(); void utils.videos.latest.invalidate(); void utils.videos.shorts.invalidate(); void utils.videos.trending.invalidate(); } });
 
   async function pickVideo(event: ChangeEvent<HTMLInputElement>) {
@@ -81,14 +84,15 @@ export default function Upload() {
     event.preventDefault();
     if (!isAdmin || isSubmitting) return;
     if (!videoFile && !videoUrl.trim()) return toast.error("Choose a video file or provide a video URL.");
+    if (!channelId) return toast.error("Choose the channel that owns this upload, or create a channel first.");
     setIsSubmitting(true);
     try {
       const uploadedVideo = videoFile ? await uploadMedia(videoFile, "video", setUploadProgress) : null;
       const uploadedThumbnail = thumbnailFile ? await uploadMedia(thumbnailFile, "thumbnail", setUploadProgress) : null;
       const uploadedCaption = captionFile ? await uploadMedia(captionFile, "caption", setUploadProgress) : null;
-      await createMutation.mutateAsync({ title, description, category, durationSeconds, videoUrl: uploadedVideo?.url || videoUrl.trim(), videoStorageKey: uploadedVideo?.key, thumbnailUrl: uploadedThumbnail?.url || thumbnailUrl.trim() || undefined, thumbnailStorageKey: uploadedThumbnail?.key, captionUrl: uploadedCaption?.url, captionStorageKey: uploadedCaption?.key });
+      await createMutation.mutateAsync({ title, description, category, channelId: Number(channelId), durationSeconds, videoUrl: uploadedVideo?.url || videoUrl.trim(), videoStorageKey: uploadedVideo?.key, thumbnailUrl: uploadedThumbnail?.url || thumbnailUrl.trim() || undefined, thumbnailStorageKey: uploadedThumbnail?.key, captionUrl: uploadedCaption?.url, captionStorageKey: uploadedCaption?.key });
       toast.success("Video published to the live HKTUBE catalog.");
-      setTitle(""); setDescription(""); setVideoUrl(""); setThumbnailUrl(""); setVideoFile(null); setThumbnailFile(null); setCaptionFile(null); setDurationSeconds(0);
+      setTitle(""); setDescription(""); setVideoUrl(""); setThumbnailUrl(""); setChannelId(""); setVideoFile(null); setThumbnailFile(null); setCaptionFile(null); setDurationSeconds(0);
       void utils.videos.adminList.invalidate(); void utils.videos.latest.invalidate(); void utils.videos.shorts.invalidate(); void utils.videos.trending.invalidate();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Video publishing failed."); }
     finally { setIsSubmitting(false); setUploadProgress(null); }
@@ -104,7 +108,7 @@ export default function Upload() {
       <form onSubmit={submit} className="rounded-2xl border border-white/9 bg-[#11111c]/90 p-5 shadow-[0_0_40px_rgba(168,85,247,.07)] sm:p-7">
         <div className="mb-6 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200"><UploadCloud className="size-5" /></span><div><h2 className="font-bold text-white">Publish a video</h2><p className="text-xs text-slate-500">Nothing is published until you submit this form.</p></div></div>
         <div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="title">Video title</Label><Input id="title" required value={title} onChange={event => setTitle(event.target.value)} maxLength={255} className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="description">Description</Label><Textarea id="description" value={description} onChange={event => setDescription(event.target.value)} maxLength={5000} className="min-h-28 border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div>
-          <div className="space-y-2"><Label htmlFor="category">Category</Label><select id="category" value={category} onChange={event => setCategory(event.target.value as "regular" | "shorts")} className="h-10 w-full rounded-md border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none focus:ring-2 focus:ring-fuchsia-400/35"><option value="regular">Regular video</option><option value="shorts">Short</option></select></div><div className="space-y-2"><Label htmlFor="duration">Duration (seconds)</Label><Input id="duration" type="number" min="0" value={durationSeconds} onChange={event => setDurationSeconds(Number(event.target.value) || 0)} className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div>
+          <div className="space-y-2"><Label htmlFor="category">Category</Label><select id="category" value={category} onChange={event => setCategory(event.target.value as "regular" | "shorts")} className="h-10 w-full rounded-md border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none focus:ring-2 focus:ring-fuchsia-400/35"><option value="regular">Regular video</option><option value="shorts">Short</option></select></div><div className="space-y-2"><Label htmlFor="duration">Duration (seconds)</Label><Input id="duration" type="number" min="0" value={durationSeconds} onChange={event => setDurationSeconds(Number(event.target.value) || 0)} className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="channel">Publish to channel</Label>{channelsQuery.data?.length ? <select id="channel" required value={channelId} onChange={event => setChannelId(event.target.value)} className="h-10 w-full rounded-md border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none focus:ring-2 focus:ring-fuchsia-400/35"><option value="">Choose your channel</option>{channelsQuery.data.map(channel => <option key={channel.id} value={channel.id}>{channel.displayName} (@{channel.handle})</option>)}</select> : <div className="rounded-xl border border-amber-300/15 bg-amber-300/[.05] p-3 text-sm text-amber-100">No channel exists yet. <Link href="/channel/create" className="font-bold text-fuchsia-200 hover:text-fuchsia-100">Create your channel first</Link>.</div>}</div>
           <div className="space-y-2"><Label htmlFor="video-file">Video file</Label><Input id="video-file" type="file" accept="video/*" onChange={pickVideo} className="border-white/10 bg-white/[.045] file:mr-3 file:border-0 file:bg-fuchsia-500/15 file:text-fuchsia-100" /><p className="text-[11px] text-slate-500">Choose an authorized video file to store in HKTUBE media storage.</p></div><div className="space-y-2"><Label htmlFor="video-url">Or video URL</Label><Input id="video-url" type="url" value={videoUrl} onChange={event => setVideoUrl(event.target.value)} placeholder="https://..." className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /><p className="text-[11px] text-slate-500">Use a direct, authorized video URL when no file is selected.</p></div>
           <div className="space-y-2"><Label htmlFor="thumbnail-file">Custom thumbnail file</Label><Input id="thumbnail-file" type="file" accept="image/*" onChange={event => setThumbnailFile(event.target.files?.[0] || null)} className="border-white/10 bg-white/[.045] file:mr-3 file:border-0 file:bg-cyan-400/15 file:text-cyan-100" /></div><div className="space-y-2"><Label htmlFor="thumbnail-url">Or thumbnail URL</Label><Input id="thumbnail-url" type="url" value={thumbnailUrl} onChange={event => setThumbnailUrl(event.target.value)} placeholder="https://..." className="border-white/10 bg-white/[.045] focus-visible:ring-cyan-300/35" /></div>
           <div className="space-y-2 sm:col-span-2"><Label htmlFor="caption-file">Caption track (optional)</Label><Input id="caption-file" type="file" accept="text/vtt,.vtt" onChange={event => setCaptionFile(event.target.files?.[0] || null)} className="border-white/10 bg-white/[.045] file:mr-3 file:border-0 file:bg-violet-500/15 file:text-violet-100" /><p className="text-[11px] text-slate-500">Upload an authorized WebVTT (.vtt) caption file to enable the player CC control for this video.</p></div>
