@@ -72,32 +72,27 @@ const BADGE = {
   blue:"#3EA6FF", gold:"#FFB800", purple:"#AA44FF",
   cyan:"#00CCFF", platinum:"#B0B0C0"
 };
-const NOTIFS = [
-  {id:1,icon:"👤",text:"TechWithHanif started following you",time:"2m",read:false},
-  {id:2,icon:"❤️",text:"Your video got 1,000 likes!",time:"15m",read:false},
-  {id:3,icon:"💬",text:"PakTravels commented: \"Amazing content as always!\"",time:"1h",read:false},
-  {id:4,icon:"🎁",text:"You received a gift worth 500 coins from a viewer!",time:"3h",read:true},
-  {id:5,icon:"💰",text:"Your payout of $24.50 was processed successfully",time:"1d",read:true},
-  {id:6,icon:"⚠️",text:"Copyright claim filed on your video — review required",time:"2d",read:true},
-  {id:7,icon:"✅",text:"Your verification application is under review",time:"3d",read:true},
-];
-const CATS = ["All","Technology","Travel","Food","Culture","Sports","Music","Gaming","Education","Comedy"];
+const CATS = ["All","Trending","Gaming","Music","Sports","Education","Technology","Live","Following","Posts"];
 const SETTINGS_GROUPS = [
   {group:"Account & Identity",items:[
     {id:"account",icon:"👤",label:"Account",desc:"Username, email, phone"},
     {id:"security",icon:"🔐",label:"Security",desc:"Password, 2FA, sessions"},
     {id:"privacy",icon:"🔒",label:"Privacy",desc:"Who can see your content"},
     {id:"notifications",icon:"🔔",label:"Notifications",desc:"Alerts and updates"},
+    {id:"account-center",icon:"🪪",label:"Account Center",desc:"Profile, sessions and connected accounts"},
+    {id:"blocked",icon:"🚫",label:"Blocked Accounts",desc:"Manage blocked users"},
   ]},
   {group:"Preferences",items:[
     {id:"language",icon:"🌐",label:"Language & Region",desc:"App language"},
-    {id:"theme",icon:"🎨",label:"Theme",desc:"Dark, Light, AMOLED"},
+    {id:"theme",icon:"🎨",label:"Theme",desc:"System, Dark, Light, AMOLED"},
     {id:"playback",icon:"▶️",label:"Playback",desc:"Autoplay, quality, speed"},
     {id:"data",icon:"📶",label:"Data Usage",desc:"Mobile data controls"},
     {id:"captions",icon:"💬",label:"Captions",desc:"Subtitle settings"},
     {id:"audio",icon:"🔊",label:"Audio & Dubbing",desc:"Audio track preferences"},
     {id:"content",icon:"🎯",label:"Content Preferences",desc:"Customize your feed"},
     {id:"family",icon:"👨‍👩‍👧",label:"Family & Safety",desc:"Parental controls"},
+    {id:"accessibility",icon:"♿",label:"Accessibility",desc:"Text, motion and display assistance"},
+    {id:"appearance",icon:"🖼️",label:"Appearance",desc:"Light, Dark or System"},
   ]},
   {group:"Creator & Monetization",items:[
     {id:"payments",icon:"💳",label:"Payments",desc:"Payment methods"},
@@ -107,6 +102,9 @@ const SETTINGS_GROUPS = [
     {id:"monetization",icon:"💵",label:"Monetization",desc:"Revenue and payouts"},
     {id:"boost",icon:"⚡",label:"Boost & Promote",desc:"Promote content"},
     {id:"ai-settings",icon:"🤖",label:"AI Assistant",desc:"Personal AI settings"},
+    {id:"dubbing",icon:"🗣️",label:"Dubbing & Audio Tracks",desc:"Viewer and creator audio preferences"},
+    {id:"ads",icon:"📣",label:"Ads & Sponsored Content",desc:"Ad preferences and transparency"},
+    {id:"payouts",icon:"🏦",label:"Payouts",desc:"Creator payout status"},
   ]},
   {group:"Support & Legal",items:[
     {id:"verification",icon:"✅",label:"Verification",desc:"Apply for a badge"},
@@ -115,6 +113,7 @@ const SETTINGS_GROUPS = [
     {id:"appeals",icon:"⚖️",label:"Appeals",desc:"Track your appeals"},
     {id:"data-export",icon:"📥",label:"Data Export",desc:"Download your data"},
     {id:"delete",icon:"🗑️",label:"Delete Account",desc:"Permanently delete",danger:true},
+    {id:"terms",icon:"📜",label:"Terms & Policies",desc:"Privacy, community and payments policies"},
   ]},
 ];
 
@@ -944,11 +943,11 @@ function SettingsPage({ t, themeId, onTheme, setPage }) {
     content:[{l:"Personalized Recommendations",k:"personalized",d:"Use your activity to order the feed"},{l:"Restricted Mode",k:"restricted",d:"Limit potentially mature discovery content"}],
     family:[{l:"Family Mode",k:"restricted",d:"Hide Shorts and discovery surfaces on this browser"}],
   };
-  const themes=[{id:"dark",icon:"🌙",l:"Dark",d:"HkTube dark theme"},{id:"amoled",icon:"⚡",l:"AMOLED",d:"True black theme"},{id:"light",icon:"☀️",l:"Light",d:"Bright theme"}];
+  const themes=[{id:"system",icon:"🌓",l:"System",d:"Follow device appearance"},{id:"dark",icon:"🌙",l:"Dark",d:"HkTube dark theme"},{id:"amoled",icon:"⚡",l:"AMOLED",d:"True black theme"},{id:"light",icon:"☀️",l:"Light",d:"Bright theme"}];
   if(active) return <div style={{paddingBottom:100}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><button type="button" onClick={()=>setActiveId(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",color:t.t2,fontSize:14,cursor:"pointer",padding:"4px 0"}}><ChevronLeft size={18}/> Settings</button><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div>
     <div style={{padding:"0 16px 16px"}}><h2 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 16px"}}>{active.icon} {active.label}</h2>
-      {rows[active.id] ? <div style={{display:"flex",flexDirection:"column",gap:1}}>{rows[active.id].map(item=><div key={item.k} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}><div style={{flex:1,minWidth:0}}><div style={{color:t.t1,fontSize:14}}>{item.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2,lineHeight:1.45}}>{item.d}</div></div><Toggle on={Boolean(tog[item.k])} onChange={()=>toggle(item.k)} t={t}/></div>)}</div> : active.id==="theme" ? <div style={{display:"flex",flexDirection:"column",gap:8}}>{themes.map(th=><button key={th.id} onClick={()=>onTheme(th.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px",borderRadius:10,background:themeId===th.id?t.priDim:t.hover,border:`1px solid ${themeId===th.id?t.pri:t.bdr}`,cursor:"pointer",textAlign:"left",width:"100%"}}><span style={{fontSize:22}}>{th.icon}</span><div style={{flex:1}}><div style={{color:t.t1,fontSize:14,fontWeight:600}}>{th.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div></div>{themeId===th.id?<Check size={18} color={t.pri}/>:<ChevronRight size={16} color={t.t3}/>}</button>)}</div> : active.id==="playback" ? <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${t.bdr}`}}><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>Preferred video quality</label><select value={quality} onChange={e=>{setQuality(e.target.value);save("hktube-quality",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>auto</option><option>2160p</option><option>1080p</option><option>720p</option><option>480p</option><option>360p</option></select></div> : active.id==="language" ? <div><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>App language</label><select value={language} onChange={e=>{setLanguage(e.target.value);save("hktube-language",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>English</option><option>Urdu</option><option>Hindi</option></select></div> : <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:10,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>{active.icon}</div><div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div><div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>This control is ready in the settings layout. Account or payment changes require the corresponding authenticated provider.</div></div>}
+      {rows[active.id] ? <div style={{display:"flex",flexDirection:"column",gap:1}}>{rows[active.id].map(item=><div key={item.k} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}><div style={{flex:1,minWidth:0}}><div style={{color:t.t1,fontSize:14}}>{item.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2,lineHeight:1.45}}>{item.d}</div></div><Toggle on={Boolean(tog[item.k])} onChange={()=>toggle(item.k)} t={t}/></div>)}</div> : (active.id==="theme" || active.id==="appearance") ? <div style={{display:"flex",flexDirection:"column",gap:8}}>{themes.map(th=><button key={th.id} onClick={()=>onTheme(th.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px",borderRadius:10,background:themeId===th.id?t.priDim:t.hover,border:`1px solid ${themeId===th.id?t.pri:t.bdr}`,cursor:"pointer",textAlign:"left",width:"100%"}}><span style={{fontSize:22}}>{th.icon}</span><div style={{flex:1}}><div style={{color:t.t1,fontSize:14,fontWeight:600}}>{th.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div></div>{themeId===th.id?<Check size={18} color={t.pri}/>:<ChevronRight size={16} color={t.t3}/>}</button>)}</div> : active.id==="playback" ? <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${t.bdr}`}}><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>Preferred video quality</label><select value={quality} onChange={e=>{setQuality(e.target.value);save("hktube-quality",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>auto</option><option>2160p</option><option>1080p</option><option>720p</option><option>480p</option><option>360p</option></select></div> : active.id==="language" ? <div><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>App language</label><select value={language} onChange={e=>{setLanguage(e.target.value);save("hktube-language",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>English</option><option>Urdu</option><option>Hindi</option></select></div> : <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:10,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>{active.icon}</div><div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div><div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>This control is ready in the settings layout. Account or payment changes require the corresponding authenticated provider.</div></div>}
     </div>
   </div>;
   return <div style={{paddingBottom:100}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0}}>Settings</h1><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div><div style={{color:t.t3,fontSize:12,padding:"12px 16px 0",lineHeight:1.5}}>YouTube-style controls for playback, notifications, privacy, appearance, data usage, and account safety.</div>{SETTINGS_GROUPS.map((group,gi)=><div key={gi}><div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>{group.items.map(item=><button key={item.id} onClick={()=>setActiveId(item.id)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${t.bdr}`,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span><div style={{flex:1,minWidth:0}}><div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div></div><ChevronRight size={15} color={t.t3}/></button>)}</div>)}</div>;
@@ -1019,8 +1018,10 @@ function VerificationPage({ t }) {
 // ─────────────────────────────────────────
 // 🔔  NOTIFICATIONS PANEL
 // ─────────────────────────────────────────
-function NotifPanel({ t, onClose }) {
-  const unread=NOTIFS.filter(n=>!n.read).length;
+function NotifPanel({ t, onClose, items=[] }) {
+  const unread=items.filter(n=>!n.readAt).length;
+  const utils=trpc.useUtils();
+  const markRead=trpc.notifications.markRead.useMutation({onSuccess:()=>void utils.notifications.mine.invalidate()});
   return (
     <div style={{
       position:"fixed",inset:0,zIndex:500,
@@ -1042,29 +1043,30 @@ function NotifPanel({ t, onClose }) {
             {unread>0&&<span style={{color:t.t3,fontSize:12}}>{unread} new</span>}
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button style={{background:"none",border:"none",color:t.pri,fontSize:12,fontWeight:600,cursor:"pointer"}}>Mark all read</button>
+            <button type="button" disabled={!unread||markRead.isPending} onClick={()=>items.filter(n=>!n.readAt).forEach(n=>markRead.mutate({id:n.id}))} style={{background:"none",border:"none",color:unread?t.pri:t.t3,fontSize:12,fontWeight:600,cursor:unread?"pointer":"default"}}>Mark all read</button>
             <button onClick={onClose} style={{background:"none",border:"none",color:t.t3,cursor:"pointer",display:"flex"}}><X size={20}/></button>
           </div>
         </div>
         <div style={{flex:1}}>
-          {NOTIFS.map(n=>(
+          {items.length ? items.map(n=>(
             <div key={n.id} style={{
               display:"flex",gap:12,padding:"14px 16px",
               borderBottom:`1px solid ${t.bdr}`,
-              background:!n.read?t.priDim:"none",cursor:"pointer",
+              background:!n.readAt?t.priDim:"none",cursor:"pointer",
               transition:"background 0.1s"
             }}
             onMouseEnter={e=>e.currentTarget.style.background=t.hover}
             onMouseLeave={e=>e.currentTarget.style.background=!n.read?t.priDim:"none"}
             >
-              <span style={{fontSize:22,flexShrink:0}}>{n.icon}</span>
+              <span style={{fontSize:22,flexShrink:0}}>{n.type==="follow"?"👤":n.type==="like"?"❤️":n.type==="comment"?"💬":n.type==="gift"?"🎁":n.type==="security"?"🔐":"🔔"}</span>
               <div style={{flex:1,minWidth:0}}>
-                <p style={{color:t.t1,fontSize:13,margin:0,lineHeight:1.5,fontWeight:n.read?400:600}}>{n.text}</p>
-                <span style={{color:t.t3,fontSize:11}}>{n.time}</span>
+                <p style={{color:t.t1,fontSize:13,margin:0,lineHeight:1.5,fontWeight:n.readAt?400:600}}>{n.title}</p>
+                {n.body&&<p style={{color:t.t2,fontSize:12,margin:"3px 0 0",lineHeight:1.45}}>{n.body}</p>}
+                <span style={{color:t.t3,fontSize:11}}>{new Date(n.createdAt).toLocaleString()}</span>
               </div>
-              {!n.read&&<div style={{width:8,height:8,borderRadius:"50%",background:t.pri,flexShrink:0,marginTop:5}}/>}
+              {!n.readAt&&<div style={{width:8,height:8,borderRadius:"50%",background:t.pri,flexShrink:0,marginTop:5}}/>}
             </div>
-          ))}
+          )) : <div style={{padding:24,textAlign:"center",color:t.t3,fontSize:13}}>No notifications yet.</div>}
         </div>
       </div>
     </div>
@@ -1250,12 +1252,16 @@ export default function HkTube() {
   const [showMenu,setShowMenu]=useState(false);
   const [showCreate,setShowCreate]=useState(false);
   const [showNotif,setShowNotif]=useState(false);
+  const auth=trpc.auth.me.useQuery();
+  const notificationsQuery=trpc.notifications.mine.useQuery(undefined,{enabled:Boolean(auth.data)});
   const videoQuery=trpc.videos.latest.useQuery({limit:20});
   const shortsQuery=trpc.videos.shorts.useQuery({limit:20});
   const videos=(videoQuery.data??[]).map(toDisplayVideo);
   const shorts=(shortsQuery.data??[]).map(toDisplayShort);
-  const t=T[themeId];
-  const unread=NOTIFS.filter(n=>!n.read).length;
+  const resolvedThemeId=themeId==="system" ? (typeof window!=="undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : themeId;
+  const t=T[resolvedThemeId]||T.dark;
+  const notifications=notificationsQuery.data??[];
+  const unread=notifications.filter(n=>!n.readAt).length;
 
   const pages={
     home:<HomePage t={t} setPage={setPage} setShowMenu={setShowMenu} videos={videos} shorts={shorts} loading={videoQuery.isLoading||shortsQuery.isLoading} error={videoQuery.isError||shortsQuery.isError}/>,
@@ -1350,7 +1356,7 @@ export default function HkTube() {
         setShowCreate={setShowCreate}
       />
 
-      {showNotif && <NotifPanel t={t} onClose={()=>setShowNotif(false)}/>}
+      {showNotif && <NotifPanel t={t} items={notifications} onClose={()=>setShowNotif(false)}/>}
       {showMenu  && <MenuModal  t={t} curTheme={themeId} onTheme={changeTheme} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
       {showCreate&& <CreateModal t={t} onClose={()=>setShowCreate(false)}/>}
     </div>
