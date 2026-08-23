@@ -1076,7 +1076,7 @@ function NotifPanel({ t, onClose, items=[] }) {
 // ─────────────────────────────────────────
 // 👤  MENU / PROFILE MODAL (full-screen YouTube-style panel)
 // ─────────────────────────────────────────
-function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
+function MenuModal({ t, curTheme, onTheme, onClose, setPage, user }) {
   const themes=[
     {id:"system",icon:"🌓",l:"System"},
     {id:"dark",icon:"🌙",l:"Dark"},
@@ -1118,18 +1118,10 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
           padding:"12px 16px 16px",borderBottom:`1px solid ${t.bdr}`,
           display:"flex",gap:12,alignItems:"center"
         }}>
-          <Av char="U" size={50} seed={88}/>
-          <div style={{flex:1}}>
-            <div style={{color:t.t1,fontWeight:700,fontSize:15}}>Your Profile</div>
-            <div style={{color:t.t2,fontSize:12,marginTop:2}}>@yourusername</div>
-            <div style={{display:"flex",gap:16,marginTop:8}}>
-              {[{l:"Followers",v:"—"},{l:"Following",v:"—"},{l:"Videos",v:"—"}].map((s,i)=>(
-                <div key={i}>
-                  <span style={{color:t.t1,fontWeight:700,fontSize:14}}>{s.v}</span>
-                  <span style={{color:t.t3,fontSize:11,marginLeft:4}}>{s.l}</span>
-                </div>
-              ))}
-            </div>
+          <Av char={(user?.name||"U").slice(0,1).toUpperCase()} size={50} seed={88}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{color:t.t1,fontWeight:700,fontSize:15}}>{user?.name || "Guest viewer"}</div>
+            <div style={{color:t.t2,fontSize:12,marginTop:2,overflowWrap:"anywhere"}}>{user?.email || "Sign in to manage your account"}</div>
           </div>
         </div>
 
@@ -1296,7 +1288,7 @@ export default function HkTube() {
         .hk-shorts-mode main,.hk-settings-mode main{min-height:100dvh!important;padding-bottom:0!important;}
         .hk-txt{display:none;}
         /* Desktop layout */
-        @media(min-width:768px){
+        @media(min-width:1024px){
           .hk-sidebar{display:block!important;}
           .hk-bottom-nav{display:none!important;}
           .hk-txt{display:inline;}
@@ -1309,7 +1301,7 @@ export default function HkTube() {
           .hk-video-item{margin-bottom:0!important;}
         }
         /* Mobile: full-width cards */
-        @media(max-width:767px){
+        @media(max-width:1023px){
           .hk-video-item{padding:0;}
           .hk-header{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));}
         }
@@ -1358,7 +1350,7 @@ export default function HkTube() {
       />
 
       {showNotif && <NotifPanel t={t} items={notifications} onClose={()=>setShowNotif(false)}/>}
-      {showMenu  && <MenuModal  t={t} curTheme={themeId} onTheme={changeTheme} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
+      {showMenu  && <MenuModal  t={t} user={auth.data} curTheme={themeId} onTheme={changeTheme} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
       {showCreate&& <CreateModal t={t} onClose={()=>setShowCreate(false)}/>}
     </div>
   );
