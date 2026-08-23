@@ -31,7 +31,6 @@ function Router() {
       <Route path={"/subscriptions"}>{() => <PlatformSection kind="subscriptions" />}</Route>
       <Route path={"/library"}>{() => <PlatformSection kind="library" />}</Route>
       <Route path={"/posts"}>{() => <PlatformSection kind="posts" />}</Route>
-      <Route path={"/live"}>{() => <PlatformSection kind="live" />}</Route>
       <Route path={"/notifications"}>{() => <PlatformSection kind="notifications" />}</Route>
       <Route path={"/playlists"}>{() => <PlatformSection kind="playlists" />}</Route>
       <Route path={"/history"}>{() => <PlatformSection kind="history" />}</Route>

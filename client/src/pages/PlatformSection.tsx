@@ -1,6 +1,5 @@
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
-import { LiveRoom } from "@/components/LiveRoom";
 import { LibraryHub } from "@/components/LibraryHub";
 import { CreatorStudioHub } from "@/components/CreatorStudioHub";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ import {
   Library,
   ListVideo,
   Loader2,
-  Radio,
   Sparkles,
   UsersRound,
   Upload,
@@ -30,7 +28,6 @@ import { toast } from "sonner";
 export type PlatformSectionKind =
   | "posts"
   | "subscriptions"
-  | "live"
   | "notifications"
   | "playlists"
   | "history"
@@ -43,7 +40,6 @@ type SectionCopy = { title: string; subtitle: string; icon: LucideIcon };
 const copy: Record<PlatformSectionKind, SectionCopy> = {
   subscriptions: { title: "Following", subtitle: "Channels you follow on HkTube.", icon: UsersRound },
   posts: { title: "Posts", subtitle: "Updates and conversations published by real HkTube creators.", icon: Sparkles },
-  live: { title: "Live", subtitle: "Discover live streams currently available in HkTube.", icon: Radio },
   notifications: { title: "Notifications", subtitle: "Stay up to date with activity connected to your account.", icon: Bell },
   playlists: { title: "Playlists", subtitle: "Organize videos you have saved into personal collections.", icon: ListVideo },
   history: { title: "Watch history", subtitle: "Your recent viewing activity, when recorded while signed in.", icon: Clock3 },
@@ -79,7 +75,6 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   const library = trpc.library.saved.useQuery(undefined, { enabled: isAuthed && kind === "library" });
   const studio = trpc.creator_studio.dashboard.useQuery(undefined, { enabled: isAuthed && kind === "studio" });
   const following = trpc.subscriptions.mine.useQuery(undefined, { enabled: isAuthed && (kind === "subscriptions" || kind === "library") });
-  const live = trpc.live.latest.useQuery({ limit: 36 }, { enabled: kind === "live" });
   const [title, setTitle] = useState("");
   const createPlaylist = trpc.playlists.create.useMutation({
     onSuccess: () => { setTitle(""); void playlists.refetch(); toast.success("Playlist created."); },
@@ -100,12 +95,8 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
         : [];
 
   const privateQuery = kind === "notifications" ? notifications : kind === "playlists" ? playlists : kind === "history" ? history : kind === "library" ? library : kind === "studio" ? studio : kind === "subscriptions" ? following : null;
-  const queryLoading = kind === "posts" ? posts.isLoading : kind === "live" ? live.isLoading : Boolean(privateQuery?.isLoading);
-  const queryError = kind === "posts" ? posts.isError : kind === "live" ? live.isError : Boolean(privateQuery?.isError);
-
-  if (kind === "live") {
-    return <HkTubeShell><LiveRoom items={live.data ?? []} loading={live.isLoading} error={live.isError} /></HkTubeShell>;
-  }
+  const queryLoading = kind === "posts" ? posts.isLoading : Boolean(privateQuery?.isLoading);
+  const queryError = kind === "posts" ? posts.isError : Boolean(privateQuery?.isError);
   if (kind === "library") {
     if (!isAuthed) return <HkTubeShell title="Library" subtitle="Your saved videos, history, and collections."><SignInState /></HkTubeShell>;
     if (library.isLoading || history.isLoading || playlists.isLoading || following.isLoading) return <HkTubeShell title="Library"><LoadingState /></HkTubeShell>;
@@ -125,7 +116,7 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   } else if (queryLoading) {
     content = <LoadingState />;
   } else if (queryError) {
-    content = <EmptyVideos title={`${meta.title} could not load`} copy="Please refresh and try again. This section reads only from HkTube's live database." icon={Inbox} />;
+    content = <EmptyVideos title={`${meta.title} could not load`} copy="Please refresh and try again. This section reads only from HkTube's database." icon={Inbox} />;
   } else if (kind === "posts") {
     content = <PostsFeed posts={posts.data ?? []} />;
   } else if (kind === "subscriptions") {
@@ -135,7 +126,7 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   } else if (kind === "playlists") {
     content = <div className="space-y-5"><form onSubmit={submitPlaylist} className="flex gap-2"><Input value={title} onChange={event => setTitle(event.target.value)} placeholder="Create a private playlist" className="max-w-md border-white/10 bg-white/[.045] text-white" /><Button type="submit" disabled={createPlaylist.isPending}>Create</Button></form>{playlists.data?.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{playlists.data.map(playlist => <div key={playlist.id} className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><h2 className="font-semibold text-white">{playlist.title}</h2><p className="mt-2 text-xs text-slate-400">{playlist.visibility} playlist</p></div>)}</div> : <EmptyVideos title="No playlists yet" copy="Create a playlist to organize videos you have chosen to keep." icon={ListVideo} />}</div>;
   } else {
-    content = videoItems.length ? <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{videoItems.map(video => <VideoCard key={video.id} video={video} />)}</div> : <EmptyVideos title={`No ${meta.title.toLowerCase()} records yet`} copy="This view is connected to the live database and will populate when the feature is used." icon={meta.icon} />;
+    content = videoItems.length ? <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{videoItems.map(video => <VideoCard key={video.id} video={video} />)}</div> : <EmptyVideos title={`No ${meta.title.toLowerCase()} records yet`} copy="This view is connected to HkTube's database and will populate when the feature is used." icon={meta.icon} />;
   }
 
   return <HkTubeShell title={meta.title} subtitle={meta.subtitle}><div className="mx-auto max-w-6xl"><div className="mb-6 flex items-center gap-3 rounded-2xl border border-fuchsia-400/15 bg-gradient-to-r from-violet-500/10 to-cyan-400/5 p-5"><Icon className="size-6 text-fuchsia-300" aria-hidden="true" /><div><p className="text-sm font-semibold text-white">Authentic HkTube records</p><p className="mt-1 text-xs text-slate-400">No demo content is inserted when the database or provider is unavailable.</p></div></div>{content}</div></HkTubeShell>;

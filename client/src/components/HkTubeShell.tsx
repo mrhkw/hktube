@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Bell, BookOpen, Compass, FileText, Flame, Home, Library, LogOut, MonitorPlay, Plus, PlusCircle, Radio, Search, Settings, Sparkles, UsersRound, Video, UserRound, X } from "lucide-react";
+import { Bell, BookOpen, Compass, FileText, Flame, Home, Library, LogOut, MonitorPlay, Plus, PlusCircle, Search, Settings, Sparkles, UsersRound, Video, UserRound, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -17,7 +17,6 @@ const primaryNav = [
   { label: "Home", href: "/", icon: Home },
   { label: "Shorts", href: "/shorts", icon: MonitorPlay },
   { label: "Posts", href: "/posts", icon: Sparkles },
-  { label: "Live", href: "/live", icon: Radio },
   { label: "Trending", href: "/trending", icon: Flame },
   { label: "Following", href: "/subscriptions", icon: Compass },
   { label: "Library", href: "/library", icon: Library },

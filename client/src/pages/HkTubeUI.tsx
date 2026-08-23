@@ -97,8 +97,6 @@ const SETTINGS_GROUPS = [
   ]},
   {group:"Creator & Monetization",items:[
     {id:"payments",icon:"💳",label:"Payments",desc:"Payment methods"},
-    {id:"coins",icon:"🪙",label:"Coins",desc:"Balance and history"},
-    {id:"gifts",icon:"🎁",label:"Gifts",desc:"Gift history"},
     {id:"creator",icon:"🎬",label:"Creator Settings",desc:"Channel settings"},
     {id:"monetization",icon:"💵",label:"Monetization",desc:"Revenue and payouts"},
     {id:"boost",icon:"⚡",label:"Boost & Promote",desc:"Promote content"},
@@ -475,7 +473,6 @@ function Sidebar({ t, page, setPage }) {
     {id:"studio",       icon:"🎬", label:"Creator Studio"},
     {id:"analytics",    icon:"📊", label:"Analytics"},
     {id:"monetization", icon:"💵", label:"Monetization"},
-    {id:"coins",        icon:"🪙", label:"Coins & Gifts"},
     null,
     {id:"settings",     icon:"⚙️", label:"Settings"},
   ];
@@ -796,7 +793,7 @@ function FeedsPage({ t }) {
 // ─────────────────────────────────────────
 function StudioPage({ t }) {
   const [tab,setTab]=useState("dashboard");
-  const tabs=["Dashboard","Content","Analytics","Monetization","Coins & Gifts"];
+  const tabs=["Dashboard","Content","Analytics","Monetization"];
   return (
     <div style={{paddingBottom:100}}>
       {/* Header */}
@@ -910,38 +907,6 @@ function StudioPage({ t }) {
         </div>
       )}
 
-      {/* Coins & Gifts tab */}
-      {tab==="coins-&-gifts"&&(
-        <div style={{padding:16}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-            {[{l:"Coin Balance",v:"0 🪙"},{l:"Gifts Received",v:"0 🎁"}].map((c,i)=>(
-              <div key={i} style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16}}>
-                <div style={{color:t.t1,fontWeight:700,fontSize:24}}>{c.v}</div>
-                <div style={{color:t.t3,fontSize:12,marginTop:4}}>{c.l}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16,marginBottom:12}}>
-            <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:12}}>Buy Coins</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-              {[{c:100,p:"$0.99"},{c:500,p:"$4.49"},{c:1200,p:"$9.99"},{c:2500,p:"$19.99"},{c:6500,p:"$49.99"},{c:14000,p:"$99.99"}].map((pkg,i)=>(
-                <button key={i} style={{
-                  background:t.hover,border:`1px solid ${t.bdr}`,borderRadius:10,
-                  padding:"12px 6px",cursor:"pointer",
-                  transition:"border-color 0.15s"
-                }}
-                onMouseEnter={e=>e.currentTarget.style.borderColor=t.pri}
-                onMouseLeave={e=>e.currentTarget.style.borderColor=t.bdr}
-                >
-                  <div style={{fontSize:20,marginBottom:3}}>🪙</div>
-                  <div style={{color:t.t1,fontWeight:700,fontSize:15}}>{pkg.c.toLocaleString()}</div>
-                  <div style={{color:t.t3,fontSize:11,marginTop:2}}>{pkg.p}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -951,7 +916,7 @@ function StudioPage({ t }) {
 // ─────────────────────────────────────────
 function SettingsPage({ t, themeId, onTheme, setPage }) {
   const [activeId,setActiveId]=useState(null);
-  const defaults={push:true,email:false,follows:true,likes:true,comments:true,gifts:true,twoFA:false,loginAlerts:true,autoplay:true,hdWifi:true,saveData:false,showActivity:true,publicLikes:false,captions:false,restricted:false,personalized:true};
+  const defaults={push:true,email:false,follows:true,likes:true,comments:true,twoFA:false,loginAlerts:true,autoplay:true,hdWifi:true,saveData:false,showActivity:true,publicLikes:false,captions:false,restricted:false,personalized:true};
   const [tog,setTog]=useState(()=>{try{const raw=localStorage.getItem("hktube-settings");return {...defaults,...(raw?JSON.parse(raw):{})};}catch{return defaults;}});
   const [quality,setQuality]=useState(()=>localStorage.getItem("hktube-quality")||"auto");
   const [language,setLanguage]=useState(()=>localStorage.getItem("hktube-language")||"English");
@@ -960,7 +925,7 @@ function SettingsPage({ t, themeId, onTheme, setPage }) {
   const save=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
   const active=activeId?SETTINGS_GROUPS.flatMap(g=>g.items).find(item=>item.id===activeId):null;
   const rows={
-    notifications:[{l:"Push Notifications",k:"push",d:"Device alerts for activity on your account"},{l:"Email Notifications",k:"email",d:"Product updates and account messages"},{l:"New Followers",k:"follows",d:"When someone follows your channel"},{l:"Likes and Comments",k:"likes",d:"Activity on your videos and posts"},{l:"Gifts",k:"gifts",d:"When you receive a creator gift"}],
+    notifications:[{l:"Push Notifications",k:"push",d:"Device alerts for activity on your account"},{l:"Email Notifications",k:"email",d:"Product updates and account messages"},{l:"New Followers",k:"follows",d:"When someone follows your channel"},{l:"Likes and Comments",k:"likes",d:"Activity on your videos and posts"}],
     security:[{l:"Two-Step Verification",k:"twoFA",d:"Add another sign-in verification step"},{l:"Login Alerts",k:"loginAlerts",d:"Notify this browser about new sign-ins"}],
     privacy:[{l:"Show Activity Status",k:"showActivity",d:"Let others see when you are active"},{l:"Public Likes",k:"publicLikes",d:"Show liked videos publicly"}],
     data:[{l:"Reduce Media Preload",k:"saveData",d:"Load metadata first to save mobile data"}],
@@ -1083,7 +1048,7 @@ function NotifPanel({ t, onClose, items=[] }) {
             onMouseEnter={e=>e.currentTarget.style.background=t.hover}
             onMouseLeave={e=>e.currentTarget.style.background=!n.read?t.priDim:"none"}
             >
-              <span style={{fontSize:22,flexShrink:0}}>{n.type==="follow"?"👤":n.type==="like"?"❤️":n.type==="comment"?"💬":n.type==="gift"?"🎁":n.type==="security"?"🔐":"🔔"}</span>
+              <span style={{fontSize:22,flexShrink:0}}>{n.type==="follow"?"👤":n.type==="like"?"❤️":n.type==="comment"?"💬":n.type==="security"?"🔐":"🔔"}</span>
               <div style={{flex:1,minWidth:0}}>
                 <p style={{color:t.t1,fontSize:13,margin:0,lineHeight:1.5,fontWeight:n.readAt?400:600}}>{n.title}</p>
                 {n.body&&<p style={{color:t.t2,fontSize:12,margin:"3px 0 0",lineHeight:1.45}}>{n.body}</p>}
@@ -1120,7 +1085,6 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage, user, navigate }) {
     {icon:"🕐",l:"History",p:"history"},
     {icon:"✅",l:"Verification",p:"verification"},
     {icon:"💵",l:"Monetization",p:"monetization"},
-    {icon:"🪙",l:"Coins & Gifts",p:"coins"},
     {icon:"⚙️",l:"Settings",p:"settings"},
     {icon:"❓",l:"Help & Feedback",p:"help"},
     {icon:"🚪",l:"Sign Out",danger:true},
@@ -1213,7 +1177,6 @@ function CreateModal({ t, onClose, navigate }) {
     {icon:"🎬",l:"Upload Video",d:"Long-form · tutorials · vlogs",col:t.pri,route:"/upload"},
     {icon:"▶️",l:"Create Short",d:"Vertical 9:16 video · up to 60s",col:t.sec,route:"/upload?category=shorts"},
     {icon:"📝",l:"Write Post",d:"Text · images · polls · links",col:"#00BBFF",route:"/posts?compose=1"},
-    {icon:"💬",l:"Go Live",d:"Real-time stream with chat",col:"#FF0000",route:"/live?create=1"},
     {icon:"📺",l:"Create Channel",d:"Set up your creator identity",col:"#00BBFF",route:"/channel/create"},
   ];
   return (
@@ -1298,7 +1261,6 @@ export default function HkTube() {
     feeds:<FeedsPage t={t}/>,
     studio:<StudioPage t={t}/>,
     monetization:<StudioPage t={t}/>,
-    coins:<StudioPage t={t}/>,
     settings:<SettingsPage t={t} themeId={themeId} onTheme={changeTheme} setPage={setPage}/>,
     verification:<VerificationPage t={t}/>,
   };
@@ -1364,10 +1326,10 @@ export default function HkTube() {
               alignItems:"center",justifyContent:"center",
               height:"60%",gap:10,textAlign:"center",padding:24
             }}>
-              <div style={{fontSize:48}}>🚧</div>
-              <div style={{color:t.t1,fontWeight:600,fontSize:17}}>Coming Soon</div>
+              <div style={{fontSize:48}}>◌</div>
+              <div style={{color:t.t1,fontWeight:600,fontSize:17}}>No records yet</div>
               <div style={{color:t.t3,fontSize:13,maxWidth:260,lineHeight:1.6}}>
-                This section connects to real backend data after setup.
+                This HkTube section will show real records when activity is available.
               </div>
               <button onClick={()=>setPage("home")} style={{
                 background:t.hover,border:`1px solid ${t.bdr}`,
