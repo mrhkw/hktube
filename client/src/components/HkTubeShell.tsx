@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Bell, BookOpen, Compass, FileText, Flame, Home, Library, LogOut, MonitorPlay, Plus, PlusCircle, Radio, Search, Settings, Sparkles, UsersRound, Video } from "lucide-react";
+import { Bell, BookOpen, Compass, FileText, Flame, Home, Library, LogOut, MonitorPlay, Plus, PlusCircle, Radio, Search, Settings, Sparkles, UsersRound, Video, UserRound } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -28,9 +28,9 @@ const primaryNav = [
 const mobileDock = [
   { label: "Home", href: "/", icon: Home },
   { label: "Shorts", href: "/shorts", icon: MonitorPlay },
-  { label: "LIVE", href: "/live", icon: Radio },
-  { label: "Feeds", href: "/posts", icon: UsersRound },
-  { label: "Library", href: "/library", icon: BookOpen },
+  { label: "Create", href: "#create", icon: Plus },
+  { label: "Subscriptions", href: "/subscriptions", icon: UsersRound },
+  { label: "You", href: "/menu", icon: UserRound },
 ];
 
 const topicFilters = [
@@ -84,6 +84,6 @@ export function HkTubeShell({ children, title, subtitle, immersive = false }: Hk
 
     <main className={cn("relative pb-[94px] lg:pb-14 lg:pl-64", immersive && "max-lg:p-0 max-lg:pb-0")}>{(title || subtitle) && <div className="border-b border-white/7 px-5 py-7 sm:px-8 lg:px-10"><h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>{subtitle && <p className="mt-1.5 text-sm text-slate-400">{subtitle}</p>}</div>}<div className={cn("px-0 py-0 sm:px-8 sm:py-6 lg:px-10", immersive && "max-lg:p-0")}>{children}</div><footer className={cn("hidden border-t border-white/7 px-5 py-7 text-xs text-slate-500 sm:block sm:px-8 lg:px-10", immersive && "max-lg:hidden")}><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><p>© {new Date().getFullYear()} HKTUBE. Authentic content only.</p><nav className="flex flex-wrap gap-x-4 gap-y-2" aria-label="Platform policies"><Link href="/privacy" className="hover:text-violet-200">Privacy</Link><Link href="/terms" className="hover:text-violet-200">Terms</Link><Link href="/cookies" className="hover:text-violet-200">Cookies</Link><Link href="/community" className="hover:text-violet-200">Guidelines</Link><Link href="/advertising" className="hover:text-violet-200">Advertising</Link><Link href="/contact" className="hover:text-violet-200">Contact</Link></nav></div></footer></main>
 
-    <nav className={cn("fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-[#2a3040] bg-[#151923]/98 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden", immersive && "max-lg:hidden")} aria-label="Mobile navigation">{mobileDock.map(item => { const active = item.href === "/" ? location === "/" : location.startsWith(item.href); const Icon = item.icon; return <Link key={item.href} href={item.href} className={cn("flex min-w-0 flex-col items-center gap-1 rounded-lg py-1 text-[11px] font-medium transition", active ? "text-violet-400" : "text-slate-400 hover:text-slate-100")}><Icon className={cn("size-5", active && "drop-shadow-[0_0_8px_rgba(139,92,246,.7)]")} /><span className="truncate">{item.label}</span></Link>; })}</nav>
+    <nav className={cn("fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-[#2a3040] bg-[#151923]/98 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden", immersive && "max-lg:hidden")} aria-label="Mobile navigation">{mobileDock.map(item => { const active = item.href === "/" ? location === "/" : item.href === "#create" ? false : location.startsWith(item.href); const Icon = item.icon; if (item.href === "#create") return <button key={item.label} type="button" onClick={openCreate} className="flex min-w-0 flex-col items-center gap-1 rounded-lg py-1 text-[11px] font-medium text-slate-300 transition"><span className="grid size-8 place-items-center rounded-full bg-white text-slate-950"><Icon className="size-5" /></span><span className="truncate">{item.label}</span></button>; return <Link key={item.href} href={item.href} className={cn("flex min-w-0 flex-col items-center gap-1 rounded-lg py-1 text-[11px] font-medium transition", active ? "text-violet-400" : "text-slate-400 hover:text-slate-100")}><Icon className={cn("size-5", active && "drop-shadow-[0_0_8px_rgba(139,92,246,.7)]")} /><span className="truncate">{item.label}</span></Link>; })}</nav>
   </div>;
 }

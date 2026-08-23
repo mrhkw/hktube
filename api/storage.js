@@ -54048,6 +54048,10 @@ var sessions = mysqlTable("sessions", { id: varchar("id", { length: 128 }).prima
 var auditLogs = mysqlTable("audit_logs", { id: int("id").autoincrement().primaryKey(), actorId: int("actorId"), action: varchar("action", { length: 120 }).notNull(), entityType: varchar("entityType", { length: 80 }).notNull(), entityId: int("entityId"), metadata: text("metadata"), createdAt: timestamp("createdAt").defaultNow().notNull() }, (table) => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
 
 // server/_core/env.ts
+var OWNER_EMAILS = /* @__PURE__ */ new Set(["hanifnazamdin30@gmail.com", "hanifnazamdin6@gmail.com"]);
+function isOwnerEmail(email3) {
+  return Boolean(email3 && OWNER_EMAILS.has(email3.trim().toLowerCase()));
+}
 var ENV = {
   // OAuth client identifiers and service base URL are public configuration.
   // Keep explicit Vercel variables as the preferred source; the fallback keeps
@@ -54096,12 +54100,13 @@ async function upsertUser(user) {
     values.lastSignedIn = user.lastSignedIn;
     updateSet.lastSignedIn = user.lastSignedIn;
   }
-  if (user.role !== void 0) {
-    values.role = user.role;
-    updateSet.role = user.role;
-  } else if (user.openId === ENV.ownerOpenId) {
+  const isOwner = isOwnerEmail(user.email) || Boolean(ENV.ownerOpenId) && user.openId === ENV.ownerOpenId;
+  if (isOwner) {
     values.role = "admin";
     updateSet.role = "admin";
+  } else if (user.role !== void 0 && user.role !== "admin") {
+    values.role = user.role;
+    updateSet.role = user.role;
   }
   if (user.language !== void 0) {
     values.language = user.language;
@@ -54115,6 +54120,24 @@ async function getUserByOpenId(openId) {
   const db = await getDb();
   if (!db) return void 0;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result[0];
+}
+async function listChannelsByOwner(ownerId) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(channels).where(eq(channels.ownerId, ownerId)).orderBy(desc(channels.createdAt));
+}
+async function createChannel(channel) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable.");
+  const result = await db.insert(channels).values(channel);
+  const created = await db.select().from(channels).where(eq(channels.id, Number(result[0].insertId))).limit(1);
+  return created[0];
+}
+async function getChannelById(id) {
+  const db = await getDb();
+  if (!db) return void 0;
+  const result = await db.select().from(channels).where(eq(channels.id, id)).limit(1);
   return result[0];
 }
 function escapeLike(value) {
@@ -72250,7 +72273,7 @@ var protectedProcedure = t.procedure.use(requireUser);
 var adminProcedure = t.procedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
-    if (!ctx.user || ctx.user.role !== "admin") {
+    if (!ctx.user || ctx.user.role !== "admin" || !isOwnerEmail(ctx.user.email)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
     return next({
@@ -72294,7 +72317,8 @@ var mediaUrl = external_exports.string().trim().refine((value) => {
     return false;
   }
 }, "Provide a valid external URL or stored media path.");
-var videoInputSchema = external_exports.object({ title: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional().default(""), videoUrl: mediaUrl, videoStorageKey: external_exports.string().trim().max(512).optional(), thumbnailUrl: mediaUrl.optional(), thumbnailStorageKey: external_exports.string().trim().max(512).optional(), captionUrl: mediaUrl.optional(), captionStorageKey: external_exports.string().trim().max(512).optional(), durationSeconds: external_exports.number().int().min(0).max(86400).default(0), category: videoCategory.default("regular") });
+var videoInputSchema = external_exports.object({ title: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional().default(""), videoUrl: mediaUrl, videoStorageKey: external_exports.string().trim().max(512).optional(), thumbnailUrl: mediaUrl.optional(), thumbnailStorageKey: external_exports.string().trim().max(512).optional(), captionUrl: mediaUrl.optional(), captionStorageKey: external_exports.string().trim().max(512).optional(), durationSeconds: external_exports.number().int().min(0).max(86400).default(0), category: videoCategory.default("regular"), channelId: external_exports.number().int().positive().optional() });
+var channelInputSchema = external_exports.object({ handle: external_exports.string().trim().regex(/^[A-Za-z0-9_]{3,64}$/, "Use 3-64 letters, numbers, or underscores."), displayName: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional().default("") });
 var commentInput = external_exports.object({ body: external_exports.string().trim().min(1).max(2e3), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), parentId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId || value.postId), "A video or post is required.");
 var appRouter = router({
   system: systemRouter,
@@ -72313,12 +72337,19 @@ var appRouter = router({
     recordView: publicProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(({ input }) => incrementVideoView(input.id)),
     engagement: publicProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).query(({ ctx, input }) => getVideoEngagement(input.id, ctx.user?.id)),
     toggleLike: protectedProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(({ ctx, input }) => toggleVideoLike(input.id, ctx.user.id)),
-    create: adminProcedure.input(videoInputSchema).mutation(({ ctx, input }) => createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, uploadedById: ctx.user.id })),
+    create: adminProcedure.input(videoInputSchema).mutation(async ({ ctx, input }) => {
+      if (input.channelId) {
+        const channel = await getChannelById(input.channelId);
+        if (!channel || channel.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "You can only upload to your own channel." });
+      }
+      return createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, channelId: input.channelId ?? null, uploadedById: ctx.user.id });
+    }),
     adminList: adminProcedure.query(() => listAdminVideos()),
     remove: adminProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(({ input }) => removeVideo(input.id))
   }),
   comments: router({ list: publicProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional() })).query(({ input }) => listComments(input)), create: protectedProcedure.input(commentInput).mutation(({ ctx, input }) => createComment({ ...input, authorId: ctx.user.id })) }),
   subscriptions: router({ mine: protectedProcedure.query(({ ctx }) => listChannelSubscriptions(ctx.user.id)), toggle: protectedProcedure.input(external_exports.object({ channelId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => toggleChannelSubscription(input.channelId, ctx.user.id)) }),
+  channels: router({ mine: protectedProcedure.query(({ ctx }) => listChannelsByOwner(ctx.user.id)), create: protectedProcedure.input(channelInputSchema).mutation(({ ctx, input }) => createChannel({ ownerId: ctx.user.id, handle: input.handle, displayName: input.displayName, description: input.description || null })) }),
   live: router({ latest: publicProcedure.input(external_exports.object({ limit: external_exports.number().int().min(1).max(60).optional() }).optional()).query(({ input }) => listLiveStreams(input?.limit)) }),
   playlists: router({ mine: protectedProcedure.query(({ ctx }) => listPlaylists(ctx.user.id)), create: protectedProcedure.input(external_exports.object({ title: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional(), visibility: external_exports.enum(["public", "unlisted", "private"]).optional() })).mutation(({ ctx, input }) => createPlaylist({ ...input, ownerId: ctx.user.id })), add: protectedProcedure.input(external_exports.object({ playlistId: external_exports.number().int().positive(), videoId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => addVideoToPlaylist({ ...input, ownerId: ctx.user.id })) }),
   watch_history: router({ mine: protectedProcedure.query(({ ctx }) => listWatchHistory(ctx.user.id)), record: protectedProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive(), watchedSeconds: external_exports.number().int().min(0).max(86400).optional() })).mutation(({ ctx, input }) => recordWatchHistory({ ...input, userId: ctx.user.id })) }),
