@@ -6,13 +6,15 @@
 // ╚═══════════════════════════════════════════════════════════╝
 
 import { useState, useEffect, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+import { formatDate, formatDuration, formatViews } from "@/lib/video";
 import {
   Home, Play, Search, Bell, Plus, Users, Heart,
   MessageCircle, Share2, Bookmark, MoreVertical,
   MoreHorizontal, Eye, X, Moon, Sun, Zap, User,
   Video, ChevronRight, Check, Volume2, VolumeX,
   BarChart2, LogOut, Upload, Award, DollarSign,
-  HelpCircle, Rss, ChevronLeft, AlertTriangle,
+  HelpCircle, ImageOff, Rss, ChevronLeft, AlertTriangle,
   Info, Menu, Settings, Shield, TrendingUp,
   Clock, Flame, FileText, Download
 } from "lucide-react";
@@ -65,40 +67,10 @@ const T = {
 // ─────────────────────────────────────────
 // 📊  DISPLAY DATA  (UI demo — real app uses Supabase)
 // ─────────────────────────────────────────
-const GRADS = {
-  tech:   "linear-gradient(160deg,#1a1a4e,#2d1b69,#1a0050)",
-  travel: "linear-gradient(160deg,#00291a,#004d2a,#003320)",
-  food:   "linear-gradient(160deg,#3d1a00,#6b2f00,#4a1a00)",
-  urdu:   "linear-gradient(160deg,#2a0040,#4a0060,#1a0030)",
-  ai:     "linear-gradient(160deg,#00003a,#0a0060,#1a0088)",
-  music:  "linear-gradient(160deg,#3a0020,#600038,#400028)",
-  news:   "linear-gradient(160deg,#252500,#403800,#1a1a00)",
-  sport:  "linear-gradient(160deg,#003300,#005000,#002200)",
-};
 const BADGE = {
   blue:"#3EA6FF", gold:"#FFB800", purple:"#AA44FF",
   cyan:"#00CCFF", platinum:"#B0B0C0"
 };
-const VIDEOS = [
-  {id:1,title:"Next.js 15 Full Course — Build & Deploy a Real App",creator:"TechWithHanif",av:"T",views:"1.2M",dur:"2:24:18",ago:"3 days ago",vf:true,badge:"gold",g:"tech"},
-  {id:2,title:"Lahore to Hunza Road Trip — 1,000 KM in 5 Days 🏔️",creator:"PakTravels",av:"P",views:"890K",dur:"22:45",ago:"1 week ago",vf:true,badge:"blue",g:"travel"},
-  {id:3,title:"Chicken Karahi — Dadi's Secret Recipe Finally Revealed",creator:"DesiKitchen",av:"D",views:"3.1M",dur:"15:30",ago:"2 weeks ago",vf:false,badge:null,g:"food"},
-  {id:4,title:"Iqbal aur Hum — Friday Night Urdu Poetry Session",creator:"PoetryWorld",av:"U",views:"445K",dur:"1:02:14",ago:"5 days ago",vf:true,badge:"purple",g:"urdu"},
-  {id:5,title:"AI Tools Every Developer Needs in 2025 — Full Ranked List",creator:"CodeCraft",av:"C",views:"2.8M",dur:"19:44",ago:"1 day ago",vf:true,badge:"gold",g:"ai"},
-  {id:6,title:"Karachi Night Market Food Tour — 12 Dishes in 60 Minutes",creator:"FoodExplorer",av:"F",views:"1.5M",dur:"28:11",ago:"4 days ago",vf:false,badge:null,g:"food"},
-  {id:7,title:"Learn Python in 6 Hours — Complete Beginner to Pro",creator:"PyCraft",av:"P",views:"4.2M",dur:"6:02:44",ago:"2 months ago",vf:true,badge:"cyan",g:"tech"},
-  {id:8,title:"Balochi Folk Music & Culture — A Heritage Journey",creator:"HeritageTV",av:"H",views:"312K",dur:"45:22",ago:"3 weeks ago",vf:true,badge:"blue",g:"music"},
-  {id:9,title:"Pakistan Cricket Highlights — Best Moments 2025",creator:"SportsPK",av:"S",views:"5.6M",dur:"32:10",ago:"2 days ago",vf:true,badge:"blue",g:"sport"},
-  {id:10,title:"Dawn News Analysis — Weekly Recap",creator:"DawnDigital",av:"N",views:"780K",dur:"18:45",ago:"6 days ago",vf:true,badge:"blue",g:"news"},
-];
-const SHORTS = [
-  {id:1,title:"This CSS trick saves 3 hours a week 🔥",creator:"WebSnippets",av:"W",likes:"124K",g:"tech"},
-  {id:2,title:"Naran Valley in monsoon season — UNREAL 🏔️",creator:"PakTravels",av:"P",likes:"89K",g:"travel"},
-  {id:3,title:"5-minute desi breakfast that hits different ☕",creator:"QuickBites",av:"Q",likes:"220K",g:"food"},
-  {id:4,title:"React hooks explained in 60 seconds ⚡",creator:"DevBytes",av:"D",likes:"67K",g:"ai"},
-  {id:5,title:"Old Lahore hidden gems you don't know 🏛️",creator:"UrbanPak",av:"U",likes:"156K",g:"urdu"},
-  {id:6,title:"How I got 100K followers in 4 months",creator:"GrowthHK",av:"G",likes:"310K",g:"news"},
-];
 const POSTS = [
   {id:1,creator:"TechWithHanif",av:"T",badge:"gold",ago:"2h",text:"Just shipped the biggest update to the channel! Next.js 15 full course is finally live after 3 months of work. Drop your questions below! 🚀 The backend series starts next month.",likes:8420,comments:342,hasImg:false},
   {id:2,creator:"PakTravels",av:"P",badge:"blue",ago:"5h",text:"Planning a winter trip to Swat Valley next month 🏔️ Who wants to join? The views are absolutely unreal this time of year. Full vlog coming soon!",likes:3201,comments:187,hasImg:true,g:"travel"},
@@ -215,7 +187,7 @@ function Av({ char, size=32, seed=0 }) {
 
 function Toggle({ on, onChange, t }) {
   return (
-    <button onClick={()=>onChange(!on)} style={{
+    <button type="button" aria-pressed={on} onClick={()=>onChange(!on)} style={{
       width:44, height:24, borderRadius:12, position:"relative",
       background:on?t.pri:t.elev,
       border:`1px solid ${on?t.pri:t.bdr}`,
@@ -234,18 +206,24 @@ function Toggle({ on, onChange, t }) {
 }
 
 // ─────────────────────────────────────────
-// 🖼️  THUMBNAIL PLACEHOLDER
 // ─────────────────────────────────────────
-function Thumb({ g="tech", dur, aspect="16/9", radius=0 }) {
+// 🖼️  REAL THUMBNAIL (never fabricate media)
+// ─────────────────────────────────────────
+function Thumb({ src, dur, aspect="16/9", radius=0, t }) {
   return (
     <div style={{
       width:"100%", aspectRatio:aspect,
-      background:GRADS[g]||GRADS.tech,
-      borderRadius:radius, overflow:"hidden",
+      background:t.elev, borderRadius:radius, overflow:"hidden",
       position:"relative", flexShrink:0
     }}>
-      <Play size={40} color="rgba(255,255,255,0.15)" fill="rgba(255,255,255,0.15)"
-        style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+      {src ? (
+        <img src={src} alt="Video thumbnail" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} />
+      ) : (
+        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:7,color:t.t3}}>
+          <ImageOff size={28} strokeWidth={1.5}/>
+          <span style={{fontSize:11}}>No thumbnail available</span>
+        </div>
+      )}
       {dur && (
         <span style={{
           position:"absolute", bottom:7, right:7,
@@ -274,7 +252,7 @@ function VideoCard({ v, t, fullWidth=false }) {
         overflow:"hidden",
       }}
     >
-      <Thumb g={v.g} dur={v.dur} radius={fullWidth?0:6}/>
+      <Thumb src={v.thumbnailUrl} t={t} dur={v.dur} radius={fullWidth?0:6}/>
       <div style={{
         display:"flex", gap:10,
         padding: fullWidth?"12px 12px 8px":"10px 4px 8px"
@@ -304,7 +282,8 @@ function VideoCard({ v, t, fullWidth=false }) {
 }
 
 // ─────────────────────────────────────────
-// ▶️  SHORTS CARD (no zoom)
+// ─────────────────────────────────────────
+// ▶️  SHORTS CARD (real thumbnail only)
 // ─────────────────────────────────────────
 function ShortCard({ s, t }) {
   const [hov,setHov]=useState(false);
@@ -321,27 +300,21 @@ function ShortCard({ s, t }) {
     >
       <div style={{
         width:"100%", aspectRatio:"9/16",
-        background:GRADS[s.g]||GRADS.tech,
-        position:"relative", borderRadius:8, overflow:"hidden"
+        background:t.elev, position:"relative", borderRadius:8, overflow:"hidden"
       }}>
-        <Play size={28} color="rgba(255,255,255,0.2)" fill="rgba(255,255,255,0.2)"
-          style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
-        <div style={{
-          position:"absolute",bottom:0,left:0,right:0,
-          padding:"30px 8px 8px",
-          background:"linear-gradient(to top,rgba(0,0,0,0.85),transparent)"
-        }}>
+        {s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="Short thumbnail" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} /> : (
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,color:t.t3}}>
+            <ImageOff size={24} strokeWidth={1.5}/><span style={{fontSize:10}}>No thumbnail</span>
+          </div>
+        )}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"30px 8px 8px",background:"linear-gradient(to top,rgba(0,0,0,0.85),transparent)"}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
-            <Heart size={11} color="white" fill="white"/>
-            <span style={{color:"white",fontSize:11,fontWeight:600}}>{s.likes}</span>
+            <Eye size={11} color="white"/><span style={{color:"white",fontSize:11,fontWeight:600}}>{s.likes}</span>
           </div>
         </div>
       </div>
       <div style={{padding:"8px 8px 10px"}}>
-        <p style={{
-          color:t.t1,fontSize:12,fontWeight:500,margin:0,lineHeight:1.4,
-          display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"
-        }}>{s.title}</p>
+        <p style={{color:t.t1,fontSize:12,fontWeight:500,margin:0,lineHeight:1.4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{s.title}</p>
         <p style={{color:t.t3,fontSize:11,margin:"3px 0 0"}}>{s.creator}</p>
       </div>
     </div>
@@ -370,12 +343,7 @@ function FeedPost({ p, t }) {
         </button>
       </div>
       <p style={{color:t.t1,fontSize:14,lineHeight:1.7,margin:"0 0 12px"}}>{p.text}</p>
-      {p.hasImg&&(
-        <div style={{
-          width:"100%",aspectRatio:"16/9",background:GRADS[p.g]||GRADS.travel,
-          borderRadius:8,marginBottom:12,opacity:0.9
-        }}/>
-      )}
+      {p.imageUrl&&<img src={p.imageUrl} alt="Post media" loading="lazy" style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",borderRadius:8,marginBottom:12,display:"block"}}/>}
       <div style={{display:"flex",gap:4}}>
         {[
           {icon:<Heart size={15} fill={liked?t.sec:"none"} color={liked?t.sec:t.t2}/>,label:liked?(p.likes+1).toLocaleString():p.likes.toLocaleString(),action:()=>setLiked(x=>!x),active:liked,col:t.sec,dim:t.secDim},
@@ -408,8 +376,8 @@ function Header({ t, setPage, setShowCreate, setShowNotif, setShowMenu, unread }
   const [q,setQ]=useState("");
   const [searching,setSearching]=useState(false);
   return (
-    <header style={{
-      position:"sticky", top:0, zIndex:200,
+    <header className="hk-header" style={{
+      width:"100%",minWidth:0,position:"sticky", top:0, zIndex:200,
       background:t.surf, borderBottom:`1px solid ${t.bdr}`,
       padding:"0 16px", height:56,
       display:"flex", alignItems:"center", gap:10,
@@ -636,32 +604,28 @@ function CatChips({ t }) {
   );
 }
 
-function HomePage({ t, setPage }) {
+function HomePage({ t, setPage, videos=[], shorts=[], loading=false, error=false }) {
   return (
     <div style={{paddingBottom:90}}>
       <CatChips t={t}/>
-
-      {/* Shorts strip */}
-      <div style={{marginTop:16, marginBottom:4}}>
+      {shorts.length > 0 && <div style={{marginTop:16, marginBottom:4}}>
         <SectionHd title="Shorts" t={t} onMore={()=>setPage("shorts")}/>
-        <div style={{
-          display:"flex", gap:8, overflowX:"auto",
-          padding:"0 16px 12px", scrollbarWidth:"none"
-        }}>
-          {SHORTS.map(s=><ShortCard key={s.id} s={s} t={t}/>)}
+        <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 16px 12px",scrollbarWidth:"none"}}>
+          {shorts.map(s=><ShortCard key={s.id} s={s} t={t}/>)}
         </div>
-      </div>
-
+      </div>}
       <div style={{height:1,background:t.bdr,margin:"4px 0 16px"}}/>
-
-      {/* Video feed — YouTube style full width on mobile */}
-      <div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">
-        {VIDEOS.map(v=>(
-          <div key={v.id} style={{marginBottom:20}} className="hk-video-item">
-            <VideoCard v={v} t={t} fullWidth={true}/>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div style={{minHeight:260,display:"grid",placeItems:"center",color:t.t3,fontSize:13}}>Loading real HkTube content…</div>
+      ) : error ? (
+        <div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><div style={{color:t.t1,fontWeight:700,fontSize:16}}>Content could not load</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Refresh and try again. HkTube does not fabricate video records.</div></div></div>
+      ) : videos.length > 0 ? (
+        <div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">
+          {videos.map(v=><div key={v.id} style={{marginBottom:20}} className="hk-video-item"><VideoCard v={v} t={t} fullWidth={true}/></div>)}
+        </div>
+      ) : (
+        <div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><ImageOff size={30} color={t.t3}/><div style={{color:t.t1,fontWeight:700,fontSize:16,marginTop:10}}>No real videos published yet</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Upload an authorized video to make it appear here.</div></div></div>
+      )}
     </div>
   );
 }
@@ -669,12 +633,14 @@ function HomePage({ t, setPage }) {
 // ─────────────────────────────────────────
 // ▶️  SHORTS PAGE (TikTok/YouTube Shorts style)
 // ─────────────────────────────────────────
-function ShortsPage({ t }) {
+function ShortsPage({ t, shorts=[] }) {
   const [cur,setCur]=useState(0);
   const [muted,setMuted]=useState(true);
   const [liked,setLiked]=useState({});
   const [saved,setSaved]=useState({});
-  const s=SHORTS[cur];
+  const items=shorts;
+  if(!items.length) return <div style={{minHeight:"calc(100dvh - 56px)",display:"grid",placeItems:"center",background:"#000",color:"#aaa",textAlign:"center",padding:24}}><div><ImageOff size={34} color="#666"/><div style={{marginTop:12,fontWeight:700,color:"#fff"}}>No real Shorts published yet</div><div style={{marginTop:6,fontSize:13}}>Upload an authorized vertical video to see it here.</div></div></div>;
+  const s=items[cur];
   return (
     <div style={{
       height:"calc(100vh - 56px)", overflow:"hidden",
@@ -687,10 +653,9 @@ function ShortsPage({ t }) {
       <div style={{
         height:"100%", maxHeight:"calc(100vh - 56px)",
         aspectRatio:"9/16", maxWidth:420,
-        background:GRADS[s.g], position:"relative", overflow:"hidden"
+        background:t.elev, position:"relative", overflow:"hidden"
       }}>
-        <Play size={64} color="rgba(255,255,255,0.1)" fill="rgba(255,255,255,0.1)"
-          style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+        <>{s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="Short thumbnail" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}} /> : <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:"#666"}}><ImageOff size={42}/><span style={{fontSize:12}}>No thumbnail available</span></div>}</>
 
         {/* Bottom overlay */}
         <div style={{
@@ -751,7 +716,7 @@ function ShortsPage({ t }) {
       <div style={{position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:10}}>
         {[
           {d:"▲",a:()=>setCur(p=>Math.max(0,p-1)),dis:cur===0},
-          {d:"▼",a:()=>setCur(p=>Math.min(SHORTS.length-1,p+1)),dis:cur===SHORTS.length-1},
+          {d:"▼",a:()=>setCur(p=>Math.min(items.length-1,p+1)),dis:cur===items.length-1},
         ].map((b,i)=>(
           <button key={i} onClick={b.a} disabled={b.dis} style={{
             background:"rgba(255,255,255,0.15)",border:"none",color:"white",
@@ -764,7 +729,7 @@ function ShortsPage({ t }) {
 
       {/* Dots */}
       <div style={{position:"absolute",bottom:20,display:"flex",gap:6}}>
-        {SHORTS.map((_,i)=>(
+        {items.map((_,i)=>(
           <div key={i} onClick={()=>setCur(i)} style={{
             width:i===cur?20:6,height:6,borderRadius:3,
             background:i===cur?"white":"rgba(255,255,255,0.4)",
@@ -971,206 +936,33 @@ function StudioPage({ t }) {
 // ─────────────────────────────────────────
 // ⚙️  SETTINGS PAGE
 // ─────────────────────────────────────────
-function SettingsPage({ t }) {
-  const [active,setActive]=useState(null);
-  const [tog,setTog]=useState({
-    push:true,email:false,follows:true,likes:true,
-    comments:true,gifts:true,twoFA:false,loginAlerts:true,
-    autoplay:true,hdWifi:true,saveData:false,
-    showActivity:true,publicLikes:false,
-    personalAI:true,aiHistory:true,
-  });
-  const T2=k=>setTog(p=>({...p,[k]:!p[k]}));
-
-  if(active) return (
-    <div style={{paddingBottom:100}}>
-      <button onClick={()=>setActive(null)} style={{
-        display:"flex",alignItems:"center",gap:8,
-        background:"none",border:"none",color:t.t2,
-        fontSize:14,cursor:"pointer",padding:"14px 16px",width:"100%",textAlign:"left"
-      }}>
-        <ChevronLeft size={18}/> Settings
-      </button>
-      <div style={{padding:"0 16px 16px"}}>
-        <h2 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 16px"}}>
-          {active.icon} {active.label}
-        </h2>
-
-        {active.id==="notifications"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:1}}>
-            {[
-              {l:"Push Notifications",k:"push",d:"Device alerts"},
-              {l:"Email Notifications",k:"email",d:"Updates via email"},
-              {l:"Follows",k:"follows",d:"When someone follows you"},
-              {l:"Likes",k:"likes",d:"When someone likes your content"},
-              {l:"Comments",k:"comments",d:"New comments on videos"},
-              {l:"Gifts",k:"gifts",d:"When you receive a gift"},
-            ].map((item,i)=>(
-              <div key={i} style={{
-                display:"flex",alignItems:"center",gap:14,
-                padding:"14px 0",borderBottom:`1px solid ${t.bdr}`
-              }}>
-                <div style={{flex:1}}>
-                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
-                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
-                </div>
-                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {active.id==="security"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:1}}>
-            {[
-              {l:"Two-Factor Authentication",k:"twoFA",d:"Extra account security"},
-              {l:"Login Alerts",k:"loginAlerts",d:"Notify on new sign-in"},
-            ].map((item,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
-                <div style={{flex:1}}>
-                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
-                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
-                </div>
-                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
-              </div>
-            ))}
-            {["Change Password","Active Sessions","Login History"].map((item,i)=>(
-              <button key={i} style={{
-                display:"flex",alignItems:"center",justifyContent:"space-between",
-                padding:"14px 0",borderBottom:`1px solid ${t.bdr}`,
-                background:"none",border:"none",cursor:"pointer",width:"100%"
-              }}>
-                <span style={{color:t.t1,fontSize:14}}>{item}</span>
-                <ChevronRight size={16} color={t.t3}/>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {active.id==="playback"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:1}}>
-            {[
-              {l:"Autoplay",k:"autoplay",d:"Auto-play next video"},
-              {l:"HD on Wi-Fi",k:"hdWifi",d:"Best quality on Wi-Fi"},
-              {l:"Save Mobile Data",k:"saveData",d:"Lower quality on mobile"},
-            ].map((item,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
-                <div style={{flex:1}}>
-                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
-                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
-                </div>
-                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {active.id==="theme"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {[
-              {id:"dark",icon:"🌙",l:"HkTube Dark",d:"Deep dark mode"},
-              {id:"amoled",icon:"⚡",l:"AMOLED Dark",d:"True black, saves battery"},
-              {id:"light",icon:"☀️",l:"HkTube Light",d:"Clean and bright"},
-            ].map(th=>(
-              <button key={th.id} style={{
-                display:"flex",alignItems:"center",gap:14,
-                padding:"14px",borderRadius:10,
-                background:t.hover,border:`1px solid ${t.bdr}`,
-                cursor:"pointer",textAlign:"left",width:"100%"
-              }}>
-                <span style={{fontSize:22}}>{th.icon}</span>
-                <div style={{flex:1}}>
-                  <div style={{color:t.t1,fontSize:14,fontWeight:500}}>{th.l}</div>
-                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div>
-                </div>
-                <ChevronRight size={16} color={t.t3}/>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {active.id==="privacy"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:1}}>
-            {[
-              {l:"Show Activity Status",k:"showActivity",d:"Let others see when active"},
-              {l:"Public Likes",k:"publicLikes",d:"Show liked videos publicly"},
-            ].map((item,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
-                <div style={{flex:1}}>
-                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
-                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
-                </div>
-                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {active.id==="delete"&&(
-          <div>
-            <div style={{
-              background:t.liveD,border:`1px solid ${t.live}33`,
-              borderRadius:10,padding:16,marginBottom:16,
-              display:"flex",gap:10
-            }}>
-              <AlertTriangle size={20} color={t.live} style={{flexShrink:0,marginTop:1}}/>
-              <div>
-                <div style={{color:t.live,fontWeight:600,fontSize:14,marginBottom:6}}>Permanent action</div>
-                <div style={{color:t.t2,fontSize:13,lineHeight:1.6}}>All your videos, followers, coins and earnings will be permanently deleted. This cannot be undone.</div>
-              </div>
-            </div>
-            <button style={{
-              width:"100%",padding:14,borderRadius:10,
-              background:t.liveD,border:`1px solid ${t.live}44`,
-              color:t.live,fontSize:14,fontWeight:600,cursor:"pointer"
-            }}>Request Account Deletion</button>
-          </div>
-        )}
-
-        {!["notifications","security","playback","theme","privacy","delete"].includes(active.id)&&(
-          <div style={{
-            background:t.elev,border:`1px solid ${t.bdr}`,
-            borderRadius:10,padding:"32px 16px",textAlign:"center"
-          }}>
-            <div style={{fontSize:40,marginBottom:10}}>{active.icon}</div>
-            <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div>
-            <div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>Available after connecting to your account.</div>
-          </div>
-        )}
-      </div>
+function SettingsPage({ t, themeId, onTheme }) {
+  const [activeId,setActiveId]=useState(null);
+  const defaults={push:true,email:false,follows:true,likes:true,comments:true,gifts:true,twoFA:false,loginAlerts:true,autoplay:true,hdWifi:true,saveData:false,showActivity:true,publicLikes:false,captions:false,restricted:false,personalized:true};
+  const [tog,setTog]=useState(()=>{try{const raw=localStorage.getItem("hktube-settings");return {...defaults,...(raw?JSON.parse(raw):{})};}catch{return defaults;}});
+  const [quality,setQuality]=useState(()=>localStorage.getItem("hktube-quality")||"auto");
+  const [language,setLanguage]=useState(()=>localStorage.getItem("hktube-language")||"English");
+  useEffect(()=>{try{localStorage.setItem("hktube-settings",JSON.stringify(tog));}catch{}},[tog]);
+  const toggle=k=>setTog(p=>({...p,[k]:!p[k]}));
+  const save=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
+  const active=activeId?SETTINGS_GROUPS.flatMap(g=>g.items).find(item=>item.id===activeId):null;
+  const rows={
+    notifications:[{l:"Push Notifications",k:"push",d:"Device alerts for activity on your account"},{l:"Email Notifications",k:"email",d:"Product updates and account messages"},{l:"New Followers",k:"follows",d:"When someone follows your channel"},{l:"Likes and Comments",k:"likes",d:"Activity on your videos and posts"},{l:"Gifts",k:"gifts",d:"When you receive a creator gift"}],
+    security:[{l:"Two-Step Verification",k:"twoFA",d:"Add another sign-in verification step"},{l:"Login Alerts",k:"loginAlerts",d:"Notify this browser about new sign-ins"}],
+    privacy:[{l:"Show Activity Status",k:"showActivity",d:"Let others see when you are active"},{l:"Public Likes",k:"publicLikes",d:"Show liked videos publicly"}],
+    data:[{l:"Reduce Media Preload",k:"saveData",d:"Load metadata first to save mobile data"}],
+    captions:[{l:"Default Captions",k:"captions",d:"Prefer captions when a real caption track exists"}],
+    content:[{l:"Personalized Recommendations",k:"personalized",d:"Use your activity to order the feed"},{l:"Restricted Mode",k:"restricted",d:"Limit potentially mature discovery content"}],
+    family:[{l:"Family Mode",k:"restricted",d:"Hide Shorts and discovery surfaces on this browser"}],
+  };
+  const themes=[{id:"dark",icon:"🌙",l:"Dark",d:"HkTube dark theme"},{id:"amoled",icon:"⚡",l:"AMOLED",d:"True black theme"},{id:"light",icon:"☀️",l:"Light",d:"Bright theme"}];
+  if(active) return <div style={{paddingBottom:100}}>
+    <button onClick={()=>setActiveId(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",color:t.t2,fontSize:14,cursor:"pointer",padding:"14px 16px",width:"100%",textAlign:"left"}}><ChevronLeft size={18}/> Settings</button>
+    <div style={{padding:"0 16px 16px"}}><h2 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 16px"}}>{active.icon} {active.label}</h2>
+      {rows[active.id] ? <div style={{display:"flex",flexDirection:"column",gap:1}}>{rows[active.id].map(item=><div key={item.k} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}><div style={{flex:1,minWidth:0}}><div style={{color:t.t1,fontSize:14}}>{item.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2,lineHeight:1.45}}>{item.d}</div></div><Toggle on={Boolean(tog[item.k])} onChange={()=>toggle(item.k)} t={t}/></div>)}</div> : active.id==="theme" ? <div style={{display:"flex",flexDirection:"column",gap:8}}>{themes.map(th=><button key={th.id} onClick={()=>onTheme(th.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px",borderRadius:10,background:themeId===th.id?t.priDim:t.hover,border:`1px solid ${themeId===th.id?t.pri:t.bdr}`,cursor:"pointer",textAlign:"left",width:"100%"}}><span style={{fontSize:22}}>{th.icon}</span><div style={{flex:1}}><div style={{color:t.t1,fontSize:14,fontWeight:600}}>{th.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div></div>{themeId===th.id?<Check size={18} color={t.pri}/>:<ChevronRight size={16} color={t.t3}/>}</button>)}</div> : active.id==="playback" ? <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${t.bdr}`}}><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>Preferred video quality</label><select value={quality} onChange={e=>{setQuality(e.target.value);save("hktube-quality",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>auto</option><option>2160p</option><option>1080p</option><option>720p</option><option>480p</option><option>360p</option></select></div> : active.id==="language" ? <div><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>App language</label><select value={language} onChange={e=>{setLanguage(e.target.value);save("hktube-language",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>English</option><option>Urdu</option><option>Hindi</option></select></div> : <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:10,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>{active.icon}</div><div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div><div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>This control is ready in the settings layout. Account or payment changes require the corresponding authenticated provider.</div></div>}
     </div>
-  );
-
-  return (
-    <div style={{paddingBottom:100}}>
-      <h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0,padding:"16px 16px 12px",borderBottom:`1px solid ${t.bdr}`}}>Settings</h1>
-      {SETTINGS_GROUPS.map((group,gi)=>(
-        <div key={gi}>
-          <div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>
-          {group.items.map((item,i)=>(
-            <button key={item.id} onClick={()=>setActive(item)} style={{
-              display:"flex",alignItems:"center",gap:14,
-              width:"100%",padding:"13px 16px",
-              background:"none",border:"none",
-              borderBottom:`1px solid ${t.bdr}`,
-              cursor:"pointer",textAlign:"left",
-              transition:"background 0.1s"
-            }}
-            onMouseEnter={e=>e.currentTarget.style.background=t.hover}
-            onMouseLeave={e=>e.currentTarget.style.background="none"}
-            >
-              <span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span>
-              <div style={{flex:1}}>
-                <div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div>
-                <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div>
-              </div>
-              <ChevronRight size={15} color={t.t3}/>
-            </button>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  </div>;
+  return <div style={{paddingBottom:100}}><h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0,padding:"16px 16px 12px",borderBottom:`1px solid ${t.bdr}`}}>Settings</h1><div style={{color:t.t3,fontSize:12,padding:"12px 16px 0",lineHeight:1.5}}>YouTube-style controls for playback, notifications, privacy, appearance, data usage, and account safety.</div>{SETTINGS_GROUPS.map((group,gi)=><div key={gi}><div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>{group.items.map(item=><button key={item.id} onClick={()=>setActiveId(item.id)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${t.bdr}`,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span><div style={{flex:1,minWidth:0}}><div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div></div><ChevronRight size={15} color={t.t3}/></button>)}</div>)}</div>;
 }
 
 // ─────────────────────────────────────────
@@ -1457,25 +1249,37 @@ function CreateModal({ t, onClose }) {
 }
 
 // ─────────────────────────────────────────
+function toDisplayVideo(video, index) {
+  return {id:video.id,title:video.title,creator:"HkTube creator",av:"H",views:formatViews(video.viewCount),dur:formatDuration(video.durationSeconds),ago:formatDate(video.uploadedAt),vf:false,badge:null,g:"tech",thumbnailUrl:video.thumbnailUrl};
+}
+function toDisplayShort(video, index) {
+  return {id:video.id,title:video.title,creator:"HkTube creator",av:"H",likes:formatViews(video.viewCount),g:"tech",thumbnailUrl:video.thumbnailUrl};
+}
+
 // 🚀  ROOT APP
 // ─────────────────────────────────────────
 export default function HkTube() {
-  const [themeId,setThemeId]=useState("dark");
+  const [themeId,setThemeId]=useState(()=>{try{return localStorage.getItem("hktube-theme")||"dark";}catch{return "dark";}});
+  const changeTheme=id=>{setThemeId(id);try{localStorage.setItem("hktube-theme",id);}catch{}};
   const [page,setPage]=useState("home");
   const [showMenu,setShowMenu]=useState(false);
   const [showCreate,setShowCreate]=useState(false);
   const [showNotif,setShowNotif]=useState(false);
+  const videoQuery=trpc.videos.latest.useQuery({limit:20});
+  const shortsQuery=trpc.videos.shorts.useQuery({limit:20});
+  const videos=(videoQuery.data??[]).map(toDisplayVideo);
+  const shorts=(shortsQuery.data??[]).map(toDisplayShort);
   const t=T[themeId];
   const unread=NOTIFS.filter(n=>!n.read).length;
 
   const pages={
-    home:<HomePage t={t} setPage={setPage}/>,
-    shorts:<ShortsPage t={t}/>,
+    home:<HomePage t={t} setPage={setPage} videos={videos} shorts={shorts} loading={videoQuery.isLoading||shortsQuery.isLoading} error={videoQuery.isError||shortsQuery.isError}/>,
+    shorts:<ShortsPage t={t} shorts={shorts}/>,
     feeds:<FeedsPage t={t}/>,
     studio:<StudioPage t={t}/>,
     monetization:<StudioPage t={t}/>,
     coins:<StudioPage t={t}/>,
-    settings:<SettingsPage t={t}/>,
+    settings:<SettingsPage t={t} themeId={themeId} onTheme={changeTheme}/>,
     verification:<VerificationPage t={t}/>,
   };
 
@@ -1485,7 +1289,11 @@ export default function HkTube() {
       background:t.bg,color:t.t1,minHeight:"100vh"
     }}>
       <style>{`
-        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        :root{color-scheme:${themeId==="light"?"light":"dark"};}
+        html,body,#root{width:100%;min-width:0;max-width:100%;margin:0;padding:0;overflow-x:hidden;}
+        *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        button,input,select,textarea{font:inherit;max-width:100%;}
+        img,video,svg{max-width:100%;}
         input{color:${t.t1};}
         input::placeholder{color:${t.t3};}
         ::-webkit-scrollbar{display:none;}
@@ -1509,6 +1317,7 @@ export default function HkTube() {
         /* Mobile: full-width cards */
         @media(max-width:767px){
           .hk-video-item{padding:0;}
+          .hk-header{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));}
         }
       `}</style>
 
@@ -1523,9 +1332,9 @@ export default function HkTube() {
       <div style={{display:"flex"}}>
         <Sidebar t={t} page={page} setPage={setPage}/>
         <main style={{
-          flex:1, minWidth:0,
-          height:"calc(100vh - 56px)",
-          overflowY:"auto", overflowX:"hidden"
+          flex:1, minWidth:0, width:"100%",
+          minHeight:"calc(100dvh - 56px)",
+          height:"auto", overflow:"visible"
         }}>
           {pages[page] || (
             <div style={{
@@ -1555,7 +1364,7 @@ export default function HkTube() {
       />
 
       {showNotif && <NotifPanel t={t} onClose={()=>setShowNotif(false)}/>}
-      {showMenu  && <MenuModal  t={t} curTheme={themeId} onTheme={id=>setThemeId(id)} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
+      {showMenu  && <MenuModal  t={t} curTheme={themeId} onTheme={changeTheme} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
       {showCreate&& <CreateModal t={t} onClose={()=>setShowCreate(false)}/>}
     </div>
   );
