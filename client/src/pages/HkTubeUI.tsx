@@ -1078,6 +1078,7 @@ function NotifPanel({ t, onClose, items=[] }) {
 // ─────────────────────────────────────────
 function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
   const themes=[
+    {id:"system",icon:"🌓",l:"System"},
     {id:"dark",icon:"🌙",l:"Dark"},
     {id:"amoled",icon:"⚡",l:"AMOLED"},
     {id:"light",icon:"☀️",l:"Light"},
@@ -1280,7 +1281,7 @@ export default function HkTube() {
       background:t.bg,color:t.t1,minHeight:"100vh"
     }}>
       <style>{`
-        :root{color-scheme:${themeId==="light"?"light":"dark"};}
+        :root{color-scheme:${resolvedThemeId==="light"?"light":"dark"};}
         html,body,#root{width:100%;min-width:0;max-width:100%;margin:0;padding:0;overflow-x:hidden;}
         *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
         button,input,select,textarea{font:inherit;max-width:100%;}
