@@ -23,7 +23,7 @@ function contextFor(role: "user" | "admin" | null): TrpcContext {
       id: 15,
       openId: "router-test-user",
       name: "Router test user",
-      email: "router@example.com",
+      email: role === "admin" ? "hanifnazamdin6@gmail.com" : "router@example.com",
       loginMethod: "manus",
       role,
       createdAt: new Date(),

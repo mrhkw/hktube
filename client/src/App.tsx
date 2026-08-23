@@ -5,6 +5,7 @@ import Menu from "@/pages/Menu";
 import Settings from "@/pages/Settings";
 import { LegalPage } from "@/pages/Legal";
 import Contact from "@/pages/Contact";
+import About from "@/pages/About";
 import SearchResults from "@/pages/SearchResults";
 import Upload from "@/pages/Upload";
 import { VideoCollection } from "@/pages/VideoCollection";
@@ -44,6 +45,7 @@ function Router() {
       <Route path={"/community"}>{() => <LegalPage kind="community" />}</Route>
       <Route path={"/advertising"}>{() => <LegalPage kind="advertising" />}</Route>
       <Route path={"/contact"} component={Contact} />
+      <Route path={"/about"} component={About} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

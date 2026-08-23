@@ -1,3 +1,9 @@
+const OWNER_EMAILS = new Set(["hanifnazamdin30@gmail.com", "hanifnazamdin6@gmail.com"]);
+
+export function isOwnerEmail(email: string | null | undefined): boolean {
+  return Boolean(email && OWNER_EMAILS.has(email.trim().toLowerCase()));
+}
+
 export const ENV = {
   // OAuth client identifiers and service base URL are public configuration.
   // Keep explicit Vercel variables as the preferred source; the fallback keeps

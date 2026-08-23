@@ -1,7 +1,7 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, InsertVideo, auditLogs, channels, comments, liveStreams, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import { ENV, isOwnerEmail } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() { if (!_db && process.env.DATABASE_URL) { try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; } } return _db; }
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -11,7 +11,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   const textFields = ["name", "email", "loginMethod", "avatarUrl", "bio"] as const;
   for (const field of textFields) { const value = user[field]; if (value !== undefined) { values[field] = value ?? null; updateSet[field] = value ?? null; } }
   if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
-  if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; } else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
+  const isOwner = isOwnerEmail(user.email) || (Boolean(ENV.ownerOpenId) && user.openId === ENV.ownerOpenId);
+  if (isOwner) { values.role = 'admin'; updateSet.role = 'admin'; }
+  else if (user.role !== undefined && user.role !== 'admin') { values.role = user.role; updateSet.role = user.role; }
   if (user.language !== undefined) { values.language = user.language; updateSet.language = user.language; }
   if (!values.lastSignedIn) values.lastSignedIn = new Date(); if (!Object.keys(updateSet).length) updateSet.lastSignedIn = new Date();
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });

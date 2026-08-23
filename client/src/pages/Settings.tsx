@@ -14,6 +14,7 @@ const policyLinks = [
   { href: "/community", icon: UsersRound, title: "Community Guidelines", description: "Rules for uploaded and shared content" },
   { href: "/advertising", icon: Megaphone, title: "Advertising Disclosure", description: "Advertising consent and disclosure information" },
   { href: "/contact", icon: Mail, title: "Contact Us", description: "Privacy, content, and platform support" },
+  { href: "/about", icon: FileText, title: "About HkTube", description: "What HkTube is and how the platform works" },
 ];
 
 export default function Settings() {
