@@ -610,7 +610,6 @@ function CatChips({ t, setShowMenu }) {
           cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap"
         }}>{c}</button>
       ))}
-      <button type="button" onClick={()=>setShowMenu(true)} style={{flexShrink:0,padding:"5px 14px",borderRadius:20,border:`1px solid ${t.pri}`,background:t.priDim,color:t.pri,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",gap:6}}><Settings size={14}/>Settings</button>
     </div>
   );
 }
@@ -654,7 +653,6 @@ function HomePage({ t, setPage, setShowMenu, videos=[], shorts=[], loading=false
         {shorts.length > 0 && <div style={{marginTop:16,marginBottom:4}}><SectionHd title="Featured Shorts" t={t} onMore={()=>setPage("shorts")}/><div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 16px 12px",scrollbarWidth:"none"}}>{shorts.map(s=><ShortCard key={s.id} s={s} t={t}/>)}</div></div>}
         {next.length > 0 && <div style={{marginTop:6}}><SectionHd title="Next Up" t={t} onMore={()=>setPage("home")}/><div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">{next.map(v=><div key={v.id} style={{marginBottom:20}} className="hk-video-item"><VideoCard v={v} t={t} fullWidth={true}/></div>)}</div></div>}
         {!hero&&!shorts.length&&<div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><ImageOff size={30} color={t.t3}/><div style={{color:t.t1,fontWeight:700,fontSize:16,marginTop:10}}>No real videos published yet</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Upload an authorized video to make it appear here.</div></div></div>}
-        <AgenticToolsCard t={t}/>
       </>}
       <LiveStatus t={t} loading={loading} error={error} videos={videos} shorts={shorts}/>
     </div>
@@ -1276,7 +1274,7 @@ function toDisplayShort(video, index) {
 // 🚀  ROOT APP
 // ─────────────────────────────────────────
 export default function HkTube() {
-  const [themeId,setThemeId]=useState(()=>{try{return localStorage.getItem("hktube-theme")||"dark";}catch{return "dark";}});
+  const [themeId,setThemeId]=useState(()=>{try{return localStorage.getItem("hktube-theme")||"light";}catch{return "light";}});
   const changeTheme=id=>{setThemeId(id);try{localStorage.setItem("hktube-theme",id);}catch{}};
   const [page,setPage]=useState("home");
   const [showMenu,setShowMenu]=useState(false);
