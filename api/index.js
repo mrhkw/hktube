@@ -53993,6 +53993,16 @@ var users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull()
 });
+var localAccounts = mysqlTable("local_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  identifier: varchar("identifier", { length: 320 }).notNull().unique(),
+  passwordHash: text("passwordHash").notNull(),
+  failedAttempts: int("failedAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+}, (table) => [index("local_accounts_identifier_idx").on(table.identifier), index("local_accounts_user_idx").on(table.userId)]);
 var creatorVerificationValues = ["unverified", "pending", "verified", "rejected"];
 var videoCategoryValues = ["regular", "shorts"];
 var channels = mysqlTable("channels", {
@@ -54121,6 +54131,23 @@ async function getUserByOpenId(openId) {
   if (!db) return void 0;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result[0];
+}
+async function getLocalAccount(identifier) {
+  const db = await getDb();
+  if (!db) return void 0;
+  const result = await db.select({ account: localAccounts, user: users }).from(localAccounts).innerJoin(users, eq(localAccounts.userId, users.id)).where(eq(localAccounts.identifier, identifier)).limit(1);
+  return result[0];
+}
+async function createLocalAccount(input) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable.");
+  return db.transaction(async (tx) => {
+    const userResult = await tx.insert(users).values({ openId: input.openId, name: input.name, email: input.email, loginMethod: "hktube-local", role: isOwnerEmail(input.email) ? "admin" : "user" });
+    const userId = Number(userResult[0].insertId);
+    await tx.insert(localAccounts).values({ userId, identifier: input.identifier, passwordHash: input.passwordHash });
+    const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
+    return rows[0];
+  });
 }
 async function listChannelsByOwner(ownerId) {
   const db = await getDb();
@@ -72169,6 +72196,9 @@ function date5(params) {
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/classic/external.js
 config(en_default());
 
+// server/routers.ts
+var import_node_crypto = require("node:crypto");
+
 // server/_core/notification.ts
 var TITLE_MAX_LENGTH = 1200;
 var CONTENT_MAX_LENGTH = 2e4;
@@ -72322,11 +72352,37 @@ var channelInputSchema = external_exports.object({ handle: external_exports.stri
 var commentInput = external_exports.object({ body: external_exports.string().trim().min(1).max(2e3), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), parentId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId || value.postId), "A video or post is required.");
 var appRouter = router({
   system: systemRouter,
-  auth: router({ me: publicProcedure.query((opts) => opts.ctx.user), logout: publicProcedure.mutation(({ ctx }) => {
-    const cookieOptions = getSessionCookieOptions(ctx.req);
-    ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-    return { success: true };
-  }) }),
+  auth: router({
+    me: publicProcedure.query((opts) => opts.ctx.user),
+    register: publicProcedure.input(external_exports.object({ name: external_exports.string().trim().min(2).max(120), email: external_exports.string().trim().toLowerCase().email().max(320), password: external_exports.string().min(8).max(128) })).mutation(async ({ ctx, input }) => {
+      const identifier = input.email.toLowerCase();
+      if (await getLocalAccount(identifier)) throw new TRPCError({ code: "CONFLICT", message: "An HkTube account already exists for this email." });
+      const salt = (0, import_node_crypto.randomBytes)(16).toString("hex");
+      const passwordHash = `${salt}:${(0, import_node_crypto.scryptSync)(input.password, salt, 64).toString("hex")}`;
+      const user = await createLocalAccount({ openId: `local_${(0, import_node_crypto.randomBytes)(18).toString("hex")}`, name: input.name, email: identifier, identifier, passwordHash });
+      const token = await sdk.signSession({ openId: user.openId, appId: process.env.VITE_APP_ID || "hktube", name: user.name || input.name });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      return user;
+    }),
+    login: publicProcedure.input(external_exports.object({ email: external_exports.string().trim().toLowerCase().email().max(320), password: external_exports.string().min(1).max(128) })).mutation(async ({ ctx, input }) => {
+      const record2 = await getLocalAccount(input.email.toLowerCase());
+      if (!record2) throw new TRPCError({ code: "UNAUTHORIZED", message: "Email or password is incorrect." });
+      const [salt, stored] = record2.account.passwordHash.split(":");
+      if (!salt || !stored) throw new TRPCError({ code: "UNAUTHORIZED", message: "Email or password is incorrect." });
+      const candidate = (0, import_node_crypto.scryptSync)(input.password, salt, 64);
+      if (!(0, import_node_crypto.timingSafeEqual)(candidate, Buffer.from(stored, "hex"))) throw new TRPCError({ code: "UNAUTHORIZED", message: "Email or password is incorrect." });
+      const token = await sdk.signSession({ openId: record2.user.openId, appId: process.env.VITE_APP_ID || "hktube", name: record2.user.name || "HkTube member" });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      return record2.user;
+    }),
+    logout: publicProcedure.mutation(({ ctx }) => {
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      return { success: true };
+    })
+  }),
   videos: router({
     latest: publicProcedure.input(external_exports.object({ limit: external_exports.number().int().min(1).max(60).optional() }).optional()).query(({ input }) => listVideos({ mode: "latest", limit: input?.limit })),
     shorts: publicProcedure.input(external_exports.object({ limit: external_exports.number().int().min(1).max(60).optional() }).optional()).query(({ input }) => listVideos({ category: "shorts", mode: "latest", limit: input?.limit })),

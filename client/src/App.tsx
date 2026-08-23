@@ -16,6 +16,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import HkTubeUI from "./pages/HkTubeUI";
+import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
 import { PlatformSection } from "./pages/PlatformSection";
 
 function Router() {
@@ -34,7 +36,8 @@ function Router() {
       <Route path={"/playlists"}>{() => <PlatformSection kind="playlists" />}</Route>
       <Route path={"/history"}>{() => <PlatformSection kind="history" />}</Route>
       <Route path={"/studio"}>{() => <PlatformSection kind="studio" />}</Route>
-      <Route path={"/profile"}>{() => <PlatformSection kind="profile" />}</Route>
+      <Route path={"/profile"} component={Profile} />
+      <Route path={"/auth"} component={Auth} />
       <Route path={"/watch/:id"} component={WatchVideo} />
       <Route path={"/search"} component={SearchResults} />
       <Route path={"/upload"} component={Upload} />

@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertChannel, InsertUser, InsertVideo, auditLogs, channels, comments, liveStreams, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
+import { InsertChannel, InsertUser, InsertVideo, auditLogs, channels, comments, liveStreams, localAccounts, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
 import { ENV, isOwnerEmail } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() { if (!_db && process.env.DATABASE_URL) { try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; } } return _db; }
@@ -19,6 +19,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
 export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1); return result[0]; }
+export async function getLocalAccount(identifier: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select({ account: localAccounts, user: users }).from(localAccounts).innerJoin(users, eq(localAccounts.userId, users.id)).where(eq(localAccounts.identifier, identifier)).limit(1); return result[0]; }
+export async function createLocalAccount(input: { openId: string; name: string; email: string; identifier: string; passwordHash: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); return db.transaction(async tx => { const userResult = await tx.insert(users).values({ openId: input.openId, name: input.name, email: input.email, loginMethod: "hktube-local", role: isOwnerEmail(input.email) ? "admin" : "user" }); const userId = Number(userResult[0].insertId); await tx.insert(localAccounts).values({ userId, identifier: input.identifier, passwordHash: input.passwordHash }); const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1); return rows[0]; }); }
 export async function listChannelsByOwner(ownerId: number) { const db = await getDb(); if (!db) return []; return db.select().from(channels).where(eq(channels.ownerId, ownerId)).orderBy(desc(channels.createdAt)); }
 export async function createChannel(channel: InsertChannel) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const result = await db.insert(channels).values(channel); const created = await db.select().from(channels).where(eq(channels.id, Number(result[0].insertId))).limit(1); return created[0]; }
 export async function getChannelById(id: number) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(channels).where(eq(channels.id, id)).limit(1); return result[0]; }

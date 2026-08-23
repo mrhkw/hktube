@@ -10,6 +10,19 @@ export const users = mysqlTable("users", {
 });
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+export const localAccounts = mysqlTable("local_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  identifier: varchar("identifier", { length: 320 }).notNull().unique(),
+  passwordHash: text("passwordHash").notNull(),
+  failedAttempts: int("failedAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [index("local_accounts_identifier_idx").on(table.identifier), index("local_accounts_user_idx").on(table.userId)]);
+export type LocalAccount = typeof localAccounts.$inferSelect;
+export type InsertLocalAccount = typeof localAccounts.$inferInsert;
 export const creatorVerificationValues = ["unverified", "pending", "verified", "rejected"] as const;
 export const videoCategoryValues = ["regular", "shorts"] as const;
 
