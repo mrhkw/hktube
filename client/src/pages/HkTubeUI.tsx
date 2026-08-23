@@ -1,0 +1,1562 @@
+// @ts-nocheck
+// ╔═══════════════════════════════════════════════════════════╗
+// ║   HkTube — App UI v4  |  YouTube-style · No Zoom        ║
+// ║   Nav: Home · Shorts · ➕ · Feeds · Menu                 ║
+// ║   Themes: Dark · AMOLED · Light  |  Live Removed        ║
+// ╚═══════════════════════════════════════════════════════════╝
+
+import { useState, useEffect, useRef } from "react";
+import {
+  Home, Play, Search, Bell, Plus, Users, Heart,
+  MessageCircle, Share2, Bookmark, MoreVertical,
+  MoreHorizontal, Eye, X, Moon, Sun, Zap, User,
+  Video, ChevronRight, Check, Volume2, VolumeX,
+  BarChart2, LogOut, Upload, Award, DollarSign,
+  HelpCircle, Rss, ChevronLeft, AlertTriangle,
+  Info, Menu, Settings, Shield, TrendingUp,
+  Clock, Flame, FileText, Download
+} from "lucide-react";
+
+// ─────────────────────────────────────────
+// 🎨  THEMES
+// ─────────────────────────────────────────
+const T = {
+  dark: {
+    id:"dark", name:"HkTube Dark",
+    bg:"#0F0F0F", surf:"#0F0F0F", card:"#0F0F0F",
+    elev:"#1A1A1A", hover:"#272727", input:"#121212",
+    pri:"#7B5EFF", priDim:"rgba(123,94,255,0.14)", priGlow:"rgba(123,94,255,0.30)",
+    sec:"#FF4C93", secDim:"rgba(255,76,147,0.14)",
+    gold:"#FFB800", goldDim:"rgba(255,184,0,0.14)",
+    t1:"#F1F1F1", t2:"#AAAAAA", t3:"#717171",
+    bdr:"#272727", bdrH:"rgba(123,94,255,0.5)",
+    ok:"#00C980", okD:"rgba(0,201,128,0.14)",
+    warn:"#FFA000", warnD:"rgba(255,160,0,0.14)",
+    live:"#FF0000", liveD:"rgba(255,0,0,0.14)",
+  },
+  amoled: {
+    id:"amoled", name:"AMOLED Dark",
+    bg:"#000000", surf:"#000000", card:"#000000",
+    elev:"#0D0D0D", hover:"#1A1A1A", input:"#080808",
+    pri:"#8866FF", priDim:"rgba(136,102,255,0.14)", priGlow:"rgba(136,102,255,0.30)",
+    sec:"#FF55AA", secDim:"rgba(255,85,170,0.14)",
+    gold:"#FFAA00", goldDim:"rgba(255,170,0,0.14)",
+    t1:"#FFFFFF", t2:"#AAAAAA", t3:"#606060",
+    bdr:"#1A1A1A", bdrH:"rgba(136,102,255,0.5)",
+    ok:"#00BB77", okD:"rgba(0,187,119,0.14)",
+    warn:"#FF9900", warnD:"rgba(255,153,0,0.14)",
+    live:"#FF0000", liveD:"rgba(255,0,0,0.14)",
+  },
+  light: {
+    id:"light", name:"HkTube Light",
+    bg:"#FFFFFF", surf:"#FFFFFF", card:"#FFFFFF",
+    elev:"#F2F2F2", hover:"#E5E5E5", input:"#F8F8F8",
+    pri:"#5B3FCE", priDim:"rgba(91,63,206,0.1)", priGlow:"rgba(91,63,206,0.25)",
+    sec:"#CC2E6E", secDim:"rgba(204,46,110,0.1)",
+    gold:"#AA7700", goldDim:"rgba(170,119,0,0.1)",
+    t1:"#0F0F0F", t2:"#606060", t3:"#909090",
+    bdr:"#E5E5E5", bdrH:"rgba(91,63,206,0.4)",
+    ok:"#007050", okD:"rgba(0,112,80,0.1)",
+    warn:"#8A5A00", warnD:"rgba(138,90,0,0.1)",
+    live:"#CC0000", liveD:"rgba(204,0,0,0.1)",
+  }
+};
+
+// ─────────────────────────────────────────
+// 📊  DISPLAY DATA  (UI demo — real app uses Supabase)
+// ─────────────────────────────────────────
+const GRADS = {
+  tech:   "linear-gradient(160deg,#1a1a4e,#2d1b69,#1a0050)",
+  travel: "linear-gradient(160deg,#00291a,#004d2a,#003320)",
+  food:   "linear-gradient(160deg,#3d1a00,#6b2f00,#4a1a00)",
+  urdu:   "linear-gradient(160deg,#2a0040,#4a0060,#1a0030)",
+  ai:     "linear-gradient(160deg,#00003a,#0a0060,#1a0088)",
+  music:  "linear-gradient(160deg,#3a0020,#600038,#400028)",
+  news:   "linear-gradient(160deg,#252500,#403800,#1a1a00)",
+  sport:  "linear-gradient(160deg,#003300,#005000,#002200)",
+};
+const BADGE = {
+  blue:"#3EA6FF", gold:"#FFB800", purple:"#AA44FF",
+  cyan:"#00CCFF", platinum:"#B0B0C0"
+};
+const VIDEOS = [
+  {id:1,title:"Next.js 15 Full Course — Build & Deploy a Real App",creator:"TechWithHanif",av:"T",views:"1.2M",dur:"2:24:18",ago:"3 days ago",vf:true,badge:"gold",g:"tech"},
+  {id:2,title:"Lahore to Hunza Road Trip — 1,000 KM in 5 Days 🏔️",creator:"PakTravels",av:"P",views:"890K",dur:"22:45",ago:"1 week ago",vf:true,badge:"blue",g:"travel"},
+  {id:3,title:"Chicken Karahi — Dadi's Secret Recipe Finally Revealed",creator:"DesiKitchen",av:"D",views:"3.1M",dur:"15:30",ago:"2 weeks ago",vf:false,badge:null,g:"food"},
+  {id:4,title:"Iqbal aur Hum — Friday Night Urdu Poetry Session",creator:"PoetryWorld",av:"U",views:"445K",dur:"1:02:14",ago:"5 days ago",vf:true,badge:"purple",g:"urdu"},
+  {id:5,title:"AI Tools Every Developer Needs in 2025 — Full Ranked List",creator:"CodeCraft",av:"C",views:"2.8M",dur:"19:44",ago:"1 day ago",vf:true,badge:"gold",g:"ai"},
+  {id:6,title:"Karachi Night Market Food Tour — 12 Dishes in 60 Minutes",creator:"FoodExplorer",av:"F",views:"1.5M",dur:"28:11",ago:"4 days ago",vf:false,badge:null,g:"food"},
+  {id:7,title:"Learn Python in 6 Hours — Complete Beginner to Pro",creator:"PyCraft",av:"P",views:"4.2M",dur:"6:02:44",ago:"2 months ago",vf:true,badge:"cyan",g:"tech"},
+  {id:8,title:"Balochi Folk Music & Culture — A Heritage Journey",creator:"HeritageTV",av:"H",views:"312K",dur:"45:22",ago:"3 weeks ago",vf:true,badge:"blue",g:"music"},
+  {id:9,title:"Pakistan Cricket Highlights — Best Moments 2025",creator:"SportsPK",av:"S",views:"5.6M",dur:"32:10",ago:"2 days ago",vf:true,badge:"blue",g:"sport"},
+  {id:10,title:"Dawn News Analysis — Weekly Recap",creator:"DawnDigital",av:"N",views:"780K",dur:"18:45",ago:"6 days ago",vf:true,badge:"blue",g:"news"},
+];
+const SHORTS = [
+  {id:1,title:"This CSS trick saves 3 hours a week 🔥",creator:"WebSnippets",av:"W",likes:"124K",g:"tech"},
+  {id:2,title:"Naran Valley in monsoon season — UNREAL 🏔️",creator:"PakTravels",av:"P",likes:"89K",g:"travel"},
+  {id:3,title:"5-minute desi breakfast that hits different ☕",creator:"QuickBites",av:"Q",likes:"220K",g:"food"},
+  {id:4,title:"React hooks explained in 60 seconds ⚡",creator:"DevBytes",av:"D",likes:"67K",g:"ai"},
+  {id:5,title:"Old Lahore hidden gems you don't know 🏛️",creator:"UrbanPak",av:"U",likes:"156K",g:"urdu"},
+  {id:6,title:"How I got 100K followers in 4 months",creator:"GrowthHK",av:"G",likes:"310K",g:"news"},
+];
+const POSTS = [
+  {id:1,creator:"TechWithHanif",av:"T",badge:"gold",ago:"2h",text:"Just shipped the biggest update to the channel! Next.js 15 full course is finally live after 3 months of work. Drop your questions below! 🚀 The backend series starts next month.",likes:8420,comments:342,hasImg:false},
+  {id:2,creator:"PakTravels",av:"P",badge:"blue",ago:"5h",text:"Planning a winter trip to Swat Valley next month 🏔️ Who wants to join? The views are absolutely unreal this time of year. Full vlog coming soon!",likes:3201,comments:187,hasImg:true,g:"travel"},
+  {id:3,creator:"DesiKitchen",av:"D",badge:null,ago:"1d",text:"New recipe dropping tomorrow! Hint: it's everyone's favourite winter food 🍲 First person to guess correctly in the comments gets a shoutout!",likes:5890,comments:624,hasImg:false},
+];
+const NOTIFS = [
+  {id:1,icon:"👤",text:"TechWithHanif started following you",time:"2m",read:false},
+  {id:2,icon:"❤️",text:"Your video got 1,000 likes!",time:"15m",read:false},
+  {id:3,icon:"💬",text:"PakTravels commented: \"Amazing content as always!\"",time:"1h",read:false},
+  {id:4,icon:"🎁",text:"You received a gift worth 500 coins from a viewer!",time:"3h",read:true},
+  {id:5,icon:"💰",text:"Your payout of $24.50 was processed successfully",time:"1d",read:true},
+  {id:6,icon:"⚠️",text:"Copyright claim filed on your video — review required",time:"2d",read:true},
+  {id:7,icon:"✅",text:"Your verification application is under review",time:"3d",read:true},
+];
+const CATS = ["All","Technology","Travel","Food","Culture","Sports","Music","Gaming","Education","Comedy"];
+const SETTINGS_GROUPS = [
+  {group:"Account & Identity",items:[
+    {id:"account",icon:"👤",label:"Account",desc:"Username, email, phone"},
+    {id:"security",icon:"🔐",label:"Security",desc:"Password, 2FA, sessions"},
+    {id:"privacy",icon:"🔒",label:"Privacy",desc:"Who can see your content"},
+    {id:"notifications",icon:"🔔",label:"Notifications",desc:"Alerts and updates"},
+  ]},
+  {group:"Preferences",items:[
+    {id:"language",icon:"🌐",label:"Language & Region",desc:"App language"},
+    {id:"theme",icon:"🎨",label:"Theme",desc:"Dark, Light, AMOLED"},
+    {id:"playback",icon:"▶️",label:"Playback",desc:"Autoplay, quality, speed"},
+    {id:"data",icon:"📶",label:"Data Usage",desc:"Mobile data controls"},
+    {id:"captions",icon:"💬",label:"Captions",desc:"Subtitle settings"},
+    {id:"audio",icon:"🔊",label:"Audio & Dubbing",desc:"Audio track preferences"},
+    {id:"content",icon:"🎯",label:"Content Preferences",desc:"Customize your feed"},
+    {id:"family",icon:"👨‍👩‍👧",label:"Family & Safety",desc:"Parental controls"},
+  ]},
+  {group:"Creator & Monetization",items:[
+    {id:"payments",icon:"💳",label:"Payments",desc:"Payment methods"},
+    {id:"coins",icon:"🪙",label:"Coins",desc:"Balance and history"},
+    {id:"gifts",icon:"🎁",label:"Gifts",desc:"Gift history"},
+    {id:"creator",icon:"🎬",label:"Creator Settings",desc:"Channel settings"},
+    {id:"monetization",icon:"💵",label:"Monetization",desc:"Revenue and payouts"},
+    {id:"boost",icon:"⚡",label:"Boost & Promote",desc:"Promote content"},
+    {id:"ai-settings",icon:"🤖",label:"AI Assistant",desc:"Personal AI settings"},
+  ]},
+  {group:"Support & Legal",items:[
+    {id:"verification",icon:"✅",label:"Verification",desc:"Apply for a badge"},
+    {id:"help",icon:"❓",label:"Help & Feedback",desc:"Get support"},
+    {id:"reports",icon:"🚩",label:"My Reports",desc:"View your reports"},
+    {id:"appeals",icon:"⚖️",label:"Appeals",desc:"Track your appeals"},
+    {id:"data-export",icon:"📥",label:"Data Export",desc:"Download your data"},
+    {id:"delete",icon:"🗑️",label:"Delete Account",desc:"Permanently delete",danger:true},
+  ]},
+];
+
+// ─────────────────────────────────────────
+// 🧩  ATOMS
+// ─────────────────────────────────────────
+function HkLogo({ size=32, text=true }) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",flexShrink:0}}>
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <defs>
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7B5EFF"/>
+            <stop offset="50%" stopColor="#CC40CC"/>
+            <stop offset="100%" stopColor="#FF4C93"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FF4C93"/>
+            <stop offset="100%" stopColor="#7B5EFF"/>
+          </linearGradient>
+        </defs>
+        <rect width="40" height="40" rx="10" fill="url(#g1)"/>
+        <rect x="6" y="10" width="3" height="20" rx="1.5" fill="white"/>
+        <rect x="6" y="18.5" width="9" height="3" rx="1.5" fill="white"/>
+        <rect x="12" y="10" width="3" height="20" rx="1.5" fill="white"/>
+        <rect x="19" y="10" width="3" height="20" rx="1.5" fill="white"/>
+        <polygon points="22,20 31,10 34.5,10 25.5,20.5 34.5,30 31,30" fill="white"/>
+        <circle cx="35" cy="8" r="4" fill="url(#g2)"/>
+        <polygon points="33.5,6.5 37,8 33.5,9.5" fill="white"/>
+      </svg>
+      {text && (
+        <span style={{
+          fontSize:18, fontWeight:800, letterSpacing:"-0.5px",
+          background:"linear-gradient(135deg,#7B5EFF,#FF4C93)",
+          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"
+        }}>HkTube</span>
+      )}
+    </div>
+  );
+}
+
+function VBadge({ type }) {
+  if (!type || !BADGE[type]) return null;
+  return (
+    <span style={{
+      display:"inline-flex", alignItems:"center", justifyContent:"center",
+      width:14, height:14, borderRadius:"50%",
+      background:BADGE[type], marginLeft:4, flexShrink:0, verticalAlign:"middle"
+    }}>
+      <Check size={8} color="white" strokeWidth={3.5}/>
+    </span>
+  );
+}
+
+function Av({ char, size=32, seed=0 }) {
+  const h=[250,290,320,200,160,340,220,270][seed%8];
+  return (
+    <div style={{
+      width:size, height:size, borderRadius:"50%", flexShrink:0,
+      background:`linear-gradient(135deg,hsl(${h},65%,42%),hsl(${h+40},75%,58%))`,
+      display:"flex", alignItems:"center", justifyContent:"center",
+      color:"white", fontWeight:800, fontSize:size*0.38
+    }}>{char}</div>
+  );
+}
+
+function Toggle({ on, onChange, t }) {
+  return (
+    <button onClick={()=>onChange(!on)} style={{
+      width:44, height:24, borderRadius:12, position:"relative",
+      background:on?t.pri:t.elev,
+      border:`1px solid ${on?t.pri:t.bdr}`,
+      cursor:"pointer", transition:"background 0.2s, border-color 0.2s",
+      flexShrink:0
+    }}>
+      <div style={{
+        position:"absolute", top:2,
+        left:on?20:2, width:18, height:18,
+        borderRadius:"50%", background:"white",
+        transition:"left 0.2s",
+        boxShadow:"0 1px 3px rgba(0,0,0,0.3)"
+      }}/>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🖼️  THUMBNAIL PLACEHOLDER
+// ─────────────────────────────────────────
+function Thumb({ g="tech", dur, aspect="16/9", radius=0 }) {
+  return (
+    <div style={{
+      width:"100%", aspectRatio:aspect,
+      background:GRADS[g]||GRADS.tech,
+      borderRadius:radius, overflow:"hidden",
+      position:"relative", flexShrink:0
+    }}>
+      <Play size={40} color="rgba(255,255,255,0.15)" fill="rgba(255,255,255,0.15)"
+        style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+      {dur && (
+        <span style={{
+          position:"absolute", bottom:7, right:7,
+          background:"rgba(0,0,0,0.88)", color:"#fff",
+          fontSize:12, fontWeight:600, padding:"1px 5px", borderRadius:3
+        }}>{dur}</span>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🃏  VIDEO CARD (YouTube style — no zoom)
+// ─────────────────────────────────────────
+function VideoCard({ v, t, fullWidth=false }) {
+  const [hov,setHov]=useState(false);
+  return (
+    <div
+      onMouseEnter={()=>setHov(true)}
+      onMouseLeave={()=>setHov(false)}
+      style={{
+        cursor:"pointer",
+        background:hov?t.hover:t.card,
+        transition:"background 0.15s",
+        borderRadius: fullWidth?0:8,
+        overflow:"hidden",
+      }}
+    >
+      <Thumb g={v.g} dur={v.dur} radius={fullWidth?0:6}/>
+      <div style={{
+        display:"flex", gap:10,
+        padding: fullWidth?"12px 12px 8px":"10px 4px 8px"
+      }}>
+        <Av char={v.av} size={36} seed={v.id}/>
+        <div style={{flex:1, minWidth:0}}>
+          <p style={{
+            color:t.t1, fontWeight:600, fontSize:14, margin:"0 0 4px",
+            lineHeight:1.4,
+            display:"-webkit-box", WebkitLineClamp:2,
+            WebkitBoxOrient:"vertical", overflow:"hidden"
+          }}>{v.title}</p>
+          <div style={{display:"flex",alignItems:"center"}}>
+            <span style={{color:t.t2,fontSize:13}}>{v.creator}</span>
+            <VBadge type={v.badge}/>
+          </div>
+          <p style={{color:t.t3,fontSize:12,margin:"2px 0 0"}}>
+            {v.views} views · {v.ago}
+          </p>
+        </div>
+        <button style={{background:"none",border:"none",color:t.t3,cursor:"pointer",padding:"0 2px",alignSelf:"flex-start"}}>
+          <MoreVertical size={16}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// ▶️  SHORTS CARD (no zoom)
+// ─────────────────────────────────────────
+function ShortCard({ s, t }) {
+  const [hov,setHov]=useState(false);
+  return (
+    <div
+      onMouseEnter={()=>setHov(true)}
+      onMouseLeave={()=>setHov(false)}
+      style={{
+        width:140, flexShrink:0, cursor:"pointer",
+        borderRadius:8, overflow:"hidden",
+        background:hov?t.hover:t.card,
+        transition:"background 0.15s"
+      }}
+    >
+      <div style={{
+        width:"100%", aspectRatio:"9/16",
+        background:GRADS[s.g]||GRADS.tech,
+        position:"relative", borderRadius:8, overflow:"hidden"
+      }}>
+        <Play size={28} color="rgba(255,255,255,0.2)" fill="rgba(255,255,255,0.2)"
+          style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+        <div style={{
+          position:"absolute",bottom:0,left:0,right:0,
+          padding:"30px 8px 8px",
+          background:"linear-gradient(to top,rgba(0,0,0,0.85),transparent)"
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
+            <Heart size={11} color="white" fill="white"/>
+            <span style={{color:"white",fontSize:11,fontWeight:600}}>{s.likes}</span>
+          </div>
+        </div>
+      </div>
+      <div style={{padding:"8px 8px 10px"}}>
+        <p style={{
+          color:t.t1,fontSize:12,fontWeight:500,margin:0,lineHeight:1.4,
+          display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"
+        }}>{s.title}</p>
+        <p style={{color:t.t3,fontSize:11,margin:"3px 0 0"}}>{s.creator}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 📰  FEED POST (no zoom)
+// ─────────────────────────────────────────
+function FeedPost({ p, t }) {
+  const [liked,setLiked]=useState(false);
+  const [saved,setSaved]=useState(false);
+  return (
+    <div style={{borderBottom:`1px solid ${t.bdr}`, padding:"14px 0"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+        <Av char={p.av} size={40} seed={p.id+20}/>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center"}}>
+            <span style={{color:t.t1,fontWeight:700,fontSize:14}}>{p.creator}</span>
+            <VBadge type={p.badge}/>
+          </div>
+          <span style={{color:t.t3,fontSize:12}}>{p.ago} ago</span>
+        </div>
+        <button style={{background:"none",border:"none",color:t.t3,cursor:"pointer"}}>
+          <MoreHorizontal size={18}/>
+        </button>
+      </div>
+      <p style={{color:t.t1,fontSize:14,lineHeight:1.7,margin:"0 0 12px"}}>{p.text}</p>
+      {p.hasImg&&(
+        <div style={{
+          width:"100%",aspectRatio:"16/9",background:GRADS[p.g]||GRADS.travel,
+          borderRadius:8,marginBottom:12,opacity:0.9
+        }}/>
+      )}
+      <div style={{display:"flex",gap:4}}>
+        {[
+          {icon:<Heart size={15} fill={liked?t.sec:"none"} color={liked?t.sec:t.t2}/>,label:liked?(p.likes+1).toLocaleString():p.likes.toLocaleString(),action:()=>setLiked(x=>!x),active:liked,col:t.sec,dim:t.secDim},
+          {icon:<MessageCircle size={15}/>,label:p.comments,col:t.t2},
+          {icon:<Share2 size={15}/>,label:"Share",col:t.t2},
+          {icon:<Bookmark size={15} fill={saved?t.pri:"none"} color={saved?t.pri:t.t2}/>,action:()=>setSaved(x=>!x),active:saved,col:t.pri,dim:t.priDim},
+        ].map((b,i)=>(
+          <button key={i} onClick={b.action} style={{
+            display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+            background:b.active?b.dim:"none",
+            border:`1px solid ${b.active?b.col:t.bdr}`,
+            color:b.active?b.col:t.t2,
+            padding:"6px 14px",borderRadius:20,
+            fontSize:12,fontWeight:500,cursor:"pointer",
+            transition:"background 0.15s,border-color 0.15s,color 0.15s",
+            flex:i<3?1:"none"
+          }}>
+            {b.icon}{b.label!==undefined&&<span>{b.label}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🔝  HEADER
+// ─────────────────────────────────────────
+function Header({ t, setPage, setShowCreate, setShowNotif, setShowMenu, unread }) {
+  const [q,setQ]=useState("");
+  const [searching,setSearching]=useState(false);
+  return (
+    <header style={{
+      position:"sticky", top:0, zIndex:200,
+      background:t.surf, borderBottom:`1px solid ${t.bdr}`,
+      padding:"0 16px", height:56,
+      display:"flex", alignItems:"center", gap:10,
+    }}>
+      {!searching && <div onClick={()=>setPage("home")}><HkLogo size={30}/></div>}
+
+      {/* Search */}
+      <div style={{
+        flex:1, display:"flex", alignItems:"center",
+        background:t.input, border:`1px solid ${t.bdr}`,
+        borderRadius:20, padding:"0 14px", height:36,
+        maxWidth: searching?"100%":460,
+        transition:"max-width 0.2s"
+      }}>
+        <Search size={15} color={t.t3}/>
+        <input
+          value={q} onChange={e=>setQ(e.target.value)}
+          onFocus={()=>setSearching(true)}
+          onBlur={()=>{if(!q)setSearching(false)}}
+          placeholder="Search"
+          style={{flex:1,background:"none",border:"none",outline:"none",color:t.t1,fontSize:14,marginLeft:8}}
+        />
+        {q && <button onClick={()=>{setQ("");setSearching(false)}} style={{background:"none",border:"none",color:t.t3,cursor:"pointer",padding:0}}><X size={14}/></button>}
+      </div>
+
+      {/* Actions */}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto",flexShrink:0}}>
+        <button onClick={()=>setShowCreate(true)} style={{
+          display:"flex",alignItems:"center",gap:6,
+          background:"none",
+          border:`1px solid ${t.bdr}`,
+          color:t.t1, padding:"6px 14px",
+          borderRadius:20, fontSize:13, fontWeight:600,
+          cursor:"pointer", whiteSpace:"nowrap",
+          transition:"background 0.15s"
+        }}
+        onMouseEnter={e=>e.currentTarget.style.background=t.hover}
+        onMouseLeave={e=>e.currentTarget.style.background="none"}
+        >
+          <Plus size={16} color={t.pri}/>
+          <span className="hk-txt" style={{color:t.t1}}>Create</span>
+        </button>
+
+        <button onClick={()=>setShowNotif(true)} style={{
+          background:"none", border:"none",
+          color:t.t2, width:36, height:36, borderRadius:"50%",
+          cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+          position:"relative", transition:"background 0.15s"
+        }}
+        onMouseEnter={e=>e.currentTarget.style.background=t.hover}
+        onMouseLeave={e=>e.currentTarget.style.background="none"}
+        >
+          <Bell size={20}/>
+          {unread>0&&<span style={{
+            position:"absolute", top:4, right:4,
+            minWidth:16, height:16, borderRadius:8,
+            background:"#FF0000", color:"white",
+            fontSize:10, fontWeight:700,
+            display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",
+            border:`2px solid ${t.surf}`
+          }}>{unread>9?"9+":unread}</span>}
+        </button>
+
+        <button onClick={()=>setShowMenu(true)} style={{
+          background:"none", border:"none", cursor:"pointer",
+          width:36, height:36, borderRadius:"50%",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          overflow:"hidden", transition:"opacity 0.15s"
+        }}>
+          <Av char="U" size={34} seed={88}/>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🗂️  SIDEBAR (Desktop ≥768px)
+// ─────────────────────────────────────────
+function Sidebar({ t, page, setPage }) {
+  const nav=[
+    {id:"home",   icon:"🏠", label:"Home"},
+    {id:"shorts", icon:"▶️",  label:"Shorts"},
+    {id:"feeds",  icon:"📰",  label:"Feeds"},
+    null,
+    {id:"trending", icon:"🔥", label:"Trending"},
+    {id:"following",icon:"👥", label:"Following"},
+    {id:"history",  icon:"🕐", label:"History"},
+    {id:"saved",    icon:"🔖", label:"Saved"},
+    null,
+    {id:"studio",       icon:"🎬", label:"Creator Studio"},
+    {id:"analytics",    icon:"📊", label:"Analytics"},
+    {id:"monetization", icon:"💵", label:"Monetization"},
+    {id:"coins",        icon:"🪙", label:"Coins & Gifts"},
+    null,
+    {id:"settings",     icon:"⚙️", label:"Settings"},
+  ];
+  return (
+    <aside className="hk-sidebar" style={{
+      width:210, flexShrink:0,
+      height:"calc(100vh - 56px)", position:"sticky", top:56,
+      borderRight:`1px solid ${t.bdr}`, background:t.surf,
+      padding:"8px 0", overflowY:"auto"
+    }}>
+      {nav.map((item,i)=>{
+        if(!item) return <div key={i} style={{height:1,background:t.bdr,margin:"6px 12px"}}/>;
+        const active=page===item.id;
+        return (
+          <button key={item.id} onClick={()=>setPage(item.id)} style={{
+            display:"flex", alignItems:"center", gap:14,
+            width:"100%", padding:"9px 20px", borderRadius:10,
+            background:active?t.hover:"none", border:"none",
+            color:active?t.t1:t.t2,
+            fontSize:13.5, fontWeight:active?700:400,
+            cursor:"pointer", transition:"background 0.1s",
+            textAlign:"left"
+          }}
+          onMouseEnter={e=>{if(!active)e.currentTarget.style.background=t.hover}}
+          onMouseLeave={e=>{if(!active)e.currentTarget.style.background="none"}}
+          >
+            <span style={{fontSize:17,lineHeight:1}}>{item.icon}</span>
+            {item.label}
+            {active && <div style={{marginLeft:"auto",width:3,height:20,borderRadius:2,background:t.pri}}/>}
+          </button>
+        );
+      })}
+    </aside>
+  );
+}
+
+// ─────────────────────────────────────────
+// 📱  BOTTOM NAV — Home · Shorts · ➕ · Feeds · Menu
+// ─────────────────────────────────────────
+function BottomNav({ t, page, setPage, setShowMenu, setShowCreate }) {
+  const items=[
+    {id:"home",   icon:<Home size={22}/>,  label:"Home"},
+    {id:"shorts", icon:<Play size={22}/>,  label:"Shorts"},
+    {id:"create", isPlus:true},
+    {id:"feeds",  icon:<Rss size={22}/>,   label:"Feeds"},
+    {id:"menu",   icon:<Menu size={22}/>,  label:"Menu"},
+  ];
+  return (
+    <nav className="hk-bottom-nav" style={{
+      position:"fixed", bottom:0, left:0, right:0, zIndex:300,
+      background:t.surf, borderTop:`1px solid ${t.bdr}`,
+      display:"flex", alignItems:"center",
+      padding:"4px 0 max(8px,env(safe-area-inset-bottom))",
+    }}>
+      {items.map(item=>{
+        if(item.isPlus) return (
+          <button key="create" onClick={()=>setShowCreate(true)} style={{
+            flex:1, display:"flex", flexDirection:"column",
+            alignItems:"center", justifyContent:"center",
+            background:"none", border:"none", cursor:"pointer", padding:"2px 0"
+          }}>
+            <div style={{
+              width:44, height:44, borderRadius:12,
+              background:`linear-gradient(135deg,${t.pri},${t.sec})`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              boxShadow:`0 2px 12px ${t.priGlow}`
+            }}>
+              <Plus size={22} color="white" strokeWidth={2.5}/>
+            </div>
+          </button>
+        );
+        const active=page===item.id;
+        const action=item.id==="menu"?()=>setShowMenu(true):()=>setPage(item.id);
+        return (
+          <button key={item.id} onClick={action} style={{
+            flex:1, display:"flex", flexDirection:"column",
+            alignItems:"center", gap:2,
+            background:"none", border:"none",
+            color:active?t.pri:t.t3,
+            cursor:"pointer", padding:"4px 0", position:"relative",
+            transition:"color 0.15s"
+          }}>
+            {item.icon}
+            <span style={{fontSize:10,fontWeight:active?700:400}}>{item.label}</span>
+            {active && <div style={{
+              position:"absolute", bottom:0,
+              width:24, height:2, borderRadius:2, background:t.pri
+            }}/>}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🏠  HOME PAGE
+// ─────────────────────────────────────────
+function SectionHd({ title, t, onMore }) {
+  return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",marginBottom:12}}>
+      <h2 style={{color:t.t1,fontSize:16,fontWeight:700,margin:0}}>{title}</h2>
+      {onMore&&<button onClick={onMore} style={{
+        display:"flex",alignItems:"center",gap:2,background:"none",border:"none",
+        color:t.t3,fontSize:12,fontWeight:500,cursor:"pointer"
+      }}>See all<ChevronRight size={14}/></button>}
+    </div>
+  );
+}
+
+function CatChips({ t }) {
+  const [a,setA]=useState("All");
+  return (
+    <div style={{
+      display:"flex", gap:8, overflowX:"auto",
+      padding:"10px 16px", scrollbarWidth:"none",
+      borderBottom:`1px solid ${t.bdr}`
+    }}>
+      {CATS.map(c=>(
+        <button key={c} onClick={()=>setA(c)} style={{
+          flexShrink:0, padding:"5px 14px", borderRadius:20,
+          border:`1px solid ${a===c?t.pri:t.bdr}`,
+          background:a===c?t.priDim:t.hover,
+          color:a===c?t.pri:t.t2,
+          fontSize:13, fontWeight:a===c?600:400,
+          cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap"
+        }}>{c}</button>
+      ))}
+    </div>
+  );
+}
+
+function HomePage({ t, setPage }) {
+  return (
+    <div style={{paddingBottom:90}}>
+      <CatChips t={t}/>
+
+      {/* Shorts strip */}
+      <div style={{marginTop:16, marginBottom:4}}>
+        <SectionHd title="Shorts" t={t} onMore={()=>setPage("shorts")}/>
+        <div style={{
+          display:"flex", gap:8, overflowX:"auto",
+          padding:"0 16px 12px", scrollbarWidth:"none"
+        }}>
+          {SHORTS.map(s=><ShortCard key={s.id} s={s} t={t}/>)}
+        </div>
+      </div>
+
+      <div style={{height:1,background:t.bdr,margin:"4px 0 16px"}}/>
+
+      {/* Video feed — YouTube style full width on mobile */}
+      <div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">
+        {VIDEOS.map(v=>(
+          <div key={v.id} style={{marginBottom:20}} className="hk-video-item">
+            <VideoCard v={v} t={t} fullWidth={true}/>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// ▶️  SHORTS PAGE (TikTok/YouTube Shorts style)
+// ─────────────────────────────────────────
+function ShortsPage({ t }) {
+  const [cur,setCur]=useState(0);
+  const [muted,setMuted]=useState(true);
+  const [liked,setLiked]=useState({});
+  const [saved,setSaved]=useState({});
+  const s=SHORTS[cur];
+  return (
+    <div style={{
+      height:"calc(100vh - 56px)", overflow:"hidden",
+      background:"#000",
+      display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center",
+      position:"relative"
+    }}>
+      {/* Main Shorts player */}
+      <div style={{
+        height:"100%", maxHeight:"calc(100vh - 56px)",
+        aspectRatio:"9/16", maxWidth:420,
+        background:GRADS[s.g], position:"relative", overflow:"hidden"
+      }}>
+        <Play size={64} color="rgba(255,255,255,0.1)" fill="rgba(255,255,255,0.1)"
+          style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+
+        {/* Bottom overlay */}
+        <div style={{
+          position:"absolute", bottom:0, left:0, right:0,
+          padding:"80px 16px 24px",
+          background:"linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)"
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <Av char={s.av} size={38} seed={cur}/>
+            <div style={{flex:1}}>
+              <span style={{color:"white",fontWeight:700,fontSize:14}}>{s.creator}</span>
+            </div>
+            <button style={{
+              background:"none", border:"1.5px solid white",
+              color:"white", padding:"5px 14px", borderRadius:20,
+              fontSize:13, fontWeight:600, cursor:"pointer"
+            }}>Follow</button>
+          </div>
+          <p style={{color:"white",fontSize:14,margin:"0 0 6px",lineHeight:1.5}}>{s.title}</p>
+          <p style={{color:"rgba(255,255,255,0.65)",fontSize:12,margin:0}}>♫ Original Audio</p>
+        </div>
+
+        {/* Side actions */}
+        <div style={{
+          position:"absolute", right:14, bottom:100,
+          display:"flex", flexDirection:"column", gap:20, alignItems:"center"
+        }}>
+          {[
+            {icon:<Heart size={28} fill={liked[cur]?"#FF4C93":"none"} color={liked[cur]?"#FF4C93":"white"}/>,
+             label:s.likes, action:()=>setLiked(p=>({...p,[cur]:!p[cur]}))},
+            {icon:<MessageCircle size={28} color="white"/>, label:"342"},
+            {icon:<Share2 size={28} color="white"/>, label:"Share"},
+            {icon:<Bookmark size={28} fill={saved[cur]?t.pri:"none"} color={saved[cur]?t.pri:"white"}/>,
+             label:"Save", action:()=>setSaved(p=>({...p,[cur]:!p[cur]}))},
+          ].map((b,i)=>(
+            <button key={i} onClick={b.action} style={{
+              background:"none",border:"none",cursor:"pointer",
+              display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:0
+            }}>
+              {b.icon}
+              <span style={{color:"white",fontSize:12,fontWeight:600}}>{b.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Mute */}
+        <button onClick={()=>setMuted(x=>!x)} style={{
+          position:"absolute",top:14,right:14,
+          background:"rgba(0,0,0,0.5)",border:"none",color:"white",
+          width:36,height:36,borderRadius:"50%",cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center"
+        }}>
+          {muted?<VolumeX size={16}/>:<Volume2 size={16}/>}
+        </button>
+      </div>
+
+      {/* Up/Down arrows */}
+      <div style={{position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:10}}>
+        {[
+          {d:"▲",a:()=>setCur(p=>Math.max(0,p-1)),dis:cur===0},
+          {d:"▼",a:()=>setCur(p=>Math.min(SHORTS.length-1,p+1)),dis:cur===SHORTS.length-1},
+        ].map((b,i)=>(
+          <button key={i} onClick={b.a} disabled={b.dis} style={{
+            background:"rgba(255,255,255,0.15)",border:"none",color:"white",
+            width:40,height:40,borderRadius:"50%",cursor:b.dis?"default":"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:14,opacity:b.dis?0.2:0.8,backdropFilter:"blur(4px)"
+          }}>{b.d}</button>
+        ))}
+      </div>
+
+      {/* Dots */}
+      <div style={{position:"absolute",bottom:20,display:"flex",gap:6}}>
+        {SHORTS.map((_,i)=>(
+          <div key={i} onClick={()=>setCur(i)} style={{
+            width:i===cur?20:6,height:6,borderRadius:3,
+            background:i===cur?"white":"rgba(255,255,255,0.4)",
+            cursor:"pointer",transition:"width 0.25s,background 0.25s"
+          }}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 📰  FEEDS PAGE
+// ─────────────────────────────────────────
+function FeedsPage({ t }) {
+  return (
+    <div style={{maxWidth:640,margin:"0 auto",padding:"0 16px 100px"}}>
+      {/* Compose */}
+      <div style={{
+        display:"flex",alignItems:"center",gap:10,
+        padding:"14px 0",borderBottom:`1px solid ${t.bdr}`
+      }}>
+        <Av char="U" size={38} seed={99}/>
+        <div style={{
+          flex:1,background:t.input,border:`1px solid ${t.bdr}`,
+          borderRadius:20,padding:"9px 16px",color:t.t3,fontSize:14,cursor:"pointer"
+        }}>Share something with your followers...</div>
+      </div>
+
+      {/* Filter */}
+      <div style={{display:"flex",gap:8,padding:"12px 0",borderBottom:`1px solid ${t.bdr}`,marginBottom:4}}>
+        {["Following","Trending","All"].map((tab,i)=>(
+          <button key={tab} style={{
+            padding:"6px 16px",borderRadius:20,
+            border:`1px solid ${i===0?t.pri:t.bdr}`,
+            background:i===0?t.priDim:t.hover,
+            color:i===0?t.pri:t.t2,
+            fontSize:13,fontWeight:i===0?600:400,cursor:"pointer",
+            transition:"all 0.15s"
+          }}>{tab}</button>
+        ))}
+      </div>
+
+      {POSTS.map(p=><FeedPost key={p.id} p={p} t={t}/>)}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🎬  CREATOR STUDIO
+// ─────────────────────────────────────────
+function StudioPage({ t }) {
+  const [tab,setTab]=useState("dashboard");
+  const tabs=["Dashboard","Content","Analytics","Monetization","Coins & Gifts"];
+  return (
+    <div style={{paddingBottom:100}}>
+      {/* Header */}
+      <div style={{
+        padding:"20px 16px",
+        background:`linear-gradient(to right,${t.priDim},${t.secDim})`,
+        borderBottom:`1px solid ${t.bdr}`,
+        display:"flex",gap:14,alignItems:"center"
+      }}>
+        <Av char="U" size={52} seed={77}/>
+        <div style={{flex:1}}>
+          <div style={{color:t.t1,fontWeight:700,fontSize:18}}>Creator Studio</div>
+          <div style={{color:t.t2,fontSize:13,marginTop:3}}>Manage your channel</div>
+        </div>
+        <button style={{
+          background:`linear-gradient(135deg,${t.pri},${t.sec})`,
+          border:"none",color:"white",padding:"9px 18px",
+          borderRadius:20,fontSize:13,fontWeight:600,cursor:"pointer",
+          display:"flex",gap:6,alignItems:"center",
+          boxShadow:`0 2px 10px ${t.priGlow}`
+        }}>
+          <Upload size={14}/> Upload
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{
+        display:"flex",gap:0,overflowX:"auto",scrollbarWidth:"none",
+        borderBottom:`1px solid ${t.bdr}`,padding:"0 8px"
+      }}>
+        {tabs.map(tb=>{
+          const key=tb.toLowerCase().replace(/ & /,"-").replace(/ /g,"-");
+          const active=tab===key;
+          return (
+            <button key={tb} onClick={()=>setTab(key)} style={{
+              flexShrink:0,padding:"14px 16px",background:"none",border:"none",
+              borderBottom:active?`2px solid ${t.pri}`:"2px solid transparent",
+              color:active?t.t1:t.t2,fontSize:13.5,fontWeight:active?700:400,
+              cursor:"pointer",transition:"color 0.15s",whiteSpace:"nowrap",
+              marginBottom:-1
+            }}>{tb}</button>
+          );
+        })}
+      </div>
+
+      {/* Dashboard */}
+      {tab==="dashboard"&&(
+        <div style={{padding:"16px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
+            {[
+              {l:"Total Views",v:"—",icon:"👁️"},
+              {l:"Followers",v:"—",icon:"👥"},
+              {l:"Videos",v:"—",icon:"🎬"},
+              {l:"Revenue",v:"—",icon:"💵"},
+            ].map((s,i)=>(
+              <div key={i} style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16}}>
+                <div style={{fontSize:24,marginBottom:8}}>{s.icon}</div>
+                <div style={{color:t.t1,fontWeight:700,fontSize:22}}>{s.v}</div>
+                <div style={{color:t.t3,fontSize:12,marginTop:3}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            background:t.elev,border:`1px solid ${t.bdr}`,
+            borderRadius:12,padding:"28px 16px",textAlign:"center"
+          }}>
+            <div style={{fontSize:44,marginBottom:10}}>📂</div>
+            <div style={{color:t.t1,fontWeight:600,fontSize:16,marginBottom:6}}>No content yet</div>
+            <div style={{color:t.t3,fontSize:13,maxWidth:260,margin:"0 auto 16px",lineHeight:1.6}}>Upload your first video to start growing your channel.</div>
+            <button style={{
+              background:`linear-gradient(135deg,${t.pri},${t.sec})`,
+              border:"none",color:"white",padding:"10px 22px",
+              borderRadius:20,fontSize:14,fontWeight:600,cursor:"pointer"
+            }}>Upload Video</button>
+          </div>
+        </div>
+      )}
+
+      {/* Monetization tab */}
+      {tab==="monetization"&&(
+        <div style={{padding:16}}>
+          <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16,marginBottom:12}}>
+            <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:14}}>Eligibility Status</div>
+            {[
+              {l:"1,000 Followers",ok:false},
+              {l:"10,000 Watch Minutes (last 90 days)",ok:false},
+              {l:"Account in good standing",ok:true},
+              {l:"Policy accepted",ok:false},
+            ].map((r,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderTop:i>0?`1px solid ${t.bdr}`:"none"}}>
+                <div style={{
+                  width:20,height:20,borderRadius:"50%",flexShrink:0,
+                  background:r.ok?t.okD:t.elev,border:`1px solid ${r.ok?t.ok:t.bdr}`,
+                  display:"flex",alignItems:"center",justifyContent:"center"
+                }}>
+                  {r.ok?<Check size={11} color={t.ok} strokeWidth={3}/>:<X size={10} color={t.t3}/>}
+                </div>
+                <span style={{color:r.ok?t.t1:t.t3,fontSize:13}}>{r.l}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16}}>
+            <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:12}}>Revenue (90/10 split)</div>
+            {["Ad Revenue","Gift Revenue (90%)","Platform Share (10%)","Available for Payout"].map((row,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderTop:i>0?`1px solid ${t.bdr}`:"none"}}>
+                <span style={{color:t.t2,fontSize:13}}>{row}</span>
+                <span style={{color:t.t1,fontWeight:600,fontSize:14}}>—</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Coins & Gifts tab */}
+      {tab==="coins-&-gifts"&&(
+        <div style={{padding:16}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+            {[{l:"Coin Balance",v:"0 🪙"},{l:"Gifts Received",v:"0 🎁"}].map((c,i)=>(
+              <div key={i} style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16}}>
+                <div style={{color:t.t1,fontWeight:700,fontSize:24}}>{c.v}</div>
+                <div style={{color:t.t3,fontSize:12,marginTop:4}}>{c.l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16,marginBottom:12}}>
+            <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:12}}>Buy Coins</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              {[{c:100,p:"$0.99"},{c:500,p:"$4.49"},{c:1200,p:"$9.99"},{c:2500,p:"$19.99"},{c:6500,p:"$49.99"},{c:14000,p:"$99.99"}].map((pkg,i)=>(
+                <button key={i} style={{
+                  background:t.hover,border:`1px solid ${t.bdr}`,borderRadius:10,
+                  padding:"12px 6px",cursor:"pointer",
+                  transition:"border-color 0.15s"
+                }}
+                onMouseEnter={e=>e.currentTarget.style.borderColor=t.pri}
+                onMouseLeave={e=>e.currentTarget.style.borderColor=t.bdr}
+                >
+                  <div style={{fontSize:20,marginBottom:3}}>🪙</div>
+                  <div style={{color:t.t1,fontWeight:700,fontSize:15}}>{pkg.c.toLocaleString()}</div>
+                  <div style={{color:t.t3,fontSize:11,marginTop:2}}>{pkg.p}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// ⚙️  SETTINGS PAGE
+// ─────────────────────────────────────────
+function SettingsPage({ t }) {
+  const [active,setActive]=useState(null);
+  const [tog,setTog]=useState({
+    push:true,email:false,follows:true,likes:true,
+    comments:true,gifts:true,twoFA:false,loginAlerts:true,
+    autoplay:true,hdWifi:true,saveData:false,
+    showActivity:true,publicLikes:false,
+    personalAI:true,aiHistory:true,
+  });
+  const T2=k=>setTog(p=>({...p,[k]:!p[k]}));
+
+  if(active) return (
+    <div style={{paddingBottom:100}}>
+      <button onClick={()=>setActive(null)} style={{
+        display:"flex",alignItems:"center",gap:8,
+        background:"none",border:"none",color:t.t2,
+        fontSize:14,cursor:"pointer",padding:"14px 16px",width:"100%",textAlign:"left"
+      }}>
+        <ChevronLeft size={18}/> Settings
+      </button>
+      <div style={{padding:"0 16px 16px"}}>
+        <h2 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 16px"}}>
+          {active.icon} {active.label}
+        </h2>
+
+        {active.id==="notifications"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:1}}>
+            {[
+              {l:"Push Notifications",k:"push",d:"Device alerts"},
+              {l:"Email Notifications",k:"email",d:"Updates via email"},
+              {l:"Follows",k:"follows",d:"When someone follows you"},
+              {l:"Likes",k:"likes",d:"When someone likes your content"},
+              {l:"Comments",k:"comments",d:"New comments on videos"},
+              {l:"Gifts",k:"gifts",d:"When you receive a gift"},
+            ].map((item,i)=>(
+              <div key={i} style={{
+                display:"flex",alignItems:"center",gap:14,
+                padding:"14px 0",borderBottom:`1px solid ${t.bdr}`
+              }}>
+                <div style={{flex:1}}>
+                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
+                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
+                </div>
+                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {active.id==="security"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:1}}>
+            {[
+              {l:"Two-Factor Authentication",k:"twoFA",d:"Extra account security"},
+              {l:"Login Alerts",k:"loginAlerts",d:"Notify on new sign-in"},
+            ].map((item,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
+                <div style={{flex:1}}>
+                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
+                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
+                </div>
+                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
+              </div>
+            ))}
+            {["Change Password","Active Sessions","Login History"].map((item,i)=>(
+              <button key={i} style={{
+                display:"flex",alignItems:"center",justifyContent:"space-between",
+                padding:"14px 0",borderBottom:`1px solid ${t.bdr}`,
+                background:"none",border:"none",cursor:"pointer",width:"100%"
+              }}>
+                <span style={{color:t.t1,fontSize:14}}>{item}</span>
+                <ChevronRight size={16} color={t.t3}/>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {active.id==="playback"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:1}}>
+            {[
+              {l:"Autoplay",k:"autoplay",d:"Auto-play next video"},
+              {l:"HD on Wi-Fi",k:"hdWifi",d:"Best quality on Wi-Fi"},
+              {l:"Save Mobile Data",k:"saveData",d:"Lower quality on mobile"},
+            ].map((item,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
+                <div style={{flex:1}}>
+                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
+                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
+                </div>
+                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {active.id==="theme"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[
+              {id:"dark",icon:"🌙",l:"HkTube Dark",d:"Deep dark mode"},
+              {id:"amoled",icon:"⚡",l:"AMOLED Dark",d:"True black, saves battery"},
+              {id:"light",icon:"☀️",l:"HkTube Light",d:"Clean and bright"},
+            ].map(th=>(
+              <button key={th.id} style={{
+                display:"flex",alignItems:"center",gap:14,
+                padding:"14px",borderRadius:10,
+                background:t.hover,border:`1px solid ${t.bdr}`,
+                cursor:"pointer",textAlign:"left",width:"100%"
+              }}>
+                <span style={{fontSize:22}}>{th.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{color:t.t1,fontSize:14,fontWeight:500}}>{th.l}</div>
+                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div>
+                </div>
+                <ChevronRight size={16} color={t.t3}/>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {active.id==="privacy"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:1}}>
+            {[
+              {l:"Show Activity Status",k:"showActivity",d:"Let others see when active"},
+              {l:"Public Likes",k:"publicLikes",d:"Show liked videos publicly"},
+            ].map((item,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}>
+                <div style={{flex:1}}>
+                  <div style={{color:t.t1,fontSize:14}}>{item.l}</div>
+                  <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.d}</div>
+                </div>
+                <Toggle on={tog[item.k]} onChange={()=>T2(item.k)} t={t}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {active.id==="delete"&&(
+          <div>
+            <div style={{
+              background:t.liveD,border:`1px solid ${t.live}33`,
+              borderRadius:10,padding:16,marginBottom:16,
+              display:"flex",gap:10
+            }}>
+              <AlertTriangle size={20} color={t.live} style={{flexShrink:0,marginTop:1}}/>
+              <div>
+                <div style={{color:t.live,fontWeight:600,fontSize:14,marginBottom:6}}>Permanent action</div>
+                <div style={{color:t.t2,fontSize:13,lineHeight:1.6}}>All your videos, followers, coins and earnings will be permanently deleted. This cannot be undone.</div>
+              </div>
+            </div>
+            <button style={{
+              width:"100%",padding:14,borderRadius:10,
+              background:t.liveD,border:`1px solid ${t.live}44`,
+              color:t.live,fontSize:14,fontWeight:600,cursor:"pointer"
+            }}>Request Account Deletion</button>
+          </div>
+        )}
+
+        {!["notifications","security","playback","theme","privacy","delete"].includes(active.id)&&(
+          <div style={{
+            background:t.elev,border:`1px solid ${t.bdr}`,
+            borderRadius:10,padding:"32px 16px",textAlign:"center"
+          }}>
+            <div style={{fontSize:40,marginBottom:10}}>{active.icon}</div>
+            <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div>
+            <div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>Available after connecting to your account.</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{paddingBottom:100}}>
+      <h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0,padding:"16px 16px 12px",borderBottom:`1px solid ${t.bdr}`}}>Settings</h1>
+      {SETTINGS_GROUPS.map((group,gi)=>(
+        <div key={gi}>
+          <div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>
+          {group.items.map((item,i)=>(
+            <button key={item.id} onClick={()=>setActive(item)} style={{
+              display:"flex",alignItems:"center",gap:14,
+              width:"100%",padding:"13px 16px",
+              background:"none",border:"none",
+              borderBottom:`1px solid ${t.bdr}`,
+              cursor:"pointer",textAlign:"left",
+              transition:"background 0.1s"
+            }}
+            onMouseEnter={e=>e.currentTarget.style.background=t.hover}
+            onMouseLeave={e=>e.currentTarget.style.background="none"}
+            >
+              <span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div>
+                <div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div>
+              </div>
+              <ChevronRight size={15} color={t.t3}/>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// ✅  VERIFICATION PAGE
+// ─────────────────────────────────────────
+function VerificationPage({ t }) {
+  return (
+    <div style={{padding:"0 0 100px"}}>
+      <div style={{
+        background:`linear-gradient(to right,${t.priDim},${t.goldDim})`,
+        padding:"24px 16px 20px",textAlign:"center",
+        borderBottom:`1px solid ${t.bdr}`
+      }}>
+        <div style={{fontSize:44,marginBottom:8}}>✅</div>
+        <h1 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 8px"}}>Creator Verification</h1>
+        <p style={{color:t.t2,fontSize:13,margin:0,lineHeight:1.6}}>Apply for a verified badge to build trust with your audience.</p>
+      </div>
+
+      <div style={{padding:"16px"}}>
+        <div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Badge Styles</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:16}}>
+          {Object.entries(BADGE).map(([key,col])=>(
+            <div key={key} style={{
+              background:t.elev,border:`1px solid ${t.bdr}`,
+              borderRadius:10,padding:"12px 4px",textAlign:"center"
+            }}>
+              <div style={{
+                width:32,height:32,borderRadius:"50%",margin:"0 auto 6px",
+                background:`${col}22`,border:`2px solid ${col}`,
+                display:"flex",alignItems:"center",justifyContent:"center"
+              }}>
+                <Check size={14} color={col} strokeWidth={3}/>
+              </div>
+              <div style={{color:t.t1,fontSize:11,fontWeight:600,textTransform:"capitalize"}}>{key}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:10,padding:16,marginBottom:12}}>
+          <div style={{color:t.t1,fontWeight:600,fontSize:14,marginBottom:12}}>Requirements</div>
+          {["Account in good standing","Complete profile with photo and bio","Content follows Community Guidelines","Represents a real person, business, or brand"].map((r,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:i>0?`1px solid ${t.bdr}`:"none"}}>
+              <Check size={14} color={t.ok} strokeWidth={3}/>
+              <span style={{color:t.t2,fontSize:13}}>{r}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{background:t.warnD,border:`1px solid ${t.warn}33`,borderRadius:10,padding:14,marginBottom:16,display:"flex",gap:10}}>
+          <Info size={15} color={t.warn} style={{flexShrink:0,marginTop:1}}/>
+          <span style={{color:t.t2,fontSize:13,lineHeight:1.6}}>Each application is reviewed individually. Badges can be revoked for policy violations.</span>
+        </div>
+
+        <button style={{
+          width:"100%",padding:"13px",borderRadius:20,
+          background:`linear-gradient(135deg,${t.pri},${t.sec})`,
+          border:"none",color:"white",fontSize:14,fontWeight:600,cursor:"pointer",
+          boxShadow:`0 2px 12px ${t.priGlow}`
+        }}>Apply for Verification</button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🔔  NOTIFICATIONS PANEL
+// ─────────────────────────────────────────
+function NotifPanel({ t, onClose }) {
+  const unread=NOTIFS.filter(n=>!n.read).length;
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:500,
+      background:"rgba(0,0,0,0.65)",
+      display:"flex",justifyContent:"flex-end"
+    }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        width:"100%",maxWidth:360,
+        background:t.surf,borderLeft:`1px solid ${t.bdr}`,
+        height:"100%",overflowY:"auto",display:"flex",flexDirection:"column"
+      }}>
+        <div style={{
+          padding:"16px",borderBottom:`1px solid ${t.bdr}`,
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          position:"sticky",top:0,background:t.surf
+        }}>
+          <div>
+            <h3 style={{color:t.t1,margin:0,fontSize:17,fontWeight:700}}>Notifications</h3>
+            {unread>0&&<span style={{color:t.t3,fontSize:12}}>{unread} new</span>}
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button style={{background:"none",border:"none",color:t.pri,fontSize:12,fontWeight:600,cursor:"pointer"}}>Mark all read</button>
+            <button onClick={onClose} style={{background:"none",border:"none",color:t.t3,cursor:"pointer",display:"flex"}}><X size={20}/></button>
+          </div>
+        </div>
+        <div style={{flex:1}}>
+          {NOTIFS.map(n=>(
+            <div key={n.id} style={{
+              display:"flex",gap:12,padding:"14px 16px",
+              borderBottom:`1px solid ${t.bdr}`,
+              background:!n.read?t.priDim:"none",cursor:"pointer",
+              transition:"background 0.1s"
+            }}
+            onMouseEnter={e=>e.currentTarget.style.background=t.hover}
+            onMouseLeave={e=>e.currentTarget.style.background=!n.read?t.priDim:"none"}
+            >
+              <span style={{fontSize:22,flexShrink:0}}>{n.icon}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{color:t.t1,fontSize:13,margin:0,lineHeight:1.5,fontWeight:n.read?400:600}}>{n.text}</p>
+                <span style={{color:t.t3,fontSize:11}}>{n.time}</span>
+              </div>
+              {!n.read&&<div style={{width:8,height:8,borderRadius:"50%",background:t.pri,flexShrink:0,marginTop:5}}/>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 👤  MENU / PROFILE MODAL (bottom sheet)
+// ─────────────────────────────────────────
+function MenuModal({ t, curTheme, onTheme, onClose, setPage }) {
+  const themes=[
+    {id:"dark",icon:"🌙",l:"Dark"},
+    {id:"amoled",icon:"⚡",l:"AMOLED"},
+    {id:"light",icon:"☀️",l:"Light"},
+  ];
+  const items=[
+    {icon:"🎬",l:"Creator Studio",p:"studio"},
+    {icon:"📊",l:"Analytics",p:"analytics"},
+    {icon:"📰",l:"Feeds",p:"feeds"},
+    {icon:"🔥",l:"Trending",p:"trending"},
+    {icon:"🔖",l:"Saved",p:"saved"},
+    {icon:"🕐",l:"History",p:"history"},
+    {icon:"✅",l:"Verification",p:"verification"},
+    {icon:"💵",l:"Monetization",p:"monetization"},
+    {icon:"🪙",l:"Coins & Gifts",p:"coins"},
+    {icon:"⚙️",l:"Settings",p:"settings"},
+    {icon:"❓",l:"Help & Feedback",p:"help"},
+    {icon:"🚪",l:"Sign Out",danger:true},
+  ];
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:500,
+      background:"rgba(0,0,0,0.65)",
+      display:"flex",alignItems:"flex-end",justifyContent:"center"
+    }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        width:"100%",maxWidth:480,
+        background:t.surf,borderRadius:"16px 16px 0 0",
+        border:`1px solid ${t.bdr}`,overflow:"hidden",
+        maxHeight:"92vh",overflowY:"auto"
+      }}>
+        {/* Handle bar */}
+        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 4px"}}>
+          <div style={{width:36,height:4,borderRadius:2,background:t.bdr}}/>
+        </div>
+
+        {/* Profile */}
+        <div style={{
+          padding:"12px 16px 16px",borderBottom:`1px solid ${t.bdr}`,
+          display:"flex",gap:12,alignItems:"center"
+        }}>
+          <Av char="U" size={50} seed={88}/>
+          <div style={{flex:1}}>
+            <div style={{color:t.t1,fontWeight:700,fontSize:15}}>Your Profile</div>
+            <div style={{color:t.t2,fontSize:12,marginTop:2}}>@yourusername</div>
+            <div style={{display:"flex",gap:16,marginTop:8}}>
+              {[{l:"Followers",v:"—"},{l:"Following",v:"—"},{l:"Videos",v:"—"}].map((s,i)=>(
+                <div key={i}>
+                  <span style={{color:t.t1,fontWeight:700,fontSize:14}}>{s.v}</span>
+                  <span style={{color:t.t3,fontSize:11,marginLeft:4}}>{s.l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:t.t3,cursor:"pointer",alignSelf:"flex-start"}}>
+            <X size={20}/>
+          </button>
+        </div>
+
+        {/* Theme */}
+        <div style={{padding:"12px 16px",borderBottom:`1px solid ${t.bdr}`}}>
+          <div style={{color:t.t3,fontSize:11,fontWeight:600,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Theme</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+            {themes.map(th=>{
+              const active=curTheme===th.id;
+              return (
+                <button key={th.id} onClick={()=>onTheme(th.id)} style={{
+                  padding:"12px 8px",borderRadius:10,cursor:"pointer",
+                  border:`1.5px solid ${active?t.pri:t.bdr}`,
+                  background:active?t.priDim:t.hover,
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+                  transition:"all 0.15s"
+                }}>
+                  <span style={{fontSize:18}}>{th.icon}</span>
+                  <span style={{fontSize:12,color:active?t.pri:t.t2,fontWeight:active?700:400}}>{th.l}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Menu items grid */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"8px 8px 28px"}}>
+          {items.map((item,i)=>(
+            <button key={i} onClick={()=>{if(item.p){setPage(item.p);onClose();}}} style={{
+              display:"flex",alignItems:"center",gap:10,
+              padding:"13px 12px",borderRadius:10,
+              background:"none",border:"none",
+              color:item.danger?t.live:t.t1,
+              fontSize:13.5,cursor:"pointer",textAlign:"left",
+              transition:"background 0.1s"
+            }}
+            onMouseEnter={e=>e.currentTarget.style.background=t.hover}
+            onMouseLeave={e=>e.currentTarget.style.background="none"}
+            >
+              <span style={{fontSize:18}}>{item.icon}</span>
+              {item.l}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// ➕  CREATE MODAL
+// ─────────────────────────────────────────
+function CreateModal({ t, onClose }) {
+  const opts=[
+    {icon:"🎬",l:"Upload Video",d:"Long-form · tutorials · vlogs",col:t.pri},
+    {icon:"▶️",l:"Create Short",d:"Vertical 9:16 video · up to 60s",col:t.sec},
+    {icon:"📝",l:"Write Post",d:"Text · images · polls · links",col:"#00BBFF"},
+    {icon:"💬",l:"Go Live",d:"Real-time stream with chat",col:"#FF0000"},
+  ];
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:500,
+      background:"rgba(0,0,0,0.65)",
+      display:"flex",alignItems:"flex-end",justifyContent:"center"
+    }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        width:"100%",maxWidth:480,
+        background:t.surf,borderRadius:"16px 16px 0 0",
+        border:`1px solid ${t.bdr}`,overflow:"hidden"
+      }}>
+        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 4px"}}>
+          <div style={{width:36,height:4,borderRadius:2,background:t.bdr}}/>
+        </div>
+        <div style={{padding:"4px 16px 14px",borderBottom:`1px solid ${t.bdr}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <h3 style={{color:t.t1,margin:0,fontSize:17,fontWeight:700}}>Create</h3>
+          <button onClick={onClose} style={{background:"none",border:"none",color:t.t3,cursor:"pointer",display:"flex"}}><X size={20}/></button>
+        </div>
+        <div style={{padding:"8px 8px 28px"}}>
+          {opts.map((o,i)=>(
+            <button key={i} onClick={onClose} style={{
+              display:"flex",alignItems:"center",gap:14,
+              width:"100%",padding:"14px 12px",borderRadius:10,
+              background:"none",border:"none",cursor:"pointer",textAlign:"left",
+              transition:"background 0.1s"
+            }}
+            onMouseEnter={e=>e.currentTarget.style.background=t.hover}
+            onMouseLeave={e=>e.currentTarget.style.background="none"}
+            >
+              <div style={{
+                width:48,height:48,borderRadius:14,flexShrink:0,
+                background:`${o.col}18`,
+                display:"flex",alignItems:"center",justifyContent:"center",fontSize:24
+              }}>{o.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{color:t.t1,fontWeight:600,fontSize:15}}>{o.l}</div>
+                <div style={{color:t.t3,fontSize:12,marginTop:2}}>{o.d}</div>
+              </div>
+              <ChevronRight size={16} color={t.t3}/>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// 🚀  ROOT APP
+// ─────────────────────────────────────────
+export default function HkTube() {
+  const [themeId,setThemeId]=useState("dark");
+  const [page,setPage]=useState("home");
+  const [showMenu,setShowMenu]=useState(false);
+  const [showCreate,setShowCreate]=useState(false);
+  const [showNotif,setShowNotif]=useState(false);
+  const t=T[themeId];
+  const unread=NOTIFS.filter(n=>!n.read).length;
+
+  const pages={
+    home:<HomePage t={t} setPage={setPage}/>,
+    shorts:<ShortsPage t={t}/>,
+    feeds:<FeedsPage t={t}/>,
+    studio:<StudioPage t={t}/>,
+    monetization:<StudioPage t={t}/>,
+    coins:<StudioPage t={t}/>,
+    settings:<SettingsPage t={t}/>,
+    verification:<VerificationPage t={t}/>,
+  };
+
+  return (
+    <div style={{
+      fontFamily:"-apple-system,'Roboto',system-ui,sans-serif",
+      background:t.bg,color:t.t1,minHeight:"100vh"
+    }}>
+      <style>{`
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        input{color:${t.t1};}
+        input::placeholder{color:${t.t3};}
+        ::-webkit-scrollbar{display:none;}
+        scrollbar-width:none;
+        .hk-sidebar{display:none!important;}
+        .hk-bottom-nav{display:flex!important;}
+        .hk-txt{display:none;}
+        /* Desktop layout */
+        @media(min-width:768px){
+          .hk-sidebar{display:block!important;}
+          .hk-bottom-nav{display:none!important;}
+          .hk-txt{display:inline;}
+          .hk-video-feed{
+            display:grid!important;
+            grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+            gap:16px;
+            padding:16px;
+          }
+          .hk-video-item{margin-bottom:0!important;}
+        }
+        /* Mobile: full-width cards */
+        @media(max-width:767px){
+          .hk-video-item{padding:0;}
+        }
+      `}</style>
+
+      <Header
+        t={t} setPage={setPage}
+        setShowCreate={setShowCreate}
+        setShowNotif={setShowNotif}
+        setShowMenu={setShowMenu}
+        unread={unread}
+      />
+
+      <div style={{display:"flex"}}>
+        <Sidebar t={t} page={page} setPage={setPage}/>
+        <main style={{
+          flex:1, minWidth:0,
+          height:"calc(100vh - 56px)",
+          overflowY:"auto", overflowX:"hidden"
+        }}>
+          {pages[page] || (
+            <div style={{
+              display:"flex",flexDirection:"column",
+              alignItems:"center",justifyContent:"center",
+              height:"60%",gap:10,textAlign:"center",padding:24
+            }}>
+              <div style={{fontSize:48}}>🚧</div>
+              <div style={{color:t.t1,fontWeight:600,fontSize:17}}>Coming Soon</div>
+              <div style={{color:t.t3,fontSize:13,maxWidth:260,lineHeight:1.6}}>
+                This section connects to real backend data after setup.
+              </div>
+              <button onClick={()=>setPage("home")} style={{
+                background:t.hover,border:`1px solid ${t.bdr}`,
+                color:t.t1,padding:"8px 20px",borderRadius:20,
+                fontSize:13,cursor:"pointer",marginTop:8
+              }}>← Home</button>
+            </div>
+          )}
+        </main>
+      </div>
+
+      <BottomNav
+        t={t} page={page} setPage={setPage}
+        setShowMenu={setShowMenu}
+        setShowCreate={setShowCreate}
+      />
+
+      {showNotif && <NotifPanel t={t} onClose={()=>setShowNotif(false)}/>}
+      {showMenu  && <MenuModal  t={t} curTheme={themeId} onTheme={id=>setThemeId(id)} onClose={()=>setShowMenu(false)} setPage={p=>{setPage(p);setShowMenu(false);}}/>}
+      {showCreate&& <CreateModal t={t} onClose={()=>setShowCreate(false)}/>}
+    </div>
+  );
+}

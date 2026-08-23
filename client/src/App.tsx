@@ -13,13 +13,15 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import HkTubeUI from "./pages/HkTubeUI";
 import { PlatformSection } from "./pages/PlatformSection";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path={"/"} component={HkTubeUI} />
+      <Route path={"/app"} component={Home} />
       <Route path={"/shorts"}>{() => <VideoCollection kind="shorts" />}</Route>
       <Route path={"/trending"}>{() => <VideoCollection kind="trending" />}</Route>
       <Route path={"/subscriptions"}>{() => <PlatformSection kind="subscriptions" />}</Route>
