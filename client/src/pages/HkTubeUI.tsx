@@ -608,28 +608,48 @@ function CatChips({ t, setShowMenu }) {
   );
 }
 
+function FeaturedVideo({ t, video, setPage }) {
+  if (!video) return null;
+  return <section style={{padding:"16px 16px 0"}}>
+    <div style={{position:"relative",overflow:"hidden",borderRadius:14,background:t.elev,border:`1px solid ${t.bdr}`}}>
+      {video.videoUrl ? <video src={video.videoUrl} poster={video.thumbnailUrl||undefined} controls playsInline preload="metadata" style={{display:"block",width:"100%",aspectRatio:"16/9",objectFit:"cover",background:"#000"}} /> : video.thumbnailUrl ? <img src={video.thumbnailUrl} alt={video.title} style={{display:"block",width:"100%",aspectRatio:"16/9",objectFit:"cover"}} /> : <div style={{display:"grid",placeItems:"center",aspectRatio:"16/9",color:t.t3}}><ImageOff size={34}/><span style={{fontSize:12,marginTop:8}}>No thumbnail available</span></div>}
+    </div>
+    <button type="button" onClick={()=>setPage(`watch:${video.id}`)} style={{display:"block",width:"100%",padding:"10px 0 0",border:0,background:"none",color:t.t1,textAlign:"left",cursor:"pointer"}}>
+      <div style={{fontSize:17,fontWeight:700,lineHeight:1.35}}>{video.title}</div>
+      <div style={{display:"flex",gap:8,alignItems:"center",marginTop:5,color:t.t3,fontSize:12}}><span>{video.creator}</span><span>•</span><span>{video.views}</span><span>•</span><span>{video.ago}</span></div>
+    </button>
+  </section>;
+}
+
+function AgenticToolsCard({ t }) {
+  const [open,setOpen]=useState(false);
+  const tools=[{label:"Auto-video generation",enabled:false},{label:"Smart subtitles",enabled:false},{label:"SEO tag optimization",enabled:false},{label:"Database self-healing",enabled:false}];
+  return <section style={{margin:"4px 16px 16px",border:`1px solid ${t.bdr}`,borderRadius:14,background:t.elev,overflow:"hidden"}}>
+    <button type="button" onClick={()=>setOpen(v=>!v)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"none",border:0,color:t.t1,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:12,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>AI agentic features</span><ChevronRight size={16} style={{transform:open?"rotate(90deg)":"none",transition:"transform .18s"}}/></button>
+    {open&&<div style={{padding:"0 14px 12px",borderTop:`1px solid ${t.bdr}`}}>{tools.map(tool=><div key={tool.label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",color:t.t2,fontSize:13}}><span>{tool.label}</span><span style={{fontSize:11,color:t.t3}}>Not connected</span></div>)}</div>}
+  </section>;
+}
+
+function LiveStatus({ t, loading, error, videos, shorts }) {
+  const state=loading?"Loading real data":error?"Data unavailable":videos.length||shorts.length?"Connected to HkTube data":"Connected · no published content";
+  const color=loading?t.warn:error?t.live:videos.length||shorts.length?t.ok:t.t2;
+  return <div style={{borderTop:`1px solid ${t.bdr}`,borderBottom:`1px solid ${t.bdr}`,padding:"8px 16px",textAlign:"center",color:t.t3,fontSize:11}}>STATUS: <span style={{color}}>{state}</span> <span style={{opacity:.5}}> | </span> Vercel: <span style={{color:t.ok}}>Live build</span></div>;
+}
+
 function HomePage({ t, setPage, setShowMenu, videos=[], shorts=[], loading=false, error=false }) {
+  const hero=videos[0];
+  const next=videos.slice(1);
   return (
     <div style={{paddingBottom:90}}>
       <CatChips t={t} setShowMenu={setShowMenu}/>
-      {shorts.length > 0 && <div style={{marginTop:16, marginBottom:4}}>
-        <SectionHd title="Shorts" t={t} onMore={()=>setPage("shorts")}/>
-        <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 16px 12px",scrollbarWidth:"none"}}>
-          {shorts.map(s=><ShortCard key={s.id} s={s} t={t}/>)}
-        </div>
-      </div>}
-      <div style={{height:1,background:t.bdr,margin:"4px 0 16px"}}/>
-      {loading ? (
-        <div style={{minHeight:260,display:"grid",placeItems:"center",color:t.t3,fontSize:13}}>Loading real HkTube content…</div>
-      ) : error ? (
-        <div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><div style={{color:t.t1,fontWeight:700,fontSize:16}}>Content could not load</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Refresh and try again. HkTube does not fabricate video records.</div></div></div>
-      ) : videos.length > 0 ? (
-        <div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">
-          {videos.map(v=><div key={v.id} style={{marginBottom:20}} className="hk-video-item"><VideoCard v={v} t={t} fullWidth={true}/></div>)}
-        </div>
-      ) : (
-        <div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><ImageOff size={30} color={t.t3}/><div style={{color:t.t1,fontWeight:700,fontSize:16,marginTop:10}}>No real videos published yet</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Upload an authorized video to make it appear here.</div></div></div>
-      )}
+      {loading ? <div style={{minHeight:220,display:"grid",placeItems:"center",color:t.t3,fontSize:13}}>Loading real HkTube content…</div> : error ? <div style={{minHeight:220,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><div style={{color:t.t1,fontWeight:700,fontSize:16}}>Content could not load</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Refresh and try again. HkTube does not fabricate video records.</div></div></div> : <>
+        {hero&&<FeaturedVideo t={t} video={hero} setPage={setPage}/>} 
+        {shorts.length > 0 && <div style={{marginTop:16,marginBottom:4}}><SectionHd title="Featured Shorts" t={t} onMore={()=>setPage("shorts")}/><div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 16px 12px",scrollbarWidth:"none"}}>{shorts.map(s=><ShortCard key={s.id} s={s} t={t}/>)}</div></div>}
+        {next.length > 0 && <div style={{marginTop:6}}><SectionHd title="Next Up" t={t} onMore={()=>setPage("home")}/><div style={{display:"flex",flexDirection:"column",gap:0}} className="hk-video-feed">{next.map(v=><div key={v.id} style={{marginBottom:20}} className="hk-video-item"><VideoCard v={v} t={t} fullWidth={true}/></div>)}</div></div>}
+        {!hero&&!shorts.length&&<div style={{minHeight:260,display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><ImageOff size={30} color={t.t3}/><div style={{color:t.t1,fontWeight:700,fontSize:16,marginTop:10}}>No real videos published yet</div><div style={{color:t.t3,fontSize:13,marginTop:6}}>Upload an authorized video to make it appear here.</div></div></div>}
+        <AgenticToolsCard t={t}/>
+      </>}
+      <LiveStatus t={t} loading={loading} error={error} videos={videos} shorts={shorts}/>
     </div>
   );
 }
@@ -660,7 +680,7 @@ function ShortsPage({ t, shorts=[] }) {
         aspectRatio:"9/16", maxWidth:420, width:"100%",
         background:t.elev, position:"relative", overflow:"hidden"
       }}>
-        <>{s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="Short thumbnail" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}} /> : <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:"#666"}}><ImageOff size={42}/><span style={{fontSize:12}}>No thumbnail available</span></div>}</>
+        <>{s.videoUrl ? <video src={s.videoUrl} poster={s.thumbnailUrl||undefined} autoPlay muted loop playsInline controls style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",background:"#000"}} /> : s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="Short thumbnail" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover"}} /> : <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:"#666"}}><ImageOff size={42}/><span style={{fontSize:12}}>No thumbnail available</span></div>}</>
 
         {/* Bottom overlay */}
         <div style={{
@@ -1230,10 +1250,10 @@ function CreateModal({ t, onClose }) {
 
 // ─────────────────────────────────────────
 function toDisplayVideo(video, index) {
-  return {id:video.id,title:video.title,creator:"HkTube creator",av:"H",views:formatViews(video.viewCount),dur:formatDuration(video.durationSeconds),ago:formatDate(video.uploadedAt),vf:false,badge:null,g:"tech",thumbnailUrl:video.thumbnailUrl};
+  return {id:video.id,title:video.title,creator:"HkTube creator",av:"H",views:formatViews(video.viewCount),dur:formatDuration(video.durationSeconds),ago:formatDate(video.uploadedAt),vf:false,badge:null,g:"tech",thumbnailUrl:video.thumbnailUrl,videoUrl:video.videoUrl,category:video.category};
 }
 function toDisplayShort(video, index) {
-  return {id:video.id,title:video.title,creator:"HkTube creator",av:"H",likes:formatViews(video.viewCount),g:"tech",thumbnailUrl:video.thumbnailUrl};
+  return {id:video.id,title:video.title,creator:"HkTube creator",av:"H",likes:formatViews(video.viewCount),g:"tech",thumbnailUrl:video.thumbnailUrl,videoUrl:video.videoUrl,category:video.category};
 }
 
 // 🚀  ROOT APP
