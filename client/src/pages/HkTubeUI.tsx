@@ -2,7 +2,7 @@
 // ╔═══════════════════════════════════════════════════════════╗
 // ║   HkTube — App UI v4  |  YouTube-style · No Zoom        ║
 // ║   Nav: Home · Shorts · ➕ · Feeds · Menu                 ║
-// ║   Themes: Dark · AMOLED · Light  |  Streaming Removed  ║
+// ║   Themes: Dark · AMOLED · Light  |  Creator tools     ║
 // ╚═══════════════════════════════════════════════════════════╝
 
 import { useState, useEffect, useRef } from "react";
@@ -36,7 +36,7 @@ const T = {
     bdr:"#272727", bdrH:"rgba(123,94,255,0.5)",
     ok:"#00C980", okD:"rgba(0,201,128,0.14)",
     warn:"#FFA000", warnD:"rgba(255,160,0,0.14)",
-    live:"#FF0000", liveD:"rgba(255,0,0,0.14)",
+    danger:"#FF0000", dangerD:"rgba(255,0,0,0.14)",
   },
   amoled: {
     id:"amoled", name:"AMOLED Dark",
@@ -49,7 +49,7 @@ const T = {
     bdr:"#1A1A1A", bdrH:"rgba(136,102,255,0.5)",
     ok:"#00BB77", okD:"rgba(0,187,119,0.14)",
     warn:"#FF9900", warnD:"rgba(255,153,0,0.14)",
-    live:"#FF0000", liveD:"rgba(255,0,0,0.14)",
+    danger:"#FF0000", dangerD:"rgba(255,0,0,0.14)",
   },
   light: {
     id:"light", name:"HkTube Light",
@@ -62,7 +62,7 @@ const T = {
     bdr:"#E5E5E5", bdrH:"rgba(91,63,206,0.4)",
     ok:"#007050", okD:"rgba(0,112,80,0.1)",
     warn:"#8A5A00", warnD:"rgba(138,90,0,0.1)",
-    live:"#CC0000", liveD:"rgba(204,0,0,0.1)",
+    danger:"#CC0000", dangerD:"rgba(204,0,0,0.1)",
   }
 };
 
@@ -635,7 +635,7 @@ function AgenticToolsCard({ t }) {
 
 function BuildStatus({ t, loading, error, videos, shorts }) {
   const state=loading?"Loading real data":error?"Data unavailable":videos.length||shorts.length?"Connected to HkTube data":"Connected · no published content";
-  const color=loading?t.warn:error?t.live:videos.length||shorts.length?t.ok:t.t2;
+  const color=loading?t.warn:error?t.danger:videos.length||shorts.length?t.ok:t.t2;
   return <div style={{borderTop:`1px solid ${t.bdr}`,borderBottom:`1px solid ${t.bdr}`,padding:"8px 16px",textAlign:"center",color:t.t3,fontSize:11}}>STATUS: <span style={{color}}>{state}</span> <span style={{opacity:.5}}> | </span> Vercel: <span style={{color:t.ok}}>Production build</span></div>;
 }
 
@@ -897,7 +897,7 @@ function StudioPage({ t }) {
           </div>
           <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:12,padding:16}}>
             <div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:12}}>Revenue (90/10 split)</div>
-            {["Ad Revenue","Gift Revenue (90%)","Platform Share (10%)","Available for Payout"].map((row,i)=>(
+            {["Ad Revenue","Platform Share (10%)","Available for Payout"].map((row,i)=>(
               <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderTop:i>0?`1px solid ${t.bdr}`:"none"}}>
                 <span style={{color:t.t2,fontSize:13}}>{row}</span>
                 <span style={{color:t.t1,fontWeight:600,fontSize:14}}>—</span>
@@ -940,7 +940,7 @@ function SettingsPage({ t, themeId, onTheme, setPage }) {
       {rows[active.id] ? <div style={{display:"flex",flexDirection:"column",gap:1}}>{rows[active.id].map(item=><div key={item.k} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${t.bdr}`}}><div style={{flex:1,minWidth:0}}><div style={{color:t.t1,fontSize:14}}>{item.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2,lineHeight:1.45}}>{item.d}</div></div><Toggle on={Boolean(tog[item.k])} onChange={()=>toggle(item.k)} t={t}/></div>)}</div> : (active.id==="theme" || active.id==="appearance") ? <div style={{display:"flex",flexDirection:"column",gap:8}}>{themes.map(th=><button key={th.id} onClick={()=>onTheme(th.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px",borderRadius:10,background:themeId===th.id?t.priDim:t.hover,border:`1px solid ${themeId===th.id?t.pri:t.bdr}`,cursor:"pointer",textAlign:"left",width:"100%"}}><span style={{fontSize:22}}>{th.icon}</span><div style={{flex:1}}><div style={{color:t.t1,fontSize:14,fontWeight:600}}>{th.l}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{th.d}</div></div>{themeId===th.id?<Check size={18} color={t.pri}/>:<ChevronRight size={16} color={t.t3}/>}</button>)}</div> : active.id==="playback" ? <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${t.bdr}`}}><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>Preferred video quality</label><select value={quality} onChange={e=>{setQuality(e.target.value);save("hktube-quality",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>auto</option><option>2160p</option><option>1080p</option><option>720p</option><option>480p</option><option>360p</option></select></div> : active.id==="language" ? <div><label style={{display:"block",color:t.t1,fontSize:14,fontWeight:600,marginBottom:8}}>App language</label><select value={language} onChange={e=>{setLanguage(e.target.value);save("hktube-language",e.target.value)}} style={{width:"100%",padding:"11px 12px",borderRadius:9,background:t.input,color:t.t1,border:`1px solid ${t.bdr}`,fontSize:14}}><option>English</option><option>Urdu</option><option>Hindi</option></select></div> : <div style={{background:t.elev,border:`1px solid ${t.bdr}`,borderRadius:10,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>{active.icon}</div><div style={{color:t.t1,fontWeight:600,fontSize:15,marginBottom:6}}>{active.label}</div><div style={{color:t.t3,fontSize:13,lineHeight:1.6}}>This control is ready in the settings layout. Account or payment changes require the corresponding authenticated provider.</div></div>}
     </div>
   </div>;
-  return <div style={{paddingBottom:100}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0}}>Settings</h1><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div><div style={{color:t.t3,fontSize:12,padding:"12px 16px 0",lineHeight:1.5}}>YouTube-style controls for playback, notifications, privacy, appearance, data usage, and account safety.</div>{SETTINGS_GROUPS.map((group,gi)=><div key={gi}><div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>{group.items.map(item=><button key={item.id} onClick={()=>setActiveId(item.id)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${t.bdr}`,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span><div style={{flex:1,minWidth:0}}><div style={{color:item.danger?t.live:t.t1,fontSize:14}}>{item.label}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div></div><ChevronRight size={15} color={t.t3}/></button>)}</div>)}</div>;
+  return <div style={{paddingBottom:100}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><h1 style={{color:t.t1,fontSize:18,fontWeight:700,margin:0}}>Settings</h1><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div><div style={{color:t.t3,fontSize:12,padding:"12px 16px 0",lineHeight:1.5}}>YouTube-style controls for playback, notifications, privacy, appearance, data usage, and account safety.</div>{SETTINGS_GROUPS.map((group,gi)=><div key={gi}><div style={{color:t.t3,fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",padding:"16px 16px 8px"}}>{group.group}</div>{group.items.map(item=><button key={item.id} onClick={()=>setActiveId(item.id)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${t.bdr}`,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span><div style={{flex:1,minWidth:0}}><div style={{color:item.danger?t.danger:t.t1,fontSize:14}}>{item.label}</div><div style={{color:t.t3,fontSize:12,marginTop:2}}>{item.desc}</div></div><ChevronRight size={15} color={t.t3}/></button>)}</div>)}</div>;
 }
 
 // ─────────────────────────────────────────
@@ -1152,7 +1152,7 @@ function MenuModal({ t, curTheme, onTheme, onClose, setPage, user, navigate }) {
               display:"flex",alignItems:"center",gap:10,
               padding:"13px 12px",borderRadius:10,
               background:"none",border:"none",
-              color:item.danger?t.live:t.t1,
+              color:item.danger?t.danger:t.t1,
               fontSize:13.5,cursor:"pointer",textAlign:"left",
               transition:"background 0.1s"
             }}
