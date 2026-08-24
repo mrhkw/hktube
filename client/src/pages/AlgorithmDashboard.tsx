@@ -1,0 +1,21 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { HkTubeShell } from "@/components/HkTubeShell";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { AlertTriangle, ClipboardCheck, FileVideo, Loader2, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+
+export default function AlgorithmDashboard() {
+  const { user, loading } = useAuth();
+  const dashboard = trpc.algorithm.dashboard.useQuery(undefined, { enabled: user?.role === "admin" });
+  const runChecks = trpc.algorithm.runSafeChecks.useMutation({ onSuccess: result => { toast.success(`${result.videosChecked} videos and ${result.reportsReviewed} reports reviewed.`); void dashboard.refetch(); }, onError: error => toast.error(error.message) });
+
+  if (loading || (user?.role === "admin" && dashboard.isLoading)) return <HkTubeShell title="Algorithm"><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-7 animate-spin text-cyan-300" /></div></HkTubeShell>;
+  if (!user || user.role !== "admin") return <HkTubeShell title="Algorithm"><div className="mx-auto max-w-xl rounded-2xl border border-red-300/15 bg-red-400/[.05] p-8 text-center"><ShieldCheck className="mx-auto size-8 text-red-200" /><h1 className="mt-4 text-xl font-bold text-white">Owner access only</h1><p className="mt-2 text-sm leading-6 text-slate-400">This dashboard is restricted to the two configured HkTube owner Gmail accounts.</p></div></HkTubeShell>;
+  if (dashboard.isError || !dashboard.data) return <HkTubeShell title="Algorithm"><p className="text-sm text-red-200">The Algorithm dashboard could not load from the HkTube database.</p></HkTubeShell>;
+  const { videos, reports, auditLogs } = dashboard.data;
+  return <HkTubeShell title="Algorithm" subtitle="Owner-only background management and review controls."><div className="mx-auto max-w-6xl space-y-6"><section className="rounded-3xl border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[.12] via-[#101826] to-violet-500/[.08] p-6 sm:p-8"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-200">Algorithm control room</p><h1 className="mt-2 text-3xl font-black text-white">Review before action</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">The safe runner inspects HkTube records and writes an audit event. It does not auto-publish, delete content, file copyright claims, or contact external services without a separate verified workflow.</p></div><Button onClick={() => runChecks.mutate()} disabled={runChecks.isPending} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"><ClipboardCheck className="mr-2 size-4" />{runChecks.isPending ? "Checking…" : "Run safe checks"}</Button></div><div className="mt-7 grid gap-3 sm:grid-cols-3"><Metric icon={FileVideo} label="Catalog records" value={videos.length} /><Metric icon={AlertTriangle} label="Reports" value={reports.length} /><Metric icon={ClipboardCheck} label="Audit events" value={auditLogs.length} /></div></section><section className="grid gap-5 lg:grid-cols-2"><Panel title="Latest reports" empty="No reports have been filed." items={reports.slice(0, 8).map(report => `${report.status}: ${report.reason}`)} /><Panel title="Recent audit trail" empty="No audit events have been recorded." items={auditLogs.slice(0, 8).map(log => `${log.action} · ${log.entityType}`)} /></section></div></HkTubeShell>;
+}
+
+function Metric({ icon: Icon, label, value }: { icon: typeof FileVideo; label: string; value: number }) { return <div className="rounded-2xl border border-white/10 bg-black/15 p-4"><Icon className="size-4 text-cyan-200" /><p className="mt-3 text-2xl font-black text-white">{value.toLocaleString()}</p><p className="mt-1 text-xs text-slate-400">{label}</p></div>; }
+function Panel({ title, empty, items }: { title: string; empty: string; items: string[] }) { return <section className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><h2 className="font-bold text-white">{title}</h2>{items.length ? <div className="mt-4 space-y-2">{items.map(item => <p key={item} className="rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-sm text-slate-300">{item}</p>)}</div> : <p className="mt-4 text-sm text-slate-500">{empty}</p>}</section>; }

@@ -5,8 +5,9 @@ import { sdk } from "./_core/sdk";
 import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
+import { invokeLLM } from "./_core/llm";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listChannelSubscriptions, listChannelsByOwner, listComments, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markNotificationRead, recordWatchHistory, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
+import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markNotificationRead, recordWatchHistory, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
 const videoCategory = z.enum(["regular", "shorts"]);
 const mediaUrl = z.string().trim().refine(value => { if (value.startsWith("/manus-storage/")) return true; try { return Boolean(new URL(value)); } catch { return false; } }, "Provide a valid external URL or stored media path.");
 export const videoInputSchema = z.object({ title: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional().default(""), videoUrl: mediaUrl, videoStorageKey: z.string().trim().max(512).optional(), thumbnailUrl: mediaUrl.optional(), thumbnailStorageKey: z.string().trim().max(512).optional(), captionUrl: mediaUrl.optional(), captionStorageKey: z.string().trim().max(512).optional(), durationSeconds: z.number().int().min(0).max(86400).default(0), category: videoCategory.default("regular"), channelId: z.number().int().positive().optional() });
@@ -37,6 +38,25 @@ export const appRouter = router({
   posts: router({ latest: publicProcedure.input(z.object({ limit: z.number().int().min(1).max(100).optional() }).optional()).query(({ input }) => listPosts(input?.limit)), create: protectedProcedure.input(z.object({ body: z.string().trim().min(1).max(5000), channelId: z.number().int().positive().optional(), mediaUrl: mediaUrl.optional(), linkUrl: mediaUrl.optional() })).mutation(({ ctx, input }) => createPost({ ...input, authorId: ctx.user.id })), toggleLike: protectedProcedure.input(z.object({ postId: z.number().int().positive() })).mutation(({ ctx, input }) => togglePostLike(input.postId, ctx.user.id)) }),
   reports: router({ create: protectedProcedure.input(z.object({ reason: z.string().trim().min(1).max(120), details: z.string().trim().max(2000).optional(), videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional(), commentId: z.number().int().positive().optional() }).refine(value => Boolean(value.videoId || value.postId || value.commentId), "A report target is required.")).mutation(({ ctx, input }) => createReport({ ...input, reporterId: ctx.user.id })) }),
   library: router({ saved: protectedProcedure.query(({ ctx }) => listSavedVideos(ctx.user.id)), toggleSaved: protectedProcedure.input(z.object({ videoId: z.number().int().positive() })).mutation(({ ctx, input }) => toggleSavedVideo(input.videoId, ctx.user.id)) }),
-  creator_studio: router({ dashboard: protectedProcedure.query(({ ctx }) => getCreatorStudioDashboard(ctx.user.id)) }),
+  algorithm: router({
+    dashboard: adminProcedure.query(async () => ({ videos: await listAdminVideos(), reports: await listReports(), auditLogs: await listAuditLogs() })),
+    runSafeChecks: adminProcedure.mutation(async ({ ctx }) => { const videos = await listAdminVideos(); const reports = await listReports(); await (await import("./db")).writeAuditLog({ actorId: ctx.user.id, action: "algorithm.safe_checks_run", entityType: "algorithm", metadata: JSON.stringify({ videosChecked: videos.length, reportsReviewed: reports.length }) }); return { videosChecked: videos.length, reportsReviewed: reports.length, mode: "review-only" as const }; }),
+  }),
+  creator_studio: router({
+    dashboard: protectedProcedure.query(({ ctx }) => getCreatorStudioDashboard(ctx.user.id)),
+    suggestMetadata: protectedProcedure.input(z.object({ title: z.string().trim().max(255), description: z.string().trim().max(5000).optional().default(""), link: z.string().trim().max(2000).optional().default(""), category: videoCategory })).mutation(async ({ input }) => {
+      const result = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are HkTube's uploader metadata assistant. Suggest accurate, non-clickbait metadata based only on the supplied context. Never invent facts, claims, links, people, or performance numbers. Return JSON only." },
+          { role: "user", content: `Category: ${input.category}\nTitle: ${input.title}\nDescription: ${input.description}\nReference link: ${input.link}` },
+        ],
+        maxTokens: 800,
+        responseFormat: { type: "json_schema", json_schema: { name: "hktube_metadata", strict: true, schema: { type: "object", properties: { title: { type: "string" }, description: { type: "string" }, tags: { type: "array", items: { type: "string" } }, checks: { type: "array", items: { type: "string" } } }, required: ["title", "description", "tags", "checks"], additionalProperties: false } } },
+      });
+      const content = result.choices[0]?.message.content;
+      if (typeof content !== "string") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI assistant returned no usable metadata." });
+      try { return JSON.parse(content) as { title: string; description: string; tags: string[]; checks: string[] }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI assistant returned invalid metadata." }); }
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;
