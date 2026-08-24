@@ -25,21 +25,23 @@ export function maxBytesForKind(kind: "video" | "thumbnail" | "caption") {
   return MAX_CAPTION_BYTES;
 }
 
-async function requireAdmin(req: Request) {
-  const user = await sdk.authenticateRequest(req);
-  if (!user || user.role !== "admin") return null;
-  return user;
+async function requireAuthenticatedUser(req: Request) {
+  try {
+    return await sdk.authenticateRequest(req);
+  } catch {
+    return null;
+  }
 }
 
 export function registerMediaUploadRoute(app: Express) {
   app.post(
-    "/api/admin/media-upload",
+    "/api/media-upload",
     express.raw({ type: "application/octet-stream", limit: MAX_UPLOAD_BYTES }),
     async (req, res) => {
       try {
-        const user = await requireAdmin(req);
+        const user = await requireAuthenticatedUser(req);
         if (!user) {
-          return res.status(403).json({ message: "Only HKTUBE administrators can upload media." });
+          return res.status(403).json({ message: "Sign in to upload media to HKTUBE." });
         }
 
         const kind = req.query.kind === "thumbnail" ? "thumbnail" : req.query.kind === "video" ? "video" : req.query.kind === "caption" ? "caption" : null;

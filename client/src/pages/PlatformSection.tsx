@@ -4,6 +4,7 @@ import { LibraryHub } from "@/components/LibraryHub";
 import { CreatorStudioHub } from "@/components/CreatorStudioHub";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { formatDate, VideoRecord } from "@/lib/video";
@@ -118,7 +119,7 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   } else if (queryError) {
     content = <EmptyVideos title={`${meta.title} could not load`} copy="Please refresh and try again. This section reads only from HkTube's database." icon={Inbox} />;
   } else if (kind === "posts") {
-    content = <PostsFeed posts={posts.data ?? []} />;
+    content = <PostsFeed posts={posts.data ?? []} canCreate={isAuthed} />;
   } else if (kind === "subscriptions") {
     content = following.data?.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{following.data.map(item => <article key={item.subscription.id} className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><div className="flex items-center gap-3">{item.channel.avatarUrl ? <img src={item.channel.avatarUrl} alt="" className="size-11 rounded-full object-cover" /> : <span className="grid size-11 place-items-center rounded-full bg-fuchsia-500/15 text-fuchsia-200"><UsersRound className="size-5" aria-hidden="true" /></span>}<div className="min-w-0"><h2 className="truncate font-semibold text-white">{item.channel.displayName}</h2><p className="truncate text-xs text-slate-500">@{item.channel.handle}</p></div></div><p className="mt-4 text-sm text-slate-400">{item.channel.subscriberCount} followers</p></article>)}</div> : <EmptyVideos title="No channels followed yet" copy="Follow channels to keep their latest activity close at hand." icon={UsersRound} />;
   } else if (kind === "notifications") {
@@ -132,9 +133,24 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   return <HkTubeShell title={meta.title} subtitle={meta.subtitle}><div className="mx-auto max-w-6xl"><div className="mb-6 flex items-center gap-3 rounded-2xl border border-fuchsia-400/15 bg-gradient-to-r from-violet-500/10 to-cyan-400/5 p-5"><Icon className="size-6 text-fuchsia-300" aria-hidden="true" /><div><p className="text-sm font-semibold text-white">Authentic HkTube records</p><p className="mt-1 text-xs text-slate-400">No demo content is inserted when the database or provider is unavailable.</p></div></div>{content}</div></HkTubeShell>;
 }
 
-function PostsFeed({ posts }: { posts: Array<{ id: number; body: string; createdAt: Date }> }) {
-  if (!posts.length) return <EmptyVideos title="No posts yet" copy="Creator posts appear here after they are published to HkTube." icon={Sparkles} />;
-  return <div className="mx-auto max-w-2xl space-y-4">{posts.map(post => <article key={post.id} className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="whitespace-pre-wrap text-sm leading-6 text-slate-200">{post.body}</p><p className="mt-4 text-xs text-slate-500">Published {formatDate(post.createdAt)}</p></article>)}</div>;
+function PostsFeed({ posts, canCreate }: { posts: Array<{ id: number; body: string; createdAt: Date }>; canCreate: boolean }) {
+  const [body, setBody] = useState("");
+  const createPost = trpc.posts.create.useMutation({
+    onSuccess: () => { setBody(""); toast.success("Post published."); },
+    onError: error => toast.error(error.message),
+  });
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = body.trim();
+    if (!value || createPost.isPending) return;
+    createPost.mutate({ body: value });
+  }
+
+  return <div className="mx-auto max-w-2xl space-y-4">
+    {canCreate && <form onSubmit={submit} className="rounded-2xl border border-fuchsia-400/15 bg-fuchsia-400/[.04] p-5"><label htmlFor="post-body" className="text-sm font-semibold text-white">Write a post</label><Textarea id="post-body" value={body} onChange={event => setBody(event.target.value)} maxLength={5000} placeholder="Share an update with the HkTube community…" className="mt-3 min-h-28 border-white/10 bg-black/20 text-white" /><div className="mt-3 flex items-center justify-between gap-3"><span className="text-xs text-slate-500">Published from your signed-in HkTube account.</span><Button type="submit" disabled={!body.trim() || createPost.isPending} className="bg-fuchsia-500 text-white hover:bg-fuchsia-400">{createPost.isPending ? "Publishing…" : "Publish post"}</Button></div></form>}
+    {posts.length ? posts.map(post => <article key={post.id} className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="whitespace-pre-wrap text-sm leading-6 text-slate-200">{post.body}</p><p className="mt-4 text-xs text-slate-500">Published {formatDate(post.createdAt)}</p></article>) : <EmptyVideos title="No posts yet" copy="Creator posts appear here after they are published to HkTube." icon={Sparkles} />}
+  </div>;
 }
 
 function Notifications({ items, onRead }: { items: Array<{ id: number; title: string; body: string | null; href: string | null; readAt: Date | null; createdAt: Date }>; onRead: () => void }) {

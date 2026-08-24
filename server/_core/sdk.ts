@@ -3,7 +3,7 @@ import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
-import { SignJWT, jwtVerify } from "jose";
+import { createRemoteJWKSet, SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
@@ -27,6 +27,39 @@ export type SessionPayload = {
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 const GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
 const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
+const supabaseJwks = createRemoteJWKSet(new URL(`${ENV.supabaseUrl}/auth/v1/.well-known/jwks.json`));
+
+async function syncSupabaseIdentity(identity: { subject: string; email: string | null; metadata?: Record<string, unknown> }): Promise<User | null> {
+  const displayName = typeof identity.metadata?.display_name === "string"
+    ? identity.metadata.display_name
+    : identity.email?.split("@")[0] ?? "HkTube creator";
+  const avatarUrl = typeof identity.metadata?.avatar_url === "string" ? identity.metadata.avatar_url : undefined;
+  const openId = `supabase:${identity.subject}`;
+  await db.upsertUser({ openId, name: displayName, email: identity.email, avatarUrl, loginMethod: "supabase-email", lastSignedIn: new Date() });
+  return (await db.getUserByOpenId(openId)) ?? null;
+}
+
+async function authenticateSupabaseToken(token: string): Promise<User | null> {
+  try {
+    const { payload } = await jwtVerify(token, supabaseJwks, { algorithms: ["ES256", "RS256", "HS256"] });
+    const subject = typeof payload.sub === "string" ? payload.sub : null;
+    if (!subject) return null;
+    const email = typeof payload.email === "string" ? payload.email : null;
+    const metadata = payload.user_metadata && typeof payload.user_metadata === "object" ? payload.user_metadata as Record<string, unknown> : undefined;
+    return syncSupabaseIdentity({ subject, email, metadata });
+  } catch {
+    if (!ENV.supabaseAnonKey) return null;
+    try {
+      const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` } });
+      if (!response.ok) return null;
+      const data = await response.json() as { id?: string; email?: string; user_metadata?: Record<string, unknown> };
+      if (!data.id) return null;
+      return syncSupabaseIdentity({ subject: data.id, email: data.email ?? null, metadata: data.user_metadata });
+    } catch {
+      return null;
+    }
+  }
+}
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
@@ -268,6 +301,11 @@ class SDKServer {
       if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
         sessionToken = authHeader.slice(7);
       }
+    }
+
+    if (sessionToken) {
+      const supabaseUser = await authenticateSupabaseToken(sessionToken);
+      if (supabaseUser) return supabaseUser;
     }
 
     const session = await this.verifySession(sessionToken);

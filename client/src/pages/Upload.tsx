@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
+import { supabase } from "@/lib/supabase";
 import { FileVideo, ImagePlus, Loader2, ShieldCheck, Trash2, UploadCloud } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { Link } from "wouter";
@@ -22,15 +23,17 @@ function assertUploadable(file: File, kind: "video" | "thumbnail" | "caption") {
 async function uploadMedia(file: File, kind: "video" | "thumbnail" | "caption", onProgress: (progress: number) => void) {
   assertUploadable(file, kind);
   return new Promise<{ key: string; url: string }>((resolve, reject) => {
-    const url = new URL("/api/admin/media-upload", window.location.origin);
+    const url = new URL("/api/media-upload", window.location.origin);
     url.searchParams.set("kind", kind);
     url.searchParams.set("filename", file.name);
     url.searchParams.set("contentType", file.type);
     const request = new XMLHttpRequest();
     request.open("POST", url);
     request.setRequestHeader("Content-Type", "application/octet-stream");
-    const previewToken = sessionStorage.getItem("manus-cookie");
-    if (previewToken) request.setRequestHeader("Authorization", `Bearer ${previewToken}`);
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.access_token) request.setRequestHeader("Authorization", `Bearer ${data.session.access_token}`);
+      request.send(file);
+    }).catch(() => reject(new Error("Your session expired. Please sign in again.")));
     request.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100)); };
     request.onerror = () => reject(new Error("Network error while uploading media."));
     request.onload = () => {
@@ -38,7 +41,6 @@ async function uploadMedia(file: File, kind: "video" | "thumbnail" | "caption", 
       if (request.status < 200 || request.status >= 300 || !payload?.url) reject(new Error(payload?.message || "Upload failed."));
       else resolve(payload as { key: string; url: string });
     };
-    request.send(file);
   });
 }
 
@@ -55,7 +57,7 @@ async function readVideoDuration(file: File) {
 
 export default function Upload() {
   const { user, loading } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isCreator = Boolean(user);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<"regular" | "shorts">(() => new URLSearchParams(window.location.search).get("category") === "shorts" ? "shorts" : "regular");
@@ -70,8 +72,8 @@ export default function Upload() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const utils = trpc.useUtils();
   const createMutation = trpc.videos.create.useMutation();
-  const videosQuery = trpc.videos.adminList.useQuery(undefined, { enabled: isAdmin });
-  const channelsQuery = trpc.channels.mine.useQuery(undefined, { enabled: isAdmin });
+  const videosQuery = trpc.videos.adminList.useQuery(undefined, { enabled: user?.role === "admin" });
+  const channelsQuery = trpc.channels.mine.useQuery(undefined, { enabled: isCreator });
   const removeMutation = trpc.videos.remove.useMutation({ onSuccess: () => { void utils.videos.adminList.invalidate(); void utils.videos.latest.invalidate(); void utils.videos.shorts.invalidate(); void utils.videos.trending.invalidate(); } });
 
   async function pickVideo(event: ChangeEvent<HTMLInputElement>) {
@@ -82,7 +84,7 @@ export default function Upload() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isAdmin || isSubmitting) return;
+    if (!isCreator || isSubmitting) return;
     if (!videoFile && !videoUrl.trim()) return toast.error("Choose a video file or provide a video URL.");
     if (!channelId) return toast.error("Choose the channel that owns this upload, or create a channel first.");
     setIsSubmitting(true);
@@ -99,8 +101,7 @@ export default function Upload() {
   }
 
   if (loading) return <HkTubeShell><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-7 animate-spin text-fuchsia-300" /></div></HkTubeShell>;
-  if (!user) return <HkTubeShell title="Creator Studio" subtitle="HKTUBE video publishing is available only to the authorized owner account."><AccessNotice button="Sign in as owner" action={startLogin} /></HkTubeShell>;
-  if (!isAdmin) return <HkTubeShell title="Creator Studio" subtitle="HKTUBE video publishing is available only to the authorized owner account."><AccessNotice /></HkTubeShell>;
+  if (!user) return <HkTubeShell title="Creator Studio" subtitle="Create authentic videos, Shorts, and posts from your own HkTube channel."><AccessNotice button="Sign in to publish" action={startLogin} /></HkTubeShell>;
 
   const managedVideos = (videosQuery.data ?? []) as VideoRecord[];
   return <HkTubeShell title="Creator Studio" subtitle="Publish authentic videos to the HKTUBE database. Uploaded files are saved securely in object storage.">
@@ -116,7 +117,7 @@ export default function Upload() {
         {uploadProgress !== null && <div className="mt-6" aria-live="polite"><div className="mb-2 flex justify-between text-xs text-slate-400"><span>Uploading authorized media</span><span>{uploadProgress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-fuchsia-400 transition-[width] duration-200" style={{ width: `${uploadProgress}%` }} /></div></div>}
         <div className="mt-7 flex justify-end"><Button disabled={isSubmitting} className="min-w-36 bg-gradient-to-r from-violet-500 to-fuchsia-500 font-bold text-white hover:from-violet-400 hover:to-fuchsia-400">{isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <FileVideo className="mr-2 size-4" />}{isSubmitting ? (uploadProgress !== null ? `Uploading ${uploadProgress}%` : "Publishing") : "Publish video"}</Button></div>
       </form>
-      <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[.035] p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-cyan-300" /><div><h2 className="font-bold text-cyan-100">Owner-only controls</h2><p className="mt-1 text-sm leading-6 text-slate-400">Your current account has the <strong className="font-semibold text-slate-200">admin</strong> role. Viewer accounts cannot open this screen, create records, upload files, or delete published videos.</p></div></div><div className="mt-5 border-t border-white/8 pt-5"><h3 className="text-xs font-bold uppercase tracking-[.16em] text-slate-400">Publishing checklist</h3><p className="mt-2 text-sm leading-6 text-slate-500">Use content you are authorized to publish. Supply direct media files or URLs, accurate metadata, and a custom thumbnail if appropriate. HKTUBE never substitutes demo imagery or fabricated metrics.</p></div></section>
+      <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[.035] p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-cyan-300" /><div><h2 className="font-bold text-cyan-100">Owner-only controls</h2><p className="mt-1 text-sm leading-6 text-slate-400">Signed-in creators can publish to channels they own. Catalog deletion and moderation remain restricted to the two configured HkTube owner accounts.</p></div></div><div className="mt-5 border-t border-white/8 pt-5"><h3 className="text-xs font-bold uppercase tracking-[.16em] text-slate-400">Publishing checklist</h3><p className="mt-2 text-sm leading-6 text-slate-500">Use content you are authorized to publish. Supply direct media files or URLs, accurate metadata, and a custom thumbnail if appropriate. HKTUBE never substitutes demo imagery or fabricated metrics.</p></div></section>
     </div>
     <section className="mt-9 rounded-2xl border border-white/9 bg-[#11111c]/70 p-5 sm:p-7"><h2 className="text-lg font-bold text-white">Published catalog</h2><p className="mt-1 text-sm text-slate-500">These are the only records currently stored in the HKTUBE database.</p>{videosQuery.isLoading ? <div className="mt-5 space-y-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-16 animate-pulse rounded-xl bg-white/5" />)}</div> : managedVideos.length ? <div className="mt-5 divide-y divide-white/7">{managedVideos.map(video => <div key={video.id} className="flex items-center gap-4 py-3"><div className="size-12 shrink-0 overflow-hidden rounded-lg bg-violet-500/10">{video.thumbnailUrl && <img src={video.thumbnailUrl} alt="" className="size-full object-cover" />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-100">{video.title}</p><p className="mt-1 text-xs text-slate-500">{formatViews(video.viewCount)} <span className="mx-1">•</span>{formatDate(video.uploadedAt)}</p></div><Button variant="ghost" size="icon" disabled={removeMutation.isPending} onClick={() => { if (window.confirm(`Remove “${video.title}” from HKTUBE? This does not delete the stored file.`)) removeMutation.mutate({ id: video.id }); }} className="text-slate-500 hover:bg-red-500/10 hover:text-red-300" aria-label={`Remove ${video.title}`}><Trash2 className="size-4" /></Button></div>)}</div> : <p className="mt-5 text-sm text-slate-500">No videos have been published yet.</p>}</section>
   </HkTubeShell>;
