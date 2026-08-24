@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Eye, Heart, Loader2, MessageCircle, Share2 } from "lucide-react";
+import { Bookmark, Eye, Heart, Loader2, MessageCircle, Share2 } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { toast } from "sonner";
@@ -23,6 +23,8 @@ export default function WatchVideo() {
   const utils = trpc.useUtils();
   const engagementQuery = trpc.videos.engagement.useQuery({ id }, { enabled: Boolean(video) });
   const likeMutation = trpc.videos.toggleLike.useMutation();
+  const savedQuery = trpc.library.saved.useQuery(undefined, { enabled: Boolean(user) });
+  const saveMutation = trpc.library.toggleSaved.useMutation({ onSuccess: () => void savedQuery.refetch() });
   const relatedQuery = trpc.videos.related.useQuery({ id: id || 1, category: video?.category || "regular" }, { enabled: Boolean(video) });
   const related = (relatedQuery.data ?? []) as VideoRecord[];
   const commentsQuery = trpc.comments.list.useQuery({ videoId: id }, { enabled: Boolean(video) });
@@ -53,6 +55,13 @@ export default function WatchVideo() {
     likeMutation.mutate({ id: activeVideo.id }, { onSuccess: engagement => { utils.videos.engagement.setData({ id: activeVideo.id }, engagement); }, onError: error => toast.error(error.message || "Unable to update like.") });
   }
 
+  const isSaved = Boolean(savedQuery.data?.some(item => item.video.id === activeVideo.id));
+
+  function toggleSaved() {
+    if (!user) return startLogin();
+    saveMutation.mutate({ videoId: activeVideo.id }, { onError: error => toast.error(error.message || "Unable to update Watch Later.") });
+  }
+
   function submitComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!commentBody.trim()) return;
@@ -66,7 +75,7 @@ export default function WatchVideo() {
         <VideoPlayer video={video} />
         <div className="border-b border-white/8 py-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-semibold uppercase tracking-[.17em] text-cyan-300">{video.category === "shorts" ? "HKTUBE Short" : "HKTUBE Video"}</span><h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">{video.title}</h1></div><span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/8 px-3 py-1.5 text-xs font-medium text-violet-100"><Eye className="size-3.5" />{formatViews(video.viewCount)}</span></div>
-          <div className="mt-4 flex flex-wrap items-center gap-2"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-fuchsia-300/35 bg-fuchsia-500/15 text-fuchsia-100 hover:bg-fuchsia-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button><Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />Share</Button></div>
+          <div className="mt-4 flex flex-wrap items-center gap-2"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-fuchsia-300/35 bg-fuchsia-500/15 text-fuchsia-100 hover:bg-fuchsia-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button><Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />Share</Button><Button variant="outline" size="sm" onClick={toggleSaved} disabled={saveMutation.isPending} className={isSaved ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100" : "border-white/10 text-slate-200 hover:bg-white/8"}><Bookmark className={`mr-1.5 size-4 ${isSaved ? "fill-current" : ""}`} />{isSaved ? "Saved" : "Watch later"}</Button></div>
           <p className="mt-4 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-slate-400">{video.description || "No description was provided for this video."}</p>
           <p className="mt-3 text-xs text-slate-600">Published {formatDate(video.uploadedAt)}</p>
         </div>
