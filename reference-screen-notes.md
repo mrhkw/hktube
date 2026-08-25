@@ -1,0 +1,15 @@
+# HkTube reference screen notes
+
+The supplied mobile references are 720x1640 Android browser screenshots with a dark nearly-black background and a fixed HkTube header beneath the browser chrome. The header uses a white-to-blue HkTube wordmark on the left, a rounded dark search field with a magnifier and `Search videos...`, a square purple gradient Create button, a bell icon, and a circular/dark settings icon. The header is compact and does not overlap content.
+
+The Home reference has a horizontal category row immediately below the header. It shows a large purple active `All` pill followed by `Music`, `Gaming`, `Education`, and additional horizontally scrollable content. The content area is full width and has an honest `No videos yet` state with the message `Be the first to upload content on HkTube!`; no fake cards appear. The bottom navigation is fixed with five items: `Home`, `Shorts`, a large glowing circular plus control labeled `Create`, `Feeds`, and `Menu`. The reference screens intentionally show the legacy `LIVE`/`Library` dock in older captures, but the approved final task explicitly requires the newer five-item Home/Shorts/Create/Feeds/Menu dock and prohibits Live, Coins, and Gifts.
+
+The Create reference is a bottom sheet/dark modal titled `Create` with a close X and exactly three visible creation choices: `Long Video` with `Upload a video (16:9)`, `Short` with `Upload a short clip (9:16)`, and `Post` with `Share text or image`. The current approved product also includes Create Channel, but it must not introduce Live, wallet, coins, or gifting controls.
+
+The Menu reference is a right-side dark drawer overlay with a blurred/dimmed page behind it, a close X, and navigation for Home, Shorts, Posts, Trending, Following, Library, History, and Playlists. The final approved task adds authenticated Profile, eligible Creator Studio, Settings, Help & Support, and Sign in/Sign up or Logout. The drawer must be an overlay, never a permanent half-screen split.
+
+The Library/Profile reference uses the same header and dark surface, a profile/creator card, tabs such as History, Watch Later, Playlists, and Likes, and honest account/activity sections. Premium, purchases, earnings, and monetization may only appear as real provider-backed states; they must not show fabricated approval or revenue.
+
+The Creator Studio reference uses the same header and dark cards, icon tabs, real counters for Subscribers, Videos, Total Views, and Watch Time, and a Monetization Progress card. These values must come from real database records, with zero values shown honestly when there is no data. `Approved` must not be displayed unless a real eligibility/provider decision exists.
+
+The Settings reference uses the same compact header, dark list rows with icons and chevrons, and visible sections such as General, Playback, Data saving, Notifications, Privacy & Security, Connected accounts, About, Language & Region, and Appearance. Each visible setting must either work or clearly state its integration requirement; decorative empty rows are not acceptable.
