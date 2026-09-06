@@ -1,3 +1,4 @@
+const SUPABASE_PUBLIC_KEY = "sb_publishable__1sh69umIE7vUSobZfp1Tw__D5ud-2S";
 const OWNER_EMAILS = new Set(["hanifnazamdin30@gmail.com", "hanifnazamdin6@gmail.com"]);
 
 export function isOwnerEmail(email: string | null | undefined): boolean {
@@ -6,8 +7,9 @@ export function isOwnerEmail(email: string | null | undefined): boolean {
 
 export const ENV = {
   // OAuth client identifiers and service base URL are public configuration.
-  // Keep explicit Vercel variables as the preferred source; the fallback keeps
-  // a missing build/runtime public setting from breaking the exchange endpoint.
+  // Keep explicit Vercel variables as the preferred source; the public
+  // Supabase key fallback also lets the server validate an existing browser
+  // Supabase session when the Vercel secret is not configured.
   appId: process.env.VITE_APP_ID ?? "oW2FhxeMWaMQ3fzfsPSX4q",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
@@ -17,5 +19,5 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   supabaseUrl: process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://jpdvunotyykfqmmkhmml.supabase.co",
-  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? "",
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? SUPABASE_PUBLIC_KEY,
 };
