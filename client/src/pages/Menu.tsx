@@ -2,7 +2,8 @@ import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Bell, BarChart3, Bot, CheckCircle2, ChevronRight, CircleUserRound, Clapperboard, Clock3, Download, History, Library, LogOut, MonitorPlay, Settings, ShieldCheck, Sparkles, UserRound, Wallet } from "lucide-react";
+import { Bell, BarChart3, Bot, CheckCircle2, ChevronRight, CircleUserRound, Clapperboard, Clock3, Download, History, Library, LogOut, MonitorPlay, Settings, ShieldCheck, Sparkles, UserRound, Wallet } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 
@@ -26,10 +27,6 @@ export default function Menu() {
   const initial = (user?.name || user?.email || "H").slice(0, 1).toUpperCase();
 
   if (loading) return <HkTubeShell title="You"><div className="grid min-h-[55vh] place-items-center"><IconBadge><CircleUserRound className="size-7 animate-pulse" /></IconBadge></div></HkTubeShell>;
-
-  // useAuth now treats the real Supabase browser session as authenticated even
-  // when the profile API is briefly unavailable, so this screen no longer lies
-  // and asks an already signed-in user to log in again.
   if (!user) return <HkTubeShell title="You"><section className="mx-auto max-w-md px-5 pt-10 text-center"><IconBadge large><CircleUserRound className="size-8" /></IconBadge><h1 className="mt-5 text-3xl font-black text-zinc-950">Sign in to HkTube</h1><p className="mt-3 text-sm leading-6 text-zinc-600">Create your HkTube account to view your channel, keep history and library data, and use Creator Studio.</p><Button onClick={startLogin} className="mt-7 h-11 rounded-full border border-zinc-950 bg-white px-7 font-bold text-zinc-950 shadow-sm hover:bg-zinc-100">Sign in / Sign up</Button><p className="mt-4 text-xs text-zinc-500">Account authentication is protected by the configured HkTube identity provider.</p></section></HkTubeShell>;
 
   const channel = channels.data?.[0];
@@ -40,7 +37,7 @@ export default function Menu() {
           <div className="grid size-20 shrink-0 place-items-center rounded-full border-2 border-zinc-900 bg-white text-3xl font-black text-zinc-950 shadow-sm">{initial}</div>
           <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-[.18em] text-zinc-500">Your HkTube account</p><h1 className="mt-2 truncate text-2xl font-black text-zinc-950 sm:text-3xl">{user.name || "HkTube member"}</h1><p className="mt-1 truncate text-sm text-zinc-600">{user.email || "Authenticated HkTube account"}</p><div className="mt-2 flex items-center gap-2 text-xs text-zinc-600"><ShieldCheck className="size-4 text-zinc-950" />{user.role === "admin" ? "Owner and admin account" : "Authenticated member"}</div></div>
         </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2"><Link href={channel ? `/profile?channel=${channel.id}` : "/channel/create"} className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-950 bg-white px-5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-100"><UserRound className="mr-2 size-4" />{channel ? "View channel" : "Create channel"}</Link><Link href="/studio" className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-950 bg-zinc-950 px-5 text-sm font-bold text-white transition hover:bg-zinc-800"><Clapperboard className="mr-2 size-4 text-white" />Creator Studio</Link></div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2"><Link href={channel ? `/profile?channel=${channel.id}` : "/channel/create"} className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-950 bg-white px-5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-100"><UserRound className="mr-2 size-4" />{channel ? "View channel" : "Create channel"}</Link><Link href="/studio" className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-950 bg-white px-5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-100"><Clapperboard className="mr-2 size-4" />Creator Studio</Link></div>
         {channel && <p className="mt-4 text-center text-xs text-zinc-500">{channel.displayName} · @{channel.handle} · {channel.subscriberCount.toLocaleString()} subscribers</p>}
       </section>
 
@@ -52,7 +49,7 @@ export default function Menu() {
   </HkTubeShell>;
 }
 
-function IconBadge({ children, large = false }: { children: React.ReactNode; large?: boolean }) {
+function IconBadge({ children, large = false }: { children: ReactNode; large?: boolean }) {
   return <span className={`relative grid place-items-center rounded-2xl border border-zinc-300 bg-white text-zinc-950 shadow-sm before:absolute before:inset-1 before:rounded-xl before:border before:border-zinc-100 ${large ? "mx-auto size-16 rounded-[22px]" : "size-11"}`}>{children}</span>;
 }
 
