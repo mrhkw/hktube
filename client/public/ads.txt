@@ -1,0 +1,3 @@
+# HkTube AdSense placeholder
+# After your AdSense account is approved, replace this comment with the exact ads.txt line Google provides, for example:
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
