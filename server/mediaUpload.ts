@@ -48,7 +48,8 @@ export function registerMediaUploadRoute(app: Express) {
       if (!Buffer.isBuffer(req.body) || req.body.length === 0) return res.status(400).json({ message: "The upload file was empty or unreadable." });
       if (req.body.length > maxBytesForKind(kind)) return res.status(413).json({ message: `This ${kind} exceeds the HkTube upload size limit.` });
       const result = await archiveStoragePresignPut({ userId: user.id, kind, filename, contentType });
-      const response = await fetch(result.url, { method: "PUT", headers: { "Content-Type": contentType }, body: req.body });
+      const body = Uint8Array.from(req.body);
+      const response = await fetch(result.url, { method: "PUT", headers: { "Content-Type": contentType }, body });
       if (!response.ok) throw new Error(`Archive.org upload failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
       return res.status(201).json({ ...result, contentType, storage: "internet-archive" });
     } catch (error) {

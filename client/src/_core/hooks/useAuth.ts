@@ -78,7 +78,7 @@ export function useAuth(options?: UseAuthOptions) {
     // The Supabase browser session is the source of truth for authentication.
     // If the backend profile request is temporarily unavailable, keep the user
     // signed in instead of incorrectly showing the Sign in / Sign up screen.
-    const user = meQuery.data ?? (hasSession && sessionIdentity ? ({
+    const fallbackUser = hasSession && sessionIdentity ? {
       id: 0,
       openId: "supabase-session",
       name: sessionIdentity.name,
@@ -86,7 +86,8 @@ export function useAuth(options?: UseAuthOptions) {
       loginMethod: sessionIdentity.loginMethod,
       role: "user",
       avatarUrl: sessionIdentity.avatarUrl,
-    } as typeof meQuery.data) : null);
+    } : null;
+    const user = meQuery.data ?? fallbackUser;
     if (typeof window !== "undefined") {
       localStorage.setItem("hktube-runtime-user-info", JSON.stringify(user));
     }
