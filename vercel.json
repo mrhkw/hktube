@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm build",
+  "buildCommand": "if [ -n \"$DATABASE_URL\" ]; then pnpm db:push; fi && pnpm build",
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
   "framework": null,
