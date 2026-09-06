@@ -30,5 +30,19 @@ export function createApiApp(): Express {
     }),
   );
 
+  // Vercel can otherwise turn an unhandled Express error into a plain-text
+  // response (for example, "A server error occurred"). The tRPC client then
+  // tries to parse that response as JSON and reports "Unexpected token 'A'".
+  // Always return a JSON error envelope for API failures instead.
+  app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("[API] Unhandled request error:", error);
+    if (res.headersSent) return;
+    res.status(500).json({
+      error: {
+        message: "The server could not complete this request. Please try again.",
+      },
+    });
+  });
+
   return app;
 }
