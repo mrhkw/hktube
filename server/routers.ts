@@ -31,7 +31,14 @@ export const appRouter = router({
   }),
   comments: router({ list: publicProcedure.input(z.object({ videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional() })).query(({ input }) => listComments(input)), create: protectedProcedure.input(commentInput).mutation(({ ctx, input }) => createComment({ ...input, authorId: ctx.user.id })) }),
   subscriptions: router({ mine: protectedProcedure.query(({ ctx }) => listChannelSubscriptions(ctx.user.id)), toggle: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => toggleChannelSubscription(input.channelId, ctx.user.id)) }),
-  channels: router({ mine: protectedProcedure.query(({ ctx }) => listChannelsByOwner(ctx.user.id)), create: protectedProcedure.input(channelInputSchema).mutation(({ ctx, input }) => createChannel({ ownerId: ctx.user.id, handle: input.handle, displayName: input.displayName, description: input.description || null })) }),
+  channels: router({
+    mine: protectedProcedure.query(({ ctx }) => listChannelsByOwner(ctx.user.id)),
+    create: protectedProcedure.input(channelInputSchema).mutation(async ({ ctx, input }) => {
+      const normalizedHandle = input.handle.trim();
+      try { return await createChannel({ ownerId: ctx.user.id, handle: normalizedHandle, displayName: input.displayName.trim(), description: input.description?.trim() || null }); }
+      catch (error) { const message = String(error); if (/duplicate|unique|channels_handle_unique|ER_DUP_ENTRY/i.test(message)) throw new TRPCError({ code: "CONFLICT", message: "That channel handle is already taken. Choose another handle." }); throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Channel could not be created. Please try again." }); }
+    })
+  }),
   playlists: router({ mine: protectedProcedure.query(({ ctx }) => listPlaylists(ctx.user.id)), create: protectedProcedure.input(z.object({ title: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional(), visibility: z.enum(["public", "unlisted", "private"]).optional() })).mutation(({ ctx, input }) => createPlaylist({ ...input, ownerId: ctx.user.id })), add: protectedProcedure.input(z.object({ playlistId: z.number().int().positive(), videoId: z.number().int().positive() })).mutation(({ ctx, input }) => addVideoToPlaylist({ ...input, ownerId: ctx.user.id })) }),
   watch_history: router({ mine: protectedProcedure.query(({ ctx }) => listWatchHistory(ctx.user.id)), record: protectedProcedure.input(z.object({ videoId: z.number().int().positive(), watchedSeconds: z.number().int().min(0).max(86400).optional() })).mutation(({ ctx, input }) => recordWatchHistory({ ...input, userId: ctx.user.id })) }),
   notifications: router({ mine: protectedProcedure.query(({ ctx }) => listNotifications(ctx.user.id)), markRead: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => markNotificationRead(input.id, ctx.user.id)) }),
@@ -45,17 +52,8 @@ export const appRouter = router({
   creator_studio: router({
     dashboard: protectedProcedure.query(({ ctx }) => getCreatorStudioDashboard(ctx.user.id)),
     suggestMetadata: protectedProcedure.input(z.object({ title: z.string().trim().max(255), description: z.string().trim().max(5000).optional().default(""), link: z.string().trim().max(2000).optional().default(""), category: videoCategory })).mutation(async ({ input }) => {
-      const result = await invokeLLM({
-        messages: [
-          { role: "system", content: "You are HkTube's uploader metadata assistant. Suggest accurate, non-clickbait metadata based only on the supplied context. Never invent facts, claims, links, people, or performance numbers. Return JSON only." },
-          { role: "user", content: `Category: ${input.category}\nTitle: ${input.title}\nDescription: ${input.description}\nReference link: ${input.link}` },
-        ],
-        maxTokens: 800,
-        responseFormat: { type: "json_schema", json_schema: { name: "hktube_metadata", strict: true, schema: { type: "object", properties: { title: { type: "string" }, description: { type: "string" }, tags: { type: "array", items: { type: "string" } }, checks: { type: "array", items: { type: "string" } } }, required: ["title", "description", "tags", "checks"], additionalProperties: false } } },
-      });
-      const content = result.choices[0]?.message.content;
-      if (typeof content !== "string") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI assistant returned no usable metadata." });
-      try { return JSON.parse(content) as { title: string; description: string; tags: string[]; checks: string[] }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI assistant returned invalid metadata." }); }
+      const result = await invokeLLM({ messages: [{ role: "system", content: "You are HkTube's uploader metadata assistant. Suggest accurate, non-clickbait metadata based only on the supplied context. Never invent facts, claims, links, people, or performance numbers. Return JSON only." }, { role: "user", content: `Category: ${input.category}\nTitle: ${input.title}\nDescription: ${input.description}\nReference link: ${input.link}` }], maxTokens: 800, responseFormat: { type: "json_schema", json_schema: { name: "hktube_metadata", strict: true, schema: { type: "object", properties: { title: { type: "string" }, description: { type: "string" }, tags: { type: "array", items: { type: "string" } }, checks: { type: "array", items: { type: "string" } } }, required: ["title", "description", "tags", "checks"], additionalProperties: false } } } });
+      const content = result.choices[0]?.message.content; if (typeof content !== "string") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI assistant returned no usable metadata." }); try { return JSON.parse(content) as { title: string; description: string; tags: string[]; checks: string[] }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI assistant returned invalid metadata." }); }
     }),
   }),
 });
