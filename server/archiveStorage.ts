@@ -1,4 +1,4 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
@@ -44,30 +44,11 @@ export async function archiveStoragePresignPut(options: {
   requireConfig();
   const identifier = `hktube-${cleanSegment(String(options.userId))}-${randomUUID().replace(/-/g, "").slice(0, 20)}`;
   const key = `${options.kind}/${cleanSegment(options.filename)}`;
-  const command = new GetObjectCommand({ Bucket: identifier, Key: key, ResponseContentType: options.contentType });
-  // IA's S3-compatible endpoint accepts AWS-style presigned requests for item files.
-  const url = await getSignedUrl(client(), command, { expiresIn: 900 });
-  return {
-    key,
-    identifier,
-    url: url.replace("/", "/"),
-    publicUrl: archivePublicUrl(identifier, key),
-    detailsUrl: archiveDetailsUrl(identifier),
-  };
-}
-
-export async function archiveStoragePresignUpload(options: {
-  userId: number | string;
-  kind: "video" | "thumbnail" | "caption";
-  filename: string;
-  contentType: string;
-}) {
-  requireConfig();
-  const identifier = `hktube-${cleanSegment(String(options.userId))}-${randomUUID().replace(/-/g, "").slice(0, 20)}`;
-  const key = `${options.kind}/${cleanSegment(options.filename)}`;
-  const s3 = client();
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-  const url = await getSignedUrl(s3, new PutObjectCommand({ Bucket: identifier, Key: key, ContentType: options.contentType }), { expiresIn: 900 });
+  const url = await getSignedUrl(
+    client(),
+    new PutObjectCommand({ Bucket: identifier, Key: key, ContentType: options.contentType }),
+    { expiresIn: 900 },
+  );
   return { key, identifier, url, publicUrl: archivePublicUrl(identifier, key), detailsUrl: archiveDetailsUrl(identifier) };
 }
 
