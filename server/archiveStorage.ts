@@ -43,13 +43,19 @@ export async function archiveStoragePresignPut(options: {
 }) {
   requireConfig();
   const identifier = `hktube-${cleanSegment(String(options.userId))}-${randomUUID().replace(/-/g, "").slice(0, 20)}`;
-  const key = `${options.kind}/${cleanSegment(options.filename)}`;
+  const objectKey = `${options.kind}/${cleanSegment(options.filename)}`;
   const url = await getSignedUrl(
     client(),
-    new PutObjectCommand({ Bucket: identifier, Key: key, ContentType: options.contentType }),
+    new PutObjectCommand({ Bucket: identifier, Key: objectKey, ContentType: options.contentType }),
     { expiresIn: 900 },
   );
-  return { key, identifier, url, publicUrl: archivePublicUrl(identifier, key), detailsUrl: archiveDetailsUrl(identifier) };
+  return {
+    key: `${identifier}/${objectKey}`,
+    identifier,
+    url,
+    publicUrl: archivePublicUrl(identifier, objectKey),
+    detailsUrl: archiveDetailsUrl(identifier),
+  };
 }
 
 export async function archiveStorageGetSignedUrl(identifier: string, key: string) {
