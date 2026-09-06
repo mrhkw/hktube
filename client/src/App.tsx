@@ -20,6 +20,7 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import { PlatformSection } from "./pages/PlatformSection";
 import AlgorithmDashboard from "./pages/AlgorithmDashboard";
+import CreatorAI from "./pages/CreatorAI";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -38,6 +39,7 @@ function Router() {
       <Route path={"/playlists"}>{() => <PlatformSection kind="playlists" />}</Route>
       <Route path={"/history"}>{() => <PlatformSection kind="history" />}</Route>
       <Route path={"/studio"}>{() => <PlatformSection kind="studio" />}</Route>
+      <Route path={"/studio/ai"} component={CreatorAI} />
       <Route path={"/algorithm"} component={AlgorithmDashboard} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/auth"} component={Auth} />

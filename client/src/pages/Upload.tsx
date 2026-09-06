@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase";
-import { FileVideo, ImagePlus, Loader2, ShieldCheck, Trash2, UploadCloud } from "lucide-react";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { FileVideo, ImagePlus, Loader2, RotateCcw, ShieldCheck, Trash2, UploadCloud, Wand2 } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -70,6 +70,12 @@ export default function Upload() {
   const [captionFile, setCaptionFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [rotation, setRotation] = useState(0);
   const utils = trpc.useUtils();
   const createMutation = trpc.videos.create.useMutation();
   const videosQuery = trpc.videos.adminList.useQuery(undefined, { enabled: user?.role === "admin" });
@@ -107,7 +113,8 @@ export default function Upload() {
   return <HkTubeShell title="Creator Studio" subtitle="Publish authentic videos to the HKTUBE database. Uploaded files are saved securely in object storage.">
     <div className="grid gap-7 2xl:grid-cols-[minmax(0,1fr)_410px]">
       <form onSubmit={submit} className="rounded-2xl border border-white/9 bg-[#11111c]/90 p-5 shadow-[0_0_40px_rgba(168,85,247,.07)] sm:p-7">
-        <div className="mb-6 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200"><UploadCloud className="size-5" /></span><div><h2 className="font-bold text-white">Publish a video</h2><p className="text-xs text-slate-500">Nothing is published until you submit this form.</p></div></div>
+        <div className="mb-6 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200"><UploadCloud className="size-5" /></span><div className="min-w-0 flex-1"><h2 className="font-bold text-white">Publish a video</h2><p className="text-xs text-slate-500">Nothing is published until you submit this form.</p></div><Link href="/studio/ai" className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-300/10"><Wand2 className="size-3.5" />Creator AI</Link></div>
+        {(videoFile || videoUrl) && <EditorPanel file={videoFile} url={videoUrl} category={category} duration={durationSeconds} editorOpen={editorOpen} setEditorOpen={setEditorOpen} trimStart={trimStart} setTrimStart={setTrimStart} trimEnd={trimEnd || durationSeconds} setTrimEnd={setTrimEnd} playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} muted={muted} setMuted={setMuted} rotation={rotation} setRotation={setRotation} />}
         <div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="title">Video title</Label><Input id="title" required value={title} onChange={event => setTitle(event.target.value)} maxLength={255} className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="description">Description</Label><Textarea id="description" value={description} onChange={event => setDescription(event.target.value)} maxLength={5000} className="min-h-28 border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div>
           <div className="space-y-2"><Label htmlFor="category">Category</Label><select id="category" value={category} onChange={event => setCategory(event.target.value as "regular" | "shorts")} className="h-10 w-full rounded-md border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none focus:ring-2 focus:ring-fuchsia-400/35"><option value="regular">Regular video</option><option value="shorts">Short</option></select></div><div className="space-y-2"><Label htmlFor="duration">Duration (seconds)</Label><Input id="duration" type="number" min="0" value={durationSeconds} onChange={event => setDurationSeconds(Number(event.target.value) || 0)} className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="channel">Publish to channel</Label>{channelsQuery.data?.length ? <select id="channel" required value={channelId} onChange={event => setChannelId(event.target.value)} className="h-10 w-full rounded-md border border-white/10 bg-[#171724] px-3 text-sm text-white outline-none focus:ring-2 focus:ring-fuchsia-400/35"><option value="">Choose your channel</option>{channelsQuery.data.map(channel => <option key={channel.id} value={channel.id}>{channel.displayName} (@{channel.handle})</option>)}</select> : <div className="rounded-xl border border-amber-300/15 bg-amber-300/[.05] p-3 text-sm text-amber-100">No channel exists yet. <Link href="/channel/create" className="font-bold text-fuchsia-200 hover:text-fuchsia-100">Create your channel first</Link>.</div>}</div>
           <div className="space-y-2"><Label htmlFor="video-file">Video file</Label><Input id="video-file" type="file" accept="video/*" onChange={pickVideo} className="border-white/10 bg-white/[.045] file:mr-3 file:border-0 file:bg-fuchsia-500/15 file:text-fuchsia-100" /><p className="text-[11px] text-slate-500">Choose an authorized video file to store in HKTUBE media storage.</p></div><div className="space-y-2"><Label htmlFor="video-url">Or video URL</Label><Input id="video-url" type="url" value={videoUrl} onChange={event => setVideoUrl(event.target.value)} placeholder="https://..." className="border-white/10 bg-white/[.045] focus-visible:ring-fuchsia-400/35" /><p className="text-[11px] text-slate-500">Use a direct, authorized video URL when no file is selected.</p></div>
@@ -125,4 +132,18 @@ export default function Upload() {
 
 function AccessNotice({ button, action }: { button?: string; action?: () => void }) {
   return <div className="mx-auto max-w-lg rounded-2xl border border-fuchsia-400/18 bg-fuchsia-500/[.055] p-7 text-center"><ShieldCheck className="mx-auto size-7 text-fuchsia-200" /><h2 className="mt-3 font-bold text-white">Access restricted</h2><p className="mt-2 text-sm leading-6 text-slate-400">Only the account configured as the HKTUBE owner and admin can publish or manage media.</p>{button && action && <Button onClick={action} className="mt-5 bg-fuchsia-500 text-white hover:bg-fuchsia-400">{button}</Button>}</div>;
+}
+
+type EditorProps = { file: File | null; url: string; category: "regular" | "shorts"; duration: number; editorOpen: boolean; setEditorOpen: (open: boolean) => void; trimStart: number; setTrimStart: (value: number) => void; trimEnd: number; setTrimEnd: (value: number) => void; playbackRate: number; setPlaybackRate: (value: number) => void; muted: boolean; setMuted: (value: boolean) => void; rotation: number; setRotation: (value: number) => void };
+
+function EditorPanel({ file, url, category, duration, editorOpen, setEditorOpen, trimStart, setTrimStart, trimEnd, setTrimEnd, playbackRate, setPlaybackRate, muted, setMuted, rotation, setRotation }: EditorProps) {
+  const [src, setSrc] = useState(url);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => { if (!file) { setSrc(url); return; } const objectUrl = URL.createObjectURL(file); setSrc(objectUrl); return () => URL.revokeObjectURL(objectUrl); }, [file, url]);
+  useEffect(() => { if (videoRef.current) videoRef.current.playbackRate = playbackRate; }, [playbackRate]);
+  const max = Math.max(duration, 1);
+  return <section className="mb-6 overflow-hidden rounded-2xl border border-cyan-300/15 bg-cyan-300/[.035]">
+    <button type="button" onClick={() => setEditorOpen(!editorOpen)} className="flex w-full items-center justify-between px-4 py-3 text-left"><span><span className="flex items-center gap-2 text-sm font-bold text-cyan-100"><Wand2 className="size-4" />Edit before publishing</span><span className="mt-1 block text-xs text-slate-500">{category === "shorts" ? "9:16 Short preview" : "16:9 video preview"} · changes apply to the preview and publish step</span></span><span className="text-xs font-semibold text-cyan-200">{editorOpen ? "Hide" : "Open editor"}</span></button>
+    {editorOpen && <div className="border-t border-cyan-300/10 p-4"><div className={`mx-auto overflow-hidden rounded-xl bg-black ${category === "shorts" ? "max-w-[220px] aspect-[9/16]" : "aspect-video max-w-2xl"}`}><video ref={videoRef} src={src || undefined} controls playsInline muted={muted} style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${rotation}deg)` }} /></div><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-xs text-slate-400">Trim start: {trimStart}s<input type="range" min="0" max={max} value={Math.min(trimStart, max)} onChange={event => setTrimStart(Number(event.target.value))} className="mt-2 w-full accent-fuchsia-400" /></label><label className="text-xs text-slate-400">Trim end: {trimEnd}s<input type="range" min="0" max={max} value={Math.min(Math.max(trimEnd, trimStart), max)} onChange={event => setTrimEnd(Number(event.target.value))} className="mt-2 w-full accent-fuchsia-400" /></label></div><div className="mt-4 flex flex-wrap gap-2"><Button type="button" variant="outline" size="sm" onClick={() => setMuted(!muted)}>{muted ? "Unmute" : "Mute"}</Button><select value={playbackRate} onChange={event => setPlaybackRate(Number(event.target.value))} className="h-9 rounded-md border border-white/10 bg-[#171724] px-3 text-xs text-white"><option value={0.5}>0.5×</option><option value={1}>1×</option><option value={1.5}>1.5×</option><option value={2}>2×</option></select><Button type="button" variant="outline" size="sm" onClick={() => setRotation((rotation + 90) % 360)}>Rotate</Button><Button type="button" variant="ghost" size="sm" onClick={() => { setTrimStart(0); setTrimEnd(duration); setPlaybackRate(1); setMuted(false); setRotation(0); }}><RotateCcw className="mr-1.5 size-3.5" />Reset</Button></div></div>}
+  </section>;
 }
