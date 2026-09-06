@@ -18227,14 +18227,14 @@ var require_init = __commonJS({
   "node_modules/.pnpm/express@4.21.2/node_modules/express/lib/middleware/init.js"(exports2) {
     "use strict";
     var setPrototypeOf = require_setprototypeof();
-    exports2.init = function(app) {
+    exports2.init = function(app2) {
       return function expressInit(req, res, next) {
-        if (app.enabled("x-powered-by")) res.setHeader("X-Powered-By", "Express");
+        if (app2.enabled("x-powered-by")) res.setHeader("X-Powered-By", "Express");
         req.res = res;
         res.req = req;
         req.next = next;
-        setPrototypeOf(req, app.request);
-        setPrototypeOf(res, app.response);
+        setPrototypeOf(req, app2.request);
+        setPrototypeOf(res, app2.response);
         res.locals = res.locals || /* @__PURE__ */ Object.create(null);
         next();
       };
@@ -20490,15 +20490,15 @@ var require_application = __commonJS({
     var setPrototypeOf = require_setprototypeof();
     var hasOwnProperty2 = Object.prototype.hasOwnProperty;
     var slice = Array.prototype.slice;
-    var app = exports2 = module2.exports = {};
+    var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
-    app.init = function init() {
+    app2.init = function init() {
       this.cache = {};
       this.engines = {};
       this.settings = {};
       this.defaultConfiguration();
     };
-    app.defaultConfiguration = function defaultConfiguration() {
+    app2.defaultConfiguration = function defaultConfiguration() {
       var env = process.env.NODE_ENV || "development";
       this.enable("x-powered-by");
       this.set("etag", "weak");
@@ -20536,7 +20536,7 @@ var require_application = __commonJS({
         }
       });
     };
-    app.lazyrouter = function lazyrouter() {
+    app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
         this._router = new Router({
           caseSensitive: this.enabled("case sensitive routing"),
@@ -20546,7 +20546,7 @@ var require_application = __commonJS({
         this._router.use(middleware.init(this));
       }
     };
-    app.handle = function handle(req, res, callback) {
+    app2.handle = function handle(req, res, callback) {
       var router2 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
@@ -20559,7 +20559,7 @@ var require_application = __commonJS({
       }
       router2.handle(req, res, done);
     };
-    app.use = function use(fn) {
+    app2.use = function use(fn) {
       var offset = 0;
       var path = "/";
       if (typeof fn !== "function") {
@@ -20597,11 +20597,11 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app.route = function route(path) {
+    app2.route = function route(path) {
       this.lazyrouter();
       return this._router.route(path);
     };
-    app.engine = function engine(ext, fn) {
+    app2.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
         throw new Error("callback function required");
       }
@@ -20609,7 +20609,7 @@ var require_application = __commonJS({
       this.engines[extension] = fn;
       return this;
     };
-    app.param = function param(name, fn) {
+    app2.param = function param(name, fn) {
       this.lazyrouter();
       if (Array.isArray(name)) {
         for (var i3 = 0; i3 < name.length; i3++) {
@@ -20620,7 +20620,7 @@ var require_application = __commonJS({
       this._router.param(name, fn);
       return this;
     };
-    app.set = function set2(setting, val) {
+    app2.set = function set2(setting, val) {
       if (arguments.length === 1) {
         var settings = this.settings;
         while (settings && settings !== Object.prototype) {
@@ -20650,23 +20650,23 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app.path = function path() {
+    app2.path = function path() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
-    app.enabled = function enabled(setting) {
+    app2.enabled = function enabled(setting) {
       return Boolean(this.set(setting));
     };
-    app.disabled = function disabled(setting) {
+    app2.disabled = function disabled(setting) {
       return !this.set(setting);
     };
-    app.enable = function enable(setting) {
+    app2.enable = function enable(setting) {
       return this.set(setting, true);
     };
-    app.disable = function disable(setting) {
+    app2.disable = function disable(setting) {
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app[method] = function(path) {
+      app2[method] = function(path) {
         if (method === "get" && arguments.length === 1) {
           return this.set(path);
         }
@@ -20676,7 +20676,7 @@ var require_application = __commonJS({
         return this;
       };
     });
-    app.all = function all3(path) {
+    app2.all = function all3(path) {
       this.lazyrouter();
       var route = this._router.route(path);
       var args = slice.call(arguments, 1);
@@ -20685,8 +20685,8 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app.del = deprecate.function(app.delete, "app.del: Use app.delete instead");
-    app.render = function render(name, options, callback) {
+    app2.del = deprecate.function(app2.delete, "app.del: Use app.delete instead");
+    app2.render = function render(name, options, callback) {
       var cache4 = this.cache;
       var done = callback;
       var engines = this.engines;
@@ -20727,7 +20727,7 @@ var require_application = __commonJS({
       }
       tryRender(view, renderOptions, done);
     };
-    app.listen = function listen() {
+    app2.listen = function listen() {
       var server = http2.createServer(this);
       return server.listen.apply(server, arguments);
     };
@@ -21793,7 +21793,7 @@ var require_response = __commonJS({
       var encoding;
       var req = this.req;
       var type;
-      var app = this.app;
+      var app2 = this.app;
       if (arguments.length === 2) {
         if (typeof arguments[0] !== "number" && typeof arguments[1] === "number") {
           deprecate("res.send(body, status): Use res.status(status).send(body) instead");
@@ -21840,7 +21840,7 @@ var require_response = __commonJS({
           this.set("Content-Type", setCharset(type, "utf-8"));
         }
       }
-      var etagFn = app.get("etag fn");
+      var etagFn = app2.get("etag fn");
       var generateETag = !this.get("ETag") && typeof etagFn === "function";
       var len;
       if (chunk !== void 0) {
@@ -21892,10 +21892,10 @@ var require_response = __commonJS({
           val = arguments[1];
         }
       }
-      var app = this.app;
-      var escape2 = app.get("json escape");
-      var replacer = app.get("json replacer");
-      var spaces = app.get("json spaces");
+      var app2 = this.app;
+      var escape2 = app2.get("json escape");
+      var replacer = app2.get("json replacer");
+      var spaces = app2.get("json spaces");
       var body = stringify(val, replacer, spaces, escape2);
       if (!this.get("Content-Type")) {
         this.set("Content-Type", "application/json");
@@ -21914,12 +21914,12 @@ var require_response = __commonJS({
           val = arguments[1];
         }
       }
-      var app = this.app;
-      var escape2 = app.get("json escape");
-      var replacer = app.get("json replacer");
-      var spaces = app.get("json spaces");
+      var app2 = this.app;
+      var escape2 = app2.get("json escape");
+      var replacer = app2.get("json replacer");
+      var spaces = app2.get("json spaces");
       var body = stringify(val, replacer, spaces, escape2);
-      var callback = this.req.query[app.get("jsonp callback name")];
+      var callback = this.req.query[app2.get("jsonp callback name")];
       if (!this.get("Content-Type")) {
         this.set("X-Content-Type-Options", "nosniff");
         this.set("Content-Type", "application/json");
@@ -22184,7 +22184,7 @@ var require_response = __commonJS({
       return this;
     };
     res.render = function render(view, options, callback) {
-      var app = this.req.app;
+      var app2 = this.req.app;
       var done = callback;
       var opts = options || {};
       var req = this.req;
@@ -22198,7 +22198,7 @@ var require_response = __commonJS({
         if (err) return req.next(err);
         self2.send(str);
       };
-      app.render(view, opts, done);
+      app2.render(view, opts, done);
     };
     function sendfile(res2, file2, options, callback) {
       var done = false;
@@ -22406,19 +22406,19 @@ var require_express = __commonJS({
     var res = require_response();
     exports2 = module2.exports = createApplication;
     function createApplication() {
-      var app = function(req2, res2, next) {
-        app.handle(req2, res2, next);
+      var app2 = function(req2, res2, next) {
+        app2.handle(req2, res2, next);
       };
-      mixin(app, EventEmitter2.prototype, false);
-      mixin(app, proto, false);
-      app.request = Object.create(req, {
-        app: { configurable: true, enumerable: true, writable: true, value: app }
+      mixin(app2, EventEmitter2.prototype, false);
+      mixin(app2, proto, false);
+      app2.request = Object.create(req, {
+        app: { configurable: true, enumerable: true, writable: true, value: app2 }
       });
-      app.response = Object.create(res, {
-        app: { configurable: true, enumerable: true, writable: true, value: app }
+      app2.response = Object.create(res, {
+        app: { configurable: true, enumerable: true, writable: true, value: app2 }
       });
-      app.init();
-      return app;
+      app2.init();
+      return app2;
     }
     exports2.application = proto;
     exports2.request = req;
@@ -44266,11 +44266,11 @@ var require_mysql2 = __commonJS({
     exports2.createQuery = Connection.createQuery;
     exports2.Pool = Pool;
     exports2.PoolCluster = PoolCluster;
-    exports2.createServer = function(handler) {
+    exports2.createServer = function(handler2) {
       const Server = require_server();
       const s3 = new Server();
-      if (handler) {
-        s3.on("connection", handler);
+      if (handler2) {
+        s3.on("connection", handler2);
       }
       return s3;
     };
@@ -51442,8 +51442,8 @@ var require_dist_cjs2 = __commonJS({
     var types = require_dist_cjs();
     var getHttpHandlerExtensionConfiguration3 = (runtimeConfig) => {
       return {
-        setHttpHandler(handler) {
-          runtimeConfig.httpHandler = handler;
+        setHttpHandler(handler2) {
+          runtimeConfig.httpHandler = handler2;
         },
         httpHandler() {
           return runtimeConfig.httpHandler;
@@ -59814,14 +59814,14 @@ var require_dist_cjs19 = __commonJS({
             identifyOnResolve = toggle;
           return identifyOnResolve;
         },
-        resolve: (handler, context) => {
+        resolve: (handler2, context) => {
           for (const middleware of getMiddlewareList().map((entry) => entry.middleware).reverse()) {
-            handler = middleware(handler, context);
+            handler2 = middleware(handler2, context);
           }
           if (identifyOnResolve) {
             console.log(stack.identify());
           }
-          return handler;
+          return handler2;
         }
       };
       return stack;
@@ -59863,27 +59863,27 @@ var require_dist_cjs20 = __commonJS({
         const options = typeof optionsOrCb !== "function" ? optionsOrCb : void 0;
         const callback = typeof optionsOrCb === "function" ? optionsOrCb : cb;
         const useHandlerCache = options === void 0 && this.config.cacheMiddleware === true;
-        let handler;
+        let handler2;
         if (useHandlerCache) {
           if (!this.handlers) {
             this.handlers = /* @__PURE__ */ new WeakMap();
           }
           const handlers2 = this.handlers;
           if (handlers2.has(command.constructor)) {
-            handler = handlers2.get(command.constructor);
+            handler2 = handlers2.get(command.constructor);
           } else {
-            handler = command.resolveMiddleware(this.middlewareStack, this.config, options);
-            handlers2.set(command.constructor, handler);
+            handler2 = command.resolveMiddleware(this.middlewareStack, this.config, options);
+            handlers2.set(command.constructor, handler2);
           }
         } else {
           delete this.handlers;
-          handler = command.resolveMiddleware(this.middlewareStack, this.config, options);
+          handler2 = command.resolveMiddleware(this.middlewareStack, this.config, options);
         }
         if (callback) {
-          handler(command).then((result) => callback(null, result.output), (err) => callback(err)).catch(() => {
+          handler2(command).then((result) => callback(null, result.output), (err) => callback(err)).catch(() => {
           });
         } else {
-          return handler(command).then((result) => result.output);
+          return handler2(command).then((result) => result.output);
         }
       }
       destroy() {
@@ -85610,8 +85610,8 @@ var require_dist_cjs72 = __commonJS({
         toMiddleware: "awsAuthMiddleware",
         override: true
       });
-      const handler = command.resolveMiddleware(clientStack, client2.config, {});
-      const { output } = await handler({ input: command.input });
+      const handler2 = command.resolveMiddleware(clientStack, client2.config, {});
+      const { output } = await handler2({ input: command.input });
       const { presigned } = output;
       return utilFormatUrl.formatUrl(presigned);
     };
@@ -86955,7 +86955,7 @@ var require_dist2 = __commonJS({
 // server/_core/vercel-api.ts
 var vercel_api_exports = {};
 __export(vercel_api_exports, {
-  default: () => vercel_api_default
+  default: () => handler
 });
 module.exports = __toCommonJS(vercel_api_exports);
 
@@ -87746,17 +87746,17 @@ var handlers = [
   octetStreamContentTypeHandler
 ];
 function getContentTypeHandler(req) {
-  const handler = handlers.find((handler$1) => handler$1.isMatch(req));
-  if (handler) return handler;
-  if (!handler && req.method === "GET") return jsonContentTypeHandler;
+  const handler2 = handlers.find((handler$1) => handler$1.isMatch(req));
+  if (handler2) return handler2;
+  if (!handler2 && req.method === "GET") return jsonContentTypeHandler;
   throw new TRPCError({
     code: "UNSUPPORTED_MEDIA_TYPE",
     message: req.headers.has("content-type") ? `Unsupported content-type "${req.headers.get("content-type")}` : "Missing content-type header"
   });
 }
 async function getRequestInfo(opts) {
-  const handler = getContentTypeHandler(opts.req);
-  return await handler.parse(opts);
+  const handler2 = getContentTypeHandler(opts.req);
+  return await handler2.parse(opts);
 }
 function isAbortError(error47) {
   return isObject(error47) && error47["name"] === "AbortError";
@@ -95186,8 +95186,8 @@ function getQueryParam(req, key) {
   const value = req.query[key];
   return typeof value === "string" ? value : void 0;
 }
-function registerOAuthRoutes(app) {
-  app.get("/api/oauth/callback", async (req, res) => {
+function registerOAuthRoutes(app2) {
+  app2.get("/api/oauth/callback", async (req, res) => {
     const code = getQueryParam(req, "code");
     const state2 = getQueryParam(req, "state");
     if (!code || !state2) {
@@ -95243,8 +95243,8 @@ function registerOAuthRoutes(app) {
 
 // server/_core/storageProxy.ts
 init_env();
-function registerStorageProxy(app) {
-  app.get("/manus-storage/*", async (req, res) => {
+function registerStorageProxy(app2) {
+  app2.get("/manus-storage/*", async (req, res) => {
     const key = req.params[0];
     if (!key) {
       res.status(400).send("Missing storage key");
@@ -95358,8 +95358,8 @@ async function requireAuthenticatedUser(req) {
     return null;
   }
 }
-function registerMediaUploadRoute(app) {
-  app.post("/api/media-upload/presign", import_express.default.json(), async (req, res) => {
+function registerMediaUploadRoute(app2) {
+  app2.post("/api/media-upload/presign", import_express.default.json(), async (req, res) => {
     try {
       const user = await requireAuthenticatedUser(req);
       if (!user) return res.status(403).json({ message: "Sign in to upload media to HkTube." });
@@ -95376,7 +95376,7 @@ function registerMediaUploadRoute(app) {
       return res.status(500).json({ message: error47 instanceof Error ? error47.message : "The Archive.org media upload could not be prepared." });
     }
   });
-  app.post("/api/media-upload", import_express.default.raw({ type: "application/octet-stream", limit: MAX_UPLOAD_BYTES }), async (req, res) => {
+  app2.post("/api/media-upload", import_express.default.raw({ type: "application/octet-stream", limit: MAX_UPLOAD_BYTES }), async (req, res) => {
     try {
       const user = await requireAuthenticatedUser(req);
       if (!user) return res.status(403).json({ message: "Sign in to upload media to HkTube." });
@@ -108438,20 +108438,20 @@ async function createContext(opts) {
 
 // server/_core/app.ts
 function createApiApp() {
-  const app = (0, import_express2.default)();
-  app.use(import_express2.default.json({ limit: "50mb" }));
-  app.use(import_express2.default.urlencoded({ limit: "50mb", extended: true }));
-  registerStorageProxy(app);
-  registerOAuthRoutes(app);
-  registerMediaUploadRoute(app);
-  app.use(
+  const app2 = (0, import_express2.default)();
+  app2.use(import_express2.default.json({ limit: "50mb" }));
+  app2.use(import_express2.default.urlencoded({ limit: "50mb", extended: true }));
+  registerStorageProxy(app2);
+  registerOAuthRoutes(app2);
+  registerMediaUploadRoute(app2);
+  app2.use(
     "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
       createContext
     })
   );
-  app.use((error47, _req, res, _next) => {
+  app2.use((error47, _req, res, _next) => {
     console.error("[API] Unhandled request error:", error47);
     if (res.headersSent) return;
     res.status(500).json({
@@ -108460,11 +108460,22 @@ function createApiApp() {
       }
     });
   });
-  return app;
+  return app2;
 }
 
 // server/_core/vercel-api.ts
-var vercel_api_default = createApiApp();
+var app;
+function handler(req, res) {
+  try {
+    app ??= createApiApp();
+    return app(req, res);
+  } catch (error47) {
+    console.error("[Vercel] API initialization failed:", error47);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: { message: "The API could not start. Please try again." } });
+    }
+  }
+}
 /*! Bundled license information:
 
 depd/index.js:
