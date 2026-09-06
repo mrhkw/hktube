@@ -4,12 +4,14 @@ declare global {
   interface Window { adsbygoogle?: unknown[]; }
 }
 
-const clientId = import.meta.env.VITE_ADSENSE_CLIENT_ID as string | undefined;
-const enabled = Boolean(clientId?.startsWith("ca-pub-"));
+// Production defaults supplied by the HkTube owner. Vercel env vars can still override them.
+const clientId = ((import.meta.env.VITE_ADSENSE_CLIENT_ID as string | undefined) || "ca-pub-6377077633182623").trim();
+const homeSlot = ((import.meta.env.VITE_ADSENSE_HOME_SLOT as string | undefined) || "6094472305").trim();
+const enabled = clientId.startsWith("ca-pub-") && homeSlot.length > 0;
 
 export function AdSenseLoader() {
   useEffect(() => {
-    if (!enabled || !clientId) return;
+    if (!enabled) return;
     if (document.querySelector('script[data-hktube-adsense="true"]')) return;
     const script = document.createElement("script");
     script.async = true;
@@ -21,12 +23,12 @@ export function AdSenseLoader() {
   return null;
 }
 
-export function HkTubeAd({ slot, className = "" }: { slot?: string; className?: string }) {
+export function HkTubeAd({ slot = homeSlot, className = "" }: { slot?: string; className?: string }) {
   useEffect(() => {
-    if (!enabled || !clientId || !slot) return;
+    if (!enabled || !slot) return;
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch { /* AdSense may not be ready yet. */ }
   }, [slot]);
-  if (!enabled || !clientId || !slot) return null;
+  if (!enabled || !slot) return null;
   return <div className={`min-h-[90px] w-full overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2 ${className}`} aria-label="Advertisement">
     <ins className="adsbygoogle block" style={{ minHeight: 76 }} data-ad-client={clientId} data-ad-slot={slot} data-ad-format="auto" data-full-width-responsive="true" />
   </div>;
