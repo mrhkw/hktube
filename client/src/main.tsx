@@ -8,6 +8,7 @@ import App from "./App";
 import { supabase } from "./lib/supabase";
 import { startLogin } from "./const";
 import "./index.css";
+import "./light-theme.css";
 
 const queryClient = new QueryClient();
 
