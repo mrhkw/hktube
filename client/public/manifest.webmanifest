@@ -1,18 +1,17 @@
 {
-  "name": "DP",
-  "short_name": "DP",
+  "name": "HKTUBE",
+  "short_name": "HKTUBE",
   "id": "/",
-  "description": "DP is a real-data video platform for watching, sharing, and publishing authorized video content.",
+  "description": "HKTUBE is a real-data video platform for watching, sharing, and publishing authorized video content.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "lang": "en",
   "dir": "ltr",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#080810",
+  "theme_color": "#080810",
   "icons": [
-    { "src": "/dp-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
     { "src": "/dp-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ],
   "prefer_related_applications": false
