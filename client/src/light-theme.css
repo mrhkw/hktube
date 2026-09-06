@@ -1,0 +1,57 @@
+/* HkTube clean light theme: white backgrounds and black UI text/icons. */
+html,
+body,
+#root {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+/* Neutralize legacy dark/purple Tailwind UI surfaces. */
+[class*="bg-"] {
+  background-color: #ffffff !important;
+}
+[class*="bg-gradient-"] {
+  background-image: none !important;
+}
+[class*="shadow-"] {
+  box-shadow: none !important;
+}
+[class*="border-"] {
+  border-color: #e5e7eb !important;
+}
+[class*="text-"] {
+  color: #111111 !important;
+}
+[class*="hover\\:bg-"]:hover,
+[class*="focus\\:bg-"]:focus,
+[class*="active\\:bg-"]:active {
+  background-color: #f3f4f6 !important;
+}
+
+input,
+textarea,
+select {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-color: #d1d5db !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+button,
+a {
+  color: #111111;
+}
+
+svg {
+  color: currentColor;
+}
+
+img,
+video,
+iframe {
+  background-color: transparent !important;
+}
