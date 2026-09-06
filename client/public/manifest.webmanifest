@@ -1,18 +1,16 @@
 {
-  "name": "HKTUBE",
-  "short_name": "HKTUBE",
+  "name": "HkTube",
+  "short_name": "HkTube",
   "id": "/",
-  "description": "HKTUBE is a real-data video platform for watching, sharing, and publishing authorized video content.",
+  "description": "HkTube — watch, share and publish video content.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "lang": "en",
   "dir": "ltr",
-  "background_color": "#080810",
-  "theme_color": "#080810",
-  "icons": [
-    { "src": "/dp-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
-  ],
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [{ "src": "/hktube-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
   "prefer_related_applications": false
 }
