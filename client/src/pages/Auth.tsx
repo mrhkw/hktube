@@ -50,7 +50,8 @@ export default function Auth() {
   async function signInWithGoogle() {
     setGooglePending(true);
     try {
-      const redirectTo = `${window.location.origin}/auth`;
+      // Always return to the production HkTube URL, even if the login starts from a Vercel preview.
+      const redirectTo = "https://hktube.vercel.app/auth";
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },
