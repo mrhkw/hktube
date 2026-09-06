@@ -25,7 +25,7 @@ import CreatorAI from "./pages/CreatorAI";
 
 function Router() {
   return <Switch>
-    <Route path="/" component={Home} /><Route path="/home" component={Home} /><Route path="/index.html" component={Home} />
+    <Route path="/" component={Home} /><Route path="/home" component={Home} /><Route path="/index.html" component={Home} /><Route path="/app" component={Home} />
     <Route path="/shorts">{() => <VideoCollection kind="shorts" />}</Route><Route path="/trending">{() => <VideoCollection kind="trending" />}</Route>
     <Route path="/subscriptions">{() => <PlatformSection kind="subscriptions" />}</Route><Route path="/library">{() => <PlatformSection kind="library" />}</Route><Route path="/posts">{() => <PlatformSection kind="posts" />}</Route><Route path="/notifications">{() => <PlatformSection kind="notifications" />}</Route><Route path="/playlists">{() => <PlatformSection kind="playlists" />}</Route><Route path="/history">{() => <PlatformSection kind="history" />}</Route><Route path="/studio">{() => <PlatformSection kind="studio" />}</Route><Route path="/studio/ai" component={CreatorAI} /><Route path="/algorithm" component={AlgorithmDashboard} />
     <Route path="/profile" component={Profile} /><Route path="/auth" component={Auth} /><Route path="/watch/:id" component={WatchVideo} /><Route path="/search" component={SearchResults} /><Route path="/upload" component={Upload} /><Route path="/menu" component={Menu} /><Route path="/settings" component={Settings} /><Route path="/settings/ads" component={AdSettings} />
