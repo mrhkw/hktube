@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import express from "express";
 import { sdk } from "./_core/sdk";
-import { storagePresignPut, storagePut } from "./storage";
+import { archiveStoragePresignPut } from "./archiveStorage";
 
 const MAX_UPLOAD_BYTES = 900 * 1024 * 1024;
 const MAX_THUMBNAIL_BYTES = 12 * 1024 * 1024;
@@ -28,16 +28,15 @@ export function registerMediaUploadRoute(app: Express) {
       const size = Number(req.body?.size || 0);
       if (!kind || !filename || !allowedContentType(kind, contentType)) return res.status(400).json({ message: "Provide a valid media type, filename, and matching content type." });
       if (!Number.isFinite(size) || size <= 0 || size > maxBytesForKind(kind)) return res.status(413).json({ message: `This ${kind} exceeds the HkTube upload size limit.` });
-      const folder = kind === "video" ? "videos" : kind === "thumbnail" ? "thumbnails" : "captions";
-      const result = await storagePresignPut(`hktube/${folder}/${user.id}/${Date.now()}-${filename}`);
-      return res.status(201).json({ ...result, contentType, maxBytes: maxBytesForKind(kind) });
+      const result = await archiveStoragePresignPut({ userId: user.id, kind, filename, contentType });
+      return res.status(201).json({ ...result, contentType, maxBytes: maxBytesForKind(kind), storage: "internet-archive" });
     } catch (error) {
-      console.error("[HkTube] Media presign failed", error);
-      return res.status(500).json({ message: error instanceof Error ? error.message : "The media upload could not be prepared." });
+      console.error("[HkTube] Archive.org media presign failed", error);
+      return res.status(500).json({ message: error instanceof Error ? error.message : "The Archive.org media upload could not be prepared." });
     }
   });
 
-  /* Kept for small legacy uploads; large/new uploads use /presign + direct PUT. */
+  /* Kept for small legacy uploads; all writes now go to Internet Archive. */
   app.post("/api/media-upload", express.raw({ type: "application/octet-stream", limit: MAX_UPLOAD_BYTES }), async (req, res) => {
     try {
       const user = await requireAuthenticatedUser(req);
@@ -48,12 +47,13 @@ export function registerMediaUploadRoute(app: Express) {
       if (!kind || !filename || !allowedContentType(kind, contentType)) return res.status(400).json({ message: "Provide a valid media type, filename, and matching content type." });
       if (!Buffer.isBuffer(req.body) || req.body.length === 0) return res.status(400).json({ message: "The upload file was empty or unreadable." });
       if (req.body.length > maxBytesForKind(kind)) return res.status(413).json({ message: `This ${kind} exceeds the HkTube upload size limit.` });
-      const folder = kind === "video" ? "videos" : kind === "thumbnail" ? "thumbnails" : "captions";
-      const result = await storagePut(`hktube/${folder}/${user.id}/${Date.now()}-${filename}`, req.body, contentType);
-      return res.status(201).json({ ...result, contentType });
+      const result = await archiveStoragePresignPut({ userId: user.id, kind, filename, contentType });
+      const response = await fetch(result.url, { method: "PUT", headers: { "Content-Type": contentType }, body: req.body });
+      if (!response.ok) throw new Error(`Archive.org upload failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
+      return res.status(201).json({ ...result, contentType, storage: "internet-archive" });
     } catch (error) {
-      console.error("[HkTube] Media upload failed", error);
-      return res.status(500).json({ message: error instanceof Error ? error.message : "The media upload could not be completed." });
+      console.error("[HkTube] Archive.org media upload failed", error);
+      return res.status(500).json({ message: error instanceof Error ? error.message : "The Archive.org media upload could not be completed." });
     }
   });
 }
