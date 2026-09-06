@@ -1,48 +1,44 @@
-// HkTube storage helpers. Files are uploaded directly to S3 using short-lived presigned URLs.
-import { ENV } from "./_core/env";
+// HkTube storage is backed by Internet Archive. Heavy media is never proxied through Vercel.
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { randomUUID } from "node:crypto";
 
-function getForgeConfig() {
-  const forgeUrl = ENV.forgeApiUrl;
-  const forgeKey = ENV.forgeApiKey;
-  if (!forgeUrl || !forgeKey) throw new Error("Storage config missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY");
-  return { forgeUrl: forgeUrl.replace(/\/+$/, ""), forgeKey };
-}
-function normalizeKey(relKey: string) { return relKey.replace(/^\/+/, ""); }
-function appendHashSuffix(relKey: string) {
-  const hash = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
-  const lastDot = relKey.lastIndexOf(".");
-  return lastDot === -1 ? `${relKey}_${hash}` : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
-}
+const ENDPOINT = process.env.ARCHIVE_ENDPOINT || "https://s3.us.archive.org";
+const FRONTEND = process.env.ARCHIVE_FRONTEND || "https://archive.org";
+const ACCESS_KEY = process.env.ARCHIVE_ACCESS_KEY || "";
+const SECRET_KEY = process.env.ARCHIVE_SECRET_KEY || "";
 
-export async function storagePresignPut(relKey: string) {
-  const { forgeUrl, forgeKey } = getForgeConfig();
-  const key = appendHashSuffix(normalizeKey(relKey));
-  const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
-  presignUrl.searchParams.set("path", key);
-  const response = await fetch(presignUrl, { headers: { Authorization: `Bearer ${forgeKey}` } });
-  if (!response.ok) throw new Error(`Storage presign failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
-  const { url } = await response.json() as { url?: string };
-  if (!url) throw new Error("Storage provider returned no upload URL");
-  return { key, url, publicUrl: `/manus-storage/${key}` };
+function requireConfig() {
+  if (!ACCESS_KEY || !SECRET_KEY) throw new Error("Internet Archive storage is not configured. Set ARCHIVE_ACCESS_KEY and ARCHIVE_SECRET_KEY in Vercel.");
+}
+function client() {
+  requireConfig();
+  return new S3Client({ region: "us-east-1", endpoint: ENDPOINT, forcePathStyle: true, credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY } });
+}
+function normalizeKey(value: string) { return value.replace(/^\/+/, "").replace(/[^a-zA-Z0-9._\/-]/g, "-"); }
+function publicUrl(identifier: string, key: string) { return `${FRONTEND.replace(/\/+$/, "")}/download/${encodeURIComponent(identifier)}/${key.split("/").map(encodeURIComponent).join("/")}`; }
+
+export async function storagePresignPut(relKey: string, contentType = "application/octet-stream") {
+  const identifier = `hktube-${randomUUID().replace(/-/g, "").slice(0, 24)}`;
+  const key = normalizeKey(relKey);
+  const url = await getSignedUrl(client(), new PutObjectCommand({ Bucket: identifier, Key: key, ContentType: contentType }), { expiresIn: 900 });
+  return { key, identifier, url, publicUrl: publicUrl(identifier, key) };
 }
 
 export async function storagePut(relKey: string, data: Buffer | Uint8Array | string, contentType = "application/octet-stream") {
-  const { url, key, publicUrl } = await storagePresignPut(relKey);
+  const { url, key, identifier, publicUrl: urlOut } = await storagePresignPut(relKey, contentType);
   const blob = typeof data === "string" ? new Blob([data], { type: contentType }) : new Blob([data as any], { type: contentType });
   const response = await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: blob });
-  if (!response.ok) throw new Error(`Storage upload to S3 failed (${response.status})`);
-  return { key, url: publicUrl };
+  if (!response.ok) throw new Error(`Archive.org upload failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
+  return { key, identifier, url: urlOut };
 }
 
-export async function storageGet(relKey: string) { const key = normalizeKey(relKey); return { key, url: `/manus-storage/${key}` }; }
+export async function storageGet(relKey: string) {
+  return { key: normalizeKey(relKey), url: `${FRONTEND.replace(/\/+$/, "")}/download/${normalizeKey(relKey)}` };
+}
+
 export async function storageGetSignedUrl(relKey: string) {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = normalizeKey(relKey);
-  const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
-  getUrl.searchParams.set("path", key);
-  const response = await fetch(getUrl, { headers: { Authorization: `Bearer ${forgeKey}` } });
-  if (!response.ok) throw new Error(`Storage signed URL failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
-  const { url } = await response.json() as { url?: string };
-  if (!url) throw new Error("Storage provider returned no download URL");
+  const { url } = await storagePresignPut(key);
   return url;
 }
