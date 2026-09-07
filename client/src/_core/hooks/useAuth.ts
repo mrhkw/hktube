@@ -9,6 +9,9 @@ type UseAuthOptions = {
   redirectPath?: string;
 };
 
+const AUTH_BOOT_TIMEOUT_MS = 8000;
+const PROFILE_TIMEOUT_MS = 8000;
+
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = "/auth" } = options ?? {};
   const [, navigate] = useLocation();
@@ -16,9 +19,17 @@ export function useAuth(options?: UseAuthOptions) {
   const [sessionReady, setSessionReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const [sessionIdentity, setSessionIdentity] = useState<{ name: string | null; email: string | null; avatarUrl: string | null; loginMethod: string | null } | null>(null);
+  const [profileTimedOut, setProfileTimedOut] = useState(false);
+  const [authBootTimedOut, setAuthBootTimedOut] = useState(false);
 
   useEffect(() => {
     let active = true;
+    const timeoutId = window.setTimeout(() => {
+      if (!active) return;
+      // Auth providers/network failures must never leave the whole app blank forever.
+      setAuthBootTimedOut(true);
+      setSessionReady(true);
+    }, AUTH_BOOT_TIMEOUT_MS);
 
     void supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
@@ -30,7 +41,16 @@ export function useAuth(options?: UseAuthOptions) {
         avatarUrl: session.user.user_metadata?.avatar_url ?? null,
         loginMethod: session.user.app_metadata?.provider ?? "supabase",
       } : null);
+      setAuthBootTimedOut(false);
       setSessionReady(true);
+      window.clearTimeout(timeoutId);
+    }).catch(() => {
+      if (!active) return;
+      setHasSession(false);
+      setSessionIdentity(null);
+      setAuthBootTimedOut(true);
+      setSessionReady(true);
+      window.clearTimeout(timeoutId);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -42,6 +62,8 @@ export function useAuth(options?: UseAuthOptions) {
         avatarUrl: session.user.user_metadata?.avatar_url ?? null,
         loginMethod: session.user.app_metadata?.provider ?? "supabase",
       } : null);
+      setProfileTimedOut(false);
+      setAuthBootTimedOut(false);
       setSessionReady(true);
       if (!session) utils.auth.me.setData(undefined, null);
       else void utils.auth.me.invalidate();
@@ -49,6 +71,7 @@ export function useAuth(options?: UseAuthOptions) {
 
     return () => {
       active = false;
+      window.clearTimeout(timeoutId);
       listener.subscription.unsubscribe();
     };
   }, [utils]);
@@ -58,6 +81,15 @@ export function useAuth(options?: UseAuthOptions) {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (!sessionReady || !hasSession || !meQuery.isLoading) {
+      setProfileTimedOut(false);
+      return;
+    }
+    const timeoutId = window.setTimeout(() => setProfileTimedOut(true), PROFILE_TIMEOUT_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [hasSession, meQuery.isLoading, sessionReady]);
 
   const logoutMutation = trpc.auth.logout.useMutation();
   const logout = useCallback(async () => {
@@ -69,6 +101,7 @@ export function useAuth(options?: UseAuthOptions) {
     } finally {
       setHasSession(false);
       setSessionIdentity(null);
+      setProfileTimedOut(false);
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
@@ -76,8 +109,8 @@ export function useAuth(options?: UseAuthOptions) {
 
   const state = useMemo(() => {
     // The Supabase browser session is the source of truth for authentication.
-    // If the backend profile request is temporarily unavailable, keep the user
-    // signed in instead of incorrectly showing the Sign in / Sign up screen.
+    // If the backend profile request is temporarily unavailable, keep the session
+    // identity available while rendering a non-blocking fallback UI.
     const fallbackUser = hasSession && sessionIdentity ? {
       id: 0,
       openId: "supabase-session",
@@ -87,20 +120,18 @@ export function useAuth(options?: UseAuthOptions) {
       role: "user",
       avatarUrl: sessionIdentity.avatarUrl,
     } : null;
-    // Never expose the local fallback as a fully authenticated backend user after
-    // the protected profile request has failed; that caused channel creation to
-    // render normally and then fail with a misleading login error.
     const user = meQuery.data ?? (meQuery.error ? null : fallbackUser);
     if (typeof window !== "undefined") {
       localStorage.setItem("hktube-runtime-user-info", JSON.stringify(user));
     }
     return {
       user,
-      loading: !sessionReady || (hasSession && meQuery.isLoading) || logoutMutation.isPending,
+      loading: (!sessionReady && !authBootTimedOut) || (hasSession && meQuery.isLoading && !profileTimedOut) || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: hasSession,
+      authTimedOut: authBootTimedOut || profileTimedOut,
     };
-  }, [hasSession, logoutMutation.error, logoutMutation.isPending, meQuery.data, meQuery.error, meQuery.isLoading, sessionIdentity, sessionReady]);
+  }, [authBootTimedOut, hasSession, logoutMutation.error, logoutMutation.isPending, meQuery.data, meQuery.error, meQuery.isLoading, profileTimedOut, sessionIdentity, sessionReady]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated || !sessionReady || hasSession || meQuery.isLoading) return;
