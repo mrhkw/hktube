@@ -13,7 +13,7 @@ function friendlyChannelError(message: string) {
 
 export default function CreateChannel() {
   const [, navigate] = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const channels = trpc.channels.mine.useQuery(undefined, { enabled: Boolean(user) });
   const utils = trpc.useUtils();
   const create = trpc.channels.create.useMutation({
@@ -40,7 +40,7 @@ export default function CreateChannel() {
   }
 
   if (loading) return <HkTubeShell><div className="mx-auto max-w-xl p-8 text-sm text-slate-500">Loading account…</div></HkTubeShell>;
-  if (!user) return <HkTubeShell><div className="mx-auto max-w-xl p-8"><Link href="/" className="inline-flex items-center text-sm font-semibold"><ArrowLeft className="mr-1.5 size-4" />Back to Home</Link><div className="mt-8 rounded-3xl border p-8 text-center"><h1 className="text-2xl font-bold">Sign in to create a channel</h1><p className="mt-3 text-sm leading-6 text-slate-500">Your channel must belong to an authenticated HkTube account.</p><Link href="/auth" className="mt-6 inline-flex rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white">Sign in / Sign up</Link></div></div></HkTubeShell>;
+  if (!user) return <HkTubeShell><div className="mx-auto max-w-xl p-8"><Link href="/" className="inline-flex items-center text-sm font-semibold"><ArrowLeft className="mr-1.5 size-4" />Back to Home</Link><div className="mt-8 rounded-3xl border p-8 text-center"><h1 className="text-2xl font-bold">{isAuthenticated ? "Session sync required" : "Sign in to create a channel"}</h1><p className="mt-3 text-sm leading-6 text-slate-500">{isAuthenticated ? "Your browser session is present, but the secure profile service did not respond. Open auth again to refresh the session, then retry." : "Your channel must belong to an authenticated HkTube account."}</p><Link href="/auth" className="mt-6 inline-flex rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white">{isAuthenticated ? "Refresh sign-in" : "Sign in / Sign up"}</Link></div></div></HkTubeShell>;
 
   return <HkTubeShell>
     <div className="mx-auto max-w-xl pb-12 pt-2">

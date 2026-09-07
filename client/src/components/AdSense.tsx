@@ -4,9 +4,9 @@ declare global {
   interface Window { adsbygoogle?: unknown[]; }
 }
 
-// Production defaults supplied by the HkTube owner. Vercel env vars can still override them.
-const clientId = ((import.meta.env.VITE_ADSENSE_CLIENT_ID as string | undefined) || "ca-pub-6377077633182623").trim();
-const homeSlot = ((import.meta.env.VITE_ADSENSE_HOME_SLOT as string | undefined) || "6094472305").trim();
+// Ads stay opt-in so an unconfigured provider never leaves a blank box in the layout.
+const clientId = ((import.meta.env.VITE_ADSENSE_CLIENT_ID as string | undefined) || "").trim();
+const homeSlot = ((import.meta.env.VITE_ADSENSE_HOME_SLOT as string | undefined) || "").trim();
 const enabled = clientId.startsWith("ca-pub-") && homeSlot.length > 0;
 
 export function AdSenseLoader() {

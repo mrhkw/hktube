@@ -87,7 +87,10 @@ export function useAuth(options?: UseAuthOptions) {
       role: "user",
       avatarUrl: sessionIdentity.avatarUrl,
     } : null;
-    const user = meQuery.data ?? fallbackUser;
+    // Never expose the local fallback as a fully authenticated backend user after
+    // the protected profile request has failed; that caused channel creation to
+    // render normally and then fail with a misleading login error.
+    const user = meQuery.data ?? (meQuery.error ? null : fallbackUser);
     if (typeof window !== "undefined") {
       localStorage.setItem("hktube-runtime-user-info", JSON.stringify(user));
     }
