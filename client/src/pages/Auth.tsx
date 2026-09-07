@@ -45,8 +45,14 @@ export default function Auth() {
   async function signInWithGoogle() {
     setGooglePending(true);
     try {
-      const redirectTo = "https://hktube.vercel.app/auth";
-      const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+      const redirectTo = "https://hktube.vercel.app";
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: { prompt: "select_account" },
+        },
+      });
       if (error) throw error;
     } catch (error) {
       toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));
