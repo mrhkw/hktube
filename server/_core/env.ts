@@ -1,5 +1,6 @@
 const SUPABASE_PUBLIC_KEY = "sb_publishable__1sh69umIE7vUSobZfp1Tw__D5ud-2S";
 const OWNER_EMAILS = new Set(["hanifnazamdin30@gmail.com", "hanifnazamdin6@gmail.com"]);
+const firstNonEmpty = (...values: Array<string | undefined>) => values.find(value => Boolean(value?.trim()))?.trim() ?? "";
 
 export function isOwnerEmail(email: string | null | undefined): boolean {
   return Boolean(email && OWNER_EMAILS.has(email.trim().toLowerCase()));
@@ -10,16 +11,16 @@ export const ENV = {
   // Keep explicit Vercel variables as the preferred source; the public
   // Supabase key fallback also lets the server validate an existing browser
   // Supabase session when the Vercel secret is not configured.
-  appId: process.env.VITE_APP_ID ?? "oW2FhxeMWaMQ3fzfsPSX4q",
+  appId: firstNonEmpty(process.env.VITE_APP_ID, "oW2FhxeMWaMQ3fzfsPSX4q"),
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "https://api.manus.im",
+  oAuthServerUrl: firstNonEmpty(process.env.OAUTH_SERVER_URL, "https://api.manus.im"),
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  supabaseUrl: process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "https://jpdvunotyykfqmmkhmml.supabase.co",
-  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? SUPABASE_PUBLIC_KEY,
+  supabaseUrl: firstNonEmpty(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
+  supabaseAnonKey: firstNonEmpty(process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "",
 };
