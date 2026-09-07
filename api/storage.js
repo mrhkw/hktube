@@ -49782,12 +49782,16 @@ async function toggleVideoLike(videoId, userId) {
 async function listComments(target) {
   const db = await getDb();
   if (!db) return [];
-  const filter2 = target.videoId ? eq(comments.videoId, target.videoId) : target.postId ? eq(comments.postId, target.postId) : void 0;
+  const filter2 = target.videoId ? and(eq(comments.videoId, target.videoId), eq(comments.status, "visible")) : target.postId ? and(eq(comments.postId, target.postId), eq(comments.status, "visible")) : void 0;
+  if (!filter2) return [];
   return db.select().from(comments).where(filter2).orderBy(desc(comments.createdAt)).limit(100);
 }
 async function createComment(input) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable.");
+  if ((input.videoId ? 1 : 0) + (input.postId ? 1 : 0) !== 1) throw new Error("A comment must target exactly one video or post.");
+  const target = input.videoId ? await db.select({ id: videos.id }).from(videos).where(eq(videos.id, input.videoId)).limit(1) : await db.select({ id: posts.id }).from(posts).where(eq(posts.id, input.postId)).limit(1);
+  if (!target.length) throw new Error("Comment target not found.");
   const result = await db.insert(comments).values({ ...input, videoId: input.videoId ?? null, postId: input.postId ?? null, parentId: input.parentId ?? null });
   const rows = await db.select().from(comments).where(eq(comments.id, Number(result[0].insertId))).limit(1);
   return rows[0];
@@ -49800,6 +49804,8 @@ async function listChannelSubscriptions(userId) {
 async function toggleChannelSubscription(channelId, subscriberId) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable.");
+  const channel = await db.select({ id: channels.id }).from(channels).where(eq(channels.id, channelId)).limit(1);
+  if (!channel.length) throw new Error("Channel not found.");
   const existing = await db.select({ id: subscriptions.id }).from(subscriptions).where(and(eq(subscriptions.channelId, channelId), eq(subscriptions.subscriberId, subscriberId))).limit(1);
   if (existing.length) {
     await db.delete(subscriptions).where(eq(subscriptions.id, existing[0].id));
@@ -49827,6 +49833,8 @@ async function addVideoToPlaylist(input) {
   if (!db) throw new Error("Database is unavailable.");
   const owner = await db.select({ id: playlists.id }).from(playlists).where(and(eq(playlists.id, input.playlistId), eq(playlists.ownerId, input.ownerId))).limit(1);
   if (!owner.length) throw new Error("Playlist not found.");
+  const video = await db.select({ id: videos.id }).from(videos).where(eq(videos.id, input.videoId)).limit(1);
+  if (!video.length) throw new Error("Video not found.");
   await db.insert(playlistItems).values({ playlistId: input.playlistId, videoId: input.videoId, position: 0 }).onDuplicateKeyUpdate({ set: { addedAt: /* @__PURE__ */ new Date() } });
   return { success: true };
 }
@@ -108319,7 +108327,7 @@ var mediaUrl = external_exports.string().trim().refine((value) => {
 }, "Provide a valid external URL or stored media path.");
 var videoInputSchema = external_exports.object({ title: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional().default(""), videoUrl: mediaUrl, videoStorageKey: external_exports.string().trim().max(512).optional(), thumbnailUrl: mediaUrl.optional(), thumbnailStorageKey: external_exports.string().trim().max(512).optional(), captionUrl: mediaUrl.optional(), captionStorageKey: external_exports.string().trim().max(512).optional(), durationSeconds: external_exports.number().int().min(0).max(86400).default(0), category: videoCategory.default("regular"), channelId: external_exports.number().int().positive().optional() });
 var channelInputSchema = external_exports.object({ handle: external_exports.string().trim().regex(/^[A-Za-z0-9_]{3,64}$/, "Use 3-64 letters, numbers, or underscores."), displayName: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional().default("") });
-var commentInput = external_exports.object({ body: external_exports.string().trim().min(1).max(2e3), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), parentId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId || value.postId), "A video or post is required.");
+var commentInput = external_exports.object({ body: external_exports.string().trim().min(1).max(2e3), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), parentId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId) !== Boolean(value.postId), "A comment must target exactly one video or post.");
 var appRouter = router({
   system: systemRouter,
   auth: router({
@@ -108374,7 +108382,7 @@ var appRouter = router({
     adminList: adminProcedure.query(() => listAdminVideos()),
     remove: adminProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(({ input }) => removeVideo(input.id))
   }),
-  comments: router({ list: publicProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional() })).query(({ input }) => listComments(input)), create: protectedProcedure.input(commentInput).mutation(({ ctx, input }) => createComment({ ...input, authorId: ctx.user.id })) }),
+  comments: router({ list: publicProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId) !== Boolean(value.postId), "Provide exactly one videoId or postId.")).query(({ input }) => listComments(input)), create: protectedProcedure.input(commentInput).mutation(({ ctx, input }) => createComment({ ...input, authorId: ctx.user.id })) }),
   subscriptions: router({ mine: protectedProcedure.query(({ ctx }) => listChannelSubscriptions(ctx.user.id)), toggle: protectedProcedure.input(external_exports.object({ channelId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => toggleChannelSubscription(input.channelId, ctx.user.id)) }),
   channels: router({
     mine: protectedProcedure.query(({ ctx }) => listChannelsByOwner(ctx.user.id)),
@@ -108392,8 +108400,14 @@ var appRouter = router({
   playlists: router({ mine: protectedProcedure.query(({ ctx }) => listPlaylists(ctx.user.id)), create: protectedProcedure.input(external_exports.object({ title: external_exports.string().trim().min(1).max(255), description: external_exports.string().trim().max(5e3).optional(), visibility: external_exports.enum(["public", "unlisted", "private"]).optional() })).mutation(({ ctx, input }) => createPlaylist({ ...input, ownerId: ctx.user.id })), add: protectedProcedure.input(external_exports.object({ playlistId: external_exports.number().int().positive(), videoId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => addVideoToPlaylist({ ...input, ownerId: ctx.user.id })) }),
   watch_history: router({ mine: protectedProcedure.query(({ ctx }) => listWatchHistory(ctx.user.id)), record: protectedProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive(), watchedSeconds: external_exports.number().int().min(0).max(86400).optional() })).mutation(({ ctx, input }) => recordWatchHistory({ ...input, userId: ctx.user.id })) }),
   notifications: router({ mine: protectedProcedure.query(({ ctx }) => listNotifications(ctx.user.id)), markRead: protectedProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(({ ctx, input }) => markNotificationRead(input.id, ctx.user.id)) }),
-  posts: router({ latest: publicProcedure.input(external_exports.object({ limit: external_exports.number().int().min(1).max(100).optional() }).optional()).query(({ input }) => listPosts(input?.limit)), create: protectedProcedure.input(external_exports.object({ body: external_exports.string().trim().min(1).max(5e3), channelId: external_exports.number().int().positive().optional(), mediaUrl: mediaUrl.optional(), linkUrl: mediaUrl.optional() })).mutation(({ ctx, input }) => createPost({ ...input, authorId: ctx.user.id })), toggleLike: protectedProcedure.input(external_exports.object({ postId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => togglePostLike(input.postId, ctx.user.id)) }),
-  reports: router({ create: protectedProcedure.input(external_exports.object({ reason: external_exports.string().trim().min(1).max(120), details: external_exports.string().trim().max(2e3).optional(), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), commentId: external_exports.number().int().positive().optional() }).refine((value) => Boolean(value.videoId || value.postId || value.commentId), "A report target is required.")).mutation(({ ctx, input }) => createReport({ ...input, reporterId: ctx.user.id })) }),
+  posts: router({ latest: publicProcedure.input(external_exports.object({ limit: external_exports.number().int().min(1).max(100).optional() }).optional()).query(({ input }) => listPosts(input?.limit)), create: protectedProcedure.input(external_exports.object({ body: external_exports.string().trim().min(1).max(5e3), channelId: external_exports.number().int().positive().optional(), mediaUrl: mediaUrl.optional(), linkUrl: mediaUrl.optional() })).mutation(async ({ ctx, input }) => {
+    if (input.channelId) {
+      const channel = await getChannelById(input.channelId);
+      if (!channel || channel.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "You can only post from your own channel." });
+    }
+    return createPost({ ...input, authorId: ctx.user.id });
+  }), toggleLike: protectedProcedure.input(external_exports.object({ postId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => togglePostLike(input.postId, ctx.user.id)) }),
+  reports: router({ create: protectedProcedure.input(external_exports.object({ reason: external_exports.string().trim().min(1).max(120), details: external_exports.string().trim().max(2e3).optional(), videoId: external_exports.number().int().positive().optional(), postId: external_exports.number().int().positive().optional(), commentId: external_exports.number().int().positive().optional() }).refine((value) => [value.videoId, value.postId, value.commentId].filter(Boolean).length === 1, "Provide exactly one report target.")).mutation(({ ctx, input }) => createReport({ ...input, reporterId: ctx.user.id })) }),
   library: router({ saved: protectedProcedure.query(({ ctx }) => listSavedVideos(ctx.user.id)), toggleSaved: protectedProcedure.input(external_exports.object({ videoId: external_exports.number().int().positive() })).mutation(({ ctx, input }) => toggleSavedVideo(input.videoId, ctx.user.id)) }),
   algorithm: router({
     dashboard: adminProcedure.query(async () => ({ videos: await listAdminVideos(), reports: await listReports(), auditLogs: await listAuditLogs() })),
