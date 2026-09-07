@@ -35,6 +35,14 @@ export default function Auth() {
 
   useEffect(() => {
     let active = true;
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    hashParams.forEach((value, key) => params.set(key, value));
+    const callbackError = params.get("error_description") || params.get("error");
+    if (callbackError) {
+      toast.error(readableAuthError(callbackError.replace(/\+/g, " ")));
+      window.history.replaceState({}, document.title, "/auth");
+    }
     supabase.auth.getSession().then(({ data }) => {
       if (active && data.session) navigate("/menu");
     });
