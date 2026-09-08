@@ -4,7 +4,7 @@ import { AlertTriangle, Captions, Home, Loader2, Maximize, Pause, Play, RefreshC
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
-export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; autoPlay?: boolean }) {
+export function VideoPlayer({ video, autoPlay = false, onProgress }: { video: VideoRecord; autoPlay?: boolean; onProgress?: (seconds: number) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,6 +23,22 @@ export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; a
     setIsLoading(true);
     setPlaybackError(null);
   }, [video.id, video.durationSeconds]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      const element = videoRef.current;
+      if (!element) return;
+      if (event.key === " ") { event.preventDefault(); togglePlayback(); }
+      if (event.key === "ArrowLeft") changeTime(Math.max(0, element.currentTime - 5));
+      if (event.key === "ArrowRight") changeTime(Math.min(element.duration || duration, element.currentTime + 5));
+      if (event.key.toLowerCase() === "m") changeVolume(element.muted || element.volume === 0 ? 0.9 : 0);
+      if (event.key.toLowerCase() === "f") void toggleFullscreen();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 
   function togglePlayback() {
     const element = videoRef.current;
@@ -61,11 +77,16 @@ export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; a
     element.load();
   }
 
+  async function toggleFullscreen() {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await containerRef.current?.requestFullscreen();
+  }
+
   return (
     <div ref={containerRef} className={`relative overflow-hidden border border-violet-400/20 bg-black shadow-[0_0_45px_rgba(139,92,246,.13)] ${isShort ? "mx-auto w-full max-w-[720px] rounded-none lg:rounded-2xl" : "rounded-2xl"}`}>
       <div className={isShort ? "relative aspect-[9/16] max-lg:h-[100dvh] max-lg:w-full max-lg:aspect-auto bg-[#05050a]" : "relative aspect-video bg-[#05050a]"}>
         <Link href="/" className="absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-black/65 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-black/85" aria-label="Back to Home"><Home className="size-4" />Home</Link>
-        <video ref={videoRef} src={video.videoUrl} poster={video.thumbnailUrl || undefined} autoPlay={autoPlay} playsInline preload="metadata" onLoadStart={() => setIsLoading(true)} onCanPlay={() => setIsLoading(false)} onWaiting={() => setIsLoading(true)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onError={() => { setIsLoading(false); setPlaybackError("This media could not be loaded. The source may be unavailable or unsupported."); }} onLoadedMetadata={event => setDuration(event.currentTarget.duration || video.durationSeconds || 0)} onTimeUpdate={event => setCurrentTime(event.currentTarget.currentTime)} className={isShort ? "size-full object-cover" : "size-full object-contain"}>
+        <video ref={videoRef} src={video.videoUrl} poster={video.thumbnailUrl || undefined} autoPlay={autoPlay} playsInline preload="metadata" onLoadStart={() => setIsLoading(true)} onCanPlay={() => setIsLoading(false)} onWaiting={() => setIsLoading(true)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => { setIsPlaying(false); onProgress?.(video.durationSeconds || duration); }} onError={() => { setIsLoading(false); setPlaybackError("This media could not be loaded. The source may be unavailable or unsupported."); }} onLoadedMetadata={event => setDuration(event.currentTarget.duration || video.durationSeconds || 0)} onTimeUpdate={event => { const seconds = event.currentTarget.currentTime; setCurrentTime(seconds); onProgress?.(seconds); }} className={isShort ? "size-full object-cover" : "size-full object-contain"}>
           {video.captionUrl && <track kind="captions" src={video.captionUrl} srcLang="en" label="English captions" />}
           Your browser does not support HTML5 video playback.
         </video>
@@ -79,7 +100,7 @@ export function VideoPlayer({ video, autoPlay = false }: { video: VideoRecord; a
         <input aria-label="Video progress" type="range" min="0" max={duration || 0} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={event => changeTime(Number(event.target.value))} className="h-1 min-w-20 flex-1 accent-fuchsia-400" />
         <div className="hidden items-center gap-2 sm:flex"><Button variant="ghost" size="icon" className="size-8 text-slate-300 hover:bg-white/10" onClick={() => changeVolume(volume ? 0 : 0.9)} aria-label="Toggle sound">{volume ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}</Button><input aria-label="Volume" type="range" min="0" max="1" step="0.05" value={volume} onChange={event => changeVolume(Number(event.target.value))} className="h-1 w-16 accent-cyan-300" /></div>
         <Button variant="ghost" size="sm" disabled={!video.captionUrl} onClick={toggleCaptions} className={captionsOn ? "bg-fuchsia-500/20 text-fuchsia-200 hover:bg-fuchsia-500/30" : "text-slate-300 hover:bg-white/10 disabled:text-slate-600"} aria-label={video.captionUrl ? "Toggle captions" : "Captions are unavailable for this video"}><Captions className="mr-1 size-4" />CC</Button>
-        <Button variant="ghost" size="icon" onClick={() => void containerRef.current?.requestFullscreen()} className="ml-auto size-8 text-slate-300 hover:bg-white/10" aria-label="Fullscreen"><Maximize className="size-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => void toggleFullscreen()} className="ml-auto size-8 text-slate-300 hover:bg-white/10" aria-label="Fullscreen (F)"><Maximize className="size-4" /></Button>
       </div>
     </div>
   );

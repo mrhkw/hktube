@@ -17,6 +17,7 @@ export default function WatchVideo() {
   const videoQuery = trpc.videos.byId.useQuery({ id }, { enabled: Number.isInteger(id) && id > 0 });
   const video = videoQuery.data as VideoRecord | undefined;
   const viewedVideoId = useRef<number | null>(null);
+  const lastHistoryWrite = useRef(0);
   const recordView = trpc.videos.recordView.useMutation();
   const recordHistory = trpc.watch_history.record.useMutation();
   const { user } = useAuth();
@@ -58,6 +59,14 @@ export default function WatchVideo() {
 
   const isSaved = Boolean(savedQuery.data?.some(item => item.video.id === activeVideo.id));
 
+  function saveWatchProgress(seconds: number) {
+    if (!user || !Number.isFinite(seconds) || seconds < 1) return;
+    const now = Date.now();
+    if (now - lastHistoryWrite.current < 15000) return;
+    lastHistoryWrite.current = now;
+    recordHistory.mutate({ videoId: activeVideo.id, watchedSeconds: Math.floor(seconds) });
+  }
+
   function toggleSaved() {
     if (!user) return startLogin();
     saveMutation.mutate({ videoId: activeVideo.id }, { onError: error => toast.error(error.message || "Unable to update Watch Later.") });
@@ -71,9 +80,9 @@ export default function WatchVideo() {
   }
 
   return <HkTubeShell immersive={video.category === "shorts"}>
-    <div className="mx-auto w-full max-w-[1560px]">
+    <div className="mx-auto grid w-full max-w-[1560px] gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="min-w-0">
-        <VideoPlayer video={video} />
+        <VideoPlayer video={video} onProgress={saveWatchProgress} />
         <div className="border-b border-white/8 py-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-semibold uppercase tracking-[.17em] text-cyan-300">{video.category === "shorts" ? "HKTUBE Short" : "HKTUBE Video"}</span><h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">{video.title}</h1></div><span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/8 px-3 py-1.5 text-xs font-medium text-violet-100"><Eye className="size-3.5" />{formatViews(video.viewCount)}</span></div>
           <div className="mt-4 flex flex-wrap items-center gap-2"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-red-300/35 bg-red-500/15 text-red-100 hover:bg-red-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button><Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />Share</Button><Button variant="outline" size="sm" onClick={toggleSaved} disabled={saveMutation.isPending} className={isSaved ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100" : "border-white/10 text-slate-200 hover:bg-white/8"}><Bookmark className={`mr-1.5 size-4 ${isSaved ? "fill-current" : ""}`} />{isSaved ? "Saved" : "Watch later"}</Button></div>
@@ -86,7 +95,7 @@ export default function WatchVideo() {
           <div className="mt-5 space-y-4">{commentsQuery.data?.length ? commentsQuery.data.map(comment => <article key={comment.id} className="rounded-xl border border-white/7 bg-white/[.025] p-4"><p className="text-sm leading-6 text-slate-300">{comment.body}</p><p className="mt-2 text-xs text-slate-600">{formatDate(comment.createdAt)}</p></article>) : <p className="py-6 text-sm text-slate-500">No comments yet. Be the first to contribute a real comment.</p>}</div>
         </section>
       </section>
-      <aside className="mt-8 border-t border-white/8 pt-7"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
+      <aside className="border-t border-white/8 pt-7 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
     </div>
   </HkTubeShell>;
 }
