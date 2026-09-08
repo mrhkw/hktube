@@ -84,7 +84,6 @@ body [class*="min-h-[100dvh]"] .bg-gradient-to-br{background-image:none!importan
 body [class*="min-h-[100dvh]"] footer p{font-size:0!important}
 body [class*="min-h-[100dvh]"] footer p:after{content:"© 2026 HkTube. Authentic content only.";font-size:12px}
 
-/* Advanced usability/performance defaults. */
 video{max-width:100%;background:#000}
 img{max-width:100%;height:auto}
 button,a,input,textarea,select{transition-property:color,background-color,border-color,opacity,box-shadow,transform;transition-duration:150ms}
@@ -94,6 +93,13 @@ button,a,input,textarea,select{transition-property:color,background-color,border
 
 @keyframes hktube-pop{0%{transform:scale(.82);opacity:.65}55%{transform:scale(1.16)}100%{transform:scale(1);opacity:1}}
 @keyframes hktube-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes hktube-heart-burst{0%{transform:scale(.35) translateY(4px);opacity:0}18%{transform:scale(1.15);opacity:1}58%{transform:scale(.96) translateY(-10px);opacity:1}100%{transform:scale(.7) translateY(-28px);opacity:0}}
+@keyframes hktube-save-burst{0%{transform:scale(.35) rotate(-12deg);opacity:0}20%{transform:scale(1.15) rotate(6deg);opacity:1}60%{transform:scale(1) rotate(-3deg) translateY(-9px);opacity:1}100%{transform:scale(.75) rotate(8deg) translateY(-26px);opacity:0}}
+@keyframes hktube-spark{0%{transform:rotate(calc(var(--i)*60deg)) translateY(5px) scale(.4);opacity:0}30%{opacity:1}100%{transform:rotate(calc(var(--i)*60deg)) translateY(23px) scale(0);opacity:0}}
 .hktube-like-pop{animation:hktube-pop 260ms cubic-bezier(.23,1,.32,1)}
 .hktube-float{animation:hktube-float 1.8s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.hktube-like-pop,.hktube-float{animation:none!important}}
+.hktube-heart-burst,.hktube-save-burst{animation:1 620ms cubic-bezier(.2,.8,.2,1) both}
+.hktube-heart-burst{animation-name:hktube-heart-burst}
+.hktube-save-burst{animation-name:hktube-save-burst}
+.hktube-action-spark{display:block;width:4px;height:10px;border-radius:999px;transform-origin:center;animation:hktube-spark 620ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*18ms)}
+@media (prefers-reduced-motion:reduce){.hktube-like-pop,.hktube-float,.hktube-heart-burst,.hktube-save-burst,.hktube-action-spark{animation:none!important}}
