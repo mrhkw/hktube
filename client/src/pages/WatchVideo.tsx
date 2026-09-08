@@ -6,10 +6,21 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Bookmark, Eye, Heart, Loader2, MessageCircle, Share2 } from "lucide-react";
+import { Bookmark, Check, Eye, Heart, Loader2, MessageCircle, Share2, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { toast } from "sonner";
+
+function ActionCelebration({ type }: { type: "like" | "save" }) {
+  return <span className="pointer-events-none absolute inset-0 grid place-items-center overflow-visible" aria-hidden="true">
+    <span className={`absolute ${type === "like" ? "hktube-heart-burst" : "hktube-save-burst"}`}>
+      {type === "like" ? <Heart className="size-9 fill-current text-rose-300 drop-shadow-[0_0_14px_rgba(251,113,133,.65)]" /> : <Sparkles className="size-9 text-cyan-200 drop-shadow-[0_0_14px_rgba(103,232,249,.65)]" />}
+    </span>
+    <span className="absolute flex gap-1.5">
+      {Array.from({ length: 6 }).map((_, index) => <i key={index} className={`hktube-action-spark ${type === "like" ? "bg-rose-300" : "bg-cyan-200"}`} style={{ "--i": index } as React.CSSProperties }} />)}
+    </span>
+  </span>;
+}
 
 export default function WatchVideo() {
   const [, params] = useRoute("/watch/:id");
@@ -32,6 +43,7 @@ export default function WatchVideo() {
   const [commentBody, setCommentBody] = useState("");
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [likePulse, setLikePulse] = useState(false);
+  const [savePulse, setSavePulse] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
   const createComment = trpc.comments.create.useMutation({ onSuccess: () => { setCommentBody(""); void commentsQuery.refetch(); toast.success("Comment published."); }, onError: error => toast.error(error.message) });
 
@@ -58,7 +70,7 @@ export default function WatchVideo() {
 
   function toggleLike() {
     if (!user) return startLogin();
-    likeMutation.mutate({ id: activeVideo.id }, { onSuccess: engagement => { utils.videos.engagement.setData({ id: activeVideo.id }, engagement); setLikePulse(true); window.setTimeout(() => setLikePulse(false), 280); }, onError: error => toast.error(error.message || "Unable to update like.") });
+    likeMutation.mutate({ id: activeVideo.id }, { onSuccess: engagement => { utils.videos.engagement.setData({ id: activeVideo.id }, engagement); if (engagement.likedByViewer) { setLikePulse(true); window.setTimeout(() => setLikePulse(false), 620); } }, onError: error => toast.error(error.message || "Unable to update like.") });
   }
 
   const isSaved = Boolean(savedQuery.data?.some(item => item.video.id === activeVideo.id));
@@ -73,7 +85,7 @@ export default function WatchVideo() {
 
   function toggleSaved() {
     if (!user) return startLogin();
-    saveMutation.mutate({ videoId: activeVideo.id }, { onSuccess: result => toast.success(result?.saved ? "Added to Watch Later." : "Removed from Watch Later."), onError: error => toast.error(error.message || "Unable to update Watch Later.") });
+    saveMutation.mutate({ videoId: activeVideo.id }, { onSuccess: result => { if (result?.saved) { setSavePulse(true); window.setTimeout(() => setSavePulse(false), 620); } toast.success(result?.saved ? "Added to Watch Later." : "Removed from Watch Later."); }, onError: error => toast.error(error.message || "Unable to update Watch Later.") });
   }
 
   function submitComment(event: FormEvent<HTMLFormElement>) {
@@ -89,7 +101,11 @@ export default function WatchVideo() {
         <VideoPlayer video={video} onProgress={saveWatchProgress} />
         <div className="border-b border-white/8 py-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-semibold uppercase tracking-[.17em] text-cyan-300">{video.category === "shorts" ? "HKTUBE Short" : "HKTUBE Video"}</span><h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">{video.title}</h1></div><span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/8 px-3 py-1.5 text-xs font-medium text-violet-100"><Eye className="size-3.5" />{formatViews(video.viewCount)}</span></div>
-          <div className="mt-4 flex flex-wrap items-center gap-2"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-red-300/35 bg-red-500/15 text-red-100 hover:bg-red-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""} ${likePulse ? "hktube-like-pop" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button><Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />{shareLabel}</Button><Button variant="outline" size="sm" onClick={toggleSaved} disabled={saveMutation.isPending} className={isSaved ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100" : "border-white/10 text-slate-200 hover:bg-white/8"}><Bookmark className={`mr-1.5 size-4 ${isSaved ? "fill-current" : ""}`} />{isSaved ? "Saved" : "Watch later"}</Button></div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="relative"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-red-300/35 bg-red-500/15 text-red-100 hover:bg-red-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""} ${likePulse ? "hktube-like-pop" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button>{likePulse && <ActionCelebration type="like" />}</div>
+            <Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />{shareLabel}</Button>
+            <div className="relative"><Button variant="outline" size="sm" onClick={toggleSaved} disabled={saveMutation.isPending} className={isSaved ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100" : "border-white/10 text-slate-200 hover:bg-white/8"}><Bookmark className={`mr-1.5 size-4 ${isSaved ? "fill-current" : ""}`} />{isSaved ? "Saved" : "Watch later"}</Button>{savePulse && <ActionCelebration type="save" />}</div>
+          </div>
           <div className="mt-4 max-w-3xl"><p className={`whitespace-pre-wrap text-sm leading-6 text-slate-400 ${descriptionExpanded ? "max-h-72 overflow-y-auto" : "line-clamp-3"}`}>{video.description || "No description was provided for this video."}</p>{(video.description?.length ?? 0) > 260 && <button type="button" onClick={() => setDescriptionExpanded(value => !value)} className="mt-2 text-xs font-bold text-cyan-300 hover:text-cyan-200">{descriptionExpanded ? "Show less" : "Show more"}</button>}</div>
           <p className="mt-3 text-xs text-slate-600">Published {formatDate(video.uploadedAt)}</p>
         </div>
