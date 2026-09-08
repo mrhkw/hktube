@@ -5,24 +5,26 @@ import { Link } from "wouter";
 
 export function VideoCard({ video, compact = false }: { video: VideoRecord; compact?: boolean }) {
   return (
-    <Link href={`/watch/${video.id}`} className="group block min-w-0">
-      <div className={`relative overflow-hidden rounded-xl border border-white/8 bg-[#131321] ${compact ? "aspect-[16/10]" : "aspect-video"}`}>
-        {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt={`${video.title} thumbnail`} className="size-full object-cover transition duration-300 group-hover:scale-[1.035]" /> : <div className="grid size-full place-items-center bg-gradient-to-br from-violet-500/20 via-[#151429] to-cyan-400/10"><Play className="size-8 fill-fuchsia-300 text-fuchsia-300" /></div>}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
-        <span className="absolute bottom-2 right-2 rounded-md bg-black/80 px-1.5 py-0.5 text-[11px] font-medium text-white">{formatDuration(video.durationSeconds)}</span>
-        {video.category === "shorts" && <Badge className="absolute left-2 top-2 border-0 bg-fuchsia-500/90 text-[10px] font-bold text-white hover:bg-fuchsia-500">SHORT</Badge>}
-      </div>
-      <div className="flex gap-2.5 pt-3">
-        <span className="grid size-8 shrink-0 place-items-center rounded-full border border-violet-400/20 bg-violet-500/10 text-violet-200"><Sparkles className="size-3.5" /></span>
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-slate-100 transition group-hover:text-fuchsia-200">{video.title}</h3>
-          <p className="mt-1 text-xs text-slate-500">{formatViews(video.viewCount)} <span className="mx-1">•</span> {formatDate(video.uploadedAt)}</p>
+    <Link href={`/watch/${video.id}`} className="group block min-w-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4">
+      <article className="overflow-hidden rounded-2xl">
+        <div className={`relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-[0_1px_2px_rgba(0,0,0,.04)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-neutral-300 group-hover:shadow-[0_12px_30px_rgba(0,0,0,.09)] ${compact ? "aspect-[16/10]" : "aspect-video"}`}>
+          {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt={`${video.title} thumbnail`} loading="lazy" decoding="async" className="size-full object-cover transition duration-500 group-hover:scale-[1.025]" /> : <div className="grid size-full place-items-center bg-neutral-100"><span className="grid size-12 place-items-center rounded-full bg-black text-white shadow-sm"><Play className="size-5 fill-current" /></span></div>}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent opacity-80" />
+          <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/90 px-2 py-1 text-[11px] font-semibold tabular-nums text-white">{formatDuration(video.durationSeconds)}</span>
+          {video.category === "shorts" && <Badge className="absolute left-2.5 top-2.5 border-0 bg-black text-[10px] font-bold text-white shadow-sm">SHORT</Badge>}
         </div>
-      </div>
+        <div className="flex gap-3 px-1 pt-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-black text-white"><Sparkles className="size-4" /></span>
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-[15px] font-bold leading-5 tracking-[-0.01em] text-neutral-950 transition group-hover:text-neutral-600">{video.title}</h3>
+            <p className="mt-1.5 text-xs font-medium text-neutral-500">{formatViews(video.viewCount)} views <span className="mx-1">•</span> {formatDate(video.uploadedAt)}</p>
+          </div>
+        </div>
+      </article>
     </Link>
   );
 }
 
 export function EmptyVideos({ title, copy, icon: Icon = Inbox }: { title: string; copy: string; icon?: LucideIcon }) {
-  return <div className="rounded-2xl border border-dashed border-white/12 bg-white/[.025] px-6 py-14 text-center"><Icon className="mx-auto size-7 text-fuchsia-300/70" aria-hidden="true" /><h2 className="mt-4 text-base font-semibold text-white">{title}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{copy}</p></div>;
+  return <div className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-16 text-center"><span className="mx-auto grid size-12 place-items-center rounded-2xl bg-black text-white"><Icon className="size-5" aria-hidden="true" /></span><h2 className="mt-4 text-lg font-bold text-neutral-950">{title}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-neutral-500">{copy}</p></div>;
 }
