@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Bookmark, Check, Eye, Heart, Loader2, MessageCircle, Share2, Sparkles } from "lucide-react";
+import { Bookmark, Eye, Heart, Loader2, MessageCircle, Share2, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ function ActionCelebration({ type }: { type: "like" | "save" }) {
       {type === "like" ? <Heart className="size-9 fill-current text-rose-300 drop-shadow-[0_0_14px_rgba(251,113,133,.65)]" /> : <Sparkles className="size-9 text-cyan-200 drop-shadow-[0_0_14px_rgba(103,232,249,.65)]" />}
     </span>
     <span className="absolute flex gap-1.5">
-      {Array.from({ length: 6 }).map((_, index) => <i key={index} className={`hktube-action-spark ${type === "like" ? "bg-rose-300" : "bg-cyan-200"}`} style={{ "--i": index } as React.CSSProperties }} />)}
+      {Array.from({ length: 6 }).map((_, index) => <i key={index} className={`hktube-action-spark ${type === "like" ? "bg-rose-300" : "bg-cyan-200"}`} style={{ "--i": index } as React.CSSProperties} />)}
     </span>
   </span>;
 }
