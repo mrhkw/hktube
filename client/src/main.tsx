@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
 import { startLogin } from "./const";
+import { ConsentBanner } from "./components/ConsentBanner";
 import "./index.css";
 import "./light-theme.css";
 
@@ -15,11 +16,8 @@ const queryClient = new QueryClient();
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
-
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
   if (!isUnauthorized) return;
-
   startLogin();
 };
 
@@ -46,10 +44,7 @@ const trpcClient = trpc.createClient({
       transformer: superjson,
       async headers() {
         const { data } = await supabase.auth.getSession();
-        if (data.session?.access_token) {
-          return { Authorization: `Bearer ${data.session.access_token}` };
-        }
-        // Compatibility fallback for any legacy preview session still present.
+        if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` };
         try {
           const raw = sessionStorage.getItem("manus-cookie");
           const prefix = `${COOKIE_NAME}=`;
@@ -61,10 +56,7 @@ const trpcClient = trpc.createClient({
         }
       },
       fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
+        return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" });
       },
     }),
   ],
@@ -74,6 +66,7 @@ createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <App />
+      <ConsentBanner />
     </QueryClientProvider>
   </trpc.Provider>
 );
