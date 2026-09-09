@@ -45,6 +45,7 @@ export default function WatchVideo() {
   const [likePulse, setLikePulse] = useState(false);
   const [savePulse, setSavePulse] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
+  const [commentSort, setCommentSort] = useState<"newest" | "oldest">("newest");
   const createComment = trpc.comments.create.useMutation({ onSuccess: () => { setCommentBody(""); void commentsQuery.refetch(); toast.success("Comment published."); }, onError: error => toast.error(error.message) });
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export default function WatchVideo() {
   }
 
   const isSaved = Boolean(savedQuery.data?.some(item => item.video.id === activeVideo.id));
+  const comments = [...(commentsQuery.data ?? [])].sort((a, b) => commentSort === "newest" ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   function saveWatchProgress(seconds: number) {
     if (!user || !Number.isFinite(seconds) || seconds < 1) return;
@@ -110,9 +112,9 @@ export default function WatchVideo() {
           <p className="mt-3 text-xs text-slate-600">Published {formatDate(video.uploadedAt)}</p>
         </div>
         <section className="border-b border-white/8 py-6">
-          <div className="flex items-center gap-2"><MessageCircle className="size-4 text-fuchsia-300" /><h2 className="text-sm font-bold uppercase tracking-[.16em] text-slate-300">Comments</h2><span className="text-xs text-slate-500">{commentsQuery.data?.length ?? 0}</span></div>
+          <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><MessageCircle className="size-4 text-fuchsia-300" /><h2 className="text-sm font-bold uppercase tracking-[.16em] text-slate-300">Comments</h2><span className="text-xs text-slate-500">{comments.length}</span></div><select value={commentSort} onChange={event => setCommentSort(event.target.value as "newest" | "oldest")} aria-label="Sort comments" className="rounded-lg border border-white/10 bg-white/[.04] px-2 py-1 text-xs text-slate-300"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></div>
           <form onSubmit={submitComment} className="mt-4 flex gap-2"><input value={commentBody} onChange={event => setCommentBody(event.target.value)} placeholder={user ? "Share your thoughts" : "Sign in to comment"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.045] px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-fuchsia-400/60" /><Button type="submit" disabled={createComment.isPending || !commentBody.trim()} size="sm">Post</Button></form>
-          <div className="mt-5 space-y-4">{commentsQuery.data?.length ? commentsQuery.data.map(comment => <article key={comment.id} className="rounded-xl border border-white/7 bg-white/[.025] p-4"><p className="text-sm leading-6 text-slate-300">{comment.body}</p><p className="mt-2 text-xs text-slate-600">{formatDate(comment.createdAt)}</p></article>) : <p className="py-6 text-sm text-slate-500">No comments yet. Be the first to contribute a real comment.</p>}</div>
+          <div className="mt-5 space-y-4">{comments.length ? comments.map(comment => <article key={comment.id} className="rounded-xl border border-white/7 bg-white/[.025] p-4"><p className="text-sm leading-6 text-slate-300">{comment.body}</p><p className="mt-2 text-xs text-slate-600">{formatDate(comment.createdAt)}</p></article>) : <p className="py-6 text-sm text-slate-500">No comments yet. Be the first to contribute a real comment.</p>}</div>
         </section>
       </section>
       <aside className="border-t border-white/8 pt-7 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
