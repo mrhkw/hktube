@@ -11,6 +11,7 @@ import { LegalPage } from "@/pages/Legal";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import Help from "@/pages/Help";
+import DeleteAccount from "@/pages/DeleteAccount";
 import Impressum from "@/pages/Impressum";
 import CreateChannel from "@/pages/CreateChannel";
 import SearchResults from "@/pages/SearchResults";
@@ -36,7 +37,7 @@ function Router() {
     <Route path="/shorts">{() => <VideoCollection kind="shorts" />}</Route><Route path="/trending">{() => <VideoCollection kind="trending" />}</Route>
     <Route path="/subscriptions">{() => <PlatformSection kind="subscriptions" />}</Route><Route path="/library">{() => <PlatformSection kind="library" />}</Route><Route path="/posts">{() => <PlatformSection kind="posts" />}</Route><Route path="/notifications">{() => <PlatformSection kind="notifications" />}</Route><Route path="/playlists">{() => <PlatformSection kind="playlists" />}</Route><Route path="/history">{() => <PlatformSection kind="history" />}</Route><Route path="/studio">{() => <PlatformSection kind="studio" />}</Route><Route path="/studio/ai" component={CreatorAI} /><Route path="/algorithm" component={AlgorithmDashboard} /><Route path="/admin" component={AdminDashboard} />
     <Route path="/profile" component={Profile} /><Route path="/channel/:handle" component={PublicChannel} /><Route path="/auth" component={Auth} /><Route path="/watch/:id" component={WatchVideo} /><Route path="/search" component={SearchResults} /><Route path="/upload" component={Upload} /><Route path="/menu" component={Menu} /><Route path="/settings" component={Settings} /><Route path="/settings/ads" component={AdSettings} /><Route path="/wallet" component={Wallet} />
-    <Route path="/help" component={Help} /><Route path="/privacy">{() => <LegalPage kind="privacy" />}</Route><Route path="/terms">{() => <LegalPage kind="terms" />}</Route><Route path="/cookies">{() => <LegalPage kind="cookies" />}</Route><Route path="/community">{() => <LegalPage kind="community" />}</Route><Route path="/advertising">{() => <LegalPage kind="advertising" />}</Route><Route path="/impressum" component={Impressum} /><Route path="/contact" component={Contact} /><Route path="/about" component={About} /><Route path="/channel/create" component={CreateChannel} /><Route path="/404" component={NotFound} /><Route component={NotFound} />
+    <Route path="/help" component={Help} /><Route path="/delete-account" component={DeleteAccount} /><Route path="/privacy">{() => <LegalPage kind="privacy" />}</Route><Route path="/terms">{() => <LegalPage kind="terms" />}</Route><Route path="/cookies">{() => <LegalPage kind="cookies" />}</Route><Route path="/community">{() => <LegalPage kind="community" />}</Route><Route path="/advertising">{() => <LegalPage kind="advertising" />}</Route><Route path="/impressum" component={Impressum} /><Route path="/contact" component={Contact} /><Route path="/about" component={About} /><Route path="/channel/create" component={CreateChannel} /><Route path="/404" component={NotFound} /><Route component={NotFound} />
   </Switch>;
 }
 export default function App() { return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><AdSenseLoader /><Toaster /><Router /><ViewerBoost /><InstallAppPrompt /></TooltipProvider></ThemeProvider></ErrorBoundary>; }
