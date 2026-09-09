@@ -1,12 +1,13 @@
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Link } from "wouter";
-import { ArrowRight, CircleHelp, Flag, LockKeyhole, ShieldCheck, UploadCloud, UserRound } from "lucide-react";
+import { ArrowRight, CircleHelp, Flag, LockKeyhole, ShieldCheck, Trash2, UploadCloud, UserRound } from "lucide-react";
 
 const topics = [
   { title: "Account & login", text: "Google sign-in, email login, sessions and account settings.", href: "/settings", icon: UserRound },
   { title: "Channel & uploads", text: "Create a channel, upload videos or Clips, and use Creator Studio.", href: "/upload", icon: UploadCloud },
   { title: "Safety & reporting", text: "Report videos, posts or comments and use HkTube's moderation flow.", href: "/community", icon: Flag },
   { title: "Privacy & data", text: "Review privacy, cookies, advertising choices and data controls.", href: "/privacy", icon: LockKeyhole },
+  { title: "Delete account", text: "Request deletion of your HkTube account and associated app data.", href: "/delete-account", icon: Trash2 },
   { title: "Creator safety", text: "Learn about ownership, moderation and publishing responsibilities.", href: "/studio", icon: ShieldCheck },
   { title: "Contact support", text: "For account, copyright, safety, privacy or advertising questions.", href: "/contact", icon: CircleHelp },
 ];
@@ -25,7 +26,7 @@ export default function Help() {
       <section className="rounded-3xl border border-white/10 bg-white/[.025] p-6">
         <h2 className="text-lg font-black text-white">Safety first</h2>
         <p className="mt-2 text-sm leading-6 text-slate-400">HkTube is a user-generated-content platform. Do not ignore harmful or illegal content: use the Report action on the content itself so it reaches the moderation queue.</p>
-        <div className="mt-4 flex flex-wrap gap-2"><Link href="/community" className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/[.06]">Community Guidelines</Link><Link href="/contact" className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-slate-100">Contact support</Link></div>
+        <div className="mt-4 flex flex-wrap gap-2"><Link href="/community" className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/[.06]">Community Guidelines</Link><Link href="/delete-account" className="rounded-full border border-red-300/20 px-4 py-2 text-sm font-semibold text-red-100 hover:bg-red-400/[.08]">Delete account</Link><Link href="/contact" className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-slate-100">Contact support</Link></div>
       </section>
     </main>
   </HkTubeShell>;
