@@ -22,14 +22,15 @@ import Auth from "./pages/Auth";
 import { PlatformSection } from "./pages/PlatformSection";
 import AlgorithmDashboard from "./pages/AlgorithmDashboard";
 import CreatorAI from "./pages/CreatorAI";
-import Wallet from "./pages/Wallet";
+import Wallet from "@/pages/Wallet";
+import PublicChannel from "@/pages/PublicChannel";
 
 function Router() {
   return <Switch>
     <Route path="/" component={Home} /><Route path="/home" component={Home} /><Route path="/index.html" component={Home} /><Route path="/app" component={Home} />
     <Route path="/shorts">{() => <VideoCollection kind="shorts" />}</Route><Route path="/trending">{() => <VideoCollection kind="trending" />}</Route>
     <Route path="/subscriptions">{() => <PlatformSection kind="subscriptions" />}</Route><Route path="/library">{() => <PlatformSection kind="library" />}</Route><Route path="/posts">{() => <PlatformSection kind="posts" />}</Route><Route path="/notifications">{() => <PlatformSection kind="notifications" />}</Route><Route path="/playlists">{() => <PlatformSection kind="playlists" />}</Route><Route path="/history">{() => <PlatformSection kind="history" />}</Route><Route path="/studio">{() => <PlatformSection kind="studio" />}</Route><Route path="/studio/ai" component={CreatorAI} /><Route path="/algorithm" component={AlgorithmDashboard} />
-    <Route path="/profile" component={Profile} /><Route path="/auth" component={Auth} /><Route path="/watch/:id" component={WatchVideo} /><Route path="/search" component={SearchResults} /><Route path="/upload" component={Upload} /><Route path="/menu" component={Menu} /><Route path="/settings" component={Settings} /><Route path="/settings/ads" component={AdSettings} /><Route path="/wallet" component={Wallet} />
+    <Route path="/profile" component={Profile} /><Route path="/channel/:handle" component={PublicChannel} /><Route path="/auth" component={Auth} /><Route path="/watch/:id" component={WatchVideo} /><Route path="/search" component={SearchResults} /><Route path="/upload" component={Upload} /><Route path="/menu" component={Menu} /><Route path="/settings" component={Settings} /><Route path="/settings/ads" component={AdSettings} /><Route path="/wallet" component={Wallet} />
     <Route path="/privacy">{() => <LegalPage kind="privacy" />}</Route><Route path="/terms">{() => <LegalPage kind="terms" />}</Route><Route path="/cookies">{() => <LegalPage kind="cookies" />}</Route><Route path="/community">{() => <LegalPage kind="community" />}</Route><Route path="/advertising">{() => <LegalPage kind="advertising" />}</Route><Route path="/contact" component={Contact} /><Route path="/about" component={About} /><Route path="/channel/create" component={CreateChannel} /><Route path="/404" component={NotFound} /><Route component={NotFound} />
   </Switch>;
 }

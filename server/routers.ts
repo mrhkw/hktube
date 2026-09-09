@@ -5,6 +5,7 @@ import { sdk } from "./_core/sdk";
 import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
+import { getPublicChannel } from "./channel";
 import { invokeLLM } from "./_core/llm";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markAllNotificationsRead, markNotificationRead, recordWatchHistory, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
@@ -32,6 +33,7 @@ export const appRouter = router({
   comments: router({ list: publicProcedure.input(z.object({ videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional() }).refine(value => Boolean(value.videoId) !== Boolean(value.postId), "Provide exactly one videoId or postId.")).query(({ input }) => listComments(input)), create: protectedProcedure.input(commentInput).mutation(({ ctx, input }) => createComment({ ...input, authorId: ctx.user.id })) }),
   subscriptions: router({ mine: protectedProcedure.query(({ ctx }) => listChannelSubscriptions(ctx.user.id)), toggle: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => toggleChannelSubscription(input.channelId, ctx.user.id)) }),
   channels: router({
+    public: publicProcedure.input(z.object({ handle: z.string().trim().min(3).max(64) })).query(({ ctx, input }) => getPublicChannel(input.handle, ctx.user?.id)),
     mine: protectedProcedure.query(({ ctx }) => listChannelsByOwner(ctx.user.id)),
     create: protectedProcedure.input(channelInputSchema).mutation(async ({ ctx, input }) => {
       const normalizedHandle = input.handle.trim();
