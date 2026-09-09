@@ -3,16 +3,17 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ArrowRight, BadgeCheck, Bot, Captions, Cookie, FileText, Gauge, Globe2, KeyRound, Loader2, LogOut, Mail, Megaphone, Moon, Palette, Play, Scale, Settings2, ShieldCheck, Sparkles, UserRound, Wallet, UsersRound } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bot, Captions, Cookie, FileText, Gauge, Globe2, KeyRound, Loader2, LogOut, Mail, Megaphone, Palette, Play, Scale, Sparkles, ShieldCheck, UserRound, Wallet, UsersRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 
 const policyLinks = [
   { href: "/privacy", icon: ShieldCheck, title: "Privacy Policy", description: "How account and video data is handled" },
   { href: "/terms", icon: Scale, title: "Terms of Use", description: "Rules for using HkTube" },
-  { href: "/cookies", icon: Cookie, title: "Cookie Notice", description: "Essential session and preference cookies" },
+  { href: "/cookies", icon: Cookie, title: "Cookie Notice", description: "Essential and optional technology choices" },
   { href: "/community", icon: UsersRound, title: "Community Guidelines", description: "Rules for uploaded and shared content" },
   { href: "/advertising", icon: Megaphone, title: "Advertising Disclosure", description: "Advertising consent and disclosure information" },
+  { href: "/impressum", icon: Scale, title: "Impressum / Legal Notice", description: "Provider information for jurisdictions that require it" },
   { href: "/contact", icon: Mail, title: "Contact Us", description: "Privacy, content, and platform support" },
   { href: "/about", icon: FileText, title: "About HkTube", description: "What HkTube is and how the platform works" },
 ];
