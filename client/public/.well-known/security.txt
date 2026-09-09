@@ -1,0 +1,3 @@
+Contact: mailto:hanifnazamdin17@gmail.com
+Canonical: https://hktube.vercel.app/.well-known/security.txt
+Preferred-Languages: en, ur
