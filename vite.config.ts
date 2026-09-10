@@ -79,6 +79,18 @@ function vitePluginManusDebugCollector(): Plugin {
 const isDevelopment = process.env.NODE_ENV !== "production";
 const plugins = [react(), tailwindcss(), ...(isDevelopment ? [jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()] : [])];
 
+function manualChunks(id: string) {
+  if (!id.includes("node_modules")) return undefined;
+  if (id.includes("/@radix-ui/")) return "radix-ui";
+  if (id.includes("/@supabase/")) return "supabase";
+  if (id.includes("/@trpc/")) return "trpc";
+  if (id.includes("/lucide-react/")) return "icons";
+  if (id.includes("/date-fns/")) return "date-utils";
+  if (id.includes("/superjson/")) return "serialization";
+  if (id.includes("/zod/")) return "validation";
+  return undefined;
+}
+
 export default defineConfig({
   plugins,
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "client", "src"), "@shared": path.resolve(import.meta.dirname, "shared"), "@assets": path.resolve(import.meta.dirname, "attached_assets") } },
@@ -88,7 +100,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    rollupOptions: { output: { manualChunks: { react: ["react", "react-dom"], query: ["@tanstack/react-query"] } } },
+    rollupOptions: { output: { manualChunks } },
   },
   server: {
     host: true,
