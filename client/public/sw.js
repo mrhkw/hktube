@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v5";
+const CACHE_NAME = "hktube-shell-v6";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = ["/offline.html", "/manifest.webmanifest", "/hktube-icon.svg"];
 
