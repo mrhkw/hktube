@@ -1,7 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/sonner";
+import { lazy, Suspense, useEffect, useState, type ComponentType } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { InstallAppPrompt } from "@/components/InstallAppPrompt";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -32,6 +30,22 @@ const Wallet = lazy(() => import("@/pages/Wallet"));
 const PublicChannel = lazy(() => import("@/pages/PublicChannel"));
 const Monetization = lazy(() => import("@/pages/Monetization"));
 
+function DeferredUtilities() {
+  const [Toaster, setToaster] = useState<ComponentType | null>(null);
+  const [InstallPrompt, setInstallPrompt] = useState<ComponentType | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void Promise.all([
+        import("@/components/ui/sonner").then(module => { if (!cancelled) setToaster(() => module.Toaster); }),
+        import("@/components/InstallAppPrompt").then(module => { if (!cancelled) setInstallPrompt(() => module.InstallAppPrompt); }),
+      ]);
+    }, 900);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, []);
+  return <>{Toaster ? <Toaster /> : null}{InstallPrompt ? <InstallPrompt /> : null}</>;
+}
+
 function RouteFallback() {
   return <div className="grid min-h-[45vh] place-items-center"><div className="rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm">Loading HkTube…</div></div>;
 }
@@ -47,5 +61,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Toaster /><Router /><InstallAppPrompt /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><DeferredUtilities /><Router /></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }
