@@ -12,6 +12,11 @@ type UseAuthOptions = {
 const AUTH_BOOT_TIMEOUT_MS = 8000;
 const PROFILE_TIMEOUT_MS = 8000;
 
+function safeSetLocalStorage(key: string, value: string) {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(key, value); } catch { /* browser storage can be blocked */ }
+}
+
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = "/auth" } = options ?? {};
   const [, navigate] = useLocation();
@@ -26,7 +31,6 @@ export function useAuth(options?: UseAuthOptions) {
     let active = true;
     const timeoutId = window.setTimeout(() => {
       if (!active) return;
-      // Auth providers/network failures must never leave the whole app blank forever.
       setAuthBootTimedOut(true);
       setSessionReady(true);
     }, AUTH_BOOT_TIMEOUT_MS);
@@ -108,9 +112,6 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    // The Supabase browser session is the source of truth for authentication.
-    // If the backend profile request is temporarily unavailable, keep the session
-    // identity available while rendering a non-blocking fallback UI.
     const fallbackUser = hasSession && sessionIdentity ? {
       id: 0,
       openId: "supabase-session",
@@ -121,9 +122,7 @@ export function useAuth(options?: UseAuthOptions) {
       avatarUrl: sessionIdentity.avatarUrl,
     } : null;
     const user = meQuery.data ?? (meQuery.error ? null : fallbackUser);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("hktube-runtime-user-info", JSON.stringify(user));
-    }
+    safeSetLocalStorage("hktube-runtime-user-info", JSON.stringify(user));
     return {
       user,
       loading: (!sessionReady && !authBootTimedOut) || (hasSession && meQuery.isLoading && !profileTimedOut) || logoutMutation.isPending,
