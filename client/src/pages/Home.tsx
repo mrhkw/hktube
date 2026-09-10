@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { HkTubeAd } from "@/components/AdSense";
 import { VideoCard } from "@/components/VideoCard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -73,8 +72,6 @@ export default function Home() {
         {categories.map(category => <Link key={category.label} href={category.href} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition ${category.label === "All" ? "border-violet-400 bg-violet-500 text-white shadow-[0_8px_20px_rgba(124,92,255,.18)]" : "border-white/10 bg-white/[.035] text-slate-200 hover:border-white/20 hover:bg-white/[.08]"}`}>{category.label}</Link>)}
         <button type="button" onClick={() => setCreateOpen(true)} className="grid size-9 shrink-0 place-items-center rounded-full border border-violet-300/30 bg-violet-500/15 text-violet-100 transition hover:bg-violet-500/25 active:scale-95" aria-label="Create"><Plus className="size-5" /></button>
       </nav>
-
-      <HkTubeAd slot={import.meta.env.VITE_ADSENSE_HOME_SLOT as string | undefined} className="my-7" />
 
       <section>
         <div className="mb-5 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-violet-300/70">Personalized-style discovery</p><h2 className="mt-1 text-2xl font-black tracking-[-.035em] text-white sm:text-3xl">Recommended for you</h2></div><Link href="/trending" className="hidden items-center text-sm font-bold text-slate-300 transition hover:text-white sm:inline-flex">View trending <ArrowRight className="ml-1 size-4" /></Link></div>
