@@ -22,39 +22,45 @@ export const HKTUBE_ALL_LANGUAGES = [
 ] as const;
 
 const RTL_LANGUAGES = new Set(["ur","ar","fa","ps","sd","he"]);
-// Existing full translation packs are reused as a safe fallback for additional
-// locales, while the document language remains the user's exact locale.
 const TRANSLATION_FALLBACK: Record<string, string> = {
   pa:"ur",sd:"ur",ps:"ur",fa:"ar",gu:"hi",mr:"hi",ne:"hi",si:"en",ta:"en",te:"en",kn:"en",ml:"en",or:"hi",as:"bn",mai:"hi",
   yue:"zh",ja:"zh",ko:"en",th:"en",vi:"en",ms:"id",fil:"en",my:"en",km:"en",lo:"en",az:"tr",kk:"ru",uz:"ru",ky:"ru",tk:"tr",
   uk:"en",be:"ru",pl:"en",cs:"en",sk:"en",sl:"en",hr:"en",sr:"en",bs:"en",mk:"en",bg:"en",ro:"en",hu:"en",nl:"de",da:"en",sv:"en",no:"en",fi:"en",is:"en",et:"en",lv:"en",lt:"en",it:"en",ca:"es",eu:"es",gl:"es",el:"en",he:"ar",sw:"en",am:"en",ha:"en",yo:"en",ig:"en",zu:"en",af:"en",so:"en",tl:"en"
 };
 
+function safeGet(key: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  try { return window.localStorage.getItem(key) || fallback; } catch { return fallback; }
+}
+
 function readLanguage() {
-  if (typeof window === "undefined") return "en";
-  const stored = localStorage.getItem(LANGUAGE_KEY) || "en";
+  const stored = safeGet(LANGUAGE_KEY, "en");
   return HKTUBE_ALL_LANGUAGES.some(item => item[0] === stored) ? stored : "en";
 }
 
 function syncLanguageOptions() {
-  for (const select of document.querySelectorAll<HTMLSelectElement>("select")) {
-    if (!Array.from(select.options).some(option => option.value === "ur" && /اردو/.test(option.textContent || ""))) continue;
-    for (const [code, name, native] of HKTUBE_ALL_LANGUAGES) {
-      if (Array.from(select.options).some(option => option.value === code)) continue;
-      const option = document.createElement("option"); option.value = code; option.textContent = `${native} · ${name}`; select.appendChild(option);
+  try {
+    for (const select of document.querySelectorAll<HTMLSelectElement>("select")) {
+      if (!Array.from(select.options).some(option => option.value === "ur" && /اردو/.test(option.textContent || ""))) continue;
+      for (const [code, name, native] of HKTUBE_ALL_LANGUAGES) {
+        if (Array.from(select.options).some(option => option.value === code)) continue;
+        const option = document.createElement("option"); option.value = code; option.textContent = `${native} · ${name}`; select.appendChild(option);
+      }
     }
-  }
+  } catch { /* optional enhancement must never block the app */ }
 }
 
 function syncPreferences() {
-  const language = readLanguage();
-  const translationCode = TRANSLATION_FALLBACK[language] || language;
-  applyHkLanguage(translationCode);
-  applyHkTheme(localStorage.getItem(THEME_KEY) || "violet");
-  document.documentElement.lang = language;
-  document.documentElement.dir = RTL_LANGUAGES.has(language) ? "rtl" : "ltr";
-  document.documentElement.dataset.hktubeLanguage = language;
-  syncLanguageOptions();
+  try {
+    const language = readLanguage();
+    const translationCode = TRANSLATION_FALLBACK[language] || language;
+    try { applyHkLanguage(translationCode); } catch { /* keep core UI usable */ }
+    try { applyHkTheme(safeGet(THEME_KEY, "violet")); } catch { /* keep core UI usable */ }
+    document.documentElement.lang = language;
+    document.documentElement.dir = RTL_LANGUAGES.has(language) ? "rtl" : "ltr";
+    document.documentElement.dataset.hktubeLanguage = language;
+    syncLanguageOptions();
+  } catch { /* language runtime is non-essential */ }
 }
 
 export function LanguageRuntime() {
