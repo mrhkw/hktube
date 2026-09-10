@@ -1,5 +1,6 @@
-const CACHE_NAME = "hktube-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/hktube-icon.svg"];
+const CACHE_NAME = "hktube-shell-v2";
+const OFFLINE_URL = "/offline.html";
+const APP_SHELL = ["/", OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -26,6 +27,6 @@ self.addEventListener("fetch", event => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then(cached => cached || caches.match("/")))
+      .catch(() => caches.match(event.request).then(cached => cached || (event.request.mode === "navigate" ? caches.match(OFFLINE_URL) : undefined)))
   );
 });

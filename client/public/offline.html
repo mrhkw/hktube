@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111625" />
+    <title>HkTube — You're offline</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #090c14; color: #f8fafc; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 15% 10%, rgba(124,92,255,.24), transparent 34%), radial-gradient(circle at 90% 18%, rgba(34,211,238,.13), transparent 30%), #090c14; }
+      main { width: min(100%, 520px); padding: 34px 28px; border: 1px solid rgba(255,255,255,.12); border-radius: 28px; background: rgba(17,22,37,.9); box-shadow: 0 26px 90px rgba(0,0,0,.4); text-align: center; }
+      .mark { width: 58px; height: 58px; margin: 0 auto 22px; display: grid; place-items: center; border-radius: 17px; background: #fff; color: #10131b; font-weight: 950; letter-spacing: -.08em; }
+      h1 { margin: 0; font-size: clamp(25px, 6vw, 36px); letter-spacing: -.04em; }
+      p { margin: 14px auto 0; max-width: 390px; color: #94a3b8; line-height: 1.7; font-size: 14px; }
+      button { margin-top: 26px; border: 0; border-radius: 999px; padding: 12px 20px; background: linear-gradient(135deg,#8b5cf6,#d946ef); color: white; font-weight: 800; cursor: pointer; }
+      button:active { transform: scale(.97); }
+      .hint { margin-top: 20px; color: #64748b; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark">HK<span>▶</span></div>
+      <h1>You’re offline</h1>
+      <p>HkTube ka network connection abhi available nahin hai. Connection wapas aane par retry karein. Jo pages pehle open kiye gaye hain, woh cache se available ho sakte hain.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+      <div class="hint">Saved videos ke liye future mein Download feature use karein.</div>
+    </main>
+  </body>
+</html>
