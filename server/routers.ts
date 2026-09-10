@@ -5,7 +5,7 @@ import { sdk } from "./_core/sdk";
 import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { getPublicChannel } from "./channel";
+import { getPublicChannel, updateOwnedChannel } from "./channel";
 import { invokeLLM } from "./_core/llm";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markAllNotificationsRead, markNotificationRead, recordWatchHistory, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
@@ -13,6 +13,7 @@ const videoCategory = z.enum(["regular", "shorts"]);
 const mediaUrl = z.string().trim().refine(value => { if (value.startsWith("/manus-storage/")) return true; try { return Boolean(new URL(value)); } catch { return false; } }, "Provide a valid external URL or stored media path.");
 export const videoInputSchema = z.object({ title: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional().default(""), videoUrl: mediaUrl, videoStorageKey: z.string().trim().max(512).optional(), thumbnailUrl: mediaUrl.optional(), thumbnailStorageKey: z.string().trim().max(512).optional(), captionUrl: mediaUrl.optional(), captionStorageKey: z.string().trim().max(512).optional(), durationSeconds: z.number().int().min(0).max(86400).default(0), category: videoCategory.default("regular"), channelId: z.number().int().positive().optional() });
 const channelInputSchema = z.object({ handle: z.string().trim().regex(/^[A-Za-z0-9_]{3,64}$/, "Use 3-64 letters, numbers, or underscores."), displayName: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional().default("") });
+const channelUpdateSchema = z.object({ id: z.number().int().positive(), displayName: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional().nullable(), avatarUrl: mediaUrl.optional().nullable(), bannerUrl: mediaUrl.optional().nullable() });
 const commentInput = z.object({ body: z.string().trim().min(1).max(2000), videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional(), parentId: z.number().int().positive().optional() }).refine(value => Boolean(value.videoId) !== Boolean(value.postId), "A comment must target exactly one video or post.");
 export const appRouter = router({
   system: systemRouter,
@@ -39,7 +40,12 @@ export const appRouter = router({
       const normalizedHandle = input.handle.trim();
       try { return await createChannel({ ownerId: ctx.user.id, handle: normalizedHandle, displayName: input.displayName.trim(), description: input.description?.trim() || null }); }
       catch (error) { const message = String(error); if (/duplicate|unique|channels_handle_unique|ER_DUP_ENTRY/i.test(message)) throw new TRPCError({ code: "CONFLICT", message: "That channel handle is already taken. Choose another handle." }); throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Channel could not be created. Please try again." }); }
-    })
+    }),
+    update: protectedProcedure.input(channelUpdateSchema).mutation(async ({ ctx, input }) => {
+      const updated = await updateOwnedChannel({ ...input, ownerId: ctx.user.id });
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Channel not found or you do not own it." });
+      return updated;
+    }),
   }),
   playlists: router({ mine: protectedProcedure.query(({ ctx }) => listPlaylists(ctx.user.id)), create: protectedProcedure.input(z.object({ title: z.string().trim().min(1).max(255), description: z.string().trim().max(5000).optional(), visibility: z.enum(["public", "unlisted", "private"]).optional() })).mutation(({ ctx, input }) => createPlaylist({ ...input, ownerId: ctx.user.id })), add: protectedProcedure.input(z.object({ playlistId: z.number().int().positive(), videoId: z.number().int().positive() })).mutation(({ ctx, input }) => addVideoToPlaylist({ ...input, ownerId: ctx.user.id })) }),
   watch_history: router({ mine: protectedProcedure.query(({ ctx }) => listWatchHistory(ctx.user.id)), record: protectedProcedure.input(z.object({ videoId: z.number().int().positive(), watchedSeconds: z.number().int().min(0).max(86400).optional() })).mutation(({ ctx, input }) => recordWatchHistory({ ...input, userId: ctx.user.id })) }),
