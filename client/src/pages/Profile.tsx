@@ -4,13 +4,40 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { BarChart3, Clapperboard, CircleUserRound, ImageOff, Play, Share2, Settings, Upload, UsersRound } from "lucide-react";
+import { BarChart3, Clapperboard, CircleUserRound, ImageOff, Play, Share2, Settings, Upload, UsersRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect, useMemo, useRef } from "react";
 
 export default function Profile() {
   const { user, loading } = useAuth();
   const channels = trpc.channels.mine.useQuery(undefined, { enabled: Boolean(user) });
   const dashboard = trpc.creator_studio.dashboard.useQuery(undefined, { enabled: Boolean(user) });
+  const utils = trpc.useUtils();
+  const provisioned = useRef(false);
+  const createChannel = trpc.channels.create.useMutation({
+    onSuccess: async () => {
+      provisioned.current = true;
+      await Promise.all([channels.refetch(), utils.creator_studio.dashboard.invalidate()]);
+      toast.success("Your HkTube creator profile is ready.");
+    },
+    onError: error => {
+      provisioned.current = false;
+      if (!/already exists|duplicate|unique/i.test(error.message)) toast.error(error.message || "Could not create your creator profile.");
+    },
+  });
+
+  const suggestedHandle = useMemo(() => {
+    const base = (user?.name || "creator").toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 48) || "creator";
+    const id = user?.id ? String(user.id) : "";
+    return `${base}_${id}`.slice(0, 64).replace(/_+$/, "") || "creator_hktube";
+  }, [user?.name, user?.id]);
+
+  useEffect(() => {
+    if (!user || loading || channels.isLoading || channels.isError || channels.data?.length || provisioned.current || createChannel.isPending) return;
+    provisioned.current = true;
+    createChannel.mutate({ handle: suggestedHandle, displayName: user.name?.trim() || "HkTube Creator", description: "" });
+  }, [user, loading, channels.isLoading, channels.isError, channels.data, createChannel.isPending, suggestedHandle]);
+
   if (loading) return <HkTubeShell title="Profile"><div className="grid min-h-[55vh] place-items-center"><CircleUserRound className="size-8 animate-pulse text-violet-300" /></div></HkTubeShell>;
   if (!user) return <HkTubeShell title="Profile"><section className="mx-auto max-w-md px-5 pt-12 text-center"><CircleUserRound className="mx-auto size-12 text-violet-200" /><h1 className="mt-4 text-2xl font-black text-white">Sign in to view your profile</h1><p className="mt-3 text-sm leading-6 text-slate-400">Your profile, channel and published content are available after signing in.</p><Button onClick={startLogin} className="mt-6 rounded-full bg-violet-500 px-7 font-bold text-white">Sign in / Sign up</Button></section></HkTubeShell>;
   const channel = channels.data?.[0];
@@ -31,6 +58,7 @@ export default function Profile() {
         <div className="px-5 pb-6 sm:px-8"><div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end"><div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-[#111624] bg-violet-500/40 text-3xl font-black text-white">{channel?.avatarUrl || user.avatarUrl ? <img src={channel?.avatarUrl || user.avatarUrl || ""} alt="" className="size-full object-cover" /> : (channel?.displayName || user.name || "H").slice(0,1).toUpperCase()}</div><div className="min-w-0 flex-1"><h1 className="truncate text-2xl font-black text-white">{channel?.displayName || user.name || "HkTube Creator"}</h1>{channel && <p className="mt-1 text-sm text-slate-400">@{channel.handle} · {channel.subscriberCount.toLocaleString()} subscribers</p>}<p className="mt-1 text-xs text-slate-500">{user.email || "HkTube member"}</p></div><div className="flex flex-wrap gap-2"><Link href="/studio" className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950"><Clapperboard className="mr-2 size-4" />Creator Studio</Link><Button type="button" onClick={() => void shareChannel()} variant="outline" className="rounded-full border-white/15 text-white hover:bg-white/10"><Share2 className="mr-2 size-4" />Share</Button><Link href="/settings" className="inline-flex items-center rounded-full border border-white/15 px-4 py-2 text-sm font-bold text-white"><Settings className="mr-2 size-4" />Edit profile</Link></div></div><p className="mt-5 max-w-3xl text-sm leading-6 text-slate-300">{channel?.description || "Add a channel description from your creator settings to tell viewers what you make."}</p></div>
       </section>
 
+      {!channel && (channels.isLoading || createChannel.isPending) && <section className="rounded-2xl border border-violet-300/15 bg-violet-500/[.06] p-4 text-sm text-slate-300"><Loader2 className="mr-2 inline size-4 animate-spin" />Preparing your creator profile…</section>}
       {channel && <section className="grid gap-3 sm:grid-cols-3"><Metric label="Subscribers" value={channel.subscriberCount.toLocaleString()} icon={UsersRound} /><Metric label="Total views" value={String(dashboard.data?.analytics.totalViews ?? 0)} icon={BarChart3} /><Metric label="Published" value={String(videos.length)} icon={Clapperboard} /></section>}
 
       <section className="rounded-3xl border border-violet-300/15 bg-gradient-to-r from-violet-500/[.08] to-cyan-400/[.04] p-5 sm:p-7"><div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-violet-200/70">Creator profile</p><h2 className="mt-1 text-xl font-black text-white">Build your channel identity</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Your profile is the public home for your long videos and Clips. Channel banner, avatar and description are supported by the channel data model and can be managed from creator tools.</p></div><Link href="/studio/settings" className="inline-flex shrink-0 items-center rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950">Customize channel</Link></div></section>
