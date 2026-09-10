@@ -2,7 +2,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdSenseLoader } from "@/components/AdSense";
 import { InstallAppPrompt } from "@/components/InstallAppPrompt";
-import { ViewerBoost } from "@/components/ViewerBoost";
 import NotFound from "@/pages/NotFound";
 import Menu from "@/pages/Menu";
 import Settings from "@/pages/Settings";
@@ -40,4 +39,7 @@ function Router() {
     <Route path="/help" component={Help} /><Route path="/delete-account" component={DeleteAccount} /><Route path="/privacy">{() => <LegalPage kind="privacy" />}</Route><Route path="/terms">{() => <LegalPage kind="terms" />}</Route><Route path="/cookies">{() => <LegalPage kind="cookies" />}</Route><Route path="/community">{() => <LegalPage kind="community" />}</Route><Route path="/advertising">{() => <LegalPage kind="advertising" />}</Route><Route path="/impressum" component={Impressum} /><Route path="/contact" component={Contact} /><Route path="/about" component={About} /><Route path="/channel/create" component={CreateChannel} /><Route path="/404" component={NotFound} /><Route component={NotFound} />
   </Switch>;
 }
-export default function App() { return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><AdSenseLoader /><Toaster /><Router /><ViewerBoost /><InstallAppPrompt /></TooltipProvider></ThemeProvider></ErrorBoundary>; }
+
+export default function App() {
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><AdSenseLoader /><Toaster /><Router /><InstallAppPrompt /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+}
