@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
@@ -16,7 +16,7 @@ const queryClient = new QueryClient();
 const trpcClient = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc", transformer: superjson, async headers() { const { data } = await supabase.auth.getSession(); if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` }; return {}; }, fetch(input, init) { return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" }); } })] });
 
 function DeferredLanguageRuntime() {
-  const [Runtime, setRuntime] = useState<React.ComponentType | null>(null);
+  const [Runtime, setRuntime] = useState<ComponentType | null>(null);
   useEffect(() => {
     let cancelled = false;
     const load = () => import("./components/LanguageRuntime").then(module => { if (!cancelled) setRuntime(() => module.LanguageRuntime); }).catch(() => undefined);
