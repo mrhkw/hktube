@@ -13,7 +13,7 @@ export function MobileDockPolish() {
       last.setAttribute("aria-label", "Profile");
       if (last.getAttribute("data-profile-dock") !== "true") {
         last.setAttribute("data-profile-dock", "true");
-        last.addEventListener("click", () => navigate("/profile"));
+        last.addEventListener("click", event => { event.preventDefault(); event.stopImmediatePropagation(); navigate("/profile"); }, true);
       }
     }, 250);
     return () => window.clearInterval(timer);
