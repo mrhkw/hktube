@@ -16,36 +16,37 @@ interface ThemeProviderProps {
   switchable?: boolean;
 }
 
+function safeGetTheme(defaultTheme: Theme): Theme {
+  if (typeof window === "undefined") return defaultTheme;
+  try {
+    const stored = window.localStorage.getItem("theme");
+    return stored === "dark" || stored === "light" ? stored : defaultTheme;
+  } catch {
+    return defaultTheme;
+  }
+}
+
+function safeSetTheme(theme: Theme) {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem("theme", theme); } catch { /* browser storage can be blocked */ }
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "light",
   switchable = false,
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
+  const [theme, setTheme] = useState<Theme>(() => switchable ? safeGetTheme(defaultTheme) : defaultTheme);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
+    if (theme === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+    if (switchable) safeSetTheme(theme);
   }, [theme, switchable]);
 
   const toggleTheme = switchable
-    ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
-      }
+    ? () => setTheme(prev => (prev === "light" ? "dark" : "light"))
     : undefined;
 
   return (
@@ -57,8 +58,6 @@ export function ThemeProvider({
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
-  }
+  if (!context) throw new Error("useTheme must be used within ThemeProvider");
   return context;
 }
