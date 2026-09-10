@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 export const HKTUBE_THEMES = [
   { id: "violet", name: "Violet", accent: "#7c5cff" },
@@ -48,6 +50,15 @@ export function applyHkLanguage(code: string) {
 }
 
 export function ThemeManager() {
+  const { user } = useAuth();
+  const channels = trpc.channels.mine.useQuery(undefined, { enabled: Boolean(user), staleTime: 60000 });
+  const createChannel = trpc.channels.create.useMutation();
+  const provisioned = useRef(false);
+  const suggestedHandle = useMemo(() => {
+    const base = (user?.name || "creator").toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 48) || "creator";
+    return `${base}_${user?.id ?? "hktube"}`.slice(0, 64).replace(/_+$/, "") || "creator_hktube";
+  }, [user?.name, user?.id]);
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("hktube-theme") || "violet";
     const savedLanguage = localStorage.getItem("hktube-language-code") || localStorage.getItem("hktube-language")?.slice(0, 2).toLowerCase() || "en";
@@ -55,5 +66,32 @@ export function ThemeManager() {
     applyHkLanguage(savedLanguage);
   }, []);
 
-  return <style>{`\n    :root { --hktube-accent:#7c5cff; --hktube-accent-soft:#7c5cff22; --hktube-accent-ring:#7c5cff55; }\n    body [class*="bg-violet-500"] { background-color:var(--hktube-accent)!important; }\n    body [class*="text-violet-300"], body [class*="text-violet-200"], body [class*="text-violet-100"] { color:var(--hktube-accent)!important; }\n    body [class*="border-violet-400"], body [class*="border-violet-300"] { border-color:var(--hktube-accent-ring)!important; }\n    body [class*="from-violet-500"] { --tw-gradient-from:var(--hktube-accent)!important; }\n    body [class*="to-violet-600"] { --tw-gradient-to:var(--hktube-accent)!important; }\n    body [class*="focus-visible:border-violet-400"]:focus-visible { border-color:var(--hktube-accent)!important; }\n    [data-hktube-theme="blue"]{}\n  `}</style>;
+  useEffect(() => {
+    if (!user || channels.isLoading || channels.isError || channels.data?.length || provisioned.current || createChannel.isPending) return;
+    provisioned.current = true;
+    createChannel.mutate({ handle: suggestedHandle, displayName: user.name?.trim() || "HkTube Creator", description: "" }, {
+      onSuccess: () => { void channels.refetch(); },
+      onError: error => { provisioned.current = false; if (!/already exists|duplicate|unique/i.test(error.message)) console.warn("[Channel] Auto-provision failed:", error.message); },
+    });
+  }, [user, channels.isLoading, channels.isError, channels.data, createChannel.isPending, suggestedHandle]);
+
+  useEffect(() => {
+    const syncMobileProfile = () => {
+      const nav = document.querySelector('nav[aria-label="Mobile navigation"]');
+      if (!nav) return;
+      const links = nav.querySelectorAll("a");
+      const profile = links.item(links.length - 1) as HTMLAnchorElement | null;
+      if (!profile) return;
+      profile.href = "/profile";
+      profile.setAttribute("aria-label", "Profile");
+      const label = Array.from(profile.children).find(child => child.tagName === "SPAN");
+      if (label) label.textContent = "Profile";
+    };
+    syncMobileProfile();
+    const observer = new MutationObserver(syncMobileProfile);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  return <style>{`\n    :root { --hktube-accent:#7c5cff; --hktube-accent-soft:#7c5cff22; --hktube-accent-ring:#7c5cff55; }\n    body [class*="bg-violet-500"] { background-color:var(--hktube-accent)!important; }\n    body [class*="text-violet-300"], body [class*="text-violet-200"], body [class*="text-violet-100"] { color:var(--hktube-accent)!important; }\n    body [class*="border-violet-400"], body [class*="border-violet-300"] { border-color:var(--hktube-accent-ring)!important; }\n    body [class*="from-violet-500"] { --tw-gradient-from:var(--hktube-accent)!important; }\n    body [class*="to-violet-600"] { --tw-gradient-to:var(--hktube-accent)!important; }\n    body [class*="focus-visible:border-violet-400"]:focus-visible { border-color:var(--hktube-accent)!important; }\n    @media (max-width: 767px) {\n      nav[aria-label="Mobile navigation"] a:first-child svg { width:24px!important; height:24px!important; transform:translateY(1px); }\n      nav[aria-label="Mobile navigation"] a { min-height:56px; }\n    }\n    [data-hktube-theme="blue"]{}\n  `}</style>;
 }
