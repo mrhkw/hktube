@@ -7,7 +7,6 @@ import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
 import { AccountBootstrap } from "./components/AccountBootstrap";
-import { ThemeManager } from "./components/ThemeManager";
 import { MobileDockPolish } from "./components/MobileDockPolish";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
@@ -21,21 +20,19 @@ function DeferredLanguageRuntime() {
   useEffect(() => {
     let cancelled = false;
     const load = () => import("./components/LanguageRuntime").then(module => { if (!cancelled) setRuntime(() => module.LanguageRuntime); }).catch(() => undefined);
-    const schedule = "requestIdleCallback" in window
-      ? window.setTimeout(() => (window as Window & { requestIdleCallback?: (callback: () => void) => number }).requestIdleCallback?.(load), 1200)
-      : window.setTimeout(load, 1600);
+    const idle = (window as Window & { requestIdleCallback?: (callback: () => void) => number }).requestIdleCallback;
+    const schedule = window.setTimeout(() => idle ? idle(load) : load(), 1200);
     return () => { cancelled = true; window.clearTimeout(schedule); };
   }, []);
   return Runtime ? <Runtime /> : null;
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(error => console.warn("[PWA] Service worker unavailable", error)); });
+if ("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(error => console.warn("[PWA] service worker unavailable", error)); });
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <ThemeManager />
         <DeferredLanguageRuntime />
         <AccountBootstrap />
         <MobileDockPolish />
