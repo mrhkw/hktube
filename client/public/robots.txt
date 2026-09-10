@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /wallet
+Disallow: /delete-account
+Disallow: /auth
+Disallow: /settings
+Disallow: /studio
+Disallow: /algorithm
 
 Sitemap: https://hktube.vercel.app/sitemap.xml
