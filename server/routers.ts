@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { getPublicChannel, updateOwnedChannel } from "./channel";
+import { listAdminChannels, setChannelVerification } from "./adminChannels";
 import { invokeLLM } from "./_core/llm";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markAllNotificationsRead, markNotificationRead, recordWatchHistory, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
@@ -56,6 +57,10 @@ export const appRouter = router({
   algorithm: router({
     dashboard: adminProcedure.query(async () => ({ videos: await listAdminVideos(), reports: await listReports(), auditLogs: await listAuditLogs() })),
     runSafeChecks: adminProcedure.mutation(async ({ ctx }) => { const videos = await listAdminVideos(); const reports = await listReports(); await (await import("./db")).writeAuditLog({ actorId: ctx.user.id, action: "algorithm.safe_checks_run", entityType: "algorithm", metadata: JSON.stringify({ videosChecked: videos.length, reportsReviewed: reports.length }) }); return { videosChecked: videos.length, reportsReviewed: reports.length, mode: "review-only" as const }; }),
+  }),
+  admin: router({
+    channels: adminProcedure.query(() => listAdminChannels()),
+    setChannelVerification: adminProcedure.input(z.object({ channelId: z.number().int().positive(), status: z.enum(["unverified", "pending", "verified", "rejected"]) })).mutation(({ ctx, input }) => setChannelVerification(input.channelId, input.status, ctx.user.id)),
   }),
   creator_studio: router({
     dashboard: protectedProcedure.query(({ ctx }) => getCreatorStudioDashboard(ctx.user.id)),
