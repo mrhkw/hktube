@@ -10,20 +10,32 @@ interface BeforeInstallPromptEvent extends Event {
 export function InstallAppPrompt() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
+  const [consentReady, setConsentReady] = useState(false);
 
   useEffect(() => {
+    const syncConsent = () => setConsentReady(Boolean(window.localStorage.getItem("hktube-consent-v1")));
+    syncConsent();
+    window.addEventListener("hktube-consent-changed", syncConsent);
     const handler = (event: Event) => {
       event.preventDefault();
-      setInstallEvent(event as BeforeInstallPromptEvent);
-      setVisible(true);
+      const nextEvent = event as BeforeInstallPromptEvent;
+      const dismissedAt = Number(window.localStorage.getItem("hktube-install-dismissed") || 0);
+      setInstallEvent(nextEvent);
+      setVisible(Boolean(window.localStorage.getItem("hktube-consent-v1")) && Date.now() - dismissedAt > 7 * 24 * 60 * 60 * 1000);
     };
     window.addEventListener("beforeinstallprompt", handler);
     const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
     if (standalone) setVisible(false);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => { window.removeEventListener("beforeinstallprompt", handler); window.removeEventListener("hktube-consent-changed", syncConsent); };
   }, []);
 
-  if (!visible || !installEvent) return null;
+  useEffect(() => {
+    if (!consentReady || !installEvent) return;
+    const dismissedAt = Number(window.localStorage.getItem("hktube-install-dismissed") || 0);
+    setVisible(Date.now() - dismissedAt > 7 * 24 * 60 * 60 * 1000);
+  }, [consentReady, installEvent]);
+
+  if (!visible || !installEvent || !consentReady) return null;
 
   const install = async () => {
     await installEvent.prompt();
