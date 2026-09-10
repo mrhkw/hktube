@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v4";
+const CACHE_NAME = "hktube-shell-v5";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = ["/offline.html", "/manifest.webmanifest", "/hktube-icon.svg"];
 
@@ -23,8 +23,8 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
-  // Never serve a stale HTML app shell. This prevents an older cached bundle
-  // from keeping a broken/stale HkTube page alive after a new deployment.
+  // Never serve stale HTML after a deployment. Navigation always asks the
+  // network for the current app shell and only falls back to offline.html.
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(new Request(event.request, { cache: "no-store" }))
