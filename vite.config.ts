@@ -98,7 +98,7 @@ function vitePluginManusDebugCollector(): Plugin {
     },
 
     configureServer(server: ViteDevServer) {
-      // POST /__manus__/logs: Browser sends logs (written directly to files)
+      // POST /__manus__/logs: Browser sends logs, written directly to files
       server.middlewares.use("/__manus__/logs", (req, res, next) => {
         if (req.method !== "POST") {
           return next();
@@ -154,8 +154,7 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 const plugins = [
   react(),
   tailwindcss(),
-  jsxLocPlugin(),
-  ...(isDevelopment ? [vitePluginManusRuntime(), vitePluginManusDebugCollector()] : []),
+  ...(isDevelopment ? [jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()] : []),
 ];
 
 export default defineConfig({
@@ -173,6 +172,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          query: ["@tanstack/react-query"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-toast", "@radix-ui/react-tooltip"],
+        },
+      },
+    },
   },
   server: {
     host: true,
