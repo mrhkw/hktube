@@ -1,6 +1,6 @@
-const CACHE_NAME = "hktube-shell-v8";
+const CACHE_NAME = "hktube-shell-v10";
 const OFFLINE_URL = "/offline.html";
-const APP_SHELL = ["/", OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
+const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
 
 self.addEventListener("install", event => {
@@ -23,7 +23,7 @@ self.addEventListener("activate", event => {
   );
 });
 
-async function fetchFast(request, timeoutMs = 5000) {
+async function fetchFast(request, timeoutMs = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -39,7 +39,7 @@ async function cacheResponse(request, response) {
     const cache = await caches.open(CACHE_NAME);
     await cache.put(request, response.clone());
   } catch {
-    // Caching is an optimization; never block navigation on it.
+    // Caching is an optimization; never block a successful response on it.
   }
 }
 
@@ -49,20 +49,32 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
   event.respondWith((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(event.request) ||
-      (event.request.mode === "navigate" ? await cache.match("/") : null);
+    const isNavigation = event.request.mode === "navigate";
+    const isStaticAsset = STATIC_ASSET.test(url.pathname);
+
+    // Navigation is always network-first. Never serve an old cached HTML shell.
+    if (isNavigation) {
+      try {
+        const response = await fetchFast(new Request(event.request, { cache: "no-store" }));
+        return response;
+      } catch {
+        const cache = await caches.open(CACHE_NAME);
+        return await cache.match(OFFLINE_URL) || new Response(
+          "HkTube is temporarily offline. Please try again.",
+          { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      }
+    }
+
+    if (!isStaticAsset) return fetch(event.request);
+
     try {
-      const request = event.request.mode === "navigate"
-        ? new Request(event.request, { cache: "no-store" })
-        : event.request;
-      const response = await fetchFast(request);
+      const response = await fetchFast(event.request);
       event.waitUntil(cacheResponse(event.request, response));
       return response;
     } catch {
-      return cached || (event.request.mode === "navigate"
-        ? await cache.match(OFFLINE_URL)
-        : new Response("", { status: 503 }));
+      const cache = await caches.open(CACHE_NAME);
+      return await cache.match(event.request) || new Response("", { status: 503 });
     }
   })());
 });
