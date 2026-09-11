@@ -27,7 +27,7 @@ function DeferredLanguageRuntime() {
   return Runtime ? <Runtime /> : null;
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(error => console.warn("[PWA] service worker unavailable", error)); });
+if ("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch(error => console.warn("[PWA] service worker unavailable", error)); });
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>

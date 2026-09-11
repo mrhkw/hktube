@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v7";
+const CACHE_NAME = "hktube-shell-v8";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = ["/", OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
@@ -14,7 +14,11 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key.startsWith("hktube-shell-") && key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -23,7 +27,7 @@ async function fetchFast(request, timeoutMs = 5000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(request, { signal: controller.signal });
+    return await fetch(request, { signal: controller.signal, cache: "no-store" });
   } finally {
     clearTimeout(timer);
   }
@@ -44,43 +48,21 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
-  if (event.request.mode === "navigate") {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(event.request) || await cache.match("/");
-      try {
-        const response = await fetchFast(new Request(event.request, { cache: "no-store" }), 5000);
-        void cacheResponse(event.request, response);
-        return response;
-      } catch {
-        return cached || await cache.match(OFFLINE_URL);
-      }
-    })());
-    return;
-  }
-
-  if (event.request.destination === "script" || event.request.destination === "style" || STATIC_ASSET.test(url.pathname)) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(event.request);
-      if (cached) {
-        event.waitUntil(fetchFast(event.request, 5000).then(response => cacheResponse(event.request, response)).catch(() => undefined));
-        return cached;
-      }
-      try {
-        const response = await fetchFast(event.request, 5000);
-        void cacheResponse(event.request, response);
-        return response;
-      } catch {
-        return new Response("", { status: 503 });
-      }
-    })());
-    return;
-  }
-
-  event.respondWith(
-    fetchFast(event.request, 5000)
-      .then(response => { void cacheResponse(event.request, response); return response; })
-      .catch(() => caches.match(event.request))
-  );
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(event.request) ||
+      (event.request.mode === "navigate" ? await cache.match("/") : null);
+    try {
+      const request = event.request.mode === "navigate"
+        ? new Request(event.request, { cache: "no-store" })
+        : event.request;
+      const response = await fetchFast(request);
+      event.waitUntil(cacheResponse(event.request, response));
+      return response;
+    } catch {
+      return cached || (event.request.mode === "navigate"
+        ? await cache.match(OFFLINE_URL)
+        : new Response("", { status: 503 }));
+    }
+  })());
 });
