@@ -1,9 +1,19 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { InsertChannel, InsertUser, InsertVideo, auditLogs, channels, comments, localAccounts, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
 import { ENV, isOwnerEmail } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
-export async function getDb() { if (!_db && process.env.DATABASE_URL) { try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; } } return _db; }
+let _pool: ReturnType<typeof mysql.createPool> | null = null;
+export async function getDb() {
+  if (!_db && process.env.DATABASE_URL) {
+    try {
+      _pool = mysql.createPool(process.env.DATABASE_URL, { connectionLimit: 5, waitForConnections: true, queueLimit: 0, enableKeepAlive: true, keepAliveInitialDelay: 0, maxIdle: 5, idleTimeout: 60_000 });
+      _db = drizzle(_pool);
+    } catch (error) { console.warn("[Database] Failed to initialize pooled connection:", error); _pool = null; _db = null; }
+  }
+  return _db;
+}
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb(); if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
