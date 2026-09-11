@@ -1,14 +1,15 @@
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { ChannelBadge } from "@/components/ChannelBadge";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Bookmark, Eye, Heart, Loader2, MessageCircle, Share2, Sparkles } from "lucide-react";
+import { Bookmark, Check, Eye, Heart, Loader2, MessageCircle, Share2, Sparkles, UserPlus } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useRoute } from "wouter";
+import { Link, useRoute } from "wouter";
 import { toast } from "sonner";
 
 function ActionCelebration({ type }: { type: "like" | "save" }) {
@@ -26,7 +27,7 @@ export default function WatchVideo() {
   const [, params] = useRoute("/watch/:id");
   const id = Number(params?.id);
   const videoQuery = trpc.videos.byId.useQuery({ id }, { enabled: Number.isInteger(id) && id > 0 });
-  const video = videoQuery.data as VideoRecord | undefined;
+  const video = videoQuery.data as (VideoRecord & { channel?: { id: number; handle: string; displayName: string; avatarUrl: string | null; subscriberCount: number; verificationStatus: string } | null }) | undefined;
   const viewedVideoId = useRef<number | null>(null);
   const lastHistoryWrite = useRef(0);
   const recordView = trpc.videos.recordView.useMutation();
@@ -40,6 +41,9 @@ export default function WatchVideo() {
   const relatedQuery = trpc.videos.related.useQuery({ id: id || 1, category: video?.category || "regular" }, { enabled: Boolean(video) });
   const related = (relatedQuery.data ?? []) as VideoRecord[];
   const commentsQuery = trpc.comments.list.useQuery({ videoId: id }, { enabled: Boolean(video) });
+  const channel = video?.channel;
+  const channelQuery = trpc.channels.public.useQuery({ handle: channel?.handle || "___" }, { enabled: Boolean(channel?.handle) });
+  const subscribeMutation = trpc.subscriptions.toggle.useMutation({ onSuccess: result => { void channelQuery.refetch(); toast.success(result.subscribed ? "You are now subscribed." : "Subscription removed."); }, onError: error => toast.error(error.message || "Unable to update subscription.") });
   const [commentBody, setCommentBody] = useState("");
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [likePulse, setLikePulse] = useState(false);
@@ -103,6 +107,7 @@ export default function WatchVideo() {
         <VideoPlayer video={video} onProgress={saveWatchProgress} />
         <div className="border-b border-white/8 py-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-semibold uppercase tracking-[.17em] text-cyan-300">{video.category === "shorts" ? "HKTUBE Short" : "HKTUBE Video"}</span><h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">{video.title}</h1></div><span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/8 px-3 py-1.5 text-xs font-medium text-violet-100"><Eye className="size-3.5" />{formatViews(video.viewCount)}</span></div>
+          {channel && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/8 bg-white/[.025] p-3"><Link href={`/channel/${channel.handle}`} className="flex min-w-0 items-center gap-3 rounded-xl pr-2 transition hover:opacity-90"><span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/25 text-sm font-black text-white">{channel.avatarUrl ? <img src={channel.avatarUrl} alt="" className="size-full object-cover" /> : channel.displayName.slice(0, 1).toUpperCase()}</span><span className="min-w-0"><span className="flex items-center gap-1.5 truncate text-sm font-bold text-white">{channel.displayName}<ChannelBadge subscriberCount={channel.subscriberCount} verified={channel.verificationStatus === "verified"} /></span><span className="block text-xs text-slate-500">@{channel.handle} · {channel.subscriberCount.toLocaleString()} subscribers</span></span></Link><Button type="button" size="sm" onClick={() => user ? subscribeMutation.mutate({ channelId: channel.id }) : startLogin()} disabled={subscribeMutation.isPending} className="ml-auto shrink-0 rounded-full bg-violet-500 px-4 text-white hover:bg-violet-400">{channelQuery.data?.subscribed ? <><Check className="mr-1.5 size-4" />Subscribed</> : <><UserPlus className="mr-1.5 size-4" />Subscribe</>}</Button></div>}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <div className="relative"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-red-300/35 bg-red-500/15 text-red-100 hover:bg-red-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""} ${likePulse ? "hktube-like-pop" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button>{likePulse && <ActionCelebration type="like" />}</div>
             <Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />{shareLabel}</Button>
