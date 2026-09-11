@@ -27,7 +27,18 @@ function DeferredLanguageRuntime() {
   return Runtime ? <Runtime /> : null;
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch(error => console.warn("[PWA] service worker unavailable", error)); });
+// Keep legacy HkTube service workers from trapping users on stale cached shells.
+// The current service worker uses network-first navigation, but this cleanup also
+// repairs browsers that still have an older worker/cache installed.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
+      .then(() => caches?.keys ? caches.keys() : [])
+      .then(keys => Promise.all(keys.filter(key => key.startsWith("hktube-shell-")).map(key => caches.delete(key))))
+      .catch(error => console.warn("[PWA] service worker cleanup unavailable", error));
+  });
+}
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
