@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { HkTubeWelcomeLoader } from "./components/HkTubeWelcomeLoader";
 import "./index.css";
 import "./light-theme.css";
 import "./theme-runtime.css";
@@ -62,7 +63,6 @@ function SafeEnhancements() {
   </ErrorBoundary>;
 }
 
-// Keep the worker out of the critical path, but cache immutable assets for repeat loads.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
@@ -76,6 +76,7 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <App />
         <SafeEnhancements />
+        <HkTubeWelcomeLoader />
       </QueryClientProvider>
     </trpc.Provider>
   </ErrorBoundary>
