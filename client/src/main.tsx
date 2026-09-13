@@ -30,7 +30,7 @@ const queryClient = new QueryClient({
     },
   },
 });
-const trpcClient = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc", transformer: superjson, async headers() { const { data } = await supabase.auth.getSession(); if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` }; return {}; }, fetch(input, init) { return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" }); } })] });
+const trpcClient = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc", transformer: superjson, async headers() { const { data } = await supabase.auth.getSession(); if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` }; return {}; }, async fetch(input, init) { const { data } = await supabase.auth.getSession(); return globalThis.fetch(input, { ...(init ?? {}), credentials: data.session ? "omit" : "include" }); } })] });
 
 function SafeEnhancements() {
   const [LanguageRuntime, setLanguageRuntime] = useState<ComponentType | null>(null);
