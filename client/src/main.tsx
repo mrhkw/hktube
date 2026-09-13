@@ -30,7 +30,38 @@ const queryClient = new QueryClient({
     },
   },
 });
-const trpcClient = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc", transformer: superjson, async headers() { const { data } = await supabase.auth.getSession(); if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` }; return {}; }, async fetch(input, init) { const { data } = await supabase.auth.getSession(); return globalThis.fetch(input, { ...(init ?? {}), credentials: data.session ? "omit" : "include" }); } })] });
+
+async function authFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const { data: initial } = await supabase.auth.getSession();
+  const firstHeaders = new Headers(init?.headers ?? {});
+  if (initial.session?.access_token) firstHeaders.set("Authorization", `Bearer ${initial.session.access_token}`);
+  const first = await globalThis.fetch(input, { ...(init ?? {}), headers: firstHeaders, credentials: initial.session ? "omit" : "include" });
+  if (first.status !== 401 && first.status !== 403) return first;
+
+  // Recover an expired persisted Supabase access token transparently. This is
+  // important for long-lived mobile sessions: protected requests must not turn
+  // into a misleading "Please login (10001)" page when refresh is possible.
+  const { data: refreshed, error } = await supabase.auth.refreshSession();
+  const token = refreshed.session?.access_token;
+  if (error || !token) return first;
+
+  const retryHeaders = new Headers(init?.headers ?? {});
+  retryHeaders.set("Authorization", `Bearer ${token}`);
+  return globalThis.fetch(input, { ...(init ?? {}), headers: retryHeaders, credentials: "omit" });
+}
+
+const trpcClient = trpc.createClient({
+  links: [httpBatchLink({
+    url: "/api/trpc",
+    transformer: superjson,
+    async headers() {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` };
+      return {};
+    },
+    fetch: authFetch,
+  })],
+});
 
 function SafeEnhancements() {
   const [LanguageRuntime, setLanguageRuntime] = useState<ComponentType | null>(null);
