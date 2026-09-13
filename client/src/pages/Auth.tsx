@@ -23,6 +23,13 @@ function validSignupPassword(value: string) {
   return value.length >= 8 && /[A-Za-z]/.test(value) && /\d/.test(value);
 }
 
+function withTimeout<T>(promise: PromiseLike<T>, message: string, timeoutMs = 20_000) {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error(message)), timeoutMs)),
+  ]);
+}
+
 export default function Auth() {
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -59,13 +66,13 @@ export default function Auth() {
     setGooglePending(true);
     try {
       const redirectTo = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await withTimeout(supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo,
           queryParams: { prompt: "select_account" },
         },
-      });
+      }), "Google login is taking too long. Please try again.");
       if (error) throw error;
     } catch (error) {
       toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));
@@ -78,7 +85,7 @@ export default function Auth() {
     setPending(true);
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim(), password }), "Login is taking too long. Please check your connection and try again.");
         if (error) throw error;
         toast.success("Welcome back to HkTube.");
         navigate("/menu");
@@ -86,14 +93,14 @@ export default function Auth() {
         if (!validSignupPassword(password)) {
           throw new Error("Password should be at least 8 characters and contain at least one letter and one number.");
         }
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await withTimeout(supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             data: { display_name: name.trim() },
             emailRedirectTo: `${window.location.origin}/auth`,
           },
-        });
+        }), "Account creation is taking too long. Please try again.");
         if (error) throw error;
         if (data.session) {
           toast.success("Your HkTube account is ready.");

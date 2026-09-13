@@ -40,7 +40,15 @@ async function directUpload(file: File, kind: "video" | "thumbnail" | "caption",
   const session = await supabase.auth.getSession();
   const token = session.data.session?.access_token;
   if (!token) throw new Error("Your session expired. Please sign in again.");
-  const response = await fetch("/api/media-upload/presign", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ kind, filename: file.name, contentType: file.type, size: file.size }) });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 20_000);
+  let response: Response;
+  try {
+    response = await fetch("/api/media-upload/presign", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ kind, filename: file.name, contentType: file.type, size: file.size }), signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error("Upload preparation timed out. Please try again.");
+    throw error;
+  } finally { window.clearTimeout(timeout); }
   const payload = await response.json().catch(() => null) as { url?: string; key?: string; publicUrl?: string; message?: string } | null;
   if (!response.ok || !payload?.url || !payload.key || !payload.publicUrl) throw new Error(payload?.message || `Could not prepare the ${kind} upload (HTTP ${response.status}).`);
   await new Promise<void>((resolve, reject) => {
@@ -48,6 +56,8 @@ async function directUpload(file: File, kind: "video" | "thumbnail" | "caption",
     request.open("PUT", payload.url!);
     request.setRequestHeader("Content-Type", file.type);
     request.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.round(event.loaded / event.total * 100)); };
+    request.timeout = 120_000;
+    request.ontimeout = () => reject(new Error("Storage upload timed out. Check your connection and try again."));
     request.onload = () => request.status >= 200 && request.status < 300 ? resolve() : reject(new Error(`Storage upload failed (${request.status}).`));
     request.onerror = () => reject(new Error("Network error while uploading the file."));
     request.send(file);
@@ -75,6 +85,10 @@ export default function Upload() {
   const [dimensions, setDimensions] = useState("");
   const [progress, setProgress] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!channelId && channelsQuery.data?.[0]) setChannelId(String(channelsQuery.data[0].id));
+  }, [channelId, channelsQuery.data]);
 
   useEffect(() => () => { if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl); }, [videoPreviewUrl]);
 

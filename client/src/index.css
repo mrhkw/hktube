@@ -144,6 +144,11 @@ body [class*="min-h-[100dvh]"] footer a:hover{color:#4c3fb4!important}
 /* Mobile: prevent cramped controls, keep cards readable and reserve space for the bottom dock. */
 @media(max-width:767px){
   body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  nav.fixed[aria-label="Mobile navigation"]{height:76px!important;min-height:76px!important;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch!important;padding-top:6px!important;padding-bottom:env(safe-area-inset-bottom)!important}
+  nav.fixed[aria-label="Mobile navigation"]>a,nav.fixed[aria-label="Mobile navigation"]>button{height:68px!important;min-height:68px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:5px 2px!important;transform:none!important}
+  nav.fixed[aria-label="Mobile navigation"]>a svg,nav.fixed[aria-label="Mobile navigation"]>button svg{width:23px!important;height:23px!important;flex:0 0 23px!important}
+  nav.fixed[aria-label="Mobile navigation"]>a:first-child svg{width:27px!important;height:27px!important;flex-basis:27px!important}
+  nav.fixed[aria-label="Mobile navigation"]>a>span:last-child,nav.fixed[aria-label="Mobile navigation"]>button>span:last-child{font-size:10px!important;line-height:13px!important}
   body [class*="min-h-[100dvh]"] header>div:first-child{height:58px!important;padding-inline:12px!important}
   body [class*="min-h-[100dvh}"]{}
   body [class*="min-h-[100dvh]"] main{padding-left:12px!important;padding-right:12px!important;padding-bottom:88px!important}

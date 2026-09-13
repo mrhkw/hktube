@@ -25,20 +25,17 @@ const trpcClient = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc",
 function SafeEnhancements() {
   const [LanguageRuntime, setLanguageRuntime] = useState<ComponentType | null>(null);
   const [AccountBootstrap, setAccountBootstrap] = useState<ComponentType | null>(null);
-  const [MobileDockPolish, setMobileDockPolish] = useState<ComponentType | null>(null);
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const [language, account, mobile] = await Promise.all([
+        const [language, account] = await Promise.all([
           import("./components/LanguageRuntime"),
           import("./components/AccountBootstrap"),
-          import("./components/MobileDockPolish"),
         ]);
         if (cancelled) return;
         setLanguageRuntime(() => language.LanguageRuntime);
         setAccountBootstrap(() => account.AccountBootstrap);
-        setMobileDockPolish(() => mobile.MobileDockPolish);
       } catch (error) {
         console.warn("[HkTube] optional enhancement unavailable", error);
       }
@@ -49,7 +46,6 @@ function SafeEnhancements() {
   return <ErrorBoundary>
     {LanguageRuntime ? <LanguageRuntime /> : null}
     {AccountBootstrap ? <AccountBootstrap /> : null}
-    {MobileDockPolish ? <MobileDockPolish /> : null}
   </ErrorBoundary>;
 }
 
