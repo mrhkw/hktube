@@ -24,7 +24,7 @@ const CreateChannel = lazy(() => import("@/pages/CreateChannel"));
 const SearchResults = lazy(() => import("@/pages/SearchResults"));
 const Upload = lazy(() => import("@/pages/Upload"));
 const VideoCollection = lazy(() => import("@/pages/VideoCollection").then(m => ({ default: m.VideoCollection })));
-const WatchVideo = lazy(() => import("@/pages/WatchVideo"));
+const WatchVideo = lazy(() => import("@/pages/SupabaseWatchVideo"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const Auth = lazy(() => import("@/pages/Auth"));
 const PlatformSection = lazy(() => import("@/pages/PlatformSection").then(m => ({ default: m.PlatformSection })));
