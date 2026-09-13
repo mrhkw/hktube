@@ -35,7 +35,7 @@ const mobileDock = [
   { label: "Shorts", href: "/shorts", icon: Clapperboard },
   { label: "Create", href: "#create", icon: CreateGlyph },
   { label: "Feeds", href: "/posts", icon: BarChart3 },
-  { label: "Menu", href: "#menu", icon: UserRound },
+  { label: "Profile", href: "/profile", icon: UserRound },
 ];
 
 function DpMark({ className }: { className?: string }) { return <span className={cn("grid place-items-center rounded-[11px] bg-[#111214] text-[11px] font-black tracking-[-0.08em] text-white", className)} aria-hidden="true">DP<span className="ml-[-1px] text-[9px] text-white">▶</span></span>; }
