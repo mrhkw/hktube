@@ -36,6 +36,12 @@ function mapVideo(row: any): SupabaseVideo {
   };
 }
 
+async function requireUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error("Your session expired. Please sign in again.");
+  return data.user;
+}
+
 export async function listMySupabaseVideos(userId: string) {
   const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").eq("creator_id", userId).order("created_at", { ascending: false }).limit(100);
   if (error) throw new Error(error.message);
@@ -46,4 +52,32 @@ export async function listPublicSupabaseVideos(limit = 20) {
   const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved").order("published_at", { ascending: false }).limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []).map(mapVideo);
+}
+
+export async function createSupabaseVideo(input: { channelId: string; title: string; description: string; file: File; thumbnail?: File | null; isShort?: boolean; onProgress?: (value: number) => void }) {
+  const user = await requireUser();
+  if (input.file.size > 900 * 1024 * 1024) throw new Error("Video file must be 900 MB or smaller.");
+  if (!input.file.type.startsWith("video/")) throw new Error("Please choose a video file.");
+  if (input.thumbnail && input.thumbnail.size > 12 * 1024 * 1024) throw new Error("Thumbnail must be 12 MB or smaller.");
+  const extension = input.file.name.split(".").pop()?.toLowerCase() || "mp4";
+  const videoPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+  input.onProgress?.(10);
+  const { error: uploadError } = await supabase.storage.from("videos").upload(videoPath, input.file, { contentType: input.file.type, upsert: false, cacheControl: "31536000" });
+  if (uploadError) throw new Error(uploadError.message);
+  input.onProgress?.(65);
+
+  let thumbnailPath: string | null = null;
+  if (input.thumbnail) {
+    const thumbExt = input.thumbnail.name.split(".").pop()?.toLowerCase() || "jpg";
+    thumbnailPath = `${user.id}/${crypto.randomUUID()}.${thumbExt}`;
+    const { error } = await supabase.storage.from("thumbnails").upload(thumbnailPath, input.thumbnail, { contentType: input.thumbnail.type, upsert: false, cacheControl: "31536000" });
+    if (error) throw new Error(error.message);
+  }
+  input.onProgress?.(82);
+
+  const tags = input.isShort ? ["shorts"] : [];
+  const { data, error } = await supabase.from("videos").insert({ creator_id: user.id, channel_id: input.channelId, title: input.title.trim(), description: input.description.trim() || null, tags, visibility: "public", status: "published", moderation_status: "pending", video_path: videoPath, thumbnail_path: thumbnailPath, duration_seconds: 0, allow_comments: true, allow_download: false, made_for_kids: false, views: 0, likes_count: 0, published_at: new Date().toISOString() }).select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").single();
+  if (error) throw new Error(error.message);
+  input.onProgress?.(100);
+  return mapVideo(data);
 }
