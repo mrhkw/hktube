@@ -76,6 +76,7 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   const library = trpc.library.saved.useQuery(undefined, { enabled: isAuthed && kind === "library" });
   const studio = trpc.creator_studio.dashboard.useQuery(undefined, { enabled: isAuthed && kind === "studio" });
   const following = trpc.subscriptions.mine.useQuery(undefined, { enabled: isAuthed && (kind === "subscriptions" || kind === "library") });
+  const followingFeed = trpc.subscriptions.feed.useQuery(undefined, { enabled: isAuthed && kind === "subscriptions" });
   const [title, setTitle] = useState("");
   const createPlaylist = trpc.playlists.create.useMutation({
     onSuccess: () => { setTitle(""); void playlists.refetch(); toast.success("Playlist created."); },
@@ -96,8 +97,8 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
         : [];
 
   const privateQuery = kind === "notifications" ? notifications : kind === "playlists" ? playlists : kind === "history" ? history : kind === "library" ? library : kind === "studio" ? studio : kind === "subscriptions" ? following : null;
-  const queryLoading = kind === "posts" ? posts.isLoading : Boolean(privateQuery?.isLoading);
-  const queryError = kind === "posts" ? posts.isError : Boolean(privateQuery?.isError);
+  const queryLoading = kind === "posts" ? posts.isLoading : Boolean(privateQuery?.isLoading) || (kind === "subscriptions" && followingFeed.isLoading);
+  const queryError = kind === "posts" ? posts.isError : Boolean(privateQuery?.isError) || (kind === "subscriptions" && followingFeed.isError);
   if (kind === "library") {
     if (!isAuthed) return <HkTubeShell title="Library" subtitle="Your saved videos, history, and collections."><SignInState /></HkTubeShell>;
     if (library.isLoading || history.isLoading || playlists.isLoading || following.isLoading) return <HkTubeShell title="Library"><LoadingState /></HkTubeShell>;
@@ -121,7 +122,8 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
   } else if (kind === "posts") {
     content = <PostsFeed posts={posts.data ?? []} canCreate={isAuthed} />;
   } else if (kind === "subscriptions") {
-    content = following.data?.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{following.data.map(item => <article key={item.subscription.id} className="rounded-2xl border border-white/10 bg-white/[.035] p-5"><div className="flex items-center gap-3">{item.channel.avatarUrl ? <img src={item.channel.avatarUrl} alt="" className="size-11 rounded-full object-cover" /> : <span className="grid size-11 place-items-center rounded-full bg-fuchsia-500/15 text-fuchsia-200"><UsersRound className="size-5" aria-hidden="true" /></span>}<div className="min-w-0"><h2 className="truncate font-semibold text-white">{item.channel.displayName}</h2><p className="truncate text-xs text-slate-500">@{item.channel.handle}</p></div></div><p className="mt-4 text-sm text-slate-400">{item.channel.subscriberCount} followers</p></article>)}</div> : <EmptyVideos title="No channels followed yet" copy="Follow channels to keep their latest activity close at hand." icon={UsersRound} />;
+    const feedVideos = (followingFeed.data ?? []).map(item => item.video as VideoRecord);
+    content = following.data?.length ? <div className="space-y-8"><section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{following.data.map(item => <Link key={item.subscription.id} href={`/channel/${item.channel.handle}`} className="rounded-2xl border border-white/10 bg-white/[.035] p-5 transition hover:border-fuchsia-300/30"><div className="flex items-center gap-3">{item.channel.avatarUrl ? <img src={item.channel.avatarUrl} alt="" className="size-11 rounded-full object-cover" /> : <span className="grid size-11 place-items-center rounded-full bg-fuchsia-500/15 text-fuchsia-200"><UsersRound className="size-5" aria-hidden="true" /></span>}<div className="min-w-0"><h2 className="truncate font-semibold text-white">{item.channel.displayName}</h2><p className="truncate text-xs text-slate-500">@{item.channel.handle}</p></div></div><p className="mt-4 text-sm text-slate-400">{item.channel.subscriberCount} subscribers</p></Link>)}</section><section><div className="mb-4"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-fuchsia-300">Latest from your channels</p><h2 className="mt-1 text-xl font-black text-white">Following feed</h2></div>{feedVideos.length ? <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{feedVideos.map(video => <VideoCard key={video.id} video={video} />)}</div> : <EmptyVideos title="No new videos yet" copy="The creators you follow have not published new content yet." icon={UsersRound} />}</section></div> : <EmptyVideos title="No channels followed yet" copy="Subscribe to creators to build your Following feed." icon={UsersRound} />;
   } else if (kind === "notifications") {
     content = <Notifications items={notifications.data ?? []} onRead={() => void notifications.refetch()} />;
   } else if (kind === "playlists") {

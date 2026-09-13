@@ -40,7 +40,7 @@ function readLanguage() {
 
 function syncLanguageOptions() {
   try {
-    for (const select of document.querySelectorAll<HTMLSelectElement>("select")) {
+    for (const select of Array.from(document.querySelectorAll<HTMLSelectElement>("select"))) {
       if (!Array.from(select.options).some(option => option.value === "ur" && /اردو/.test(option.textContent || ""))) continue;
       for (const [code, name, native] of HKTUBE_ALL_LANGUAGES) {
         if (Array.from(select.options).some(option => option.value === code)) continue;
