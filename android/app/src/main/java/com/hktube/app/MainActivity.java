@@ -1,11 +1,8 @@
 package com.hktube.app;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -18,7 +15,6 @@ import android.webkit.WebViewClient;
 
 public final class MainActivity extends Activity {
     private static final int FILE_CHOOSER = 4101;
-    private static final int NOTIFICATION_PERMISSION = 4102;
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
 
@@ -66,12 +62,11 @@ public final class MainActivity extends Activity {
             }
         });
 
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION);
-        }
-
         String deepLink = getIntent().getDataString();
-        webView.loadUrl(deepLink != null && deepLink.startsWith("https://hktube.vercel.app") ? deepLink : "https://hktube.vercel.app/");
+        String startUrl = deepLink != null && deepLink.startsWith("https://hktube.vercel.app")
+                ? deepLink
+                : "https://hktube.vercel.app/?app=android";
+        webView.loadUrl(startUrl);
     }
 
     @Override
