@@ -14,6 +14,7 @@ export default function Wallet() {
         <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">
           HkTube will show real earnings, payout status, and transaction records here only after a verified payments or creator-revenue provider is connected. No estimated balance or fake payout data is shown.
         </p>
+        <div className="mx-auto mt-6 max-w-lg rounded-2xl border border-amber-300/20 bg-amber-400/[.08] p-4 text-left"><p className="text-sm font-black text-amber-100">Withdraw is temporarily unavailable</p><p className="mt-1 text-xs leading-5 text-amber-100/70">The withdraw option is visible for creator planning, but it will not work until HkTube enables a verified payout provider.</p><Button type="button" disabled className="mt-4 w-full cursor-not-allowed bg-white/10 text-slate-400">Withdraw earnings · Currently disabled</Button></div>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/library">
             <Button className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">Back to library</Button>
@@ -30,4 +31,3 @@ export default function Wallet() {
     </HkTubeShell>
   );
 }
-

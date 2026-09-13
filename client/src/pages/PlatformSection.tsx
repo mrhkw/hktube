@@ -109,7 +109,7 @@ export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
     if (!isAuthed) return <HkTubeShell title="Creator Studio" subtitle="Manage creator-owned HkTube content."><SignInState /></HkTubeShell>;
     if (studio.isLoading) return <HkTubeShell title="Creator Studio"><LoadingState /></HkTubeShell>;
     if (studio.isError) return <HkTubeShell title="Creator Studio"><EmptyVideos title="Creator Studio could not load" copy="Please refresh and try again. This workspace only reads content belonging to your account." icon={Inbox} /></HkTubeShell>;
-    return <HkTubeShell><CreatorStudioHub videos={studio.data?.videos ?? []} analytics={studio.data?.analytics ?? { totalViews: 0, contentCount: 0, regularCount: 0, shortsCount: 0 }} /></HkTubeShell>;
+    return <HkTubeShell><CreatorStudioHub videos={studio.data?.videos ?? []} analytics={studio.data?.analytics ?? { totalViews: 0, contentCount: 0, regularCount: 0, shortsCount: 0, watchHours: 0 }} /></HkTubeShell>;
   }
 
   let content: ReactNode;
