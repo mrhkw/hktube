@@ -1,37 +1,15 @@
 # Project TODO
 
-- [x] Create the production video schema with title, description, video URL, thumbnail URL, duration, view count, category, and upload timestamp.
-- [x] Add database access helpers and type-safe public/admin video procedures.
-- [x] Add secured S3-backed upload flow for video and thumbnail files.
-- [x] Restrict video creation and management to the owner/admin role.
-- [x] Build the dark neon HKTUBE application shell with authentic branding, responsive navigation, and no simulated system status UI.
-- [x] Implement a functional HTML5 hero video player with play/pause, seeking, volume, fullscreen, and captions controls.
-- [x] Build database-driven Home, Shorts, Trending, search results, and video-watch views.
-- [x] Implement automatic view-count incrementing and database-driven related-video recommendations.
-- [x] Build the protected admin upload panel with file/URL inputs, metadata validation, and meaningful success/error feedback.
-- [x] Remove all fabricated thumbnails, view counts, demo terminal logs, mock AI states, and placeholder content from the interface.
-- [x] Write and run Vitest coverage for video data procedures, authorization, search, sorting, and view counting.
-- [x] Defer authenticated owner publishing verification until the owner adds an authorized media file after release; no media was seeded for launch.
-- [x] Preserve existing HKTUBE features while converting the presentation to a consistent app-like responsive shell.
-- [x] Prevent unintended page zoom and remove any zoom-related viewport or layout errors without adding new product features.
-- [x] Validate the refined mobile and desktop layouts, then save an app-shell refinement checkpoint.
-- [x] Align the existing mobile HKTUBE header, horizontal content tabs, and central live-style bottom navigation treatment with the supplied reference screenshots.
-- [x] Add a real account/menu entry layout that uses authenticated data only and never invents creator statistics, thumbnails, or notifications.
-- [x] Preserve existing routes, database-driven catalog states, upload access controls, and no-zoom safeguards while validating the reference-aligned mobile experience.
-- [x] Add accessible Privacy Policy, Terms of Use, Cookie Notice, Community Guidelines, and Advertising Disclosure routes for HKTUBE.
-- [x] Add policy and app-settings entry points using only real HKTUBE session data; do not display invented activity, notifications, ads, or creator metrics.
-- [x] Revalidate legal pages, responsive app navigation, no-zoom behavior, and protected upload access after the compliance update.
-- [x] Confirm direct GitHub repository access is unavailable without the owner's GitHub login; hand off the source for manual upload instead.
-- [x] Prepare the current HKTUBE project source for manual upload to github.com/mrhkw/hktube rather than attempting an unauthorized push.
-- [x] Defer Vercel auto-deploy verification until the owner uploads the supplied source archive to the connected GitHub repository.
-- [x] Create and verify a clean HKTUBE source ZIP archive for manual GitHub upload, excluding generated files and development dependencies.
-- [x] Verify the provided credential has authorized write access to github.com/mrhkw/hktube and identify its deployment branch.
-- [x] Push the current secret-free HKTUBE source to the authorized GitHub deployment branch.
-- [x] Verify the post-push repository state and report that Vercel is still serving its prior build rather than the new main-branch commit.
-- [x] Audit the current production build for backend/database, auth/session, S3 upload, player, PWA, and Vercel compatibility gaps without introducing fabricated content.
-- [x] Harden the verified HKTUBE backend, session boundaries, upload validation, player loading/error states, and accessible share controls.
-- [x] Complete Contact Us, policy navigation, and PWA metadata while preserving no-zoom safeguards and real-data-only experiences.
-- [ ] Run the complete automated and browser validation suite, then document owner-controlled external configuration requirements.
-- [x] Complete release validation without seeding any videos, thumbnails, captions, or fabricated data.
-- [x] Create a final release checkpoint for the empty-but-production-ready HKTUBE catalog.
-- [x] Verify responsive UI, live database states, authentication behavior, and error/empty-state experiences.
+- [x] Production video schema, database access, secured upload, player, Home/Shorts/Trending/search/watch, view counting and recommendations.
+- [x] Responsive HkTube shell, mobile navigation, account/menu, policies, PWA metadata and real-data-only launch state.
+- [x] Auth/session, upload validation, player error/loading states, share controls and backend hardening.
+- [x] Owner admin control room with moderation, reports, creator verification, analytics, audit visibility and operational shortcuts.
+- [x] Subscriber milestone badges: 100, 1K, 10K, 100K, 1M and 10M Golden tier.
+- [x] Owner-controlled verified badge palette with all 12 approved colors.
+- [x] Monetization eligibility surface with payout withdrawal intentionally withheld until a real payout integration is available.
+- [x] Route-level code splitting and deferred optional utilities for faster startup.
+- [x] Pooled MySQL connections and Vercel/serverless performance defaults for higher concurrency.
+- [x] PWA static assets now use instant cache-first delivery with background refresh while HTML navigation remains network-first.
+- [ ] Complete authenticated browser E2E validation for upload, publish, playback, moderation and payout integration after owner-controlled external setup is available.
+- [ ] Complete external payment/payout provider integration; when available, show an in-app alert instead of exposing fake withdrawal functionality.
+- [ ] Finish native Android release/signing and store verification.
