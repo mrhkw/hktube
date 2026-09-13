@@ -1,0 +1,48 @@
+/* HkTube runtime theme bridge. The main visual shell has legacy hard-coded violet/fuchsia utility colors;
+   these rules make the selected Settings theme control those accents consistently. */
+html[data-hktube-theme] {
+  --hktube-accent: #7c5cff;
+  --hktube-accent-soft: rgba(124,92,255,.12);
+  --hktube-accent-ring: rgba(124,92,255,.34);
+}
+html[data-hktube-theme="blue"] { --hktube-accent:#3b82f6; --hktube-accent-soft:rgba(59,130,246,.12); --hktube-accent-ring:rgba(59,130,246,.34); }
+html[data-hktube-theme="cyan"] { --hktube-accent:#06b6d4; --hktube-accent-soft:rgba(6,182,212,.12); --hktube-accent-ring:rgba(6,182,212,.34); }
+html[data-hktube-theme="teal"] { --hktube-accent:#14b8a6; --hktube-accent-soft:rgba(20,184,166,.12); --hktube-accent-ring:rgba(20,184,166,.34); }
+html[data-hktube-theme="green"] { --hktube-accent:#10b981; --hktube-accent-soft:rgba(16,185,129,.12); --hktube-accent-ring:rgba(16,185,129,.34); }
+html[data-hktube-theme="lime"] { --hktube-accent:#84cc16; --hktube-accent-soft:rgba(132,204,22,.12); --hktube-accent-ring:rgba(132,204,22,.34); }
+html[data-hktube-theme="amber"] { --hktube-accent:#f59e0b; --hktube-accent-soft:rgba(245,158,11,.12); --hktube-accent-ring:rgba(245,158,11,.34); }
+html[data-hktube-theme="orange"] { --hktube-accent:#f97316; --hktube-accent-soft:rgba(249,115,22,.12); --hktube-accent-ring:rgba(249,115,22,.34); }
+html[data-hktube-theme="red"] { --hktube-accent:#ef4444; --hktube-accent-soft:rgba(239,68,68,.12); --hktube-accent-ring:rgba(239,68,68,.34); }
+html[data-hktube-theme="pink"] { --hktube-accent:#ec4899; --hktube-accent-soft:rgba(236,72,153,.12); --hktube-accent-ring:rgba(236,72,153,.34); }
+html[data-hktube-theme="fuchsia"] { --hktube-accent:#d946ef; --hktube-accent-soft:rgba(217,70,239,.12); --hktube-accent-ring:rgba(217,70,239,.34); }
+html[data-hktube-theme="indigo"] { --hktube-accent:#6366f1; --hktube-accent-soft:rgba(99,102,241,.12); --hktube-accent-ring:rgba(99,102,241,.34); }
+
+html[data-hktube-theme] body [class*="text-violet-"],
+html[data-hktube-theme] body [class*="text-fuchsia-"],
+html[data-hktube-theme] body [class*="text-indigo-"] { color:var(--hktube-accent)!important; }
+html[data-hktube-theme] body [class*="border-violet-"],
+html[data-hktube-theme] body [class*="border-fuchsia-"],
+html[data-hktube-theme] body [class*="border-indigo-"] { border-color:var(--hktube-accent)!important; }
+html[data-hktube-theme] body [class*="bg-violet-"],
+html[data-hktube-theme] body [class*="bg-fuchsia-"],
+html[data-hktube-theme] body [class*="bg-indigo-"] { background-color:var(--hktube-accent-soft)!important; }
+html[data-hktube-theme] body [class*="from-violet-"],
+html[data-hktube-theme] body [class*="from-fuchsia-"],
+html[data-hktube-theme] body [class*="from-indigo-"] { --tw-gradient-from:var(--hktube-accent)!important; }
+html[data-hktube-theme] body [class*="to-fuchsia-"],
+html[data-hktube-theme] body [class*="to-violet-"],
+html[data-hktube-theme] body [class*="to-indigo-"] { --tw-gradient-to:var(--hktube-accent)!important; }
+html[data-hktube-theme] body [class*="ring-violet-"],
+html[data-hktube-theme] body [class*="ring-fuchsia-"],
+html[data-hktube-theme] body [class*="ring-indigo-"] { --tw-ring-color:var(--hktube-accent-ring)!important; }
+
+/* Explicit overrides for the light shell's fixed accent values. */
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] main nav:not(.fixed) a:first-child,
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] aside [class*="bg-violet-500"] { background:var(--hktube-accent)!important; border-color:var(--hktube-accent)!important; }
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] main nav:not(.fixed) a:hover,
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] aside a:hover,
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] aside button:hover { border-color:var(--hktube-accent)!important; color:var(--hktube-accent)!important; }
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] header input:focus { border-color:var(--hktube-accent)!important; box-shadow:0 0 0 4px var(--hktube-accent-soft)!important; }
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] nav.fixed a[aria-current="page"] span,
+html[data-hktube-theme] body [class*="min-h-[100dvh]"] nav.fixed a:hover span { color:var(--hktube-accent)!important; }
+html[data-hktube-theme] body :focus-visible { outline-color:var(--hktube-accent)!important; }
