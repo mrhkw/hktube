@@ -14,7 +14,7 @@ export default function DeleteAccount() {
     if (!value || !value.includes("@")) return;
     const subject = encodeURIComponent("HkTube account deletion request");
     const body = encodeURIComponent(`Please delete my HkTube account and associated app data.\n\nAccount email: ${value}`);
-    window.location.href = `mailto:hello@hktube.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:support@hktube.com?subject=${subject}&body=${body}`;
     setSubmitted(true);
   }
 
