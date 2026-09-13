@@ -100,6 +100,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    cssCodeSplit: true,
+    sourcemap: false,
+    reportCompressedSize: true,
     rollupOptions: { output: { manualChunks } },
   },
   server: {

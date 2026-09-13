@@ -10,7 +10,16 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
 import "./light-theme.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 const trpcClient = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc", transformer: superjson, async headers() { const { data } = await supabase.auth.getSession(); if (data.session?.access_token) return { Authorization: `Bearer ${data.session.access_token}` }; return {}; }, fetch(input, init) { return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" }); } })] });
 
 function SafeEnhancements() {
@@ -44,14 +53,11 @@ function SafeEnhancements() {
   </ErrorBoundary>;
 }
 
-// Do not let an old PWA worker/cache prevent the fresh application shell from starting.
+// Keep the worker out of the critical path, but cache immutable assets for repeat loads.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.getRegistrations()
-      .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
-      .then(() => caches?.keys ? caches.keys() : [])
-      .then(keys => Promise.all(keys.filter(key => key.startsWith("hktube-shell-" )).map(key => caches.delete(key))))
-      .catch(error => console.warn("[PWA] service worker cleanup unavailable", error));
+    void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
+      .catch(error => console.warn("[PWA] service worker unavailable", error));
   });
 }
 

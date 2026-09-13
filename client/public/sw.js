@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v10";
+const CACHE_NAME = "hktube-shell-v11";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
@@ -27,7 +27,7 @@ async function fetchFast(request, timeoutMs = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(request, { signal: controller.signal, cache: "no-store" });
+    return await fetch(request, { signal: controller.signal, cache: "default" });
   } finally {
     clearTimeout(timer);
   }
@@ -67,6 +67,13 @@ self.addEventListener("fetch", event => {
     }
 
     if (!isStaticAsset) return fetch(event.request);
+
+    // Vite assets are content-hashed, so cached copies are safe and instant.
+    const cached = await caches.match(event.request);
+    if (cached) {
+      event.waitUntil(fetchFast(event.request).then(response => cacheResponse(event.request, response)).catch(() => undefined));
+      return cached;
+    }
 
     try {
       const response = await fetchFast(event.request);
