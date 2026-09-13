@@ -4,7 +4,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { ChannelBadge, getSubscriberBadge, BADGE_TIERS } from "@/components/ChannelBadge";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, BarChart3, Check, CheckCircle2, FileVideo, Flag, Gavel, Loader2, LockKeyhole, Palette, ScrollText, Settings2, ShieldCheck, Trash2, Users, WalletCards, Bell, Database, Ban, MessageSquare, Search, Wrench, UserCog } from "lucide-react";
+import { AlertTriangle, BarChart3, Bot, Check, CheckCircle2, FileVideo, Flag, Gavel, Loader2, LockKeyhole, Palette, ScrollText, Settings2, ShieldCheck, Trash2, Users, WalletCards, Bell, Database, Ban, MessageSquare, Search, Wrench, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
 const VERIFY_COLORS = [
@@ -25,6 +25,7 @@ const ADMIN_AREAS = [
   ["Search & discovery", "Monitor catalog discovery and search quality", Search, "/algorithm"],
   ["Analytics", "Catalog, engagement and platform health", BarChart3, "/algorithm"],
   ["Algorithm", "Recommendation health and safe checks", Gavel, "/algorithm"],
+  ["AI Operations", "Manage the four existing AI agents, audit actions and admin alerts", Bot, "/admin/ai"],
   ["Audit logs", "Review sensitive platform actions", ScrollText, "/admin"],
   ["Monetization", "Eligibility, earnings status and payout readiness", WalletCards, "/monetization"],
   ["Notifications", "Review platform notification operations", Bell, "/notifications"],
