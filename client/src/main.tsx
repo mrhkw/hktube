@@ -9,6 +9,15 @@ import { supabase } from "./lib/supabase";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./index.css";
 import "./light-theme.css";
+import "./theme-runtime.css";
+
+const THEME_IDS = new Set(["violet", "blue", "cyan", "teal", "green", "lime", "amber", "orange", "red", "pink", "fuchsia", "indigo"]);
+try {
+  const savedTheme = window.localStorage.getItem("hktube-theme") || "violet";
+  document.documentElement.dataset.hktubeTheme = THEME_IDS.has(savedTheme) ? savedTheme : "violet";
+} catch {
+  document.documentElement.dataset.hktubeTheme = "violet";
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
