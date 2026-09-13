@@ -9,6 +9,14 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
+    // Legacy storage is public media only. Never allow arbitrary Forge storage
+    // paths, traversal, encoded path tricks, or non-HkTube namespaces to reach
+    // the signing service with its server-side credential.
+    if (!key.startsWith("hktube/") || key.includes("..") || key.includes("\\") || key.includes("//")) {
+      res.status(404).send("Storage object not found");
+      return;
+    }
+
     if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
       res.status(500).send("Storage proxy not configured");
       return;
@@ -26,8 +34,7 @@ export function registerStorageProxy(app: Express) {
       });
 
       if (!forgeResp.ok) {
-        const body = await forgeResp.text().catch(() => "");
-        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
+        console.error(`[StorageProxy] forge error: ${forgeResp.status}`);
         res.status(502).send("Storage backend error");
         return;
       }
