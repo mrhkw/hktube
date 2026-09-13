@@ -21,11 +21,12 @@ export function getSubscriberBadge(subscriberCount: number): BadgeTier | null {
   return [...BADGE_TIERS].reverse().find(tier => subscriberCount >= tier.threshold) ?? null;
 }
 
-export function ChannelBadge({ subscriberCount, verified = false, compact = false }: { subscriberCount: number; verified?: boolean; compact?: boolean }) {
-  const tier = getSubscriberBadge(subscriberCount);
+export function ChannelBadge({ subscriberCount, verified = false, compact = false, verifiedColor = "#3EA6FF" }: { subscriberCount: number; verified?: boolean; compact?: boolean; verifiedColor?: string }) {
+  const tier = getSubscriberBadge(Math.max(0, subscriberCount));
   if (!tier && !verified) return null;
-  return <span title={verified ? `Verified HkTube channel${tier ? ` · ${tier.label}` : ""}` : tier?.label} className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-bold ${compact ? "text-[10px]" : "text-xs"} ${tier?.className ?? "border-cyan-300/50 bg-cyan-400/15 text-cyan-200"}`}>
-    {tier?.key === "gold" ? <Crown className="size-3" aria-hidden="true" /> : verified ? <BadgeCheck className="size-3" aria-hidden="true" /> : <Sparkles className="size-3" aria-hidden="true" />}
-    {verified ? "Verified" : tier?.label}
+  const size = compact ? "text-[10px]" : "text-xs";
+  return <span className="inline-flex flex-wrap items-center gap-1.5" title={verified ? `Verified HkTube channel${tier ? ` · ${tier.label}` : ""}` : tier?.label}>
+    {verified && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-bold ${size}`} style={{ borderColor: `${verifiedColor}66`, backgroundColor: `${verifiedColor}22`, color: verifiedColor }}><BadgeCheck className="size-3" aria-hidden="true" />Verified</span>}
+    {tier && <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-bold ${size} ${tier.className}`}><span className="sr-only">Subscriber milestone: </span>{tier.key === "gold" ? <Crown className="size-3" aria-hidden="true" /> : <Sparkles className="size-3" aria-hidden="true" />}{tier.label}</span>}
   </span>;
 }
