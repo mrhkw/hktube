@@ -112,6 +112,9 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
+    // Supabase is the browser authentication source of truth. Keep its identity
+    // available while the backend profile sync is recovering, rather than
+    // turning a temporary backend 401 into a false "Please login" state.
     const fallbackUser = hasSession && sessionIdentity ? {
       id: 0,
       openId: "supabase-session",
@@ -121,7 +124,7 @@ export function useAuth(options?: UseAuthOptions) {
       role: "user",
       avatarUrl: sessionIdentity.avatarUrl,
     } : null;
-    const user = meQuery.data ?? (meQuery.error ? null : fallbackUser);
+    const user = meQuery.data ?? fallbackUser;
     safeSetLocalStorage("hktube-runtime-user-info", JSON.stringify(user));
     return {
       user,
