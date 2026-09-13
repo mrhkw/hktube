@@ -7,6 +7,7 @@ import { AdConsentBanner } from "./components/AdConsentBanner";
 import { GlobalAdPlacement } from "./components/GlobalAdPlacement";
 import { UgcTermsGate } from "./components/UgcTermsGate";
 import { MobileSettingsButton } from "./components/MobileSettingsButton";
+import { AppStabilityGuard } from "./components/AppStabilityGuard";
 
 const Home = lazy(() => import("@/pages/Home"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -67,5 +68,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><DeferredUtilities /><GlobalAdPlacement /><Router /><MobileSettingsButton /><AdConsentBanner /><UgcTermsGate /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><DeferredUtilities /><AppStabilityGuard /><GlobalAdPlacement /><Router /><MobileSettingsButton /><AdConsentBanner /><UgcTermsGate /></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }
