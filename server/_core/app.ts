@@ -32,7 +32,7 @@ function rateLimit(req: express.Request, res: express.Response) {
     for (const [entryKey, entry] of rateBuckets) if (entry.resetAt <= now) rateBuckets.delete(entryKey);
   }
   if (current.count > limit) {
-    res.set("Retry-After", String(Math.max(1, Math.ceil((current.resetAt - now) / 1000)));
+    res.set("Retry-After", String(Math.max(1, Math.ceil((current.resetAt - now) / 1000))));
     res.status(429).json({ error: { message: "Too many requests. Please slow down and try again shortly." } });
     return false;
   }
