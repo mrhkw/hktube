@@ -17,7 +17,14 @@ function friendlyChannelError(message: string) {
 export default function CreateChannel() {
   const [, navigate] = useLocation();
   const { user, loading, isAuthenticated } = useAuth();
-  const channels = trpc.channels.mine.useQuery(undefined, { enabled: Boolean(user), retry: 2, staleTime: 15_000 });
+  // Do not run protected channel queries against the temporary Supabase
+  // fallback user (id=0). That fallback keeps the UI visible while the backend
+  // profile sync recovers, but it cannot authorize protected tRPC procedures.
+  const channels = trpc.channels.mine.useQuery(undefined, {
+    enabled: Boolean(user?.id && user.id > 0),
+    retry: 2,
+    staleTime: 15_000,
+  });
   const utils = trpc.useUtils();
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -44,8 +51,6 @@ export default function CreateChannel() {
         toast.success("Channel created successfully.");
         navigate("/profile");
       } catch (error) {
-        // The channel is already created; don't trap the owner on setup just
-        // because an optional logo upload failed.
         toast.error(error instanceof Error ? `Channel created, but logo upload failed: ${error.message}` : "Channel created, but logo upload failed.");
         await utils.channels.mine.invalidate();
         navigate("/profile");
@@ -87,10 +92,20 @@ export default function CreateChannel() {
     if (!cleanName || !cleanHandle || create.isPending) return;
 
     try {
+      // Make sure a persisted mobile session is refreshed before the protected
+      // mutation. This avoids sending an expired access token to the API.
+      const current = await supabase.auth.getSession();
+      if (!current.data.session) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (!refreshed.data.session) {
+          toast.error("Your session expired. Please sign in again.");
+          navigate("/auth");
+          return;
+        }
+      }
+
       await create.mutateAsync({ handle: cleanHandle, displayName: cleanName, description: cleanDescription });
     } catch (error) {
-      // Supabase can refresh an access token after the page has been open for
-      // a long time. Retry once so an old token never permanently blocks setup.
       const message = error instanceof Error ? error.message : String(error);
       if (/login|unauthorized|forbidden|session/i.test(message)) {
         try {
@@ -102,6 +117,9 @@ export default function CreateChannel() {
         } catch {
           // Fall through to the normal friendly error below.
         }
+        toast.error("Your session expired. Please sign in again.");
+        navigate("/auth");
+        return;
       }
       toast.error(`Channel create failed: ${friendlyChannelError(message)}`);
     }
@@ -138,7 +156,7 @@ export default function CreateChannel() {
             </div>
           </div>
 
-          {channels.isError && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><p className="font-semibold">We could not load your existing channels yet.</p><p className="mt-1">You can still try creating this channel. If the session is stale, HkTube will refresh it and retry once automatically.</p><button type="button" className="mt-3 rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold" onClick={() => void channels.refetch()}>Retry channel check</button></div>}
+          {channels.isError && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><p className="font-semibold">We could not load your existing channels yet.</p><p className="mt-1">The secure session may need a refresh. Use the retry button, or sign in again if it continues.</p><button type="button" className="mt-3 rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold" onClick={() => void channels.refetch()}>Retry channel check</button></div>}
 
           <label className="block"><span className="text-sm font-semibold">Channel name</span><input value={displayName} onChange={e => setDisplayName(e.target.value)} required maxLength={255} className="mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:border-black" placeholder="Your public channel name" /></label>
           <label className="block"><span className="text-sm font-semibold">Handle</span><input value={handle} onChange={e => setHandle(e.target.value.replace(/[^A-Za-z0-9_]/g, ""))} required minLength={3} maxLength={64} autoCapitalize="none" autoCorrect="off" className="mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:border-black" placeholder="your_channel_handle" /><span className="mt-1 block text-xs text-slate-500">3–64 letters, numbers, or underscores.</span></label>
