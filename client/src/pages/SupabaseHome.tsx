@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
@@ -8,7 +8,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2, RefreshCw, Sparkles, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function Section({ title, eyebrow, href, children }: { title: string; eyebrow: string; href?: string; children: React.ReactNode }) {
+function Section({ title, eyebrow, href, children }: { title: string; eyebrow: string; href?: string; children: ReactNode }) {
   return <section><div className="mb-4 flex items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">{eyebrow}</p><h2 className="mt-1 text-2xl font-black text-white">{title}</h2></div>{href && <Link href={href} className="shrink-0 text-sm font-bold text-violet-200">See all</Link>}</div>{children}</section>;
 }
 
@@ -16,7 +16,7 @@ export default function SupabaseHome() {
   const { user } = useAuth();
   const [videos, setVideos] = useState<RankedVideo[]>([]);
   const [shorts, setShorts] = useState<RankedVideo[]>([]);
-  const [continueWatching, setContinueWatching] = useState<any[]>([]);
+  const [continueWatching, setContinueWatching] = useState<RankedVideo[]>([]);
   const [following, setFollowing] = useState<RankedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,8 @@ export default function SupabaseHome() {
   useEffect(() => { void load(); }, [user?.id]);
 
   async function hide(videoId: string) {
-    try { await setRecommendationFeedback(videoId, "not_interested"); setVideos(items => items.filter(v => v.id !== videoId)); } catch (e) { setError(e instanceof Error ? e.message : "Could not update recommendations."); }
+    try { await setRecommendationFeedback(videoId, "not_interested"); setVideos(items => items.filter(v => v.id !== videoId)); }
+    catch (e) { setError(e instanceof Error ? e.message : "Could not update recommendations."); }
   }
 
   return <HkTubeShell><main className="mx-auto w-full max-w-[1480px] px-4 pb-16 sm:px-8 lg:px-10">
