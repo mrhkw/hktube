@@ -1,12 +1,6 @@
 import { supabase } from "./supabase";
 
-export type EngagementState = {
-  liked: boolean;
-  saved: boolean;
-  subscribed: boolean;
-  likeCount: number;
-  subscriberCount: number;
-};
+export type EngagementState = { liked: boolean; saved: boolean; subscribed: boolean; likeCount: number; subscriberCount: number };
 
 async function requireUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -24,16 +18,8 @@ export async function getVideoEngagement(videoId: string, channelId?: string | n
     uid && channelId ? supabase.from("subscriptions").select("channel_id").eq("subscriber_id", uid).eq("channel_id", channelId).maybeSingle() : Promise.resolve({ data: null, error: null } as any),
   ]);
   if (video.error) throw new Error(video.error.message);
-  const subscriberCount = channelId
-    ? Number((await supabase.from("channels").select("subscriber_count").eq("id", channelId).maybeSingle()).data?.subscriber_count ?? 0)
-    : 0;
-  return {
-    liked: Boolean(like.data),
-    saved: Boolean(save.data),
-    subscribed: Boolean(subscription.data),
-    likeCount: Number(video.data?.likes_count ?? 0),
-    subscriberCount,
-  };
+  const subscriberCount = channelId ? Number((await supabase.from("channels").select("subscriber_count").eq("id", channelId).maybeSingle()).data?.subscriber_count ?? 0) : 0;
+  return { liked: Boolean(like.data), saved: Boolean(save.data), subscribed: Boolean(subscription.data), likeCount: Number(video.data?.likes_count ?? 0), subscriberCount };
 }
 
 export async function toggleVideoLike(videoId: string) {
@@ -58,42 +44,32 @@ export async function toggleChannelSubscription(channelId: string) {
 }
 
 export async function recordVideoView(videoId: string, progressSeconds = 0) {
-  const { data, error } = await supabase.rpc("record_video_view", {
-    p_video_id: videoId,
-    p_progress_seconds: Math.max(0, Math.floor(progressSeconds)),
-  });
+  const { data, error } = await supabase.rpc("record_video_view", { p_video_id: videoId, p_progress_seconds: Math.max(0, Math.floor(progressSeconds)) });
   if (error) throw new Error(error.message);
   return data as { views: number };
 }
 
+export async function reportVideo(videoId: string, reason: string, details?: string) {
+  const user = await requireUser();
+  const { error } = await supabase.from("reports").insert({ reporter_id: user.id, video_id: videoId, reason: reason.trim().slice(0, 120), details: details?.trim().slice(0, 2000) || null, status: "open" });
+  if (error) throw new Error(error.message);
+}
+
 export async function listVideoComments(videoId: string) {
-  const { data, error } = await supabase
-    .from("comments")
-    .select("id,author_id,video_id,parent_id,body,created_at,profiles:author_id(username,avatar_url)")
-    .eq("video_id", videoId)
-    .eq("moderation_status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const { data, error } = await supabase.from("comments").select("id,author_id,video_id,parent_id,body,created_at,profiles:author_id(username,avatar_url)").eq("video_id", videoId).eq("moderation_status", "approved").order("created_at", { ascending: false }).limit(200);
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 export async function addVideoComment(videoId: string, body: string, parentId?: string | null) {
   await requireUser();
-  const { data, error } = await supabase.rpc("add_video_comment", {
-    p_video_id: videoId,
-    p_body: body,
-    p_parent_id: parentId ?? null,
-  });
+  const { data, error } = await supabase.rpc("add_video_comment", { p_video_id: videoId, p_body: body, p_parent_id: parentId ?? null });
   if (error) throw new Error(error.message);
   return data;
 }
 
 export async function searchPublicVideos(query: string, limit = 48) {
-  const { data, error } = await supabase.rpc("search_public_videos", {
-    p_query: query,
-    p_limit: limit,
-  });
+  const { data, error } = await supabase.rpc("search_public_videos", { p_query: query, p_limit: limit });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
