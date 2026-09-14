@@ -11,12 +11,10 @@ export async function createSupabaseVideo(input: { channelId: string; title: str
   const user = await requireUser();
   if (input.file.size > 900 * 1024 * 1024) throw new Error("Video file must be 900 MB or smaller.");
   if (input.file.size <= 0) throw new Error("The selected video is empty.");
-  if (!input.file.type.startsWith("video/")) throw new Error("Please choose a video file.");
+  if (input.file.type !== "video/mp4") throw new Error("For reliable HkTube playback, please export the video as MP4/H.264 (video/mp4).");
   const probe = document.createElement("video");
-  if (!probe.canPlayType(input.file.type)) throw new Error("This video format is not supported by your browser. Please choose an MP4/H.264 video so HkTube can display both picture and sound.");
+  if (!probe.canPlayType("video/mp4")) throw new Error("This browser cannot play MP4 video. Please use a modern browser.");
   if (input.thumbnail && input.thumbnail.size > 12 * 1024 * 1024) throw new Error("Thumbnail must be 12 MB or smaller.");
-  const extension = input.file.name.split(".").pop()?.toLowerCase() || "mp4";
-  if (extension === "mov" || extension === "mkv" || extension === "avi") throw new Error("Please export this video as MP4/H.264 for reliable browser playback.");
   const videoPath = `${user.id}/${crypto.randomUUID()}.mp4`;
   input.onProgress?.(10);
   const { error: uploadError } = await supabase.storage.from("videos").upload(videoPath, input.file, { contentType: "video/mp4", upsert: false, cacheControl: "31536000" });
