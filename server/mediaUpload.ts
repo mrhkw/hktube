@@ -11,6 +11,16 @@ function safeFilename(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-").replace(/^[.-]+|[.-]+$/g, "").slice(0, 120) || "upload";
 }
 
+function extensionMatches(kind: "video" | "thumbnail" | "caption", filename: string, contentType: string) {
+  const extension = filename.toLowerCase().split(".").pop() || "";
+  const allowed: Record<typeof kind, Record<string, string[]>> = {
+    video: { "video/mp4": ["mp4", "m4v"], "video/webm": ["webm"], "video/ogg": ["ogv", "ogg"], "video/quicktime": ["mov"], "video/x-msvideo": ["avi"] },
+    thumbnail: { "image/jpeg": ["jpg", "jpeg"], "image/png": ["png"], "image/webp": ["webp"], "image/avif": ["avif"], "image/gif": ["gif"] },
+    caption: { "text/vtt": ["vtt"] },
+  };
+  return allowed[kind][contentType.toLowerCase().split(";", 1)[0]]?.includes(extension) ?? false;
+}
+
 export function allowedContentType(kind: "video" | "thumbnail" | "caption", contentType: string) {
   const type = contentType.toLowerCase().split(";", 1)[0];
   if (kind === "video") return ["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-m4v", "video/x-msvideo"].includes(type);
@@ -41,7 +51,7 @@ export function registerMediaUploadRoute(app: Express) {
       const filename = typeof req.body?.filename === "string" ? safeFilename(req.body.filename) : "";
       const contentType = typeof req.body?.contentType === "string" ? req.body.contentType : "";
       const size = Number(req.body?.size || 0);
-      if (!kind || !filename || !allowedContentType(kind, contentType)) return res.status(400).json({ message: "Provide a valid media type, filename, and matching content type." });
+      if (!kind || !filename || !allowedContentType(kind, contentType) || !extensionMatches(kind, filename, contentType)) return res.status(400).json({ message: "Provide a valid filename extension and matching content type." });
       if (!Number.isFinite(size) || size <= 0 || size > maxBytesForKind(kind)) return res.status(413).json({ message: `This ${kind} exceeds the HkTube upload size limit.` });
       const result = await archiveStoragePresignPut({ userId: user.id, kind, filename, contentType });
       return res.status(201).json({ ...result, contentType, maxBytes: maxBytesForKind(kind), storage: "internet-archive" });
