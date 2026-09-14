@@ -7,25 +7,29 @@ async function requireUser() { const { data, error } = await supabase.auth.getUs
 export async function listMySupabaseVideos(userId: string) { const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,status,moderation_status").eq("creator_id", userId).order("created_at", { ascending: false }).limit(100); if (error) throw new Error(error.message); return (data ?? []).map(mapVideo); }
 export async function listPublicSupabaseVideos(limit = 20) { const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,status,moderation_status").eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved").order("published_at", { ascending: false }).limit(limit); if (error) throw new Error(error.message); return (data ?? []).map(mapVideo); }
 export async function listPublicSupabaseShorts(limit = 40) { const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,status,moderation_status").eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved").contains("tags", ["shorts"]).order("published_at", { ascending: false }).limit(limit); if (error) throw new Error(error.message); return (data ?? []).map(mapVideo); }
-export async function createSupabaseVideo(input: { channelId: string; title: string; description: string; file: File; thumbnail?: File | null; isShort?: boolean; onProgress?: (value: number) => void }) {
+export async function createSupabaseVideo(input: { channelId: string; title: string; description: string; file: File; thumbnail?: File | null; isShort?: boolean; durationSeconds?: number; onProgress?: (value: number) => void }) {
   const user = await requireUser();
   if (input.file.size > 900 * 1024 * 1024) throw new Error("Video file must be 900 MB or smaller.");
+  if (input.file.size <= 0) throw new Error("The selected video is empty.");
   if (!input.file.type.startsWith("video/")) throw new Error("Please choose a video file.");
   const probe = document.createElement("video");
   if (!probe.canPlayType(input.file.type)) throw new Error("This video format is not supported by your browser. Please choose an MP4/H.264 video so HkTube can display both picture and sound.");
   if (input.thumbnail && input.thumbnail.size > 12 * 1024 * 1024) throw new Error("Thumbnail must be 12 MB or smaller.");
   const extension = input.file.name.split(".").pop()?.toLowerCase() || "mp4";
-  const videoPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+  if (extension === "mov" || extension === "mkv" || extension === "avi") throw new Error("Please export this video as MP4/H.264 for reliable browser playback.");
+  const videoPath = `${user.id}/${crypto.randomUUID()}.mp4`;
   input.onProgress?.(10);
-  const { error: uploadError } = await supabase.storage.from("videos").upload(videoPath, input.file, { contentType: input.file.type, upsert: false, cacheControl: "31536000" });
+  const { error: uploadError } = await supabase.storage.from("videos").upload(videoPath, input.file, { contentType: "video/mp4", upsert: false, cacheControl: "31536000" });
   if (uploadError) throw new Error(uploadError.message);
   input.onProgress?.(65);
   let thumbnailPath: string | null = null;
   if (input.thumbnail) { const thumbExt = input.thumbnail.name.split(".").pop()?.toLowerCase() || "jpg"; thumbnailPath = `${user.id}/${crypto.randomUUID()}.${thumbExt}`; const { error } = await supabase.storage.from("thumbnails").upload(thumbnailPath, input.thumbnail, { contentType: input.thumbnail.type, upsert: false, cacheControl: "31536000" }); if (error) throw new Error(error.message); }
   input.onProgress?.(82);
   const tags = input.isShort ? ["shorts"] : [];
-  const { data, error } = await supabase.from("videos").insert({ creator_id: user.id, channel_id: input.channelId, title: input.title.trim(), description: input.description.trim() || null, tags, visibility: "public", status: "published", moderation_status: "approved", video_path: videoPath, thumbnail_path: thumbnailPath, duration_seconds: 0, allow_comments: true, allow_download: false, made_for_kids: false, views: 0, likes_count: 0, published_at: new Date().toISOString() }).select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,status,moderation_status").single();
+  const duration = Math.max(0, Math.floor(Number(input.durationSeconds || 0)));
+  const { data, error } = await supabase.from("videos").insert({ creator_id: user.id, channel_id: input.channelId, title: input.title.trim(), description: input.description.trim() || null, tags, visibility: "public", status: "published", moderation_status: "pending", video_path: videoPath, thumbnail_path: thumbnailPath, duration_seconds: duration, allow_comments: true, allow_download: false, made_for_kids: false, views: 0, likes_count: 0, published_at: new Date().toISOString() }).select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,status,moderation_status").single();
   if (error) throw new Error(error.message);
+  await supabase.from("upload_jobs").insert({ user_id: user.id, content_type: input.isShort ? "short" : "video", content_id: data.id, file_name: input.file.name, storage_path: videoPath, bytes_total: input.file.size, bytes_uploaded: input.file.size, status: "completed" }).then(() => undefined).catch(() => undefined);
   input.onProgress?.(100);
   return mapVideo(data);
 }
