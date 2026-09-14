@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { listMySupabaseChannels, updateSupabaseChannel, type SupabaseChannel } from "@/lib/supabaseChannels";
 import { listMySupabaseVideos, type SupabaseVideo } from "@/lib/supabaseVideos";
 import { Link, useLocation } from "wouter";
-import { CircleUserRound, Edit3, ImageOff, Loader2, Mail, Megaphone, MoreVertical, Play, Settings2, Share2, ShieldCheck, Trash2, UsersRound, X } from "lucide-react";
+import { CircleUserRound, Edit3, ImageOff, Loader2, Mail, Megaphone, Menu, Play, Settings2, Share2, ShieldCheck, Trash2, UsersRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -91,14 +91,14 @@ export default function Profile() {
   return <HkTubeShell title="Profile" subtitle="Your HkTube creator profile, channel identity and published videos.">
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-5 pb-28 sm:px-6 sm:py-8">
       <section className="overflow-hidden rounded-3xl border border-white/10 bg-[#111624]">
-        <div className="relative h-28 bg-gradient-to-r from-violet-500/35 via-fuchsia-400/15 to-cyan-300/20 sm:h-56">{channel?.bannerUrl && <img src={channel.bannerUrl} alt="" className="size-full object-cover" />}</div>
+        <div className="relative h-28 bg-gradient-to-r from-violet-500/35 via-fuchsia-400/15 to-cyan-300/20 sm:h-56">{channel?.bannerUrl && <img src={channel.bannerUrl} alt="" className="size-full object-cover" />}<p className="absolute bottom-3 left-4 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-bold text-white/80">Banner · 1500 × 500</p></div>
         <div className="px-5 pb-6 sm:px-8">
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end">
             <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-[#111624] bg-violet-500/40 text-3xl font-black text-white">{channel?.avatarUrl || user.avatarUrl ? <img src={channel?.avatarUrl || user.avatarUrl || ""} alt="" className="size-full object-cover" /> : (channel?.displayName || user.name || "H").slice(0, 1).toUpperCase()}</div>
             <div className="min-w-0 flex-1"><h1 className="truncate text-2xl font-black text-white">{channel?.displayName || user.name || "HkTube Creator"}</h1>{channel && <p className="mt-1 text-sm text-slate-400">@{channel.handle} · {channel.subscriberCount.toLocaleString()} subscribers</p>}<p className="mt-1 text-xs text-slate-500">{user.email || "HkTube member"}</p></div>
             <div className="flex flex-wrap gap-2"><Button type="button" onClick={() => setEditOpen(true)} disabled={!channel} className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-slate-100"><Edit3 className="mr-2 size-4" />Edit profile</Button><Button type="button" onClick={() => void shareChannel()} variant="outline" className="rounded-full border-white/15 text-white hover:bg-white/10"><Share2 className="mr-2 size-4" />Share</Button></div>
-            <div className="relative sm:hidden">
-              <button type="button" aria-label="Open profile menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)} className="grid size-11 place-items-center rounded-full border border-white/10 bg-black/30 text-white shadow-lg transition hover:bg-white/10 active:scale-95"><MoreVertical className="size-5" /></button>
+            <div className="relative">
+              <button type="button" aria-label="Open profile menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)} className="grid size-11 place-items-center rounded-full border border-white/10 bg-black/30 text-white shadow-lg transition hover:bg-white/10 active:scale-95"><Menu className="size-5" /></button>
               {menuOpen && <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl border border-white/10 bg-[#080b12] p-2 text-white shadow-2xl shadow-black/50">
                 <p className="px-3 pb-2 pt-1 text-[10px] font-black uppercase tracking-[.18em] text-slate-500">Profile menu</p>
                 <ProfileMenuItem icon={Settings2} title="Settings" description="App and account preferences" onClick={() => openMenuLink("/settings")} />
@@ -109,7 +109,7 @@ export default function Profile() {
               </div>}
             </div>
           </div>
-          <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-300">{channel?.description || "Add a description to tell viewers what your channel makes."}</p>
+          <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-300">{channel?.description || "Add a description to tell viewers what your channel makes."}</p><p className="mt-2 text-[11px] font-semibold text-slate-500">Logo · 512 × 512 · Banner · 1500 × 500</p>
         </div>
       </section>
 

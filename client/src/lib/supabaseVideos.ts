@@ -22,17 +22,11 @@ function publicUrl(bucket: string, path: string | null) {
 
 function mapVideo(row: any): SupabaseVideo {
   return {
-    id: String(row.id),
-    creatorId: String(row.creator_id),
-    channelId: String(row.channel_id),
-    title: String(row.title ?? "Untitled video"),
-    description: row.description ?? null,
-    videoUrl: publicUrl("videos", row.video_path) ?? "",
-    thumbnailUrl: publicUrl("thumbnails", row.thumbnail_path),
-    durationSeconds: Number(row.duration_seconds ?? 0),
-    viewCount: Number(row.views ?? 0),
-    publishedAt: row.published_at ?? null,
-    createdAt: row.created_at ?? new Date().toISOString(),
+    id: String(row.id), creatorId: String(row.creator_id), channelId: String(row.channel_id),
+    title: String(row.title ?? "Untitled video"), description: row.description ?? null,
+    videoUrl: publicUrl("videos", row.video_path) ?? "", thumbnailUrl: publicUrl("thumbnails", row.thumbnail_path),
+    durationSeconds: Number(row.duration_seconds ?? 0), viewCount: Number(row.views ?? 0),
+    publishedAt: row.published_at ?? null, createdAt: row.created_at ?? new Date().toISOString(),
   };
 }
 
@@ -49,7 +43,13 @@ export async function listMySupabaseVideos(userId: string) {
 }
 
 export async function listPublicSupabaseVideos(limit = 20) {
-  const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved").order("published_at", { ascending: false }).limit(limit);
+  const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").eq("visibility", "public").eq("status", "published").order("published_at", { ascending: false }).limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapVideo);
+}
+
+export async function listPublicSupabaseShorts(limit = 40) {
+  const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags").eq("visibility", "public").eq("status", "published").contains("tags", ["shorts"]).order("published_at", { ascending: false }).limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []).map(mapVideo);
 }
@@ -65,7 +65,6 @@ export async function createSupabaseVideo(input: { channelId: string; title: str
   const { error: uploadError } = await supabase.storage.from("videos").upload(videoPath, input.file, { contentType: input.file.type, upsert: false, cacheControl: "31536000" });
   if (uploadError) throw new Error(uploadError.message);
   input.onProgress?.(65);
-
   let thumbnailPath: string | null = null;
   if (input.thumbnail) {
     const thumbExt = input.thumbnail.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -74,10 +73,11 @@ export async function createSupabaseVideo(input: { channelId: string; title: str
     if (error) throw new Error(error.message);
   }
   input.onProgress?.(82);
-
   const tags = input.isShort ? ["shorts"] : [];
-  const { data, error } = await supabase.from("videos").insert({ creator_id: user.id, channel_id: input.channelId, title: input.title.trim(), description: input.description.trim() || null, tags, visibility: "public", status: "published", moderation_status: "pending", video_path: videoPath, thumbnail_path: thumbnailPath, duration_seconds: 0, allow_comments: true, allow_download: false, made_for_kids: false, views: 0, likes_count: 0, published_at: new Date().toISOString() }).select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").single();
+  const { data, error } = await supabase.from("videos").insert({ creator_id: user.id, channel_id: input.channelId, title: input.title.trim(), description: input.description.trim() || null, tags, visibility: "public", status: "published", moderation_status: "approved", video_path: videoPath, thumbnail_path: thumbnailPath, duration_seconds: 0, allow_comments: true, allow_download: false, made_for_kids: false, views: 0, likes_count: 0, published_at: new Date().toISOString() }).select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at").single();
   if (error) throw new Error(error.message);
   input.onProgress?.(100);
   return mapVideo(data);
 }
+
+export { mapVideo };
