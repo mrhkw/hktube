@@ -7,7 +7,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { rankPublicVideos, recordDiscoveryEvent } from "@/lib/supabaseDiscovery";
 import { addVideoComment, getVideoEngagement, listVideoComments, recordVideoView, reportVideo, toggleChannelSubscription, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
-import { Bookmark, Check, Eye, Heart, Loader2, MessageCircle, MoreVertical, Play, Share2, UserPlus } from "lucide-react";
+import type { SupabaseVideo } from "@/lib/supabaseVideos";
+import { Bookmark, Check, Heart, Loader2, MessageCircle, MoreVertical, Share2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 type Video = { id: string; creator_id: string; channel_id: string | null; title: string; description: string; video_path: string | null; thumbnail_path: string | null; duration_seconds: number | null; views: number; likes_count: number; published_at: string | null; tags: string[] };
@@ -16,47 +17,24 @@ function mediaUrl(bucket: string, path: string | null) { return path ? (/^https?
 
 export default function SupabaseWatchVideo() {
   const [, params] = useRoute("/watch/:id"); const id = params?.id || ""; const { user } = useAuth();
-  const [video, setVideo] = useState<Video | null>(null); const [channel, setChannel] = useState<Channel | null>(null); const [related, setRelated] = useState<Video[]>([]); const [comments, setComments] = useState<any[]>([]); const [comment, setComment] = useState(""); const [replyTo, setReplyTo] = useState<string | null>(null); const [resumePosition, setResumePosition] = useState(0);
+  const [video, setVideo] = useState<Video | null>(null); const [channel, setChannel] = useState<Channel | null>(null); const [related, setRelated] = useState<SupabaseVideo[]>([]); const [comments, setComments] = useState<any[]>([]); const [comment, setComment] = useState(""); const [replyTo, setReplyTo] = useState<string | null>(null); const [resumePosition, setResumePosition] = useState(0);
   const [engagement, setEngagement] = useState({ liked: false, saved: false, subscribed: false, likeCount: 0, subscriberCount: 0 }); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [expanded, setExpanded] = useState(false); const [moreOpen, setMoreOpen] = useState(false);
   const playerRef = useRef<HTMLVideoElement | null>(null); const viewed = useRef(false); const lastSavedSecond = useRef(0); const lastBucket = useRef<string | null>(null);
-
   async function load() {
     if (!id) return; setLoading(true);
     const { data, error } = await supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,likes_count,published_at,tags").eq("id", id).eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved").maybeSingle();
     if (error || !data) { setVideo(null); setLoading(false); return; }
     setVideo(data as Video);
     if (data.channel_id) { const channelResult = await supabase.from("channels").select("id,handle,name,avatar_url,subscriber_count").eq("id", data.channel_id).maybeSingle(); setChannel((channelResult.data as Channel | null) || null); }
-    try {
-      const ranked = await rankPublicVideos({ query: data.title, limit: 16, userId: user?.id });
-      setRelated(ranked.filter(item => item.id !== id).slice(0, 12) as Video[]);
-    } catch { setRelated([]); }
+    try { const ranked = await rankPublicVideos({ query: data.title, limit: 16, userId: user?.id }); setRelated(ranked.filter(item => item.id !== id).slice(0, 12)); } catch { setRelated([]); }
     setComments(await listVideoComments(id));
     if (user?.id) { const { data: history } = await supabase.from("watch_history").select("progress_seconds").eq("user_id", user.id).eq("video_id", id).maybeSingle(); setResumePosition(Number(history?.progress_seconds || 0)); }
     try { setEngagement(await getVideoEngagement(id, data.channel_id)); } catch {}
     setLoading(false);
   }
   useEffect(() => { void load(); }, [id, user?.id]);
-
-  useEffect(() => {
-    if (!video || viewed.current) return;
-    viewed.current = true;
-    void recordVideoView(video.id).then(result => setVideo(current => current ? { ...current, views: Number(result.views) } : current)).catch(() => undefined);
-    void recordDiscoveryEvent({ eventType: "open", objectType: video.tags?.includes("shorts") ? "short" : "video", objectId: video.id }).catch(() => undefined);
-  }, [video?.id]);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (!playerRef.current || (event.target as HTMLElement)?.tagName === "INPUT" || (event.target as HTMLElement)?.tagName === "TEXTAREA") return;
-      const el = playerRef.current;
-      if (event.key === " ") { event.preventDefault(); if (el.paused) void el.play(); else el.pause(); }
-      if (event.key.toLowerCase() === "f") { event.preventDefault(); if (document.fullscreenElement) void document.exitFullscreen(); else void el.requestFullscreen?.(); }
-      if (event.key === "ArrowLeft") el.currentTime = Math.max(0, el.currentTime - 5);
-      if (event.key === "ArrowRight") el.currentTime = Math.min(el.duration || Infinity, el.currentTime + 5);
-      if (event.key.toLowerCase() === "m") el.muted = !el.muted;
-    };
-    window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
+  useEffect(() => { if (!video || viewed.current) return; viewed.current = true; void recordVideoView(video.id).then(result => setVideo(current => current ? { ...current, views: Number(result.views) } : current)).catch(() => undefined); void recordDiscoveryEvent({ eventType: "open", objectType: video.tags?.includes("shorts") ? "short" : "video", objectId: video.id }).catch(() => undefined); }, [video?.id]);
+  useEffect(() => { const onKey = (event: KeyboardEvent) => { if (!playerRef.current || (event.target as HTMLElement)?.tagName === "INPUT" || (event.target as HTMLElement)?.tagName === "TEXTAREA") return; const el = playerRef.current; if (event.key === " ") { event.preventDefault(); if (el.paused) void el.play(); else el.pause(); } if (event.key.toLowerCase() === "f") { event.preventDefault(); if (document.fullscreenElement) void document.exitFullscreen(); else void el.requestFullscreen?.(); } if (event.key === "ArrowLeft") el.currentTime = Math.max(0, el.currentTime - 5); if (event.key === "ArrowRight") el.currentTime = Math.min(el.duration || Infinity, el.currentTime + 5); if (event.key.toLowerCase() === "m") el.muted = !el.muted; }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, []);
   const videoUrl = useMemo(() => mediaUrl("videos", video?.video_path || null), [video?.video_path]); const thumbnailUrl = useMemo(() => mediaUrl("thumbnails", video?.thumbnail_path || null), [video?.thumbnail_path]);
   async function like() { if (!user) return startLogin(); try { const result = await toggleVideoLike(id); setEngagement(current => ({ ...current, liked: result.liked, likeCount: Number(result.count) })); void recordDiscoveryEvent({eventType:result.liked?"like":"unlike",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to like this video."); } }
   async function save() { if (!user) return startLogin(); try { const saved = await toggleVideoSave(id); setEngagement(current => ({ ...current, saved })); void recordDiscoveryEvent({eventType:saved?"save":"unsave",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); toast.success(saved ? "Added to Watch Later." : "Removed from Watch Later."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to save this video."); } }
@@ -64,7 +42,6 @@ export default function SupabaseWatchVideo() {
   async function submitComment(event: React.FormEvent) { event.preventDefault(); if (!comment.trim()) return; if (!user) return startLogin(); setBusy(true); try { await addVideoComment(id, comment.trim(), replyTo); setComment(""); setReplyTo(null); setComments(await listVideoComments(id)); void recordDiscoveryEvent({eventType:"comment",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); toast.success(replyTo ? "Reply published." : "Comment published."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to post comment."); } finally { setBusy(false); } }
   async function share() { const url = window.location.href; try { if (navigator.share) await navigator.share({ title: video?.title, url }); else { await navigator.clipboard.writeText(url); toast.success("Video link copied."); } void recordDiscoveryEvent({eventType:"share",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); } catch {} }
   async function report() { if (!user) return startLogin(); try { await reportVideo(id, "policy_violation", "User reported this video from the watch page."); setMoreOpen(false); toast.success("Report sent to moderation."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to report this video."); } }
-
   if (loading) return <HkTubeShell><div className="grid min-h-[60vh] place-items-center"><Loader2 className="size-8 animate-spin" /></div></HkTubeShell>;
   if (!video || !videoUrl) return <HkTubeShell title="Video unavailable"><div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white p-8 text-center"><h1 className="text-2xl font-black text-black">This video is unavailable</h1><p className="mt-2 text-sm text-neutral-500">It may still be in moderation, removed, or the link may be incorrect.</p><Link href="/" className="mt-5 inline-flex rounded-full bg-black px-5 py-2.5 text-sm font-bold text-white">Back to HkTube</Link></div></HkTubeShell>;
   const isShort = video.tags?.includes("shorts");
@@ -77,5 +54,5 @@ export default function SupabaseWatchVideo() {
       <div className="mt-4 rounded-2xl bg-white/[.035] p-4"><p className={`whitespace-pre-wrap text-sm leading-6 text-slate-300 ${expanded?"":"line-clamp-4"}`}>{video.description||"No description."}</p>{video.description&&video.description.length>300&&<button className="mt-2 text-xs font-bold text-cyan-300" onClick={()=>setExpanded(v=>!v)}>{expanded?"Show less":"Show more"}</button>}</div>
     </div>
     <section id="comments" className="py-6"><div className="flex items-center gap-2"><MessageCircle className="size-5 text-fuchsia-300"/><h2 className="text-lg font-black text-white">Comments</h2><span className="text-xs text-slate-500">{comments.length}</span></div>{replyTo&&<div className="mt-3 flex items-center justify-between rounded-xl bg-violet-500/10 px-3 py-2 text-xs text-violet-200">Replying to a comment<button onClick={()=>setReplyTo(null)} className="font-bold">Cancel</button></div>}<form onSubmit={submitComment} className="mt-4 flex gap-2"><input value={comment} onChange={e=>setComment(e.target.value)} placeholder={user?(replyTo?"Write a reply…":"Add a public comment…"):"Sign in to comment"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.04] px-3 py-2.5 text-sm text-white outline-none"/><Button type="submit" disabled={busy||!comment.trim()}>Post</Button></form><div className="mt-5 space-y-3">{comments.map(item=><article key={item.id} className={`rounded-xl border border-white/8 bg-white/[.025] p-4 ${item.parent_id?"ml-5 border-l-violet-400/30":""}`}><div className="flex items-start justify-between gap-3"><p className="text-sm leading-6 text-slate-300">{item.body}</p>{!item.parent_id&&<button onClick={()=>setReplyTo(item.id)} className="shrink-0 text-xs font-bold text-violet-300">Reply</button>}</div><p className="mt-2 text-xs text-slate-600">{new Date(item.created_at).toLocaleString()}</p></article>)}{!comments.length&&<p className="py-8 text-sm text-slate-500">No comments yet.</p>}</div></section>
-  </section><aside><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">More like this</h2><div className="grid gap-4">{related.map(item=><Link key={item.id} href={`/watch/${item.id}`} className="flex gap-3 rounded-xl p-2 transition hover:bg-white/[.05]"><div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-black"><img src={mediaUrl("thumbnails",item.thumbnail_path)||""} alt="" className="size-full object-cover"/><span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{Number(item.viewCount).toLocaleString()}</span></div><span className="line-clamp-3 text-sm font-semibold text-slate-200">{item.title}</span></Link>)}</div></aside></main></HkTubeShell>;
+  </section><aside><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">More like this</h2><div className="grid gap-4">{related.map(item=><Link key={item.id} href={`/watch/${item.id}`} className="flex gap-3 rounded-xl p-2 transition hover:bg-white/[.05]"><div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-black"><img src={mediaUrl("thumbnails",item.thumbnailUrl)||""} alt="" className="size-full object-cover"/><span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{Number(item.viewCount).toLocaleString()}</span></div><span className="line-clamp-3 text-sm font-semibold text-slate-200">{item.title}</span></Link>)}</div></aside></main></HkTubeShell>;
 }
