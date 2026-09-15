@@ -1,7 +1,7 @@
 import { BadgeCheck, Crown, Sparkles } from "lucide-react";
 
 export type BadgeTier = {
-  key: "starter" | "creator" | "rising" | "pro" | "million" | "gold";
+  key: "starter" | "creator" | "rising" | "pro" | "million" | "gold" | "diamond" | "sapphire" | "ruby" | "emerald" | "platinum";
   label: string;
   threshold: number;
   className: string;
@@ -14,6 +14,11 @@ export const BADGE_TIERS: BadgeTier[] = [
   { key: "pro", label: "100K subscribers", threshold: 100_000, className: "border-cyan-300/50 bg-cyan-400/15 text-cyan-200" },
   { key: "million", label: "1M subscribers", threshold: 1_000_000, className: "border-amber-300/50 bg-amber-400/15 text-amber-200" },
   { key: "gold", label: "10M subscribers", threshold: 10_000_000, className: "border-yellow-200/70 bg-yellow-300/20 text-yellow-100" },
+  { key: "diamond", label: "100M subscribers", threshold: 100_000_000, className: "border-sky-100/80 bg-sky-100/15 text-sky-50" },
+  { key: "sapphire", label: "1B subscribers", threshold: 1_000_000_000, className: "border-blue-400/70 bg-blue-500/15 text-blue-200" },
+  { key: "ruby", label: "10B subscribers", threshold: 10_000_000_000, className: "border-red-400/70 bg-red-500/15 text-red-200" },
+  { key: "emerald", label: "100B subscribers", threshold: 100_000_000_000, className: "border-emerald-400/70 bg-emerald-500/15 text-emerald-200" },
+  { key: "platinum", label: "1T subscribers", threshold: 1_000_000_000_000, className: "border-white/70 bg-white/10 text-white" },
 ];
 
 /** Returns the highest subscriber milestone a channel has actually reached. */
