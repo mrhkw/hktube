@@ -11,6 +11,7 @@ import { HkTubeWelcomeLoader } from "./components/HkTubeWelcomeLoader";
 import "./index.css";
 import "./light-theme.css";
 import "./theme-runtime.css";
+import "./hktube-brand.css";
 
 const THEME_IDS = new Set(["violet", "blue", "cyan", "teal", "green", "lime", "amber", "orange", "red", "pink", "fuchsia", "indigo"]);
 try {
