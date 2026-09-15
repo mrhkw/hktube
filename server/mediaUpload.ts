@@ -52,8 +52,8 @@ export function registerMediaUploadRoute(app: Express) {
       const contentType = typeof req.body?.contentType === "string" ? req.body.contentType : "";
       const size = Number(req.body?.size || 0);
       if (!kind || !filename || !allowedContentType(kind, contentType) || !extensionMatches(kind, filename, contentType)) return res.status(400).json({ message: "Provide a valid filename extension and matching content type." });
-      if (!Number.isFinite(size) || size <= 0 || size > maxBytesForKind(kind)) return res.status(413).json({ message: `This ${kind} exceeds the HkTube upload size limit.` });
-      const result = await archiveStoragePresignPut({ userId: user.id, kind, filename, contentType });
+      if (!Number.isSafeInteger(size) || size <= 0 || size > maxBytesForKind(kind)) return res.status(413).json({ message: `This ${kind} exceeds the HkTube upload size limit.` });
+      const result = await archiveStoragePresignPut({ userId: user.id, kind, filename, contentType, size });
       return res.status(201).json({ ...result, contentType, maxBytes: maxBytesForKind(kind), storage: "internet-archive" });
     } catch (error) {
       console.error("[HkTube] Archive.org media presign failed", error);
