@@ -12,6 +12,7 @@ const RATE_WINDOW_MS = 60_000;
 const GENERAL_LIMIT = 120;
 const AUTH_LIMIT = 12;
 const UPLOAD_LIMIT = 12;
+const MAX_RATE_BUCKETS = 5000;
 
 function clientIp(req: express.Request) {
   const forwarded = req.headers["x-forwarded-for"];
@@ -55,7 +56,7 @@ function rateLimit(req: express.Request, res: express.Response) {
   const current = !existing || existing.resetAt <= now ? { count: 0, resetAt: now + RATE_WINDOW_MS } : existing;
   current.count += 1;
   rateBuckets.set(key, current);
-  if (rateBuckets.size > 5000) rateBuckets.forEach((entry, entryKey) => { if (entry.resetAt <= now) rateBuckets.delete(entryKey); });
+  if (rateBuckets.size > MAX_RATE_BUCKETS) rateBuckets.forEach((entry, entryKey) => { if (entry.resetAt <= now) rateBuckets.delete(entryKey); });
   if (current.count > limit) {
     res.set("Retry-After", String(Math.max(1, Math.ceil((current.resetAt - now) / 1000))));
     res.status(429).json({ error: { message: "Too many requests. Please slow down and try again shortly." } });
@@ -79,9 +80,12 @@ export function createApiApp(): Express {
       "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
       "Cross-Origin-Resource-Policy": "same-site",
+      "Origin-Agent-Cluster": "?1",
+      "X-Permitted-Cross-Domain-Policies": "none",
       "Content-Security-Policy": "default-src 'self'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co https://api.manus.im; object-src 'none'",
     });
-    if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    if (req.path.startsWith("/api/")) res.set("Cache-Control", "no-store");
+    if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
     if (securityGate(req, res)) next();
   });
   app.use((req, res, next) => rateLimit(req, res) ? next() : undefined);
