@@ -23,8 +23,6 @@ async function syncSupabaseIdentity(identity: { subject: string; email: string |
 }
 async function authenticateSupabaseToken(token: string): Promise<User | null> {
   if (!token) return null;
-  // Ask Supabase Auth directly first. This supports both current publishable-key
-  // projects and older JWT signing configurations.
   if (ENV.supabaseAnonKey) {
     try {
       const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` } });
@@ -59,9 +57,9 @@ class SDKServer {
   async getUserInfo(accessToken: string): Promise<GetUserInfoResponse> { const data = await this.oauthService.getUserInfoByToken({ accessToken } as ExchangeTokenResponse); const loginMethod = this.deriveLoginMethod((data as any)?.platforms, (data as any)?.platform ?? data.platform ?? null); return { ...(data as any), platform: loginMethod, loginMethod } as GetUserInfoResponse; }
   private parseCookies(cookieHeader: string | undefined) { if (!cookieHeader) return new Map<string, string>(); const parsed = parseCookieHeader(cookieHeader); return new Map(Object.entries(parsed)); }
   private getSessionSecret() { return new TextEncoder().encode(ENV.cookieSecret); }
-  async createSessionToken(openId: string, options: { expiresInMs?: number; name?: string } = {}): Promise<string> { return this.signSession({ openId, appId: ENV.appId, name: options.name || "" }, options); }
+  async createSessionToken(openId: string, options: { expiresInMs?: number; name?: string } = {}): Promise<string> { return this.signSession({ openId, appId: ENV.appId, name: options.name || "HkTube member" }, options); }
   async signSession(payload: SessionPayload, options: { expiresInMs?: number } = {}): Promise<string> { const issuedAt = Date.now(); const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS; const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000); return new SignJWT({ openId: payload.openId, appId: payload.appId, name: payload.name }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(this.getSessionSecret()); }
-  async verifySession(cookieValue: string | undefined | null): Promise<{ openId: string; appId: string; name: string } | null> { if (!cookieValue) return null; try { const { payload } = await jwtVerify(cookieValue, this.getSessionSecret(), { algorithms: ["HS256"] }); const { openId, appId, name } = payload as Record<string, unknown>; if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) return null; return { openId, appId, name }; } catch { return null; } }
+  async verifySession(cookieValue: string | undefined | null): Promise<{ openId: string; appId: string; name: string } | null> { if (!cookieValue) return null; try { const { payload } = await jwtVerify(cookieValue, this.getSessionSecret(), { algorithms: ["HS256"] }); const { openId, appId, name } = payload as Record<string, unknown>; if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) return null; if (appId !== ENV.appId) return null; return { openId, appId, name }; } catch { return null; } }
   async getUserInfoWithJwt(jwtToken: string): Promise<GetUserInfoWithJwtResponse> { const payload: GetUserInfoWithJwtRequest = { jwtToken, projectId: ENV.appId }; const { data } = await this.client.post<GetUserInfoWithJwtResponse>(GET_USER_INFO_WITH_JWT_PATH, payload); const loginMethod = this.deriveLoginMethod((data as any)?.platforms, (data as any)?.platform ?? data.platform ?? null); return { ...(data as any), platform: loginMethod, loginMethod } as GetUserInfoWithJwtResponse; }
   async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
     const cookies = this.parseCookies(req.headers.cookie);
