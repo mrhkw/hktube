@@ -40,13 +40,23 @@ export async function archiveStoragePresignPut(options: {
   kind: "video" | "thumbnail" | "caption";
   filename: string;
   contentType: string;
+  size: number;
 }) {
   requireConfig();
+  if (!Number.isSafeInteger(options.size) || options.size <= 0) {
+    throw new Error("Invalid upload size.");
+  }
+
   const identifier = `hktube-${cleanSegment(String(options.userId))}-${randomUUID().replace(/-/g, "").slice(0, 20)}`;
   const objectKey = `${options.kind}/${cleanSegment(options.filename)}`;
   const url = await getSignedUrl(
     client(),
-    new PutObjectCommand({ Bucket: identifier, Key: objectKey, ContentType: options.contentType }),
+    new PutObjectCommand({
+      Bucket: identifier,
+      Key: objectKey,
+      ContentType: options.contentType,
+      ContentLength: options.size,
+    }),
     { expiresIn: 900 },
   );
   return {
