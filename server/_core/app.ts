@@ -15,16 +15,34 @@ const UPLOAD_LIMIT = 12;
 const MAX_RATE_BUCKETS = 5000;
 
 function clientIp(req: express.Request) {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length > 0) return forwarded.split(",")[0].trim();
-  return req.socket.remoteAddress || "unknown";
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
+function hasSessionCookie(req: express.Request) {
+  return /(?:^|;)\s*app_session_id=/.test(req.headers.cookie || "");
+}
+
+function requestOrigin(req: express.Request) {
+  const origin = req.get("origin")?.trim();
+  if (origin) return origin;
+  const referer = req.get("referer")?.trim();
+  if (!referer) return "";
+  try { return new URL(referer).origin; } catch { return ""; }
+}
+
+function targetOrigin(req: express.Request) {
+  const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
+  const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim();
+  return host ? `${proto}://${host}` : "";
 }
 
 function isTrustedOrigin(req: express.Request, origin: string) {
   try {
     const parsed = new URL(origin);
+    const target = targetOrigin(req);
+    if (target) return parsed.origin === target;
     const requestHost = req.get("host")?.split(":")[0];
-    if (parsed.protocol === "https:") return parsed.host === req.get("host") || parsed.hostname === requestHost;
+    if (parsed.protocol === "https:") return parsed.hostname === requestHost;
     return parsed.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
   } catch { return false; }
 }
@@ -36,13 +54,27 @@ function securityGate(req: express.Request, res: express.Response) {
     res.status(400).json({ error: { message: "Invalid request path." } });
     return false;
   }
-  const origin = req.get("origin");
+
   const mutating = !["GET", "HEAD", "OPTIONS"].includes(req.method);
-  if (mutating && origin && !isTrustedOrigin(req, origin)) {
-    console.warn(`[Security] blocked cross-origin mutation ip=${clientIp(req)}`);
-    res.status(403).json({ error: { message: "Cross-origin request blocked." } });
-    return false;
+  if (mutating && hasSessionCookie(req)) {
+    const origin = requestOrigin(req);
+    // Cookie-authenticated mutations fail closed when the browser does not
+    // identify a same-origin source. This closes the CSRF gap created by the
+    // OAuth-compatible SameSite=None session cookie.
+    if (!origin || !isTrustedOrigin(req, origin)) {
+      console.warn(`[Security] blocked unauthenticated-origin mutation ip=${clientIp(req)}`);
+      res.status(403).json({ error: { message: "Cross-origin request blocked." } });
+      return false;
+    }
+  } else if (mutating) {
+    const origin = req.get("origin");
+    if (origin && !isTrustedOrigin(req, origin)) {
+      console.warn(`[Security] blocked cross-origin mutation ip=${clientIp(req)}`);
+      res.status(403).json({ error: { message: "Cross-origin request blocked." } });
+      return false;
+    }
   }
+
   return true;
 }
 
