@@ -6,8 +6,6 @@ import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import { listPublicSupabaseVideos, type SupabaseVideo } from "@/lib/supabaseVideos";
 import { supabase } from "@/lib/supabase";
 
-const media = (bucket: string, path: string | null) => path ? (/^https?:\/\//i.test(path) ? path : supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl) : null;
-
 type Channel = { id: string; handle: string; name: string; avatar_url: string | null; subscriber_count: number };
 
 export default function HkTubeExplore() {
@@ -19,7 +17,7 @@ export default function HkTubeExplore() {
     let active = true;
     setLoading(true);
     void Promise.all([
-      listPublicSupabaseVideos({ limit: 80 }),
+      listPublicSupabaseVideos(80),
       supabase.from("channels").select("id,handle,name,avatar_url,subscriber_count").order("subscriber_count", { ascending: false }).limit(12),
     ]).then(([rows, channelResult]) => {
       if (!active) return;
@@ -29,7 +27,7 @@ export default function HkTubeExplore() {
     return () => { active = false; };
   }, []);
 
-  const trending = useMemo(() => [...videos].sort((a, b) => Number(b.views || 0) - Number(a.views || 0)).slice(0, 12), [videos]);
+  const trending = useMemo(() => [...videos].sort((a, b) => Number(b.viewCount || 0) - Number(a.viewCount || 0)).slice(0, 12), [videos]);
   const fresh = useMemo(() => [...videos].sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()).slice(0, 12), [videos]);
   const topics = useMemo(() => {
     const counts = new Map<string, number>();
@@ -40,6 +38,8 @@ export default function HkTubeExplore() {
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 18);
   }, [videos]);
+
+  const card = (video: SupabaseVideo) => <SupabaseVideoCard key={video.id} video={{ id: video.id, title: video.title, thumbnailUrl: video.thumbnailUrl, durationSeconds: video.durationSeconds, views: video.viewCount, publishedAt: video.publishedAt, isShort: video.tags.includes("shorts") }} />;
 
   return <HkTubeShell title="Explore" subtitle="Find new creators, rising topics and videos beyond your usual feed.">
     <main className="mx-auto w-full max-w-[1480px] px-4 pb-16 sm:px-8 lg:px-10">
@@ -57,11 +57,8 @@ export default function HkTubeExplore() {
 
       {loading ? <div className="grid min-h-[35vh] place-items-center"><Loader2 className="size-8 animate-spin text-violet-300" /></div> : <>
         {!!topics.length && <section className="mt-9"><SectionTitle icon={<Hash className="size-5" />} title="Topics people are watching" /><div className="mt-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">{topics.map(([topic, count]) => <Link key={topic} href={`/search?q=${encodeURIComponent(topic)}`} className="shrink-0 rounded-2xl border border-white/10 bg-white/[.035] px-4 py-3 hover:border-violet-300/30 hover:bg-white/[.06]"><p className="font-bold text-white">#{topic}</p><p className="mt-1 text-[11px] text-slate-500">{count} videos</p></Link>)}</div></section>}
-
-        {!!trending.length && <section className="mt-10"><SectionTitle icon={<Flame className="size-5" />} title="Rising now" subtitle="Popular public videos, separated from your personal ranking." /><div className="mt-5 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{trending.map(video => <SupabaseVideoCard key={video.id} video={{ id: video.id, title: video.title, thumbnailUrl: media("thumbnails", video.thumbnailPath), durationSeconds: video.durationSeconds, views: video.views, publishedAt: video.publishedAt, isShort: (video.tags ?? []).includes("shorts") }} />)}</div></section>}
-
-        {!!fresh.length && <section className="mt-12"><SectionTitle icon={<Sparkles className="size-5" />} title="Fresh on HkTube" subtitle="Recently published public videos." /><div className="mt-5 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{fresh.map(video => <SupabaseVideoCard key={video.id} video={{ id: video.id, title: video.title, thumbnailUrl: media("thumbnails", video.thumbnailPath), durationSeconds: video.durationSeconds, views: video.views, publishedAt: video.publishedAt, isShort: (video.tags ?? []).includes("shorts") }} />)}</div></section>}
-
+        {!!trending.length && <section className="mt-10"><SectionTitle icon={<Flame className="size-5" />} title="Rising now" subtitle="Popular public videos, separated from your personal ranking." /><div className="mt-5 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{trending.map(card)}</div></section>}
+        {!!fresh.length && <section className="mt-12"><SectionTitle icon={<Sparkles className="size-5" />} title="Fresh on HkTube" subtitle="Recently published public videos." /><div className="mt-5 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{fresh.map(card)}</div></section>}
         {!!channels.length && <section className="mt-12"><SectionTitle icon={<Users className="size-5" />} title="Creators to discover" subtitle="A rotating entry point for creators, not just videos." /><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{channels.map(channel => <Link key={channel.id} href={`/channel/${encodeURIComponent(channel.handle)}`} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4 transition hover:border-violet-300/30 hover:bg-white/[.055]"><span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/15 text-lg font-black text-white">{channel.avatar_url ? <img src={channel.avatar_url} alt="" className="size-full object-cover" /> : channel.name.slice(0, 1).toUpperCase()}</span><span className="min-w-0"><span className="block truncate font-bold text-white">{channel.name}</span><span className="block truncate text-xs text-slate-500">@{channel.handle} · {Number(channel.subscriber_count || 0).toLocaleString()} followers</span></span></Link>)}</div></section>}
       </>}
     </main>
