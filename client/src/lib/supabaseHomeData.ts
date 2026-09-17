@@ -1,11 +1,42 @@
 import { rankPublicVideos, setRecommendationFeedback, type RankedVideo } from "@/lib/supabaseDiscovery";
+import { listPublicSupabaseShorts, listPublicSupabaseVideos, type SupabaseVideo } from "@/lib/supabaseVideos";
 import { supabase } from "@/lib/supabase";
 
+function asRanked(video: SupabaseVideo, reason: RankedVideo["reason"] = "fresh"): RankedVideo {
+  return { ...video, reason, score: 0 };
+}
+
 export async function loadSupabaseHomeData(userId?: number | string) {
-  const [ranked, rankedShorts] = await Promise.all([
-    rankPublicVideos({ limit: 60, userId }),
-    rankPublicVideos({ shorts: true, limit: 12, userId }),
-  ]);
+  let ranked: RankedVideo[] = [];
+  let rankedShorts: RankedVideo[] = [];
+  let rankingError: unknown = null;
+
+  try {
+    [ranked, rankedShorts] = await Promise.all([
+      rankPublicVideos({ limit: 60, userId }),
+      rankPublicVideos({ shorts: true, limit: 12, userId }),
+    ]);
+  } catch (error) {
+    rankingError = error;
+  }
+
+  // The personalized engine must never turn a healthy public catalog into a blank Home.
+  // If ranking is unavailable, fall back to the same approved/public source of truth.
+  if (!ranked.length) {
+    try {
+      ranked = (await listPublicSupabaseVideos(60)).map(video => asRanked(video));
+    } catch (error) {
+      if (rankingError) throw rankingError;
+      throw error;
+    }
+  }
+  if (!rankedShorts.length) {
+    try {
+      rankedShorts = (await listPublicSupabaseShorts(12)).map(video => asRanked(video));
+    } catch {
+      rankedShorts = [];
+    }
+  }
 
   let following: RankedVideo[] = [];
   let continueWatching: RankedVideo[] = [];
