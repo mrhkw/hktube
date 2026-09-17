@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { Compass, Flame, Hash, Sparkles, Users, Video } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Compass, Flame, Hash, Sparkles, Users, Video, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import { listPublicSupabaseVideos, type SupabaseVideo } from "@/lib/supabaseVideos";
 import { supabase } from "@/lib/supabase";
-import { Loader2 } from "lucide-react";
 
 const media = (bucket: string, path: string | null) => path ? (/^https?:\/\//i.test(path) ? path : supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl) : null;
 
@@ -69,6 +68,6 @@ export default function HkTubeExplore() {
   </HkTubeShell>;
 }
 
-function SectionTitle({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
+function SectionTitle({ icon, title, subtitle }: { icon: ReactNode; title: string; subtitle?: string }) {
   return <div className="flex items-end justify-between gap-4"><div><h2 className="flex items-center gap-2 text-xl font-black text-white">{icon}{title}</h2>{subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}</div></div>;
 }
