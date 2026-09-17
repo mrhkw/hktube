@@ -14,6 +14,7 @@ import { toast } from "sonner";
 type HkTubeShellProps = { children: ReactNode; title?: string; subtitle?: string; immersive?: boolean };
 const primaryNav = [
   { label: "Home", href: "/", icon: Home },
+  { label: "Explore", href: "/explore", icon: Compass },
   { label: "Shorts", href: "/shorts", icon: MonitorPlay },
   { label: "Posts", href: "/posts", icon: Sparkles },
   { label: "Trending", href: "/trending", icon: Flame },
@@ -24,6 +25,7 @@ const primaryNav = [
 ];
 const topicFilters = [
   { label: "All", href: "/" },
+  { label: "Explore", href: "/explore" },
   { label: "Music", href: "/search?q=music" },
   { label: "Gaming", href: "/search?q=gaming" },
   { label: "Education", href: "/search?q=education" },
