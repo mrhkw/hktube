@@ -1,7 +1,7 @@
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { ChannelBadge, getSubscriberBadge } from "@/components/ChannelBadge";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Bell, CircleDollarSign, Clock3, ShieldCheck, WalletCards } from "lucide-react";
+import { Bell, CircleDollarSign, Clock3, ShieldCheck, WalletCards } from "lucide-react";
 import { Link } from "wouter";
 
 const PAYOUT_MESSAGE = "Payouts are not enabled yet. When HkTube connects its secure payout provider, an in-app alert will appear here so you can complete payout setup yourself.";
@@ -13,7 +13,6 @@ export default function Monetization() {
   const subscribers = channel?.subscriberCount ?? 0;
   const watchHours = studio.data?.analytics.watchHours ?? 0;
   const eligible = subscribers >= 500 && watchHours >= 500;
-  const tier = getSubscriberBadge(subscribers);
   const subscriberProgress = Math.min(100, Math.round((subscribers / 500) * 100));
   const watchProgress = Math.min(100, Math.round((watchHours / 500) * 100));
 
@@ -26,7 +25,7 @@ export default function Monetization() {
         </section>
         <section className="grid gap-4 lg:grid-cols-2">
           <article className="rounded-2xl border border-white/10 bg-white/[.035] p-6"><div className="flex items-center gap-3"><Clock3 className="size-5 text-cyan-300" /><h2 className="font-black text-white">Eligibility progress</h2></div><p className="mt-3 text-sm text-slate-400">Creator eligibility requires <strong className="text-white">500 subscribers</strong> and <strong className="text-white">500 watch hours</strong>.</p><div className="mt-4 space-y-3"><Progress label="Subscribers" value={subscribers} target={500} progress={subscriberProgress} /><Progress label="Watch hours" value={watchHours} target={500} progress={watchProgress} /></div><p className="mt-4 text-xs font-semibold text-cyan-200">{eligible ? "Eligibility threshold reached. Payouts remain disabled for now." : "Keep creating to reach the eligibility threshold."}</p></article>
-          <article className="rounded-2xl border border-amber-300/15 bg-amber-400/[.05] p-6"><div className="flex items-start gap-3"><Bell className="mt-0.5 size-5 shrink-0 text-amber-200" /><div><h2 className="font-black text-white">Payout setup is not available yet</h2><p className="mt-2 text-sm leading-6 text-slate-300">{PAYOUT_MESSAGE}</p></div></div><div className="mt-5 flex flex-wrap gap-2"><span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100">Payout provider pending</span><span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300">No withdrawal button</span></div></article>
+          <article className="rounded-2xl border border-amber-300/15 bg-amber-400/[.05] p-6"><div className="flex items-start gap-3"><Bell className="mt-0.5 size-5 shrink-0 text-amber-200" /><div><h2 className="font-black text-white">Payout setup is not available yet</h2><p className="mt-2 text-sm leading-6 text-slate-300">{PAYOUT_MESSAGE}</p></div></div><div className="mt-5 flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100">Payout provider pending</span><button type="button" disabled aria-disabled="true" title="Payout provider integration is pending" className="cursor-not-allowed rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100 opacity-80">Withdraw payout — Pending</button></div></article>
         </section>
         <section className="rounded-2xl border border-white/10 bg-white/[.035] p-6"><h2 className="font-black text-white">What is ready now</h2><div className="mt-4 grid gap-3 sm:grid-cols-2"><Status text="Real subscriber count" /><Status text="Subscriber milestone badges" /><Status text="Manual admin verification" /><Status text="Payout setup alert when provider is connected" /></div><div className="mt-5 rounded-xl border border-white/10 bg-black/15 p-4 text-xs leading-5 text-slate-500">HkTube does not claim a payout balance or “approved” earnings until a real payment provider and eligibility decision exist.</div></section>
       </>}
