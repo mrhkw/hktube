@@ -9,7 +9,8 @@ import { trpc } from "@/lib/trpc";
 import { Bot, Copy, Loader2, Send, Sparkles, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
-type AISource = { title: string; url: string; snippet: string };\ntype ChatMessage = { id: string; role: "user" | "assistant"; content: string; sources?: AISource[] };
+type AISource = { title: string; url: string; snippet: string };
+type ChatMessage = { id: string; role: "user" | "assistant"; content: string; sources?: AISource[] };
 const STORAGE_KEY = "hktube-ai-chat-v1";
 const suggestions = [
   "HkTube par apna channel grow karne ka plan banao.",
@@ -18,7 +19,8 @@ const suggestions = [
   "Mujhe simple Roman Urdu mein AI samjhao.",
 ];
 
-\nasync function liveResearch(query: string): Promise<AISource[]> {
+
+async function liveResearch(query: string): Promise<AISource[]> {
   if (!/(latest|today|current|recent|news|price|weather|score|schedule|2026|right now|aaj|abhi|taaza|qeemat|rate|khabar|source|research|compare|official|update)/i.test(query) && query.length < 80) return [];
   try {
     const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query.slice(0, 300))}&format=json&no_html=1&skip_disambig=1&no_redirect=1`, { signal: AbortSignal.timeout(7000) });
