@@ -62,6 +62,20 @@ export const appRouter = router({
     channels: adminProcedure.query(() => listAdminChannels()),
     setChannelVerification: adminProcedure.input(z.object({ channelId: z.number().int().positive(), status: z.enum(["unverified", "pending", "verified", "rejected"]) })).mutation(({ ctx, input }) => setChannelVerification(input.channelId, input.status, ctx.user.id)),
   }),
+  ai: router({
+    chat: protectedProcedure.input(z.object({ messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(6000) })).min(1).max(20) })).mutation(async ({ input }) => {
+      const totalChars = input.messages.reduce((sum, message) => sum + message.content.length, 0);
+      if (totalChars > 24000) throw new TRPCError({ code: "BAD_REQUEST", message: "Chat is too long. Start a new chat or shorten the messages." });
+      try {
+        const result = await invokeLLM({ messages: [{ role: "system", content: "You are HkTube AI, a helpful general-purpose conversational assistant inside the HkTube platform. Answer clearly and naturally. You may help with writing, learning, coding, creator workflows, video ideas, summaries and general questions. Do not claim to be ChatGPT, OpenAI, or another branded assistant. Do not invent facts, links, sources, account data, or actions you did not perform. If information may be current or uncertain, say so and recommend verification. Respect safety and privacy. Match the user language; Roman Urdu is welcome when the user uses it." }, ...input.messages], maxTokens: 1400 });
+        const content = result.choices[0]?.message.content;
+        if (typeof content !== "string" || !content.trim()) throw new Error("The AI assistant returned no usable response.");
+        return { content: content.trim(), model: result.model };
+      } catch (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "AI service is temporarily unavailable." });
+      }
+    }),
+  }),
   creator_studio: router({
     dashboard: protectedProcedure.query(({ ctx }) => getCreatorStudioDashboard(ctx.user.id)),
     suggestMetadata: protectedProcedure.input(z.object({ title: z.string().trim().max(255), description: z.string().trim().max(5000).optional().default(""), link: z.string().trim().max(2000).optional().default(""), category: videoCategory })).mutation(async ({ input }) => {
