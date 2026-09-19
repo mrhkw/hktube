@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
 export const AD_CONSENT_KEY = "hktube-consent-v2";
+const ADS_ENABLED = import.meta.env.VITE_ADS_ENABLED === "true";
 export type AdConsent = "ads" | "essential";
 
 export function getAdConsent(): AdConsent | null {
@@ -22,15 +23,15 @@ export function setAdConsent(value: AdConsent) {
 
 export function AdConsentBanner() {
   const [choice, setChoice] = useState<AdConsent | null>(() => getAdConsent());
-  const [open, setOpen] = useState(() => !getAdConsent());
+  const [open, setOpen] = useState(() => ADS_ENABLED && !getAdConsent());
 
   useEffect(() => {
-    const sync = () => { const next = getAdConsent(); setChoice(next); setOpen(!next); };
+    const sync = () => { const next = getAdConsent(); setChoice(next); setOpen(ADS_ENABLED && !next); };
     window.addEventListener("hktube-ad-consent-changed", sync);
     return () => window.removeEventListener("hktube-ad-consent-changed", sync);
   }, []);
 
-  if (choice || !open) return null;
+  if (!ADS_ENABLED || choice || !open) return null;
   return <aside className="fixed inset-x-3 bottom-3 z-[80] mx-auto max-w-3xl rounded-3xl border border-white/15 bg-[#0b1019]/[.98] p-4 text-white shadow-2xl shadow-black/40 backdrop-blur-xl sm:inset-x-5 sm:p-5" role="dialog" aria-label="Advertising privacy choices">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
