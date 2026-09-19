@@ -19,7 +19,7 @@ const creatorRows = [
   { title: "Creator verification", description: "Apply for and track a verified badge request", href: "/verification", icon: ShieldCheck },
   { title: "Content manager", description: "Review your videos and Shorts", href: "/studio", icon: Clapperboard },
   { title: "Monetization", description: "Eligibility, revenue status and payout alerts", href: "/monetization", icon: Wallet },
-  { title: "AI creator tools", description: "Assistant, dubbing and workflow automation", href: "/studio/ai", icon: Bot },
+  { title: "HkTube AI", description: "ChatGPT-style conversational assistant for questions, writing and ideas", href: "/ai", icon: Bot },\n  { title: "AI creator tools", description: "Assistant, dubbing and workflow automation", href: "/studio/ai", icon: Sparkles },
 ];
 
 export default function Menu() {
