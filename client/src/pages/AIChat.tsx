@@ -7,9 +7,12 @@ import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Bot, Copy, Loader2, Send, Sparkles, Trash2, UserRound } from "lucide-react";
-import { toast } from "sonner";\nimport { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
-type AISource = { title: string; url: string; snippet: string };\ntype AIMemory = { memory_type: string; memory_key: string; value: unknown };\ntype ChatMessage = { id: string; role: "user" | "assistant"; content: string; sources?: AISource[] };
+type AISource = { title: string; url: string; snippet: string };
+type AIMemory = { memory_type: string; memory_key: string; value: unknown };
+type ChatMessage = { id: string; role: "user" | "assistant"; content: string; sources?: AISource[] };
 const STORAGE_KEY = "hktube-ai-chat-v1";
 const suggestions = [
   "HkTube par apna channel grow karne ka plan banao.",
