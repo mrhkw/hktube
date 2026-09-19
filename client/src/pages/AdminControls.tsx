@@ -23,7 +23,7 @@ const groups = [
     ["Users", "Account status, access and creator relationships", "/admin", Users, "planned"],
     ["User controls", "Restrictions, access reviews and account actions", "/admin", UserCog, "planned"],
     ["Creator verification", "Owner-only verify, revoke or reject channels", "/admin", ShieldCheck, "live"],
-    ["Verification requests", "Review creator-submitted verification requests", "/admin", ShieldCheck, "planned"],
+    ["Verification requests", "Review creator-submitted verification requests", "/admin", ShieldCheck, "live"],
     ["Channels", "Channel identity, handles, banners and ownership", "/admin", Users, "live"],
     ["Creator Studio", "Creator content, analytics and publishing tools", "/studio", BarChart3, "live"],
   ]},
