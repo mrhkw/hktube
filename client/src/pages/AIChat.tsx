@@ -9,7 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { Bot, Copy, Loader2, Send, Sparkles, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
-type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
+type AISource = { title: string; url: string; snippet: string };\ntype ChatMessage = { id: string; role: "user" | "assistant"; content: string; sources?: AISource[] };
 const STORAGE_KEY = "hktube-ai-chat-v1";
 const suggestions = [
   "HkTube par apna channel grow karne ka plan banao.",
@@ -52,7 +52,7 @@ export default function AIChat() {
       const result = await chat.mutateAsync({
         messages: next.map(({ role, content: value }) => ({ role, content: value })),
       });
-      setMessages(current => [...current, { id: crypto.randomUUID(), role: "assistant", content: result.content }].slice(-40));
+      setMessages(current => [...current, { id: crypto.randomUUID(), role: "assistant", content: result.content, sources: result.sources ?? [] }].slice(-40));
     } catch (error) {
       setMessages(current => current.filter(message => message.id !== userMessage.id));
       toast.error(error instanceof Error ? error.message : "AI response nahi aa saki.");
@@ -80,7 +80,7 @@ export default function AIChat() {
       </header>
       <div className="flex-1 overflow-y-auto py-6">
         {messages.length === 0 ? <div className="mx-auto flex min-h-[55vh] max-w-3xl flex-col items-center justify-center text-center"><span className="grid size-16 place-items-center rounded-2xl bg-white/[.06] text-violet-300"><Bot className="size-8" /></span><h2 className="mt-5 text-3xl font-black text-white">How can I help?</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">HkTube AI se general questions, content ideas, writing, summaries aur creator help pooch sakte ho.</p><div className="mt-7 grid w-full gap-2 sm:grid-cols-2">{suggestions.map(item => <button key={item} type="button" onClick={() => void sendMessage(item)} className="rounded-2xl border border-white/8 bg-white/[.025] p-4 text-left text-sm text-slate-300 transition hover:bg-white/[.06] hover:text-white">{item}</button>)}</div></div> :
-          <div className="mx-auto max-w-3xl space-y-7">{messages.map(message => <article key={message.id} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-200">{message.content}</div>{message.role === "assistant" && <button type="button" onClick={() => void copy(message.content)} className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-white/[.05] hover:text-white"><Copy className="size-3.5" />Copy</button>}</div></article>)}</div>}
+          <div className="mx-auto max-w-3xl space-y-7">{messages.map(message => <article key={message.id} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-200">{message.content}</div>{message.role === "assistant" && <><div className="mt-2 flex flex-wrap gap-2">{(message.sources ?? []).map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="max-w-full truncate rounded-md border border-white/8 px-2 py-1 text-xs text-slate-500 hover:bg-white/[.05] hover:text-white">{source.title}</a>)}</div><button type="button" onClick={() => void copy(message.content)} className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-white/[.05] hover:text-white"><Copy className="size-3.5" />Copy</button></>}</div></article>)}</div>}
         {pending && <div className="mx-auto mt-6 flex max-w-3xl items-center gap-3 text-sm text-slate-500"><span className="grid size-8 place-items-center rounded-lg bg-violet-500 text-white"><Bot className="size-4" /></span><span className="flex items-center gap-1">HkTube AI is thinking<Loader2 className="ml-1 size-3.5 animate-spin" /></span></div>}
         <div ref={bottomRef} />
       </div>
