@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getAdConsent } from "./AdConsentBanner";
 
+const ADS_ENABLED = import.meta.env.VITE_ADS_ENABLED === "true";
 const clientId = ((import.meta.env.VITE_ADSENSE_CLIENT_ID as string | undefined) || "ca-pub-6377077633182623").trim();
 const defaultSlot = ((import.meta.env.VITE_ADSENSE_HOME_SLOT as string | undefined) || "6094472305").trim();
 let scriptPromise: Promise<void> | null = null;
@@ -28,11 +29,11 @@ type Props = { slot?: string; label?: string };
 
 export function AdSenseAd({ slot = defaultSlot, label = "Advertisement" }: Props) {
   const ref = useRef<HTMLModElement | null>(null);
-  const [enabled, setEnabled] = useState(() => getAdConsent() === "ads");
+  const [enabled, setEnabled] = useState(() => ADS_ENABLED && getAdConsent() === "ads");
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const sync = () => setEnabled(getAdConsent() === "ads");
+    const sync = () => setEnabled(ADS_ENABLED && getAdConsent() === "ads");
     window.addEventListener("hktube-ad-consent-changed", sync);
     return () => window.removeEventListener("hktube-ad-consent-changed", sync);
   }, []);
