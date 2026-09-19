@@ -32,23 +32,9 @@ export default function CreatorAI() {
     toast.success("AI draft ready. Rendering provider connect hone par video generate hoga.");
   }
 
-  async function useMetadataAssistant() {
+  function useMetadataAssistant() {
     if (!title.trim()) { toast.error("Pehle draft title add karein."); return; }
-    let research = "";
-    try {
-      const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent([title, prompt].join(" ").slice(0, 300))}&format=json&no_html=1&skip_disambig=1&no_redirect=1`, { signal: AbortSignal.timeout(7000) });
-      if (response.ok) {
-        const data = await response.json() as { AbstractText?: string; AbstractURL?: string; Heading?: string; RelatedTopics?: Array<{ Text?: string; FirstURL?: string }> };
-        const parts = [];
-        if (data.AbstractText) parts.push(`Source: ${data.Heading || "web"}\nURL: ${data.AbstractURL || ""}\n${data.AbstractText}`);
-        for (const topic of data.RelatedTopics ?? []) {
-          if (topic.Text) parts.push(`${topic.Text} ${topic.FirstURL || ""}`);
-          if (parts.length >= 4) break;
-        }
-        research = parts.join("\n\n").slice(0, 1800);
-      }
-    } catch {}
-    suggest.mutate({ title: title.trim(), description: prompt.trim(), link: research, category: mode === "clip" ? "shorts" : "regular" });
+    suggest.mutate({ title: title.trim(), description: prompt.trim(), link: "", category: mode === "clip" ? "shorts" : "regular" });
   }
 
   return <HkTubeShell title="AI Studio" subtitle="Prompt se Clip ya long-video draft prepare karein — signup ke baghair.">
