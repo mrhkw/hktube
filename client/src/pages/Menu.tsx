@@ -16,6 +16,7 @@ const accountRows = [
 
 const creatorRows = [
   { title: "Channel dashboard", description: "Real views and published-content totals", href: "/studio", icon: BarChart3 },
+  { title: "Creator verification", description: "Apply for and track a verified badge request", href: "/verification", icon: ShieldCheck },
   { title: "Content manager", description: "Review your videos and Shorts", href: "/studio", icon: Clapperboard },
   { title: "Monetization", description: "Eligibility, revenue status and payout alerts", href: "/monetization", icon: Wallet },
   { title: "AI creator tools", description: "Assistant, dubbing and workflow automation", href: "/studio/ai", icon: Bot },
