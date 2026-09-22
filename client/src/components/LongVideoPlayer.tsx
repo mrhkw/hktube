@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Bookmark, Check, Heart, MessageCircle, Share2, UserPlus } from "lucide-react";
+import { Bookmark, Check, Heart, MessageCircle, Share2, ThumbsDown, UserPlus } from "lucide-react";
 import { Link } from "wouter";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { addVideoComment, getVideoEngagement, listVideoComments, recordVideoView, toggleChannelSubscription, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 type CommentRow = { id: string; body: string; created_at: string; parent_id: string | null };
@@ -49,6 +50,23 @@ export default function LongVideoPlayer(props: LongVideoPlayerProps) {
     try { const result = await toggleVideoLike(props.videoId); setEngagement(s => ({ ...s, liked: result.liked, likeCount: Number(result.count) })); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Unable to update Like."); }
   }
+  async function dislike() {
+    if (!user) return startLogin();
+    try {
+      const result = await toggleVideoDislike(props.videoId);
+      setEngagement((state) => ({
+        ...state,
+        disliked: result.disliked,
+        liked: result.disliked ? false : state.liked,
+        dislikeCount: result.count,
+      }));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to update Dislike.",
+      );
+    }
+  }
+
   async function save() {
     if (!user) return startLogin();
     try { const result = await toggleVideoSave(props.videoId); setEngagement(s => ({ ...s, saved: result })); toast.success(result ? "Saved to Library." : "Removed from Library."); }
@@ -83,6 +101,7 @@ export default function LongVideoPlayer(props: LongVideoPlayerProps) {
     </div>
     <div className="flex flex-wrap items-center gap-2">
       <button onClick={() => void like()} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 py-2 text-sm font-bold text-white"><Heart className={engagement.liked ? "size-4 fill-current text-rose-400" : "size-4"} />{engagement.likeCount.toLocaleString()}</button>
+      <button onClick={() => void dislike()} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 py-2 text-sm font-bold text-white"><ThumbsDown className={engagement.disliked ? "size-4 fill-current" : "size-4"} />{engagement.dislikeCount.toLocaleString()}</button>
       <button onClick={() => void save()} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 py-2 text-sm font-bold text-white"><Bookmark className={engagement.saved ? "size-4 fill-current" : "size-4"} />{engagement.saved ? "Saved" : "Watch later"}</button>
       <button onClick={() => void share()} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 py-2 text-sm font-bold text-white"><Share2 className="size-4" />Share</button>
       {props.channelId && <button onClick={() => void follow()} className="inline-flex items-center gap-2 rounded-full bg-violet-500 px-4 py-2 text-sm font-bold text-white">{engagement.subscribed ? <><Check className="size-4" />Following</> : <><UserPlus className="size-4" />Follow</>}</button>}
@@ -93,7 +112,7 @@ export default function LongVideoPlayer(props: LongVideoPlayerProps) {
     </div>
     <section className="rounded-2xl border border-white/10 bg-white/[.025] p-4">
       <div className="flex items-center gap-2 text-white"><MessageCircle className="size-5" /><h2 className="font-black">Comments</h2><span className="text-xs text-slate-500">{comments.length}</span></div>
-      <form onSubmit={submitComment} className="mt-3 flex gap-2"><input value={comment} onChange={event => setComment(event.target.value)} placeholder={user ? "Add a public comment…" : "Sign in to comment"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none" /><button disabled={busy || !comment.trim()} className="rounded-xl bg-violet-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Post</button></form>
+      <form onSubmit={submitComment} className="mt-3 flex gap-2"><input value={comment} onChange={event => setComment(event.target.value.slice(0, 2000))} maxLength={2000} placeholder={user ? "Add a public comment…" : "Sign in to comment"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none" /><button disabled={busy || !comment.trim()} className="rounded-xl bg-violet-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Post</button></form>
       <div className="mt-4 space-y-2">{comments.map(row => <article key={row.id} className="rounded-xl border border-white/8 bg-black/15 p-3"><p className="text-sm text-slate-300">{row.body}</p><time className="mt-1 block text-[11px] text-slate-600">{new Date(row.created_at).toLocaleString()}</time></article>)}{!comments.length && <p className="py-6 text-center text-sm text-slate-500">No comments yet.</p>}</div>
     </section>
   </section>;
