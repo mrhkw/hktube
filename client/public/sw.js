@@ -12,7 +12,9 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(
+  event.waitUntil((async () => {
+    try { await self.registration.navigationPreload.enable(); } catch {}
+
     caches.keys()
       .then(keys => Promise.all(
         keys
@@ -20,7 +22,8 @@ self.addEventListener("activate", event => {
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
-  );
+    );
+  })());
 });
 
 async function fetchFast(request, timeoutMs = 8000) {
@@ -55,6 +58,8 @@ self.addEventListener("fetch", event => {
     // Navigation is always network-first. Never serve an old cached HTML shell.
     if (isNavigation) {
       try {
+        const preloaded = await event.preloadResponse;
+        if (preloaded) return preloaded;
         const response = await fetchFast(new Request(event.request, { cache: "no-store" }));
         return response;
       } catch {
