@@ -1,17 +1,324 @@
 import { supabase } from "./supabase";
-export type SupabaseVideo={id:string;creatorId:string;channelId:string;title:string;description:string|null;videoUrl:string;thumbnailUrl:string|null;durationSeconds:number;viewCount:number;publishedAt:string|null;createdAt:string;tags:string[];category:string|null;language:string|null;moderationStatus?:string|null;status?:string|null};
-function publicUrl(bucket:string,path:string|null){if(!path)return null;if(/^https?:\/\//i.test(path))return path;return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;}
-function mapVideo(row:any):SupabaseVideo{return{id:String(row.id),creatorId:String(row.creator_id),channelId:String(row.channel_id),title:String(row.title??"Untitled video"),description:row.description??null,videoUrl:publicUrl("videos",row.video_path)??"",thumbnailUrl:publicUrl("thumbnails",row.thumbnail_path),durationSeconds:Number(row.duration_seconds??0),viewCount:Number(row.views??0),publishedAt:row.published_at??null,createdAt:row.created_at??new Date().toISOString(),tags:Array.isArray(row.tags)?row.tags.map(String):[],category:row.category??null,language:row.language??null,moderationStatus:row.moderation_status??null,status:row.status??null};}
-const VIDEO_SELECT="id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,category,language,status,moderation_status";
-async function requireUser(){const {data,error}=await supabase.auth.getUser();if(error||!data.user)throw new Error("Your session expired. Please sign in again.");return data.user;}
-async function readDuration(file:File){return new Promise<number>(resolve=>{const video=document.createElement("video");const url=URL.createObjectURL(file);video.preload="metadata";const done=()=>{const value=Number.isFinite(video.duration)?Math.max(0,Math.floor(video.duration)):0;URL.revokeObjectURL(url);resolve(value)};video.onloadedmetadata=done;video.onerror=()=>{URL.revokeObjectURL(url);resolve(0)};video.src=url})}
-async function readDimensions(file:File){return new Promise<{width:number;height:number}|null>(resolve=>{const video=document.createElement("video");const url=URL.createObjectURL(file);video.preload="metadata";const done=()=>{const result=video.videoWidth>0&&video.videoHeight>0?{width:video.videoWidth,height:video.videoHeight}:null;URL.revokeObjectURL(url);resolve(result)};video.onloadedmetadata=done;video.onerror=()=>{URL.revokeObjectURL(url);resolve(null)};video.src=url})}
-export async function listMySupabaseVideos(userId:string){const {data,error}=await supabase.from("videos").select(VIDEO_SELECT).eq("creator_id",userId).order("created_at",{ascending:false}).limit(100);if(error)throw new Error(error.message);return(data??[]).map(mapVideo)}
-export async function listPublicSupabaseVideos(limit=20){const {data,error}=await supabase.from("videos").select(VIDEO_SELECT).eq("visibility","public").eq("status","published").eq("moderation_status","approved").order("published_at",{ascending:false}).limit(limit);if(error)throw new Error(error.message);return(data??[]).map(mapVideo)}
-export async function listPublicSupabaseShorts(limit=40){const {data,error}=await supabase.from("videos").select(VIDEO_SELECT).eq("visibility","public").eq("status","published").eq("moderation_status","approved").contains("tags",["shorts"]).order("published_at",{ascending:false}).limit(limit);if(error)throw new Error(error.message);return(data??[]).map(mapVideo)}
-export async function createSupabaseVideo(input:{channelId:string;title:string;description:string;file:File;thumbnail?:File|null;isShort?:boolean;durationSeconds?:number;category?:string|null;language?:string|null;visibility?:"public"|"unlisted"|"private";allowComments?:boolean;madeForKids?:boolean;tags?:string[];onProgress?:(value:number)=>void}){
- const user=await requireUser();if(input.file.size>900*1024*1024)throw new Error("Video file must be 900 MB or smaller.");if(input.file.size<=0)throw new Error("The selected video is empty.");if(input.file.type!=="video/mp4")throw new Error("For reliable HkTube playback, please export the video as MP4/H.264 (video/mp4).");const probe=document.createElement("video");if(!probe.canPlayType("video/mp4"))throw new Error("This browser cannot play MP4 video. Please use a modern browser.");const dimensions=await readDimensions(input.file);if(!dimensions)throw new Error("HkTube could not read the video stream. Re-export it as a standard MP4/H.264 file and try again.");if(input.isShort){const ratio=dimensions.width/dimensions.height;if(ratio>1.05)throw new Error("Clips must be vertical (9:16). Please select a portrait video.");}if(input.thumbnail&&input.thumbnail.size>12*1024*1024)throw new Error("Thumbnail must be 12 MB or smaller.");
- const videoPath=`${user.id}/${crypto.randomUUID()}.mp4`;const suppliedDuration=Math.floor(Number(input.durationSeconds??0));const duration=suppliedDuration>0?suppliedDuration:await readDuration(input.file);input.onProgress?.(10);const {error:uploadError}=await supabase.storage.from("videos").upload(videoPath,input.file,{contentType:"video/mp4",upsert:false,cacheControl:"31536000"});if(uploadError)throw new Error(uploadError.message);input.onProgress?.(65);let thumbnailPath:string|null=null;
- try{if(input.thumbnail){const thumbExt=input.thumbnail.name.split(".").pop()?.toLowerCase()||"jpg";thumbnailPath=`${user.id}/${crypto.randomUUID()}.${thumbExt}`;const {error}=await supabase.storage.from("thumbnails").upload(thumbnailPath,input.thumbnail,{contentType:input.thumbnail.type||"image/jpeg",upsert:false,cacheControl:"31536000"});if(error)throw new Error(error.message)}input.onProgress?.(82);const tags=Array.from(new Set([...(input.tags||[]).map(tag=>tag.trim().toLowerCase()).filter(Boolean),...(input.isShort?["shorts"]:[])]));const {data,error}=await supabase.from("videos").insert({creator_id:user.id,channel_id:input.channelId,title:input.title.trim(),description:input.description.trim()||null,tags,category:input.category?.trim()||null,language:input.language?.trim()||null,visibility:input.visibility||"public",status:"processing",moderation_status:"pending",video_path:videoPath,thumbnail_path:thumbnailPath,duration_seconds:duration,allow_comments:input.allowComments!==false,allow_download:false,made_for_kids:Boolean(input.madeForKids),views:0,likes_count:0,published_at:null}).select(VIDEO_SELECT).single();if(error)throw new Error(error.message);await supabase.from("upload_jobs").insert({user_id:user.id,content_type:input.isShort?"short":"video",content_id:data.id,file_name:input.file.name,storage_path:videoPath,bytes_total:input.file.size,bytes_uploaded:input.file.size,status:"completed"}).then(()=>undefined).catch(()=>undefined);input.onProgress?.(100);return mapVideo(data)}catch(error){await supabase.storage.from("videos").remove([videoPath]).catch(()=>undefined);if(thumbnailPath)await supabase.storage.from("thumbnails").remove([thumbnailPath]).catch(()=>undefined);throw error}
+
+export type SupabaseVideo = {
+  id: string;
+  creatorId: string;
+  channelId: string;
+  title: string;
+  description: string | null;
+  videoUrl: string;
+  thumbnailUrl: string | null;
+  durationSeconds: number;
+  viewCount: number;
+  publishedAt: string | null;
+  createdAt: string;
+  tags: string[];
+  category: string | null;
+  language: string | null;
+  isShort: boolean;
+  moderationStatus?: string | null;
+  status?: string | null;
+};
+
+function publicUrl(bucket: string, path: string | null): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
+
+function mapVideo(row: Record<string, unknown>): SupabaseVideo {
+  return {
+    id: String(row.id),
+    creatorId: String(row.creator_id),
+    channelId: String(row.channel_id),
+    title: String(row.title ?? "Untitled video"),
+    description: typeof row.description === "string" ? row.description : null,
+    videoUrl: publicUrl("videos", typeof row.video_path === "string" ? row.video_path : null) ?? "",
+    thumbnailUrl: publicUrl(
+      "thumbnails",
+      typeof row.thumbnail_path === "string" ? row.thumbnail_path : null,
+    ),
+    durationSeconds: Number(row.duration_seconds ?? 0),
+    viewCount: Number(row.views ?? 0),
+    publishedAt: typeof row.published_at === "string" ? row.published_at : null,
+    createdAt:
+      typeof row.created_at === "string"
+        ? row.created_at
+        : new Date().toISOString(),
+    tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
+    category: typeof row.category === "string" ? row.category : null,
+    language: typeof row.language === "string" ? row.language : null,
+    isShort: Boolean(row.is_short),
+    moderationStatus:
+      typeof row.moderation_status === "string" ? row.moderation_status : null,
+    status: typeof row.status === "string" ? row.status : null,
+  };
+}
+
+const VIDEO_SELECT =
+  "id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,category,language,status,moderation_status,is_short";
+
+async function requireUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    throw new Error("Your session expired. Please sign in again.");
+  }
+  return data.user;
+}
+
+async function readDuration(file: File): Promise<number> {
+  return new Promise<number>((resolve) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    video.preload = "metadata";
+
+    const cleanup = () => URL.revokeObjectURL(url);
+    video.onloadedmetadata = () => {
+      const value = Number.isFinite(video.duration)
+        ? Math.max(0, Math.floor(video.duration))
+        : 0;
+      cleanup();
+      resolve(value);
+    };
+    video.onerror = () => {
+      cleanup();
+      resolve(0);
+    };
+    video.src = url;
+  });
+}
+
+async function readDimensions(
+  file: File,
+): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    video.preload = "metadata";
+
+    const cleanup = () => URL.revokeObjectURL(url);
+    video.onloadedmetadata = () => {
+      const result =
+        video.videoWidth > 0 && video.videoHeight > 0
+          ? { width: video.videoWidth, height: video.videoHeight }
+          : null;
+      cleanup();
+      resolve(result);
+    };
+    video.onerror = () => {
+      cleanup();
+      resolve(null);
+    };
+    video.src = url;
+  });
+}
+
+export async function listMySupabaseVideos(userId: string) {
+  const { data, error } = await supabase
+    .from("videos")
+    .select(VIDEO_SELECT)
+    .eq("creator_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapVideo(row as Record<string, unknown>));
+}
+
+export async function listPublicSupabaseVideos(limit = 20) {
+  const { data, error } = await supabase
+    .from("videos")
+    .select(VIDEO_SELECT)
+    .eq("visibility", "public")
+    .eq("status", "published")
+    .eq("moderation_status", "approved")
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapVideo(row as Record<string, unknown>));
+}
+
+export async function listPublicSupabaseShorts(limit = 40) {
+  const { data, error } = await supabase
+    .from("videos")
+    .select(VIDEO_SELECT)
+    .eq("visibility", "public")
+    .eq("status", "published")
+    .eq("moderation_status", "approved")
+    .eq("is_short", true)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapVideo(row as Record<string, unknown>));
+}
+
+export async function createSupabaseVideo(input: {
+  channelId: string;
+  title: string;
+  description: string;
+  file: File;
+  thumbnail?: File | null;
+  isShort?: boolean;
+  durationSeconds?: number;
+  category?: string | null;
+  language?: string | null;
+  visibility?: "public" | "unlisted" | "private";
+  allowComments?: boolean;
+  madeForKids?: boolean;
+  tags?: string[];
+  onProgress?: (value: number) => void;
+}) {
+  const user = await requireUser();
+
+  if (input.file.size > 900 * 1024 * 1024) {
+    throw new Error("Video file must be 900 MB or smaller.");
+  }
+  if (input.file.size <= 0) {
+    throw new Error("The selected video is empty.");
+  }
+  if (input.file.type !== "video/mp4") {
+    throw new Error(
+      "For reliable HkTube playback, please export the video as MP4/H.264 (video/mp4).",
+    );
+  }
+
+  const probe = document.createElement("video");
+  if (!probe.canPlayType("video/mp4")) {
+    throw new Error(
+      "This browser cannot play MP4 video. Please use a modern browser.",
+    );
+  }
+
+  const dimensions = await readDimensions(input.file);
+  if (!dimensions) {
+    throw new Error(
+      "HkTube could not read the video stream. Re-export it as a standard MP4/H.264 file and try again.",
+    );
+  }
+
+  const isShort = Boolean(input.isShort);
+  if (isShort) {
+    const ratio = dimensions.width / Math.max(dimensions.height, 1);
+    if (ratio > 0.8) {
+      throw new Error("Clips must be vertical (9:16). Please select a portrait video.");
+    }
+  } else {
+    const ratio = dimensions.width / Math.max(dimensions.height, 1);
+    if (ratio < 1.25 || ratio > 2.2) {
+      throw new Error("Long videos must use a landscape aspect ratio.");
+    }
+  }
+
+  if (isShort && Number(input.durationSeconds ?? 0) > 180) {
+    throw new Error("Clips cannot exceed 180 seconds.");
+  }
+  if (input.thumbnail && input.thumbnail.size > 12 * 1024 * 1024) {
+    throw new Error("Thumbnail must be 12 MB or smaller.");
+  }
+
+  const videoPath = `${user.id}/${crypto.randomUUID()}.mp4`;
+  const suppliedDuration = Math.floor(Number(input.durationSeconds ?? 0));
+  const duration =
+    suppliedDuration > 0 ? suppliedDuration : await readDuration(input.file);
+
+  input.onProgress?.(10);
+
+  const { error: uploadError } = await supabase.storage
+    .from("videos")
+    .upload(videoPath, input.file, {
+      contentType: "video/mp4",
+      upsert: false,
+      cacheControl: "31536000",
+    });
+
+  if (uploadError) throw new Error(uploadError.message);
+  input.onProgress?.(65);
+
+  let thumbnailPath: string | null = null;
+
+  try {
+    if (input.thumbnail) {
+      const thumbExt =
+        input.thumbnail.name.split(".").pop()?.toLowerCase() || "jpg";
+      thumbnailPath = `${user.id}/${crypto.randomUUID()}.${thumbExt}`;
+
+      const { error } = await supabase.storage
+        .from("thumbnails")
+        .upload(thumbnailPath, input.thumbnail, {
+          contentType: input.thumbnail.type || "image/jpeg",
+          upsert: false,
+          cacheControl: "31536000",
+        });
+
+      if (error) throw new Error(error.message);
+    }
+
+    input.onProgress?.(82);
+
+    const tags = Array.from(
+      new Set([
+        ...(input.tags ?? [])
+          .map((tag) => tag.trim().toLowerCase())
+          .filter(Boolean),
+        ...(isShort ? ["shorts"] : []),
+      ]),
+    );
+
+    const { data, error } = await supabase
+      .from("videos")
+      .insert({
+        creator_id: user.id,
+        channel_id: input.channelId,
+        title: input.title.trim(),
+        description: input.description.trim() || null,
+        tags,
+        category: input.category?.trim() || null,
+        language: input.language?.trim() || null,
+        visibility: input.visibility || "public",
+        status: "processing",
+        moderation_status: "pending",
+        video_path: videoPath,
+        thumbnail_path: thumbnailPath,
+        duration_seconds: duration,
+        allow_comments: input.allowComments !== false,
+        allow_download: false,
+        made_for_kids: Boolean(input.madeForKids),
+        is_short: isShort,
+        views: 0,
+        likes_count: 0,
+        published_at: null,
+      })
+      .select(VIDEO_SELECT)
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    await supabase
+      .from("upload_jobs")
+      .insert({
+        user_id: user.id,
+        content_type: isShort ? "short" : "video",
+        content_id: data.id,
+        file_name: input.file.name,
+        storage_path: videoPath,
+        bytes_total: input.file.size,
+        bytes_uploaded: input.file.size,
+        status: "completed",
+      })
+      .then(() => undefined)
+      .catch(() => undefined);
+
+    input.onProgress?.(100);
+    return mapVideo(data as Record<string, unknown>);
+  } catch (error) {
+    await supabase.storage.from("videos").remove([videoPath]).catch(() => undefined);
+    if (thumbnailPath) {
+      await supabase.storage.from("thumbnails").remove([thumbnailPath]).catch(() => undefined);
+    }
+    throw error;
+  }
+}
+
 export { mapVideo };
