@@ -72,7 +72,7 @@ async function candidateRows(shorts = false, limit = 180) {
 type WatchSignal = { starts: number; completed: number; watchedSeconds: number; maxPosition: number; shares: number; likes: number; comments: number };
 
 async function loadPersonalSignals(userId: string) {
-  const [subs, history, saves, fb, blocks, events, searches] = await Promise.all([
+  const [subs, history, saves, fb, blocks, events, searches, topicPreferences] = await Promise.all([
     supabase.from("subscriptions").select("channel_id").eq("subscriber_id", userId),
     supabase.from("watch_history").select("video_id,short_id,progress_seconds").eq("user_id", userId).order("updated_at", { ascending: false }).limit(150),
     supabase.from("saves").select("video_id").eq("user_id", userId).not("video_id", "is", null).limit(150),
@@ -80,6 +80,7 @@ async function loadPersonalSignals(userId: string) {
     supabase.from("user_blocks").select("blocked_id").eq("blocker_id", userId),
     supabase.from("content_events").select("event_type,object_type,object_id,watch_seconds,position_seconds,created_at").eq("actor_id", userId).in("object_type", ["video", "short"]).order("created_at", { ascending: false }).limit(2000),
     supabase.from("content_events").select("context,created_at").eq("actor_id", userId).eq("object_type", "search").order("created_at", { ascending: false }).limit(100),
+    supabase.from("user_topic_preferences").select("topic,weight,source").eq("user_id", userId).limit(200),
   ]);
 
   const signals = new Map<string, WatchSignal>();
@@ -136,6 +137,7 @@ async function loadPersonalSignals(userId: string) {
     blocked: new Set((blocks.data ?? []).map(x => String(x.blocked_id))),
     signals,
     searchTerms,
+    topicPreferences: new Map((topicPreferences.data ?? []).map(x => [String(x.topic).toLowerCase(), Number(x.weight || 0)])),
   };
 }
 
@@ -145,8 +147,8 @@ export async function rankPublicVideos(input: { shorts?: boolean; limit?: number
   if (!candidates.length) return [];
   const userId = input.userId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
 
-  let followed = new Set<string>(); let watched = new Set<string>(); let saved = new Set<string>(); let feedback = new Map<string, string>(); let hiddenCreators = new Set<string>(); let hiddenTopics = new Set<string>(); let blocked = new Set<string>(); let signals = new Map<string, WatchSignal>(); let searchTerms: string[] = [];
-  if (userId) ({ followed, watched, saved, feedback, hiddenCreators, hiddenTopics, blocked, signals, searchTerms } = await loadPersonalSignals(userId));
+  let followed = new Set<string>(); let watched = new Set<string>(); let saved = new Set<string>(); let feedback = new Map<string, string>(); let hiddenCreators = new Set<string>(); let hiddenTopics = new Set<string>(); let blocked = new Set<string>(); let signals = new Map<string, WatchSignal>(); let searchTerms: string[] = []; let topicPreferences = new Map<string, number>();
+  if (userId) ({ followed, watched, saved, feedback, hiddenCreators, hiddenTopics, blocked, signals, searchTerms, topicPreferences } = await loadPersonalSignals(userId));
 
   const channelIds = [...new Set(candidates.map(v => v.channelId).filter(Boolean))] as string[];
   const { data: channels } = channelIds.length ? await supabase.from("channels").select("id,owner_id").in("id", channelIds) : { data: [] as any[] };
@@ -159,7 +161,8 @@ export async function rankPublicVideos(input: { shorts?: boolean; limit?: number
   const nowHour = new Date().getHours();
   const ranked = candidates.map((v, index) => {
     const contentTokens = tokens(`${v.title} ${v.description ?? ""} ${v.tags.join(" ")} ${v.category ?? ""}`);
-    const interest = queryTokens.length ? overlap(queryTokens, contentTokens) : overlap(inferredInterestTokens, contentTokens);
+    const topicPreference = [v.category, ...v.tags].filter(Boolean).reduce((sum, topic) => sum + (topicPreferences.get(String(topic).toLowerCase()) || 0), 0) / Math.max(1, [v.category, ...v.tags].filter(Boolean).length);
+    const interest = queryTokens.length ? overlap(queryTokens, contentTokens) : Math.min(1, Math.max(0, overlap(inferredInterestTokens, contentTokens) * 0.7 + (topicPreference + 1) * 0.15));
     const follow = followed.has(v.channelId) ? 1 : 0;
     const signal = signals.get(v.id);
     const completion = signal && signal.starts > 0 ? Math.min(1, signal.completed / signal.starts) : 0;
@@ -174,8 +177,9 @@ export async function rankPublicVideos(input: { shorts?: boolean; limit?: number
     const owner = ownerByChannel.get(v.channelId);
     const timeContext = ((v.category || "").toLowerCase() === "news" || v.tags.some(tag => tag.toLowerCase() === "news")) && (nowHour < 11 || nowHour > 17) ? 0.35 : 0;
     const underexposed = Number(v.viewCount || 0) < 1000 ? RECOMMENDATION_CONFIG.explorationBoost : 0;
-    const base = RECOMMENDATION_CONFIG.interest * interest + RECOMMENDATION_CONFIG.watchQuality * watchQuality + RECOMMENDATION_CONFIG.completion * completion + RECOMMENDATION_CONFIG.freshness * freshnessScore + RECOMMENDATION_CONFIG.engagement * engagement + RECOMMENDATION_CONFIG.creatorAffinity * follow + RECOMMENDATION_CONFIG.searchRelevance * inferredRelevance + RECOMMENDATION_CONFIG.saveShare * saveShareValue + RECOMMENDATION_CONFIG.novelty * novelty + RECOMMENDATION_CONFIG.popularity * popularityScore + RECOMMENDATION_CONFIG.context * timeContext + underexposed;
+    const base = RECOMMENDATION_CONFIG.interest * interest + positiveFeedback + RECOMMENDATION_CONFIG.watchQuality * watchQuality + RECOMMENDATION_CONFIG.completion * completion + RECOMMENDATION_CONFIG.freshness * freshnessScore + RECOMMENDATION_CONFIG.engagement * engagement + RECOMMENDATION_CONFIG.creatorAffinity * follow + RECOMMENDATION_CONFIG.searchRelevance * inferredRelevance + RECOMMENDATION_CONFIG.saveShare * saveShareValue + RECOMMENDATION_CONFIG.novelty * novelty + RECOMMENDATION_CONFIG.popularity * popularityScore + RECOMMENDATION_CONFIG.context * timeContext + underexposed;
     const negative = feedback.get(v.id);
+    const positiveFeedback = negative === "more_like_this" ? 0.22 : 0;
     const topicHidden = [v.category, ...v.tags].filter(Boolean).some(topic => hiddenTopics.has(String(topic).toLowerCase()));
     const ownerBlocked = owner ? blocked.has(owner) : false;
     const creatorHidden = owner ? hiddenCreators.has(owner) : false;
@@ -184,7 +188,7 @@ export async function rankPublicVideos(input: { shorts?: boolean; limit?: number
     const creatorExposure = candidates.slice(0, index).filter(x => (ownerByChannel.get(x.channelId) || x.creatorId) === creatorBase).length;
     const repetitionPenalty = creatorExposure >= RECOMMENDATION_CONFIG.maxPerCreator ? 0.8 : creatorExposure >= 2 ? 0.25 : 0;
     const score = ownerBlocked || creatorHidden || (topicHidden && (negative === "hide_topic" || hiddenTopics.size > 0)) ? -10 : base - penalty - repetitionPenalty - index * 0.00001;
-    const reason = follow ? "followed_creator" : queryTokens.length ? "search_related" : interest > 0.25 ? (watched.has(v.id) ? "similar_to_watched" : "interest_match") : Number(v.viewCount || 0) < 1000 ? "fresh_creator" : freshnessScore > 0.75 ? "fresh" : "trending";
+    const reason = follow ? "followed_creator" : positiveFeedback > 0 ? "similar_to_watched" : queryTokens.length ? "search_related" : interest > 0.25 ? (watched.has(v.id) ? "similar_to_watched" : "interest_match") : Number(v.viewCount || 0) < 1000 ? "fresh_creator" : freshnessScore > 0.75 ? "fresh" : "trending";
     return { ...v, score, reason } as RankedVideo;
   }).filter(v => v.score > -5).sort((a, b) => b.score - a.score);
 
