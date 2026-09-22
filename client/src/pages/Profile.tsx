@@ -65,8 +65,8 @@ export default function Profile() {
 
   const visibleVideos = tab === "clips" ? videos.filter(video => video.durationSeconds > 0 && video.durationSeconds <= 180) : tab === "videos" ? videos.filter(video => video.durationSeconds === 0 || video.durationSeconds > 180) : tab === "favorites" ? favorites : videos;
 
-  if (loading) return <HkTubeShell minimalHeader headerAvatarUrl={channel?.avatarUrl || user.avatarUrl}><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-8 animate-spin text-violet-400" /></div></HkTubeShell>;
-  if (!user) return <HkTubeShell title="Profile"><section className="mx-auto max-w-md px-5 pt-12 text-center"><CircleUserRound className="mx-auto size-12 text-violet-400" /><h1 className="mt-4 text-2xl font-black text-white">Sign in to view your profile</h1><p className="mt-3 text-sm leading-6 text-slate-400">Your channel, videos, favorites and settings live here.</p><Button onClick={startLogin} className="mt-6 rounded-full bg-violet-600 px-7 font-bold text-white">Sign in / Sign up</Button></section></HkTubeShell>;
+  if (loading) return <HkTubeShell minimalHeader headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-8 animate-spin text-violet-400" /></div></HkTubeShell>;
+  if (!user) return <HkTubeShell minimalHeader headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}><section className="mx-auto max-w-md px-5 pt-12 text-center"><CircleUserRound className="mx-auto size-12 text-violet-400" /><h1 className="mt-4 text-2xl font-black text-white">Sign in to view your profile</h1><p className="mt-3 text-sm leading-6 text-slate-400">Your channel, videos, favorites and settings live here.</p><Button onClick={startLogin} className="mt-6 rounded-full bg-violet-600 px-7 font-bold text-white">Sign in / Sign up</Button></section></HkTubeShell>;
 
   return <HkTubeShell title="Profile">
     <div className="mx-auto max-w-6xl px-3 py-3 pb-28 sm:px-6 sm:py-7">
