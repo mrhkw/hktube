@@ -46,7 +46,7 @@ export async function getVideoEngagement(
     throw new Error(dislike.error.message);
   }
 
-  const { data: dislikeRows, error: dislikeCountError } = await supabase
+  const { count: dislikeCount, error: dislikeCountError } = await supabase
     .from("dislikes")
     .select("video_id", { count: "exact", head: true })
     .eq("video_id", videoId);
@@ -71,7 +71,7 @@ export async function getVideoEngagement(
     saved: Boolean(save.data),
     subscribed: Boolean(subscription.data),
     likeCount: Number(video.data?.likes_count ?? 0),
-    dislikeCount: dislikeRows?.length ?? 0,
+    dislikeCount: dislikeCount ?? 0,
     subscriberCount: Number(subscriberResult?.data?.subscriber_count ?? 0),
   };
 }
