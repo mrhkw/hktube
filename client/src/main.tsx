@@ -7,7 +7,6 @@ import superjson from "superjson";
 import App from "./App";
 import { supabase } from "./lib/supabase";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { HkTubeWelcomeLoader } from "./components/HkTubeWelcomeLoader";
 import "./index.css";
 import "./light-theme.css";
 import "./theme-runtime.css";
@@ -48,5 +47,14 @@ function installRuntimeRecovery() {
   });
 }
 installRuntimeRecovery();
+
+// Warm the first route immediately after the browser gets a chance to paint.
+// This keeps Home code-split while removing the lazy-chunk wait from the critical interaction path.
+const warmHome = () => { void import("./pages/SupabaseHome").catch(() => undefined); };
+if ("requestIdleCallback" in window) {
+  window.requestIdleCallback(warmHome, { timeout: 120 });
+} else {
+  window.setTimeout(warmHome, 60);
+}
 if ("serviceWorker" in navigator) window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(error => console.warn("[PWA] service worker unavailable", error)); });
-createRoot(document.getElementById("root")!).render(<ErrorBoundary><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><App /><SafeEnhancements /><HkTubeWelcomeLoader /></QueryClientProvider></trpc.Provider></ErrorBoundary>);
+createRoot(document.getElementById("root")!).render(<ErrorBoundary><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><App /><SafeEnhancements /></QueryClientProvider></trpc.Provider></ErrorBoundary>);
