@@ -49,6 +49,20 @@ export async function setRecommendationFeedback(contentId: string, feedbackType:
   if (!user) throw new Error("Sign in to personalize your feed.");
   const { error } = await supabase.from("recommendation_feedback").upsert({ user_id: user.id, content_id: contentId, feedback_type: feedbackType, topic: topic?.trim() || null }, { onConflict: "user_id,content_id" });
   if (error) throw error;
+  const { data: video } = await supabase.from("videos").select("category,tags").eq("id", contentId).maybeSingle();
+  const topics = [...new Set([video?.category, ...(video?.tags ?? []), topic].filter(Boolean).map(value => String(value).trim().toLowerCase()).filter(Boolean))].slice(0, 12);
+  if (topics.length) {
+    const delta = feedbackType === "more_like_this" ? 0.35 : feedbackType === "less_like_this" || feedbackType === "hide_topic" ? -0.35 : feedbackType === "not_interested" ? -0.15 : 0;
+    if (delta !== 0) {
+      const { data: existing } = await supabase.from("user_topic_preferences").select("topic,weight").eq("user_id", user.id).in("topic", topics);
+      const weights = new Map((existing ?? []).map(row => [String(row.topic).toLowerCase(), Number(row.weight || 0)]));
+      await Promise.all(topics.map(async value => {
+        const next = Math.max(-1, Math.min(1, (weights.get(value) ?? 0) + delta));
+        const { error: prefError } = await supabase.from("user_topic_preferences").upsert({ user_id: user.id, topic: value, weight: next, source: "behavior", updated_at: new Date().toISOString() }, { onConflict: "user_id,topic" });
+        if (prefError) throw prefError;
+      }));
+    }
+  }
   await recordDiscoveryEvent({ eventType: feedbackType, objectType: "video", objectId: contentId }).catch(() => undefined);
 }
 
