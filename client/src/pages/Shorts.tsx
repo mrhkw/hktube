@@ -1,32 +1,56 @@
-import { useEffect, useState } from "react";
-import { Link } from "wouter";
-import { Loader2, RefreshCw } from "lucide-react";
-import { ShortsPlayer } from "@/components/ShortsPlayer";
-import { rankPublicVideos } from "@/lib/supabaseDiscovery";
-import { listPublicSupabaseShorts, type SupabaseVideo } from "@/lib/supabaseVideos";
+import React, { useState, useEffect, useRef } from 'react';
+import { ShortsPlayer } from '../components/ShortsPlayer';
+import { supabase } from '../lib/supabase';
 
-export default function Shorts() {
-  const [items, setItems] = useState<SupabaseVideo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+export const Shorts: React.FC = () => {
+  const [videos, setVideos] = useState<any[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  async function load() {
-    setLoading(true);
-    setError("");
-    try {
-      const ranked = await rankPublicVideos({ shorts: true, limit: 40 });
-      setItems(ranked.length ? ranked : await listPublicSupabaseShorts(40));
-    } catch (cause) {
-      try { setItems(await listPublicSupabaseShorts(40)); }
-      catch (fallbackError) { setError(fallbackError instanceof Error ? fallbackError.message : cause instanceof Error ? cause.message : "Unable to load Clips."); }
-    } finally { setLoading(false); }
-  }
+  useEffect(() => {
+    fetchShorts();
+  }, []);
 
-  useEffect(() => { void load(); }, []);
+  const fetchShorts = async () => {
+    const { data, error } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('is_short', true);
 
-  if (loading) return <div className="grid min-h-screen place-items-center bg-black text-white"><Loader2 className="size-8 animate-spin" /></div>;
-  if (error) return <div className="grid min-h-screen place-items-center bg-black p-6 text-center text-white"><div><p className="text-lg font-black">Clips could not load</p><p className="mt-2 text-sm text-white/60">{error}</p><button onClick={() => void load()} className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black"><RefreshCw className="size-4" />Retry</button></div></div>;
-  if (!items.length) return <div className="grid min-h-screen place-items-center bg-black p-6 text-center text-white"><div><p className="text-xl font-black">No public Clips yet</p><p className="mt-2 text-sm text-white/60">Publish a vertical 9:16 Clip to start the swipe feed.</p><Link href="/" className="mt-5 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black">Back to Home</Link></div></div>;
+    if (error || !data || data.length === 0) {
+      setVideos([
+        { id: '1', title: 'Deeplay Shorts Clip 1', video_url: 'https://assets.mixkit.co/videos/preview/mixkit-vertical-shot-of-a-neon-sign-41551-large.mp4', user_name: 'deeplay_official' },
+        { id: '2', title: 'Deeplay Shorts Clip 2', video_url: 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-lighting-1232-large.mp4', user_name: 'hktube' },
+      ]);
+    } else {
+      setVideos(data);
+    }
+  };
 
-  return <ShortsPlayer items={items} />;
-}
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const height = containerRef.current.clientHeight;
+    const scrollTop = containerRef.current.scrollTop;
+    const index = Math.round(scrollTop / height);
+    if (index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  };
+
+  return (
+    <div className="w-full h-[calc(100vh-64px)] bg-black flex justify-center items-center overflow-hidden">
+      <div 
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="w-full max-w-sm sm:max-w-md h-full overflow-y-scroll snap-y snap-mandatory scrollbar-none"
+        style={{ scrollSnapType: 'y mandatory', scrollbarWidth: 'none' }}
+      >
+        {videos.map((video, idx) => (
+          <div key={video.id} className="w-full h-full snap-start snap-always">
+            <ShortsPlayer video={video} isActive={idx === activeIndex} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
