@@ -11,7 +11,7 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 
-type HkTubeShellProps = { children: ReactNode; title?: string; subtitle?: string; immersive?: boolean };
+type HkTubeShellProps = { children: ReactNode; title?: string; subtitle?: string; immersive?: boolean; minimalHeader?: boolean; headerAvatarUrl?: string | null };
 const primaryNav = [
   { label: "Home", href: "/", icon: Home },
   { label: "Explore", href: "/explore", icon: Compass },
@@ -31,7 +31,7 @@ const topicFilters = [
 function HkTubeMark({ className }: { className?: string }) { return <span className={cn("grid place-items-center rounded-[11px] bg-gradient-to-br from-violet-500 to-fuchsia-500 text-[11px] font-black tracking-[-0.04em] text-white shadow-[0_5px_18px_rgba(139,92,246,.28)]", className)} aria-hidden="true">HK<span className="ml-[-1px]">▶</span></span>; }
 function ProfileGlyph({ className }: { className?: string }) { return <UserRound className={className} aria-hidden="true" />; }
 
-export function HkTubeShell({ children, title, subtitle, immersive = false }: HkTubeShellProps) {
+export function HkTubeShell({ children, title, subtitle, immersive = false, minimalHeader = false, headerAvatarUrl }: HkTubeShellProps) {
   const [location, navigate] = useLocation();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const notificationsQuery = trpc.notifications.mine.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30000 });
@@ -57,9 +57,9 @@ export function HkTubeShell({ children, title, subtitle, immersive = false }: Hk
         <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="HkTube home"><HkTubeMark className="size-9" /><span className="hidden text-base font-black tracking-tight text-white sm:block">HkTube</span></Link>
         <form onSubmit={submitSearch} className="min-w-0 flex-1 lg:mx-auto lg:max-w-2xl"><div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-slate-500" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search HkTube" aria-label="Search HkTube" className="h-10 rounded-full border border-white/10 bg-white/[.045] pl-10 pr-4 text-sm text-white placeholder:text-slate-500 shadow-none focus-visible:border-violet-400/60 focus-visible:ring-violet-400/15" /></div></form>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button type="button" onClick={openCreate} className="grid size-11 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95" aria-label="Create content"><Plus className="size-5" /></button>
+          <button type="button" onClick={openCreate} className={cn("grid size-11 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95" aria-label="Create content"><Plus className="size-5" /></button>"} hidden={minimalHeader} />
           <Link href="/notifications" className="relative grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white" aria-label="Notifications"><Bell className="size-5" />{unread > 0 && <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-fuchsia-500 px-1 text-[9px] font-black leading-4 text-white">{Math.min(unread, 9)}{unread > 9 ? "+" : ""}</span>}</Link>
-          <Link href={isAuthenticated ? "/profile" : "/auth"} className="grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20" aria-label={isAuthenticated ? "Open profile" : "Sign in or create account"}>{user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : <ProfileGlyph className="size-5" />}</Link>
+          <Link href={isAuthenticated ? "/profile" : "/auth"} className="grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20" aria-label={isAuthenticated ? "Open profile" : "Sign in or create account"}>{headerAvatarUrl || user?.avatarUrl ? <img src={headerAvatarUrl || user?.avatarUrl || ""} alt="" className="size-full object-cover" /> : <ProfileGlyph className="size-5" />}</Link>
         </div>
       </div>
       <nav className="flex gap-2 overflow-x-auto border-t border-white/6 px-3 py-2 [scrollbar-width:none] md:hidden" aria-label="Topics">{topicFilters.map(filter => { const active = filter.href === "/" ? location === "/" : location === filter.href; return <Link key={filter.label} href={filter.href} className={cn("shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition", active ? "border-violet-400/70 bg-violet-500 text-white" : "border-white/8 bg-white/[.04] text-slate-300 hover:bg-white/[.08]")}>{filter.label}</Link>; })}</nav>
