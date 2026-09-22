@@ -1,37 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the Vercel environment."
-  );
-}
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: "pkce",
-  },
-});
-
-export const isSupabaseConfigured = true;
-
-export async function signInWithGoogle(next = "/"): Promise<void> {
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  const redirectTo =
-    typeof window !== "undefined"
-      ? new URL(safeNext, window.location.origin).toString()
-      : undefined;
-
+export const signInWithGoogle = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: redirectTo ? { redirectTo } : undefined,
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    },
   });
+  if (error) console.error('Google Auth Error:', error.message);
+};
 
-  if (error) throw new Error(error.message);
-}
+export const signOut = async () => {
+  await supabase.auth.signOut();
+};
