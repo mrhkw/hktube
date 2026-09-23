@@ -307,6 +307,8 @@ export async function createSupabaseVideo(input: {
   madeForKids?: boolean;
   tags?: string[];
   onProgress?: (value: number) => void;
+  allowDownload?: boolean;
+  signal?: AbortSignal;
 }) {
   const user = await requireUser();
 
@@ -374,6 +376,7 @@ export async function createSupabaseVideo(input: {
     videoPath,
     input.file,
     fraction => input.onProgress?.(10 + Math.round(fraction * 55)),
+    input.signal,
   );
   input.onProgress?.(65);
 
@@ -420,7 +423,7 @@ export async function createSupabaseVideo(input: {
         moderation_status: "pending",
         published_at: null,
         allow_comments: input.allowComments !== false,
-        allow_download: false,
+        allow_download: Boolean(input.allowDownload),
         made_for_kids: Boolean(input.madeForKids),
       })
       .select(VIDEO_SELECT)
