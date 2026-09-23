@@ -134,7 +134,7 @@ export async function listMySupabaseVideos(userId: string) {
   const { data, error } = await supabase
     .from("videos")
     .select(VIDEO_SELECT)
-    .eq("user_id", userId)
+    .eq("creator_id", userId)
     .order("created_at", { ascending: false })
     .limit(100);
 
