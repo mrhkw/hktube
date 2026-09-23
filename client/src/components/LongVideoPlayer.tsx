@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThumbsUp, ThumbsDown, Share2, Send, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import QualitySelector from './QualitySelector';
 
 interface VideoProps {
   id: string;
@@ -15,6 +16,7 @@ interface VideoProps {
 export const LongVideoPlayer: React.FC<{ video: VideoProps }> = ({ video }) => {
   const [likes, setLikes] = useState(video.likes || 0);
   const [hasLiked, setHasLiked] = useState(false);
+  const [quality, setQuality] = useState('Auto');
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
 
@@ -57,7 +59,7 @@ export const LongVideoPlayer: React.FC<{ video: VideoProps }> = ({ video }) => {
   return (
     <div className="w-full flex flex-col gap-4 text-white p-4 max-w-6xl mx-auto">
       <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
-        <video src={video.video_url} controls controlsList="nodownload" className="w-full h-full object-contain" />
+        <video src={video.video_url} controls controlsList="nodownload" data-quality={quality} className="w-full h-full object-contain" />
       </div>
 
       <h1 className="text-xl md:text-2xl font-bold">{video.title}</h1>
@@ -75,6 +77,7 @@ export const LongVideoPlayer: React.FC<{ video: VideoProps }> = ({ video }) => {
         </div>
 
         <div className="flex items-center gap-3">
+          <QualitySelector currentQuality={quality} onQualityChange={setQuality} />
           <button
             onClick={handleLike}
             className={`flex items-center gap-2 px-4 py-2 rounded-full border border-gray-700 backdrop-blur-md hover:bg-gray-800 transition ${hasLiked ? 'text-red-500 border-red-500' : 'text-white'}`}
