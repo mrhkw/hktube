@@ -31,7 +31,7 @@ export function VideoPlayer({ video, autoPlay = false, onProgress }: { video: Vi
       if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       const element = videoRef.current;
       if (!element) return;
-      if (event.key === " ") { event.preventDefault(); togglePlayback(); }
+      if (event.key === " " || event.key.toLowerCase() === "k") { event.preventDefault(); togglePlayback(); }
       if (event.key === "ArrowLeft") changeTime(Math.max(0, element.currentTime - 5));
       if (event.key === "ArrowRight") changeTime(Math.min(element.duration || duration, element.currentTime + 5));
       if (event.key.toLowerCase() === "m") changeVolume(element.muted || element.volume === 0 ? 0.9 : 0);

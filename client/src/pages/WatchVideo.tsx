@@ -1,6 +1,7 @@
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import ShareModal from "@/components/ShareModal";
 import { ChannelBadge } from "@/components/ChannelBadge";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -11,6 +12,7 @@ import { Bookmark, Check, Eye, Heart, Loader2, MessageCircle, Share2, Sparkles, 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { toast } from "sonner";
+import { sendVideoAnalytics } from "@/lib/videoAnalytics";
 
 function ActionCelebration({ type }: { type: "like" | "save" }) {
   return <span className="pointer-events-none absolute inset-0 grid place-items-center overflow-visible" aria-hidden="true">
@@ -48,6 +50,7 @@ export default function WatchVideo() {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [likePulse, setLikePulse] = useState(false);
   const [savePulse, setSavePulse] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
   const [commentSort, setCommentSort] = useState<"newest" | "oldest">("newest");
   const createComment = trpc.comments.create.useMutation({ onSuccess: () => { setCommentBody(""); void commentsQuery.refetch(); toast.success("Comment published."); }, onError: error => toast.error(error.message) });
@@ -82,11 +85,14 @@ export default function WatchVideo() {
   const comments = [...(commentsQuery.data ?? [])].sort((a, b) => commentSort === "newest" ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   function saveWatchProgress(seconds: number) {
-    if (!user || !Number.isFinite(seconds) || seconds < 1) return;
+    if (!Number.isFinite(seconds) || seconds < 1) return;
+    const totalDuration = activeVideo.durationSeconds || 0;
+    const completed = totalDuration > 0 && seconds >= totalDuration - 2;
     const now = Date.now();
-    if (now - lastHistoryWrite.current < 15000) return;
+    if (!completed && now - lastHistoryWrite.current < 15000) return;
     lastHistoryWrite.current = now;
-    recordHistory.mutate({ videoId: activeVideo.id, watchedSeconds: Math.floor(seconds) });
+    void sendVideoAnalytics({ videoId: String(activeVideo.id), userId: user?.id ? String(user.id) : undefined, watchDurationSeconds: seconds, totalDurationSeconds: totalDuration, completed });
+    if (user) recordHistory.mutate({ videoId: activeVideo.id, watchedSeconds: Math.floor(seconds) });
   }
 
   function toggleSaved() {
@@ -110,7 +116,7 @@ export default function WatchVideo() {
           {channel && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/8 bg-white/[.025] p-3"><Link href={`/channel/${channel.handle}`} className="flex min-w-0 items-center gap-3 rounded-xl pr-2 transition hover:opacity-90"><span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/25 text-sm font-black text-white">{channel.avatarUrl ? <img src={channel.avatarUrl} alt="" className="size-full object-cover" /> : channel.displayName.slice(0, 1).toUpperCase()}</span><span className="min-w-0"><span className="flex items-center gap-1.5 truncate text-sm font-bold text-white">{channel.displayName}<ChannelBadge subscriberCount={channel.subscriberCount} verified={channel.verificationStatus === "verified"} /></span><span className="block text-xs text-slate-500">@{channel.handle} · {channel.subscriberCount.toLocaleString()} subscribers</span></span></Link><Button type="button" size="sm" onClick={() => user ? subscribeMutation.mutate({ channelId: channel.id }) : startLogin()} disabled={subscribeMutation.isPending} className="ml-auto shrink-0 rounded-full bg-violet-500 px-4 text-white hover:bg-violet-400">{channelQuery.data?.subscribed ? <><Check className="mr-1.5 size-4" />Subscribed</> : <><UserPlus className="mr-1.5 size-4" />Subscribe</>}</Button></div>}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <div className="relative"><Button variant="outline" size="sm" onClick={toggleLike} disabled={likeMutation.isPending} className={engagementQuery.data?.likedByViewer ? "border-red-300/35 bg-red-500/15 text-red-100 hover:bg-red-500/25" : "border-white/10 text-slate-200 hover:bg-white/8"}><Heart className={`mr-1.5 size-4 ${engagementQuery.data?.likedByViewer ? "fill-current" : ""} ${likePulse ? "hktube-like-pop" : ""}`} />{engagementQuery.data?.likeCount ?? 0}</Button>{likePulse && <ActionCelebration type="like" />}</div>
-            <Button variant="outline" size="sm" onClick={() => void shareVideo()} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />{shareLabel}</Button>
+            <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} className="border-white/10 text-slate-200 hover:bg-white/8"><Share2 className="mr-1.5 size-4" />Share</Button>
             <div className="relative"><Button variant="outline" size="sm" onClick={toggleSaved} disabled={saveMutation.isPending} className={isSaved ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100" : "border-white/10 text-slate-200 hover:bg-white/8"}><Bookmark className={`mr-1.5 size-4 ${isSaved ? "fill-current" : ""}`} />{isSaved ? "Saved" : "Watch later"}</Button>{savePulse && <ActionCelebration type="save" />}</div>
           </div>
           <div className="mt-4 max-w-3xl"><p className={`whitespace-pre-wrap text-sm leading-6 text-slate-400 ${descriptionExpanded ? "max-h-72 overflow-y-auto" : "line-clamp-3"}`}>{video.description || "No description was provided for this video."}</p>{(video.description?.length ?? 0) > 260 && <button type="button" onClick={() => setDescriptionExpanded(value => !value)} className="mt-2 text-xs font-bold text-cyan-300 hover:text-cyan-200">{descriptionExpanded ? "Show less" : "Show more"}</button>}</div>
@@ -124,5 +130,6 @@ export default function WatchVideo() {
       </section>
       <aside className="border-t border-white/8 pt-7 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">Related videos</h2>{relatedQuery.isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-xl bg-white/5" />)}</div> : related.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">{related.map(item => <VideoCard key={item.id} video={item} compact />)}</div> : <EmptyVideos title="No related videos" copy="Related videos will appear as authentic content is published." />}</aside>
     </div>
+    <ShareModal videoId={activeVideo.id} videoTitle={activeVideo.title} isOpen={shareOpen} onClose={() => setShareOpen(false)} />
   </HkTubeShell>;
 }
