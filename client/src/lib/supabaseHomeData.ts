@@ -2,11 +2,38 @@ import { rankPublicVideos, setRecommendationFeedback, type RankedVideo } from "@
 import { listPublicSupabaseShorts, listPublicSupabaseVideos, type SupabaseVideo } from "@/lib/supabaseVideos";
 import { supabase } from "@/lib/supabase";
 
+let anonymousHomeCache: { expiresAt: number; value: Awaited<ReturnType<typeof loadAnonymousHome>> } | null = null;
+let anonymousHomeRequest: Promise<Awaited<ReturnType<typeof loadAnonymousHome>>> | null = null;
+
 function asRanked(video: SupabaseVideo, reason: RankedVideo["reason"] = "fresh"): RankedVideo {
   return { ...video, reason, score: 0 };
 }
 
+async function loadAnonymousHome() {
+  const [videos, shorts] = await Promise.all([
+    listPublicSupabaseVideos(24),
+    listPublicSupabaseShorts(12),
+  ]);
+  return {
+    videos: videos.map(video => asRanked(video)),
+    shorts: shorts.map(video => asRanked(video)),
+    following: [],
+    continueWatching: [],
+    historyVideos: [],
+  };
+}
+
 export async function loadSupabaseHomeData(userId?: number | string) {
+  if (userId == null) {
+    const now = Date.now();
+    if (anonymousHomeCache && anonymousHomeCache.expiresAt > now) return anonymousHomeCache.value;
+    anonymousHomeRequest ??= loadAnonymousHome().then(value => {
+      anonymousHomeCache = { value, expiresAt: Date.now() + 15_000 };
+      return value;
+    }).finally(() => { anonymousHomeRequest = null; });
+    return anonymousHomeRequest;
+  }
+
   let ranked: RankedVideo[] = [];
   let rankedShorts: RankedVideo[] = [];
   let rankingError: unknown = null;

@@ -77,7 +77,7 @@ async function candidateRows(shorts = false, limit = 180) {
   if (shorts) q = q.eq("is_short", true);
   // Pull a much wider pool than the visible shelf. Ranking is responsible for choosing
   // the final items, so a single creator cannot dominate simply by uploading frequently.
-  const { data, error } = await q.order("created_at", { ascending: false }).limit(Math.min(600, Math.max(180, limit)));
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(Math.min(120, Math.max(48, limit)));
   if (error) throw error;
   return (data ?? []).map(mapVideo);
 }
@@ -146,7 +146,7 @@ async function loadPersonalSignals(userId: string) {
 
 export async function rankPublicVideos(input: { shorts?: boolean; limit?: number; query?: string; userId?: string | null }): Promise<RankedVideo[]> {
   const limit = Math.min(60, Math.max(1, input.limit ?? 24));
-  const candidates = await candidateRows(Boolean(input.shorts), Math.max(180, limit * 8));
+  const candidates = await candidateRows(Boolean(input.shorts), Math.max(48, limit * 3));
   if (!candidates.length) return [];
   const userId = input.userId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
 
