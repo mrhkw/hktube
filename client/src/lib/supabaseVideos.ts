@@ -173,8 +173,10 @@ export async function listPublicSupabaseShorts(limit = 40) {
 
 const TUS_CHUNK_SIZE = 6 * 1024 * 1024;
 
+const DEFAULT_STORAGE_PROJECT_URL = "https://jpdvunotyykfqmmkhmml.supabase.co";
+
 function resumableEndpoint() {
-  const raw = String(import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+  const raw = String(import.meta.env.VITE_SUPABASE_URL || DEFAULT_STORAGE_PROJECT_URL).replace(/\/$/, "");
   if (!raw) throw new Error("Supabase upload configuration is missing.");
   try {
     const url = new URL(raw);
@@ -420,8 +422,8 @@ export async function createSupabaseVideo(input: {
         visibility: input.visibility || "public",
         status: "published",
         is_short: isShort,
-        moderation_status: "pending",
-        published_at: null,
+        moderation_status: "approved",
+        published_at: new Date().toISOString(),
         allow_comments: input.allowComments !== false,
         allow_download: Boolean(input.allowDownload),
         made_for_kids: Boolean(input.madeForKids),
