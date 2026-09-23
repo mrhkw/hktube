@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { sanitizeInput } from "@shared/security";
 
 export type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -46,7 +47,7 @@ export async function listMySupabaseChannels() {
 
 export async function createSupabaseChannel(input: { handle: string; displayName: string; description: string }) {
   const user = await requireUser();
-  const displayName = input.displayName.trim(), description = input.description.trim();
+  const displayName = sanitizeInput(input.displayName).slice(0, 255), description = sanitizeInput(input.description).slice(0, 5000);
   const normalizedHandle = input.handle.trim().replace(/^@+/, "").toLowerCase();
   if (!displayName) throw new Error("Channel name is required.");
   if (!/^[a-z0-9][a-z0-9_.-]{2,38}$/.test(normalizedHandle)) throw new Error("Handle must be 3-39 characters and use lowercase letters, numbers, dots, hyphens or underscores.");
@@ -64,7 +65,7 @@ export async function createSupabaseChannel(input: { handle: string; displayName
 export async function updateSupabaseChannel(id: string, input: { displayName: string; description: string; avatarUrl?: string | null; bannerUrl?: string | null }) {
   const user = await requireUser();
   const { data, error } = await supabase.from("channels").update({
-    name: input.displayName.trim(), description: input.description.trim() || null,
+    name: sanitizeInput(input.displayName).slice(0, 255), description: sanitizeInput(input.description).slice(0, 5000) || null,
     avatar_url: input.avatarUrl, banner_url: input.bannerUrl, updated_at: new Date().toISOString(),
   }).eq("id", id).eq("owner_id", user.id).select(CHANNEL_SELECT).single();
   if (error) throw new Error(error.message);

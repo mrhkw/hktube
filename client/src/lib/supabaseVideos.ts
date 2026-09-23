@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { sanitizeInput } from "@shared/security";
 
 export type SupabaseVideo = {
   id: string;
@@ -214,7 +215,8 @@ export async function createSupabaseVideo(input: {
   }
 
   const isShort = Boolean(input.isShort);
-  const cleanTitle = input.title.trim();
+  const cleanTitle = sanitizeInput(input.title).slice(0, 180);
+  const cleanDescription = sanitizeInput(input.description).slice(0, 5000);
   if (!cleanTitle) throw new Error("Video title is required.");
   if (cleanTitle.length > 180) throw new Error("Video title must be 180 characters or fewer.");
   if (isShort) {
@@ -286,7 +288,7 @@ export async function createSupabaseVideo(input: {
       .insert({
         user_id: user.id,
         title: cleanTitle,
-        description: input.description.trim() || null,
+        description: cleanDescription || null,
         video_url: videoPublicUrl,
         thumbnail_url: thumbnailPublicUrl,
         duration,

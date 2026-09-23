@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { sanitizeInput } from "@shared/security";
 
 export type EngagementState = {
   liked: boolean;
@@ -174,8 +175,8 @@ export async function reportVideo(videoId: string, reason: string, details?: str
   const { error } = await supabase.from("reports").insert({
     reporter_id: user.id,
     video_id: videoId,
-    reason: reason.trim().slice(0, 120),
-    details: details?.trim().slice(0, 2000) || null,
+    reason: sanitizeInput(reason).slice(0, 120),
+    details: details ? sanitizeInput(details).slice(0, 2000) || null : null,
     status: "open",
   });
   if (error) throw new Error(error.message);
@@ -196,7 +197,7 @@ export async function listVideoComments(videoId: string) {
 
 export async function addVideoComment(videoId: string, body: string, parentId?: string | null) {
   await requireUser();
-  const normalized = body.trim().slice(0, 2000);
+  const normalized = sanitizeInput(body).slice(0, 2000);
   if (!normalized) throw new Error("Comment cannot be empty.");
 
   const { data, error } = await supabase.rpc("add_video_comment", {

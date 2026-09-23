@@ -6,6 +6,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -106,15 +107,8 @@ export function createApiApp(): Express {
   app.use((req, res, next) => {
     res.set({
       "X-Request-Id": randomUUID(),
-      "X-Content-Type-Options": "nosniff",
-      "X-Frame-Options": "SAMEORIGIN",
-      "Referrer-Policy": "strict-origin-when-cross-origin",
-      "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-      "Cross-Origin-Resource-Policy": "same-site",
-      "Origin-Agent-Cluster": "?1",
-      "X-Permitted-Cross-Domain-Policies": "none",
-      "Content-Security-Policy": "default-src 'self'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co https://api.manus.im; object-src 'none'",
+      ...SECURITY_HEADERS,
+      "Content-Security-Policy": CONTENT_SECURITY_POLICY,
     });
     if (req.path.startsWith("/api/")) res.set("Cache-Control", "no-store");
     if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
