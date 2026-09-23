@@ -449,7 +449,6 @@ export const ClipsView: React.FC = () => {
 
                   {/* Like Button */}
                   <button
-                    type="button"
                     onClick={() => toggleLike(clip.id, clip.likes)}
                     className="flex flex-col items-center gap-1 group"
                   >
@@ -471,7 +470,6 @@ export const ClipsView: React.FC = () => {
 
                   {/* Comment Button */}
                   <button
-                    type="button"
                     onClick={() => setActiveSheet("comment")}
                     className="flex flex-col items-center gap-1 group"
                   >
@@ -487,7 +485,6 @@ export const ClipsView: React.FC = () => {
 
                   {/* Bookmark Button */}
                   <button
-                    type="button"
                     onClick={() => toggleFavorite(clip.id, clip.favorites)}
                     className="flex flex-col items-center gap-1 group"
                   >
@@ -509,7 +506,6 @@ export const ClipsView: React.FC = () => {
 
                   {/* Share Button */}
                   <button
-                    type="button"
                     onClick={() => setActiveSheet("share")}
                     className="flex flex-col items-center gap-1 group"
                   >
@@ -525,7 +521,6 @@ export const ClipsView: React.FC = () => {
 
                   {/* Report Flag */}
                   <button
-                    type="button"
                     onClick={() => setActiveSheet("report")}
                     className="flex flex-col items-center gap-1 group"
                   >
@@ -571,7 +566,6 @@ export const ClipsView: React.FC = () => {
         <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm">
           <span>Comments ({comments.length})</span>
           <button
-            type="button"
             onClick={() => setActiveSheet(null)}
             className="p-1 text-gray-400 hover:text-white"
           >
@@ -607,7 +601,6 @@ export const ClipsView: React.FC = () => {
             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500"
           />
           <button
-            type="button"
             onClick={handleAddComment}
             className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2.5 rounded-full text-white text-xs font-bold"
           >
@@ -625,7 +618,6 @@ export const ClipsView: React.FC = () => {
         <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm">
           <span>Share Video</span>
           <button
-            type="button"
             onClick={() => setActiveSheet(null)}
             className="p-1 text-gray-400 hover:text-white"
           >
@@ -635,7 +627,6 @@ export const ClipsView: React.FC = () => {
 
         <div className="grid grid-cols-4 gap-4 mt-6 text-center text-xs">
           <button
-            type="button"
             onClick={() => {
               showToast("Link Copied!");
               setActiveSheet(null);
@@ -648,7 +639,6 @@ export const ClipsView: React.FC = () => {
             Copy Link
           </button>
           <button
-            type="button"
             onClick={() => {
               showToast("Opening WhatsApp...");
               setActiveSheet(null);
@@ -661,7 +651,6 @@ export const ClipsView: React.FC = () => {
             WhatsApp
           </button>
           <button
-            type="button"
             onClick={() => {
               showToast("Reposted!");
               setActiveSheet(null);
@@ -674,7 +663,6 @@ export const ClipsView: React.FC = () => {
             Repost
           </button>
           <button
-            type="button"
             onClick={() => {
               showToast("Video Saved!");
               setActiveSheet(null);
@@ -698,7 +686,6 @@ export const ClipsView: React.FC = () => {
         <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm text-red-400">
           <span>🚩 Report Content</span>
           <button
-            type="button"
             onClick={() => setActiveSheet(null)}
             className="p-1 text-gray-400 hover:text-white"
           >
@@ -708,7 +695,6 @@ export const ClipsView: React.FC = () => {
 
         <div className="flex flex-col gap-2.5 mt-4">
           <button
-            type="button"
             onClick={() => {
               showToast("Report Submitted");
               setActiveSheet(null);
@@ -718,7 +704,6 @@ export const ClipsView: React.FC = () => {
             🚫 Spam or Misleading
           </button>
           <button
-            type="button"
             onClick={() => {
               showToast("Report Submitted");
               setActiveSheet(null);
@@ -728,7 +713,6 @@ export const ClipsView: React.FC = () => {
             ⚠️ Inappropriate Content
           </button>
           <button
-            type="button"
             onClick={() => {
               showToast("Report Submitted");
               setActiveSheet(null);
