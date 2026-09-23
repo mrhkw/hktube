@@ -139,8 +139,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
   const [thumbnailPreview, setThumbnailPreview] = useState("");
   const [videoPreview, setVideoPreview] = useState("");
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [isShort, setIsShort] = useState(false);\n  const [uploadMode, setUploadMode] = useState<"video" | "short" | "auto">("auto");\n  const [thumbnailPosition, setThumbnailPosition] = useState(0.12);
-  const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
+  const [isShort, setIsShort] = useState(false);\n  const [uploadMode, setUploadMode] = useState<"video" | "short" | "auto">("auto");\n  const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
   const [madeForKids, setMadeForKids] = useState(false);
   const [allowComments, setAllowComments] = useState(true);
   const [allowDownload, setAllowDownload] = useState(false);
