@@ -29,7 +29,7 @@ function publicUrl(bucket: string, path: string | null): string | null {
 }
 
 export const VIDEO_SELECT =
-  "id,user_id,title,description,video_url,thumbnail_url,duration,views_count,likes_count,created_at,status,visibility,is_short";
+  "id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,likes_count,created_at,updated_at,status,visibility,is_short,tags,category,language,moderation_status,published_at,allow_comments,allow_download,made_for_kids";
 
 function mapVideo(row: Record<string, unknown>): SupabaseVideo {
   return {
@@ -148,6 +148,7 @@ export async function listPublicSupabaseVideos(limit = 20) {
     .select(VIDEO_SELECT)
     .eq("visibility", "public")
     .eq("status", "published")
+    .eq("moderation_status", "approved")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -161,12 +162,134 @@ export async function listPublicSupabaseShorts(limit = 40) {
     .select(VIDEO_SELECT)
     .eq("visibility", "public")
     .eq("status", "published")
+    .eq("moderation_status", "approved")
     .eq("is_short", true)
     .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapVideo(row as Record<string, unknown>));
+}
+
+const TUS_CHUNK_SIZE = 6 * 1024 * 1024;
+
+function resumableEndpoint() {
+  const raw = String(import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+  if (!raw) throw new Error("Supabase upload configuration is missing.");
+  try {
+    const url = new URL(raw);
+    if (url.hostname.endsWith(".storage.supabase.co")) {
+      return `${url.origin}/storage/v1/upload/resumable`;
+    }
+    return `https://${url.hostname.replace(/\.supabase\.co$/i, ".storage.supabase.co")}/storage/v1/upload/resumable`;
+  } catch {
+    throw new Error("Supabase upload configuration is invalid.");
+  }
+}
+
+function uploadFingerprint(file: File) {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+async function getAccessToken() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Your session expired. Please sign in again.");
+  return session.access_token;
+}
+
+async function tusCreate(bucket: string, path: string, file: File, accessToken: string) {
+  const key = `hktube-upload:${uploadFingerprint(file)}`;
+  const stored = localStorage.getItem(key);
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    "x-upsert": "false",
+    "Tus-Resumable": "1.0.0",
+    "Upload-Length": String(file.size),
+    "Upload-Metadata": [
+      ["bucketName", bucket],
+      ["objectName", path],
+      ["contentType", file.type || "video/mp4"],
+      ["cacheControl", "31536000"],
+    ].map(([k, v]) => `${k} ${btoa(unescape(encodeURIComponent(v))) }`.trim()).join(","),
+  } as Record<string, string>;
+
+  if (stored) {
+    try {
+      const saved = JSON.parse(stored) as { url?: string; path?: string };
+      if (saved.url && saved.path === path) {
+        const head = await fetch(saved.url, {
+          method: "HEAD",
+          headers: { Authorization: `Bearer ${accessToken}`, "Tus-Resumable": "1.0.0" },
+        });
+        if (head.ok) return { url: saved.url, offset: Number(head.headers.get("Upload-Offset") || 0) };
+      }
+    } catch {}
+    localStorage.removeItem(key);
+  }
+
+  const response = await fetch(resumableEndpoint(), { method: "POST", headers });
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(message || `Resumable upload could not start (HTTP ${response.status}).`);
+  }
+  const location = response.headers.get("Location");
+  if (!location) throw new Error("Upload server did not return a resumable upload URL.");
+  const url = new URL(location, resumableEndpoint()).toString();
+  localStorage.setItem(key, JSON.stringify({ url, path }));
+  return { url, offset: 0 };
+}
+
+async function resumableUpload(
+  bucket: string,
+  path: string,
+  file: File,
+  onProgress?: (value: number) => void,
+  signal?: AbortSignal,
+) {
+  const accessToken = await getAccessToken();
+  const { url, offset: initialOffset } = await tusCreate(bucket, path, file, accessToken);
+  let offset = Math.min(Math.max(initialOffset, 0), file.size);
+  onProgress?.(offset / Math.max(file.size, 1));
+
+  while (offset < file.size) {
+    if (signal?.aborted) throw new DOMException("Upload cancelled", "AbortError");
+    const chunk = file.slice(offset, Math.min(offset + TUS_CHUNK_SIZE, file.size));
+    let response: Response | null = null;
+    let lastError: unknown = null;
+
+    for (const delay of [0, 1500, 4000, 9000]) {
+      if (delay) await new Promise(resolve => window.setTimeout(resolve, delay));
+      if (signal?.aborted) throw new DOMException("Upload cancelled", "AbortError");
+      try {
+        response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Tus-Resumable": "1.0.0",
+            "Upload-Offset": String(offset),
+            "Content-Type": "application/offset+octet-stream",
+          },
+          body: chunk,
+          signal,
+        });
+        if (response.ok) break;
+        lastError = new Error(`Upload chunk failed (HTTP ${response.status}).`);
+      } catch (error) {
+        lastError = error;
+      }
+      response = null;
+    }
+
+    if (!response?.ok) throw lastError instanceof Error ? lastError : new Error("Upload interrupted.");
+    const nextOffset = Number(response.headers.get("Upload-Offset") || 0);
+    if (!Number.isFinite(nextOffset) || nextOffset <= offset) throw new Error("Upload server returned an invalid offset.");
+    offset = Math.min(nextOffset, file.size);
+    const key = `hktube-upload:${uploadFingerprint(file)}`;
+    localStorage.setItem(key, JSON.stringify({ url, path }));
+    onProgress?.(offset / Math.max(file.size, 1));
+  }
+
+  localStorage.removeItem(`hktube-upload:${uploadFingerprint(file)}`);
 }
 
 export async function createSupabaseVideo(input: {
@@ -246,15 +369,12 @@ export async function createSupabaseVideo(input: {
 
   input.onProgress?.(10);
 
-  const { error: uploadError } = await supabase.storage
-    .from("videos")
-    .upload(videoPath, input.file, {
-      contentType,
-      upsert: false,
-      cacheControl: "31536000",
-    });
-
-  if (uploadError) throw new Error(uploadError.message);
+  await resumableUpload(
+    "videos",
+    videoPath,
+    input.file,
+    fraction => input.onProgress?.(10 + Math.round(fraction * 55)),
+  );
   input.onProgress?.(65);
 
   let thumbnailPath: string | null = null;
@@ -278,25 +398,30 @@ export async function createSupabaseVideo(input: {
 
     input.onProgress?.(82);
 
-    const videoPublicUrl = supabase.storage.from("videos").getPublicUrl(videoPath).data.publicUrl;
-    const thumbnailPublicUrl = thumbnailPath
-      ? supabase.storage.from("thumbnails").getPublicUrl(thumbnailPath).data.publicUrl
-      : null;
-
     const { data, error } = await supabase
       .from("videos")
       .insert({
-        user_id: user.id,
+        creator_id: user.id,
+        channel_id: input.channelId,
         title: cleanTitle,
         description: cleanDescription || null,
-        video_url: videoPublicUrl,
-        thumbnail_url: thumbnailPublicUrl,
-        duration,
-        views_count: 0,
+        video_path: videoPath,
+        thumbnail_path: thumbnailPath,
+        duration_seconds: duration,
+        views: 0,
         likes_count: 0,
+        comments_count: 0,
+        tags: (input.tags ?? []).map(tag => sanitizeInput(tag).slice(0, 50)).filter(Boolean).slice(0, 30),
+        category: input.category ? sanitizeInput(input.category).slice(0, 80) : null,
+        language: input.language ? sanitizeInput(input.language).slice(0, 32) : null,
         visibility: input.visibility || "public",
         status: "published",
         is_short: isShort,
+        moderation_status: "pending",
+        published_at: null,
+        allow_comments: input.allowComments !== false,
+        allow_download: false,
+        made_for_kids: Boolean(input.madeForKids),
       })
       .select(VIDEO_SELECT)
       .single();
