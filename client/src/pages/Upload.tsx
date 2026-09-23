@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { ArrowLeft, CheckCircle2, FileVideo2, ImagePlus, Loader2, PauseCircle, PlayCircle, ShieldCheck, Smartphone, UploadCloud, WandSparkles, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, FileVideo2, ImagePlus, Loader2, PauseCircle, PlayCircle, ShieldCheck, Smartphone, Square, UploadCloud, WandSparkles, X } from "lucide-react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -123,7 +123,7 @@ async function generateThumbnailAt(file: File, info: VideoInfo, position: number
   });
 }
 
-async function generateThumbnail(file: File, info: VideoInfo): Promise<File | null> { return generateThumbnailAt(file, info, 0.12); }\nfunction titleFromFilename(name: string) { return name.replace(/\\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\\s+/g, " ").trim().slice(0, 100); }\nfunction suggestedTags(title: string, category: string) { const words = title.toLowerCase().replace(/[^a-z0-9\\s]/g, " ").split(/\\s+/).filter(word => word.length >= 3); return Array.from(new Set([category.trim().toLowerCase(), ...words].filter(Boolean))).slice(0, 10).join(", "); }\nexport default function UploadPage() {
+async function generateThumbnail(file: File, info: VideoInfo): Promise<File | null> { return generateThumbnailAt(file, info, 0.12); }\nfunction titleFromFilename(name: string) { return name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100); }\nfunction suggestedTags(title: string, category: string) { const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(word => word.length >= 3); return Array.from(new Set([category.trim().toLowerCase(), ...words].filter(Boolean))).slice(0, 10).join(", "); }\nexport default function UploadPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [channels, setChannels] = useState<SupabaseChannel[]>([]);
   const [channelsLoading, setChannelsLoading] = useState(true);
@@ -151,7 +151,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
   const [notice, setNotice] = useState<Notice>(null);
   const [autoThumbnail, setAutoThumbnail] = useState(false);
   const startedAtRef = useRef<number | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const abortRef = useRef<AbortController | null>(null);\n  const recorderRef = useRef<MediaRecorder | null>(null);\n  const recordingStreamRef = useRef<MediaStream | null>(null);\n  const recordingVideoRef = useRef<HTMLVideoElement | null>(null);\n  const recordingChunksRef = useRef<Blob[]>([]);\n  const [recording, setRecording] = useState(false);\n  const [recordingSeconds, setRecordingSeconds] = useState(0);\n  const recordingTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -224,7 +224,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
       const inferredShort = info.height >= info.width && info.duration <= 180;
       setFile(next);
       setVideoInfo(info);
-      setIsShort(forcedShort || inferredShort);
+      setIsShort(chosenShort);
       setAutoThumbnail(false);
       const generated = await generateThumbnail(next, info);
       if (generated) {
@@ -238,6 +238,62 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
       setVideoInfo(null);
       setNotice({ type: "error", text: friendlyUploadError(error) });
     }
+  }
+
+  async function startRecording() {
+    if (recording || uploading) return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setNotice({ type: "error", text: "Camera recording is not supported by this browser. Use Choose video instead." });
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: true });
+      recordingStreamRef.current = stream;
+      if (recordingVideoRef.current) {
+        recordingVideoRef.current.srcObject = stream;
+        await recordingVideoRef.current.play().catch(() => undefined);
+      }
+      const preferred = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find(type => MediaRecorder.isTypeSupported(type)) || "";
+      const recorder = new MediaRecorder(stream, preferred ? { mimeType: preferred } : undefined);
+      recordingChunksRef.current = [];
+      recorder.ondataavailable = event => { if (event.data.size) recordingChunksRef.current.push(event.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || "video/webm" });
+        const recordedFile = new File([blob], `HkTube-recording-${Date.now()}.webm`, { type: blob.type || "video/webm", lastModified: Date.now() });
+        stream.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+        if (recordingVideoRef.current) recordingVideoRef.current.srcObject = null;
+        setRecording(false);
+        if (recordingTimerRef.current) window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+        setRecordingSeconds(0);
+        void chooseVideo(recordedFile);
+      };
+      recorder.onerror = () => {
+        stream.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+        setRecording(false);
+        setNotice({ type: "error", text: "Camera recording failed. Your browser did not provide a usable recording." });
+      };
+      recorder.start(1000);
+      recorderRef.current = recorder;
+      setRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = window.setInterval(() => setRecordingSeconds(value => value + 1), 1000);
+      setNotice({ type: "info", text: "Recording started. Keep the camera steady. Stop recording when your video is ready." });
+    } catch {
+      setNotice({ type: "error", text: "Camera or microphone permission was denied. Allow access in the browser or use Choose video." });
+    }
+  }
+
+  function stopRecording() {
+    if (!recorderRef.current || recorderRef.current.state === "inactive") return;
+    recorderRef.current.stop();
+    recorderRef.current = null;
+  }
+
+  function formatRecordingTime(seconds: number) {
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   }
 
   function chooseThumbnail(next: File | undefined) {
@@ -302,7 +358,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
         },
       });
       setProgress(100);
-      setNotice({ type: "success", text: visibility === "public" ? "Upload complete. HkTube is processing moderation before public discovery." : "Upload complete and saved." });
+      setNotice({ type: "success", text: visibility === "public" ? "Upload complete. Your video is published and linked to your channel." : "Upload complete and saved." });
       localStorage.removeItem(DRAFT_KEY);
       setStep("publish");
       setTitle(""); setDescription(""); setCategory(""); setTags(""); setFile(null); setThumbnail(null); setVideoInfo(null);
@@ -337,7 +393,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
       {step === "publish" && notice?.type === "success" ? <section className="mx-auto max-w-2xl rounded-3xl border border-emerald-300/20 bg-emerald-500/[.06] p-8 text-center">
         <CheckCircle2 className="mx-auto size-14 text-emerald-300" />
         <h1 className="mt-5 text-2xl font-black text-white">Upload received</h1>
-        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">The media is stored, the database record is linked to your channel, and moderation can now process it before public discovery.</p>
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">The media is stored in HkTube Storage, the video record is linked to your channel, and the published video is ready for viewers.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3"><Link href="/studio" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black">Open Creator Studio</Link><Link href="/clips" className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-white">Open Clips</Link><Link href="/" className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-white">Home</Link></div>
       </section> : <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
@@ -349,7 +405,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
               <UploadCloud className="mx-auto size-12 text-violet-300" />
               <h2 className="mt-4 text-lg font-black text-white">{file ? file.name : "Drop a video here or choose from your device"}</h2>
               <p className="mt-2 text-xs text-slate-500">MP4/H.264 or WebM · up to 900 MB · resumable 6 MB chunks</p>
-              <div className="mt-5 flex flex-wrap justify-center gap-3"><label htmlFor="video-file" className="inline-flex min-h-11 cursor-pointer items-center rounded-full bg-violet-500 px-5 text-sm font-bold text-white hover:bg-violet-400">Choose video</label><label htmlFor="video-camera" className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-white/12 px-5 text-sm font-bold text-white hover:bg-white/[.06]">Record / camera</label></div>
+              <div className="mt-5 flex flex-wrap justify-center gap-3"><label htmlFor="video-file" className="inline-flex min-h-11 cursor-pointer items-center rounded-full bg-violet-500 px-5 text-sm font-bold text-white hover:bg-violet-400">Choose video</label><button type="button" onClick={() => void startRecording()} disabled={recording || uploading} className="inline-flex min-h-11 items-center rounded-full border border-white/12 px-5 text-sm font-bold text-white hover:bg-white/[.06]"><Circle className="mr-2 size-4 text-rose-300" />Record in HkTube</button><label htmlFor="video-camera" className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-white/12 px-5 text-sm font-bold text-white hover:bg-white/[.06]">Camera file</label></div>
             </div>
             {file && videoInfo && <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr]"><div className="aspect-video overflow-hidden rounded-2xl bg-black">{videoPreview && <video src={videoPreview} muted controls playsInline className="size-full object-contain" />}</div><div className="rounded-2xl border border-white/10 bg-black/15 p-4"><div className="flex flex-wrap gap-2"><span className="rounded-full bg-violet-500/15 px-3 py-1 text-xs font-bold text-violet-200">{modeLabel}</span><span className="rounded-full bg-white/[.06] px-3 py-1 text-xs font-semibold text-slate-300">{videoInfo.width}×{videoInfo.height}</span><span className="rounded-full bg-white/[.06] px-3 py-1 text-xs font-semibold text-slate-300">{formatDuration(videoInfo.duration)}</span><span className="rounded-full bg-white/[.06] px-3 py-1 text-xs font-semibold text-slate-300">{formatBytes(file.size)}</span></div><p className="mt-3 text-xs leading-5 text-slate-500">The browser successfully read the video dimensions and duration before upload.</p><button type="button" onClick={() => { setFile(null); setVideoInfo(null); setThumbnail(null); }} className="mt-4 inline-flex items-center text-xs font-bold text-slate-400 hover:text-white"><X className="mr-1 size-3.5" />Replace video</button></div></div>}
             {file && <button type="button" onClick={() => setStep("details")} className="mt-5 inline-flex min-h-11 rounded-full bg-white px-6 text-sm font-bold text-black">Continue to details</button>}
@@ -358,7 +414,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
             <div className="mt-6 space-y-5">
               <label className="block"><span className="text-sm font-bold text-white">Title <b className="text-rose-300">*</b></span><div className="mt-2 flex items-center gap-2"><input value={title} onChange={event => setTitle(event.target.value)} maxLength={100} required className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder={isShort ? "Write a strong Clip title" : "Give your video a clear title"} /><span className="text-[11px] text-slate-600">{title.length}/100</span></div><div className="mt-2 flex flex-wrap gap-2"><button type="button" onClick={() => file && setTitle(titleFromFilename(file.name))} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-300">Use filename as title</button><button type="button" onClick={() => setTags(suggestedTags(title || (file ? titleFromFilename(file.name) : ""), category))} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-300">Auto-generate tags</button></div></label>
               <label className="block"><span className="text-sm font-bold text-white">Description</span><textarea value={description} onChange={event => setDescription(event.target.value)} maxLength={5000} rows={7} className="mt-2 w-full resize-y rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder="Explain what viewers will get from this video." /><span className="mt-1 block text-right text-[11px] text-slate-600">{description.length}/5000</span></label>
-              <div className="grid gap-4 sm:grid-cols-2"><label><span className="text-sm font-bold text-white">Channel</span><select value={channelId} onChange={event => setChannelId(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none">{channels.map(channel => <option key={channel.id} value={channel.id}>{channel.displayName} (@{channel.handle})</option>)}</select></label><label><span className="text-sm font-bold text-white">Visibility</span><select value={visibility} onChange={event => setVisibility(event.target.value as typeof visibility)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none"><option value="public">Public · moderation first</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select></label><label><span className="text-sm font-bold text-white">Category</span><select value={category} onChange={event => setCategory(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none"><option value="">Select category</option><option>Entertainment</option><option>Gaming</option><option>Music</option><option>Education</option><option>Technology</option><option>Sports</option><option>News</option><option>Comedy</option><option>How-to & Style</option><option>Travel</option><option>Science</option><option>People & Blogs</option><option>Film & Animation</option><option>Other</option></select></label><label><span className="text-sm font-bold text-white">Language</span><select value={language} onChange={event => setLanguage(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none"><option>English</option><option>Urdu</option><option>Hindi</option><option>Arabic</option><option>Punjabi</option><option>Other</option></select></label></div>
+              <div className="grid gap-4 sm:grid-cols-2"><label><span className="text-sm font-bold text-white">Channel</span><select value={channelId} onChange={event => setChannelId(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none">{channels.map(channel => <option key={channel.id} value={channel.id}>{channel.displayName} (@{channel.handle})</option>)}</select></label><label><span className="text-sm font-bold text-white">Visibility</span><select value={visibility} onChange={event => setVisibility(event.target.value as typeof visibility)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none"><option value="public">Public · publish now</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select></label><label><span className="text-sm font-bold text-white">Category</span><select value={category} onChange={event => setCategory(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none"><option value="">Select category</option><option>Entertainment</option><option>Gaming</option><option>Music</option><option>Education</option><option>Technology</option><option>Sports</option><option>News</option><option>Comedy</option><option>How-to & Style</option><option>Travel</option><option>Science</option><option>People & Blogs</option><option>Film & Animation</option><option>Other</option></select></label><label><span className="text-sm font-bold text-white">Language</span><select value={language} onChange={event => setLanguage(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-4 py-3 text-sm text-white outline-none"><option>English</option><option>Urdu</option><option>Hindi</option><option>Arabic</option><option>Punjabi</option><option>Other</option></select></label></div>
               <label className="block"><span className="text-sm font-bold text-white">Tags</span><input value={tags} onChange={event => setTags(event.target.value)} maxLength={500} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" placeholder="gaming, tutorial, tech" /></label>
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4"><div className="flex items-center gap-3"><ImagePlus className="size-5 text-violet-300" /><div className="min-w-0 flex-1"><p className="text-sm font-bold text-white">Thumbnail</p><p className="mt-0.5 text-xs text-slate-500">{autoThumbnail ? "Auto-generated from the video. Replace it if you want a custom frame." : "Use a custom thumbnail or keep the generated one."}</p></div><label className="cursor-pointer rounded-full border border-white/12 px-3 py-2 text-xs font-bold text-white">Change<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={event => chooseThumbnail(event.target.files?.[0])} /></label></div>{thumbnailPreview && <img src={thumbnailPreview} alt="Video thumbnail preview" className="mt-4 aspect-video w-full max-w-sm rounded-xl object-cover" />}</div>
               <div className="grid gap-3 sm:grid-cols-2"><Toggle checked={allowComments} onChange={setAllowComments} title="Allow comments" text="Let viewers comment on this video." /><Toggle checked={madeForKids} onChange={setMadeForKids} title="Made for kids" text="Mark this only when the content is specifically directed to children." /><Toggle checked={allowDownload} onChange={setAllowDownload} title="Allow downloads" text="Let eligible viewers save an original copy when supported." /><div className="rounded-2xl border border-sky-300/10 bg-sky-500/[.05] p-4"><p className="text-xs font-bold text-sky-200">Pre-upload checks</p><p className="mt-1 text-xs leading-5 text-slate-500">Format, size, dimensions and readable video track are checked locally. Copyright review is handled separately by platform moderation.</p></div></div>
@@ -372,7 +428,7 @@ async function generateThumbnail(file: File, info: VideoInfo): Promise<File | nu
             <div className={`mt-4 overflow-hidden rounded-2xl bg-black ${isShort ? "aspect-[9/16] max-h-[520px]" : "aspect-video"}`}>{videoPreview ? <video src={videoPreview} poster={thumbnailPreview || undefined} controls muted playsInline className="size-full object-contain" /> : <div className="grid size-full min-h-44 place-items-center text-center text-xs text-slate-600"><PlayCircle className="mb-2 size-8" />Your video preview appears here</div>}</div>
             <div className="mt-4"><p className="line-clamp-2 text-sm font-black text-white">{title || "Your video title"}</p><p className="mt-1 text-xs text-slate-500">{selectedChannel ? `@${selectedChannel.handle}` : "@yourchannel"} · {videoInfo ? formatDuration(videoInfo.duration) : "0:00"}</p></div>
           </section>
-          <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-emerald-300" /><p className="text-sm font-bold text-white">Upload reliability</p></div><ul className="mt-3 space-y-2 text-xs leading-5 text-slate-500"><li>• Large files use resumable 6 MB chunks.</li><li>• Interrupted chunks retry automatically.</li><li>• The same file can continue from a saved transfer.</li><li>• Media is linked to your selected channel.</li><li>• Public discovery waits for moderation approval.</li></ul></section>
+          <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-emerald-300" /><p className="text-sm font-bold text-white">Upload reliability</p></div><ul className="mt-3 space-y-2 text-xs leading-5 text-slate-500"><li>• Large files use resumable 6 MB chunks.</li><li>• Interrupted chunks retry automatically.</li><li>• The same file can continue from a saved transfer.</li><li>• Media is linked to your selected channel.</li><li>• Public videos are published after the upload transaction succeeds.</li></ul></section>
         </aside>
       </form>}
     </main>
