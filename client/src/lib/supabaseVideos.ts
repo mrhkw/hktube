@@ -73,8 +73,9 @@ async function readDuration(file: File): Promise<number> {
     const video = document.createElement("video");
     const url = URL.createObjectURL(file);
     video.preload = "metadata";
+    const timeout = window.setTimeout(() => { cleanup(); resolve(0); }, 12_000);
 
-    const cleanup = () => URL.revokeObjectURL(url);
+    const cleanup = () => { window.clearTimeout(timeout); URL.revokeObjectURL(url); };
     video.onloadedmetadata = () => {
       const value = Number.isFinite(video.duration)
         ? Math.max(0, Math.floor(video.duration))
@@ -97,8 +98,9 @@ async function readDimensions(
     const video = document.createElement("video");
     const url = URL.createObjectURL(file);
     video.preload = "metadata";
+    const timeout = window.setTimeout(() => { cleanup(); resolve(null); }, 12_000);
 
-    const cleanup = () => URL.revokeObjectURL(url);
+    const cleanup = () => { window.clearTimeout(timeout); URL.revokeObjectURL(url); };
     video.onloadedmetadata = () => {
       const result =
         video.videoWidth > 0 && video.videoHeight > 0
@@ -180,14 +182,15 @@ export async function createSupabaseVideo(input: {
   if (input.file.size <= 0) {
     throw new Error("The selected video is empty.");
   }
-  if (input.file.type !== "video/mp4") {
+  const contentType = input.file.type.toLowerCase().split(";", 1)[0];
+  if (contentType !== "video/mp4" && contentType !== "video/webm") {
     throw new Error(
-      "For reliable HkTube playback, please export the video as MP4/H.264 (video/mp4).",
+      "For reliable HkTube playback, please choose an MP4/H.264 or WebM video.",
     );
   }
 
   const probe = document.createElement("video");
-  if (!probe.canPlayType("video/mp4")) {
+  if (!probe.canPlayType(contentType)) {
     throw new Error(
       "This browser cannot play MP4 video. Please use a modern browser.",
     );
@@ -201,6 +204,9 @@ export async function createSupabaseVideo(input: {
   }
 
   const isShort = Boolean(input.isShort);
+  const cleanTitle = input.title.trim();
+  if (!cleanTitle) throw new Error("Video title is required.");
+  if (cleanTitle.length > 180) throw new Error("Video title must be 180 characters or fewer.");
   if (isShort) {
     const ratio = dimensions.width / Math.max(dimensions.height, 1);
     if (ratio > 0.8) {
@@ -220,7 +226,8 @@ export async function createSupabaseVideo(input: {
     throw new Error("Thumbnail must be 12 MB or smaller.");
   }
 
-  const videoPath = `${user.id}/${crypto.randomUUID()}.mp4`;
+  const extension = contentType === "video/webm" ? "webm" : "mp4";
+  const videoPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
   const suppliedDuration = Math.floor(Number(input.durationSeconds ?? 0));
   const duration =
     suppliedDuration > 0 ? suppliedDuration : await readDuration(input.file);
@@ -230,7 +237,7 @@ export async function createSupabaseVideo(input: {
   const { error: uploadError } = await supabase.storage
     .from("videos")
     .upload(videoPath, input.file, {
-      contentType: "video/mp4",
+      contentType,
       upsert: false,
       cacheControl: "31536000",
     });
@@ -273,7 +280,7 @@ export async function createSupabaseVideo(input: {
       .insert({
         creator_id: user.id,
         channel_id: input.channelId,
-        title: input.title.trim(),
+        title: cleanTitle,
         description: input.description.trim() || null,
         tags,
         category: input.category?.trim() || null,

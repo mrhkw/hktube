@@ -51,8 +51,9 @@ installRuntimeRecovery();
 // Warm the first route immediately after the browser gets a chance to paint.
 // This keeps Home code-split while removing the lazy-chunk wait from the critical interaction path.
 const warmHome = () => { void import("./pages/SupabaseHome").catch(() => undefined); };
-if ("requestIdleCallback" in window) {
-  window.requestIdleCallback(warmHome, { timeout: 120 });
+const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number };
+if (typeof idleWindow.requestIdleCallback === "function") {
+  idleWindow.requestIdleCallback(warmHome, { timeout: 120 });
 } else {
   window.setTimeout(warmHome, 60);
 }
