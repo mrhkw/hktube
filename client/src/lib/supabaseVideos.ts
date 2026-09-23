@@ -448,9 +448,12 @@ export async function createSupabaseVideo(input: {
     input.onProgress?.(100);
     return mapVideo(data as Record<string, unknown>);
   } catch (error) {
-    await supabase.storage.from("videos").remove([videoPath]).catch(() => undefined);
-    if (thumbnailPath) {
-      await supabase.storage.from("thumbnails").remove([thumbnailPath]).catch(() => undefined);
+    const cancelled = error instanceof DOMException && error.name === "AbortError";
+    if (!cancelled) {
+      await supabase.storage.from("videos").remove([videoPath]).catch(() => undefined);
+      if (thumbnailPath) {
+        await supabase.storage.from("thumbnails").remove([thumbnailPath]).catch(() => undefined);
+      }
     }
     throw error;
   }
