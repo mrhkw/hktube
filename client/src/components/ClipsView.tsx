@@ -1,80 +1,414 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Bookmark, ChevronDown, Flag, Heart, MessageCircle, MoreVertical, Play, Share2, UserRound, Volume2, VolumeX } from "lucide-react";
-import { Link } from "wouter";
-import { startLogin } from "@/const";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
-import { recordDiscoveryEvent, setRecommendationFeedback } from "@/lib/supabaseDiscovery";
-import { recordVideoView, toggleChannelSubscription, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
-import { toast } from "sonner";
+import React, { useState, useRef, useEffect } from 'react';
 
-type ClipItem={id:string;title:string;description:string|null;video_path:string|null;thumbnail_path:string|null;views:number;likes_count:number;channel_id:string|null;tags:string[]|null};
-type Channel={id:string;handle:string;name:string;avatar_url:string|null;subscriber_count:number};
-type Panel="none"|"more"|"share"|"speed"|"help";
+export const DeeplayLogoSVG = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg viewBox="0 0 500 500" className={className} fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Deeplay">
+    <g filter="drop-shadow(0px 4px 8px rgba(0,0,0,0.5))">
+      <path d="M250 50 C320 50 380 90 410 150 L310 190 C290 160 270 150 250 150 Z" fill="#9333EA" />
+      <path d="M450 250 C450 320 410 380 350 410 L310 310 C340 290 350 270 350 250 Z" fill="#9333EA" />
+      <path d="M250 450 C180 450 120 410 90 350 L190 310 C210 340 230 350 250 350 Z" fill="#9333EA" />
+      <path d="M50 250 C50 180 90 120 150 90 L190 190 C160 210 150 230 150 250 Z" fill="#9333EA" />
+      <path d="M250 110 C300 110 340 140 360 190 L280 220 C270 190 260 180 250 180 Z" fill="#EAB308" />
+      <path d="M390 250 C390 300 360 340 310 360 L280 280 C310 270 320 260 320 250 Z" fill="#EAB308" />
+      <path d="M250 390 C200 390 160 360 140 310 L220 280 C230 310 240 320 250 320 Z" fill="#EAB308" />
+      <path d="M110 250 C110 200 140 160 190 140 L220 220 C190 230 180 240 180 250 Z" fill="#EAB308" />
+      <rect x="200" y="200" width="100" height="100" rx="12" transform="rotate(45 250 250)" fill="#14B8A6" stroke="#0F766E" strokeWidth="6" />
+    </g>
+  </svg>
+);
 
-const media=(bucket:string,path:string|null)=>path?( /^https?:\/\//i.test(path)?path:supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl):null;
-const compact=(n:number)=>n>=1_000_000?`${(n/1_000_000).toFixed(1)}M`:n>=1_000?`${(n/1_000).toFixed(n>=10_000?0:1)}K`:String(Math.max(0,Math.round(n)));
-const clock=(n:number)=>{if(!Number.isFinite(n)||n<0)return "0:00";const s=Math.floor(n);return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;};
-
-export function ClipsView({items,mode,onModeChange}:{items:ClipItem[];mode:"for-you"|"following";onModeChange:(m:"for-you"|"following")=>void}){
- const {user}=useAuth();
- const [muted,setMuted]=useState(true),[autoplay,setAutoplay]=useState(true),[dataSaver,setDataSaver]=useState(false),[speed,setSpeed]=useState(1),[clearScreen,setClearScreen]=useState(false);
- const [paused,setPaused]=useState<Record<string,boolean>>({}),[liked,setLiked]=useState<Record<string,boolean>>({}),[saved,setSaved]=useState<Record<string,boolean>>({});
- const [likeCounts,setLikeCounts]=useState<Record<string,number>>(()=>Object.fromEntries(items.map(x=>[x.id,Number(x.likes_count||0)])));
- const [channels,setChannels]=useState<Record<string,Channel>>({}),[following,setFollowing]=useState<Record<string,boolean>>({});
- const [ready,setReady]=useState<Record<string,boolean>>({}),[errors,setErrors]=useState<Record<string,string>>({}),[progress,setProgress]=useState<Record<string,number>>({}),[duration,setDuration]=useState<Record<string,number>>({}),[activeId,setActiveId]=useState(items[0]?.id??null);
- const [panel,setPanel]=useState<Panel>("none"),[shareTarget,setShareTarget]=useState<ClipItem|null>(null),[heart,setHeart]=useState<Record<string,boolean>>({});
- const refs=useRef<Record<string,HTMLVideoElement|null>>({}),seen=useRef(new Set<string>()),lastTap=useRef({id:"",at:0}),hold=useRef<number|null>(null),history=useRef<Record<string,number>>({}),buckets=useRef<Record<string,Set<string>>>({});
-
- useEffect(()=>{setAutoplay(localStorage.getItem("hktube-autoplay")!=="disabled");setDataSaver(localStorage.getItem("hktube-data-saver")==="enabled")},[]);
- useEffect(()=>{const ids=[...new Set(items.map(x=>x.channel_id).filter(Boolean))] as string[];if(!ids.length)return;let dead=false;void supabase.from("channels").select("id,handle,name,avatar_url,subscriber_count").in("id",ids).then(({data})=>{if(!dead)setChannels(Object.fromEntries((data??[]).map(x=>[String(x.id),x as Channel])))});return()=>{dead=true}},[items]);
- useEffect(()=>{if(!user)return;const ids=[...new Set(items.map(x=>x.channel_id).filter(Boolean))] as string[];if(!ids.length)return;let dead=false;void supabase.from("subscriptions").select("channel_id").eq("subscriber_id",user.id).in("channel_id",ids).then(({data})=>{if(!dead)setFollowing(Object.fromEntries((data??[]).map(x=>[String(x.channel_id),true])))});return()=>{dead=true}},[items,user?.id]);
- useEffect(()=>{setLikeCounts(Object.fromEntries(items.map(x=>[x.id,Number(x.likes_count||0)])));setPaused({});setReady({});setErrors({});setProgress({});setDuration({});setActiveId(items[0]?.id??null);refs.current={};seen.current.clear();history.current={};buckets.current={}},[items]);
-
- const play=(id:string)=>{const v=refs.current[id];if(!v)return;v.muted=muted;v.playbackRate=speed;void v.play().then(()=>setPaused(s=>({...s,[id]:false}))).catch(()=>setPaused(s=>({...s,[id]:true})))};
- useEffect(()=>{const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{const id=(entry.target as HTMLElement).dataset.clipId;if(!id)return;const v=refs.current[id];if(!v)return;if(entry.isIntersecting&&entry.intersectionRatio>.68){setActiveId(id);if(autoplay)play(id);if(!seen.current.has(id)){seen.current.add(id);void recordVideoView(id).catch(()=>undefined);void recordDiscoveryEvent({eventType:"play_start",objectType:"short",objectId:id}).catch(()=>undefined)}}else v.pause()}),{threshold:[.2,.68,.9]});const timer=window.setTimeout(()=>document.querySelectorAll<HTMLElement>("[data-clip-id]").forEach(el=>observer.observe(el)),50);return()=>{window.clearTimeout(timer);observer.disconnect()}},[items,autoplay,muted,speed]);
-
- async function like(id:string,fromDoubleTap=false){if(!user)return startLogin();try{const r=await toggleVideoLike(id);setLiked(s=>({...s,[id]:r.liked}));setLikeCounts(s=>({...s,[id]:Number(r.count)}));if(fromDoubleTap&&r.liked){setHeart(s=>({...s,[id]:true}));window.setTimeout(()=>setHeart(s=>({...s,[id]:false})),700)}void recordDiscoveryEvent({eventType:r.liked?"like":"unlike",objectType:"short",objectId:id}).catch(()=>undefined)}catch(e){toast.error(e instanceof Error?e.message:"Unable to like Clip.")}}
- async function save(id:string){if(!user)return startLogin();try{const r=await toggleVideoSave(id);setSaved(s=>({...s,[id]:r}));void recordDiscoveryEvent({eventType:r?"save":"unsave",objectType:"short",objectId:id}).catch(()=>undefined);toast.success(r?"Saved to Library":"Removed from Library")}catch(e){toast.error(e instanceof Error?e.message:"Unable to save Clip.")}}
- async function follow(id:string){if(!user)return startLogin();try{const r=await toggleChannelSubscription(id);setFollowing(s=>({...s,[id]:r.subscribed}));setChannels(s=>({...s,[id]:s[id]?{...s[id],subscriber_count:Number(r.count)}:s[id]}));void recordDiscoveryEvent({eventType:r.subscribed?"follow":"unfollow",objectType:"channel",objectId:id}).catch(()=>undefined)}catch(e){toast.error(e instanceof Error?e.message:"Unable to update follow.")}}
- async function tune(item:ClipItem,type:"not_interested"|"hide_creator"|"hide_topic"){if(!user)return startLogin();try{const topic=type==="hide_topic"?(item.tags?.find(x=>x.toLowerCase()!=="shorts")??null):null;await setRecommendationFeedback(item.id,type,topic);setPanel("none");toast.success(type==="not_interested"?"Fewer Clips like this.":type==="hide_creator"?"Fewer Clips from this creator.":"Fewer Clips on this topic.")}catch(e){toast.error(e instanceof Error?e.message:"Unable to tune recommendations.")}}
- async function share(item:ClipItem){const url=`${window.location.origin}/watch/${item.id}`;try{if(navigator.share)await navigator.share({title:item.title,url});else{await navigator.clipboard.writeText(url);toast.success("Clip link copied")}void recordDiscoveryEvent({eventType:"share",objectType:"short",objectId:item.id}).catch(()=>undefined)}catch{}finally{setPanel("none");setShareTarget(null)}}
- async function copyLink(item:ClipItem){try{await navigator.clipboard.writeText(`${window.location.origin}/watch/${item.id}`);toast.success("Clip link copied");void recordDiscoveryEvent({eventType:"share",objectType:"short",objectId:item.id,context:{method:"copy_link"}}).catch(()=>undefined)}catch{toast.error("Could not copy the link.")}}
-
- function surface(id:string){const now=Date.now();if(lastTap.current.id===id&&now-lastTap.current.at<300){lastTap.current={id:"",at:0};void like(id,true);return}lastTap.current={id,at:now};window.setTimeout(()=>{if(lastTap.current.id===id&&Date.now()-lastTap.current.at>=290){const v=refs.current[id];if(!v)return;if(v.paused)play(id);else{v.pause();setPaused(s=>({...s,[id]:true}))}}},310)}
- function holdStart(id:string){if(hold.current)window.clearTimeout(hold.current);hold.current=window.setTimeout(()=>{const v=refs.current[id];if(v){v.playbackRate=2;toast("2× playback")}},380)}
- function holdEnd(id:string){if(hold.current)window.clearTimeout(hold.current);const v=refs.current[id];if(v)v.playbackRate=speed}
-
- if(!items.length)return null;
- return <div className="fixed inset-0 z-[80] overflow-hidden bg-black text-white">
-  {!clearScreen&&<header className="pointer-events-none absolute inset-x-0 top-0 z-50 flex items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] sm:px-5"><Link href="/" className="pointer-events-auto grid size-10 place-items-center rounded-full bg-black/45 backdrop-blur-xl" aria-label="Close Clips"><ArrowLeft className="size-5"/></Link><div className="pointer-events-auto rounded-full bg-black/45 p-1 text-xs font-black backdrop-blur-xl"><button onClick={()=>onModeChange("for-you")} className={`rounded-full px-4 py-2 ${mode==="for-you"?"bg-white text-black":"text-white/70"}`}>For You</button><button onClick={()=>onModeChange("following")} className={`rounded-full px-4 py-2 ${mode==="following"?"bg-white text-black":"text-white/70"}`}>Following</button></div><button onClick={()=>setPanel("more")} className="pointer-events-auto grid size-10 place-items-center rounded-full bg-black/45 backdrop-blur-xl" aria-label="More"><MoreVertical className="size-5"/></button></header>}
-  {clearScreen&&<button onClick={()=>setClearScreen(false)} className="absolute right-3 top-[max(12px,env(safe-area-inset-top))] z-[120] rounded-full bg-black/60 px-3 py-2 text-xs font-black backdrop-blur-xl">Show controls</button>}
-  <div className="h-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-   {items.map((item,index)=>{const video=media("videos",item.video_path),thumb=media("thumbnails",item.thumbnail_path),channel=item.channel_id?channels[item.channel_id]:undefined,failed=errors[item.id],active=activeId===item.id;return <section key={item.id} data-clip-id={item.id} className="relative flex h-[100dvh] snap-start items-center justify-center overflow-hidden bg-black">
-    {thumb&&<img src={thumb} alt="" aria-hidden="true" className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${ready[item.id]?"opacity-0":"opacity-100"}`}/>}
-    {video&&<video ref={el=>{refs.current[item.id]=el}} src={video} playsInline autoPlay={autoplay&&index===0} muted defaultMuted loop preload={dataSaver?(index<1?"auto":"metadata"):(index<2?"auto":"metadata")} controls={false} disablePictureInPicture className="absolute inset-0 z-10 h-full w-full object-cover" onLoadedMetadata={e=>{const v=e.currentTarget;setDuration(s=>({...s,[item.id]:Number.isFinite(v.duration)?v.duration:0}));if(v.videoWidth>0&&v.videoHeight>0){setReady(s=>({...s,[item.id]:true}));setErrors(s=>{const n={...s};delete n[item.id];return n});v.muted=muted;v.playbackRate=speed;if(active&&autoplay)void v.play().catch(()=>undefined)}else setErrors(s=>({...s,[item.id]:"The video stream has no decodable video track."}))}} onCanPlay={e=>{const v=e.currentTarget;if(v.videoWidth>0&&v.videoHeight>0)setReady(s=>({...s,[item.id]:true}));if(active&&autoplay)void v.play().catch(()=>undefined)}} onTimeUpdate={e=>{const v=e.currentTarget,p=v.duration>0?v.currentTime/v.duration:0;setProgress(s=>({...s,[item.id]:p}));if(user&&Math.floor(v.currentTime)-(history.current[item.id]??0)>=5){history.current[item.id]=Math.floor(v.currentTime);void supabase.from("watch_history").upsert({user_id:user.id,video_id:item.id,progress_seconds:Math.floor(v.currentTime),watched_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"user_id,video_id"}).then(()=>undefined,()=>undefined)}const bucket=p>=.9?"watch_90_percent":p>=.75?"watch_75_percent":p>=.5?"watch_50_percent":p>=.25?"watch_25_percent":p>=.1?"watch_10_percent":null;if(bucket){const set=buckets.current[item.id]??new Set<string>();if(!set.has(bucket)){set.add(bucket);buckets.current[item.id]=set;void recordDiscoveryEvent({eventType:bucket,objectType:"short",objectId:item.id,watchSeconds:Math.floor(v.currentTime),positionSeconds:Math.floor(v.currentTime)}).catch(()=>undefined)}}}} onEnded={()=>void recordDiscoveryEvent({eventType:"complete",objectType:"short",objectId:item.id}).catch(()=>undefined)} onError={e=>{const code=e.currentTarget.error?.code;setErrors(s=>({...s,[item.id]:code?`Playback error ${code}.`:"Playback error."}));void recordDiscoveryEvent({eventType:"playback_error",objectType:"short",objectId:item.id,context:{media_error_code:code??null}}).catch(()=>undefined)}} onClick={()=>surface(item.id)} onPointerDown={()=>holdStart(item.id)} onPointerUp={()=>holdEnd(item.id)} onPointerCancel={()=>holdEnd(item.id)}/>}
-    <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-b from-black/30 via-transparent to-black/85"/>
-    {active&&<div className="pointer-events-none absolute inset-x-0 top-0 z-30 h-1 bg-white/15"><div className="h-full bg-white" style={{width:`${Math.min(100,(progress[item.id]??0)*100)}%`}}/></div>}
-    {failed&&<div className="absolute left-1/2 top-1/2 z-40 w-[min(88vw,430px)] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-black/90 p-5 text-center backdrop-blur-xl"><p className="font-black">This Clip cannot be played</p><p className="mt-2 text-xs text-white/60">{failed}</p><Link href={`/watch/${item.id}`} className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black text-black"><Play className="mr-1 size-4 fill-current"/>Open video</Link></div>}
-    {!ready[item.id]&&!failed&&video&&!clearScreen&&<div className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/45 px-3 py-2 text-xs font-bold text-white/75 backdrop-blur-xl">Loading Clip…</div>}
-    {heart[item.id]&&<div className="pointer-events-none absolute left-1/2 top-1/2 z-40 -translate-x-1/2 -translate-y-1/2 animate-ping"><Heart className="size-28 fill-current"/></div>}
-    {!clearScreen&&<><div className="absolute bottom-[max(20px,env(safe-area-inset-bottom))] left-3 right-20 z-30 max-w-[650px] sm:left-1/2 sm:right-auto sm:w-[620px] sm:-translate-x-1/2 sm:pr-16"><div className="flex items-center gap-2"><Link href={channel?`/channel/${channel.handle}`:`/watch/${item.id}`} className="pointer-events-auto flex min-w-0 items-center gap-2"><span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-white/30 bg-white/10">{channel?.avatar_url?<img src={channel.avatar_url} alt="" className="size-full object-cover"/>:<UserRound className="size-4"/>}</span><span className="truncate text-sm font-black">@{channel?.handle??"hktube"}</span></Link>{channel&&<button onClick={()=>void follow(channel.id)} className={`pointer-events-auto rounded-full px-3 py-1.5 text-[11px] font-black ${following[channel.id]?"bg-white/15":"bg-white text-black"}`}>{following[channel.id]?"Following":"Follow"}</button>}</div><h2 className="mt-2 line-clamp-2 text-base font-black leading-6 sm:text-lg">{item.title}</h2>{item.description&&<p className="mt-1 line-clamp-2 text-sm text-white/75">{item.description}</p>}<div className="mt-2 flex items-center gap-2 text-[10px] font-semibold text-white/50"><span>{compact(Number(item.views||0))} views</span>{duration[item.id]>0&&<><span>•</span><span>{clock(duration[item.id])}</span></>}</div></div>
-    <div className="absolute bottom-[max(22px,env(safe-area-inset-bottom))] right-2 z-30 flex flex-col items-center gap-3 sm:right-[calc(50%-300px)]"><Action icon={liked[item.id]?<Heart className="size-6 fill-current"/>:<Heart className="size-6"/>} label={compact(likeCounts[item.id]??0)} onClick={()=>void like(item.id)} active={!!liked[item.id]}/><Action icon={<MessageCircle className="size-6"/>} label="Comments" onClick={()=>{window.location.href=`/watch/${item.id}#comments`}}/><Action icon={saved[item.id]?<Bookmark className="size-6 fill-current"/>:<Bookmark className="size-6"/>} label="Save" onClick={()=>void save(item.id)} active={!!saved[item.id]}/><Action icon={<Share2 className="size-6"/>} label="Share" onClick={()=>{setShareTarget(item);setPanel("share")}}/><Action icon={muted?<VolumeX className="size-6"/>:<Volume2 className="size-6"/>} label={muted?"Sound":"Mute"} onClick={()=>{setMuted(v=>!v);Object.values(refs.current).forEach(v=>{if(v)v.muted=!v.muted})}}/><Action icon={<MoreVertical className="size-6"/>} label="More" onClick={()=>setPanel("more")}/></div></>}
-    {paused[item.id]&&!clearScreen&&<button onClick={()=>play(item.id)} className="absolute left-1/2 top-1/2 z-40 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/50 backdrop-blur-xl" aria-label="Play Clip"><Play className="ml-1 size-8 fill-current"/></button>}
-   </section>})}
-  </div>
-  {!clearScreen&&items.length>1&&<div className="pointer-events-none absolute bottom-3 left-1/2 z-30 hidden -translate-x-1/2 items-center gap-1 text-[10px] font-bold text-white/55 sm:flex"><ChevronDown className="size-4 animate-bounce"/>Swipe for next</div>}
-  {panel!=="none"&&<div className="absolute inset-0 z-[100] bg-black/40" onClick={()=>setPanel("none")}><div className="absolute bottom-0 left-0 right-0 mx-auto max-w-xl rounded-t-3xl bg-[#0c1019]/98 p-3 pb-[max(14px,env(safe-area-inset-bottom))]" onClick={e=>e.stopPropagation()}>
-   {panel==="more"&&<MorePanel item={items.find(x=>x.id===activeId)??items[0]} muted={muted} dataSaver={dataSaver} clear={clearScreen} setClear={setClearScreen} onMute={()=>setMuted(v=>!v)} onSaver={v=>{setDataSaver(v);localStorage.setItem("hktube-data-saver",v?"enabled":"disabled")}} onSpeed={()=>setPanel("speed")} onHelp={()=>setPanel("help")} onTune={tune}/>}
-   {panel==="speed"&&<div className="px-2 pb-2"><h3 className="py-2 text-lg font-black">Playback speed</h3><div className="grid grid-cols-5 gap-2">{[0.5,0.75,1,1.5,2].map(v=><button key={v} onClick={()=>{setSpeed(v);Object.values(refs.current).forEach(x=>{if(x)x.playbackRate=v});setPanel("none")}} className={`rounded-2xl border px-3 py-3 text-sm font-black ${speed===v?"border-white bg-white text-black":"border-white/10 bg-white/[.04]"}`}>{v}×</button>)}</div></div>}
-   {panel==="help"&&<div className="space-y-2 px-2 pb-2"><h3 className="text-lg font-black">Clips controls</h3><p className="text-sm leading-6 text-white/70"><b className="text-white">Tap</b> pause/resume. <b className="text-white">Double tap</b> like. <b className="text-white">Press and hold</b> temporary 2×. <b className="text-white">Swipe</b> next Clip.</p></div>}
-   {panel==="share"&&shareTarget&&<div className="space-y-3 px-2 pb-2"><h3 className="text-lg font-black">Share Clip</h3><p className="line-clamp-2 text-sm text-white/60">{shareTarget.title}</p><div className="grid grid-cols-2 gap-2"><button onClick={()=>void share(shareTarget)} className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-black">Share</button><button onClick={()=>void copyLink(shareTarget)} className="rounded-2xl bg-white/[.06] px-4 py-3 text-sm font-black">Copy link</button></div></div>}
-  </div></div>}
- </div>
+export interface Clip {
+  id: string;
+  videoUrl: string;
+  author: string;
+  avatar: string;
+  isVerified: boolean;
+  description: string;
+  musicTitle: string;
+  likes: number;
+  commentsCount: number;
+  favorites: number;
+  shares: number;
+  category: string;
 }
 
-function Action({icon,label,onClick,active=false}:{icon:ReactNode;label:string;onClick:()=>void;active?:boolean}){return <button type="button" onClick={onClick} className={`flex flex-col items-center gap-1 transition active:scale-90 ${active?"text-white":"text-white/90"}`} aria-label={label}><span className={`grid size-11 place-items-center rounded-full bg-black/35 backdrop-blur-xl ${active?"bg-white/15":""}`}>{icon}</span><span className="max-w-16 truncate text-[10px] font-bold">{label}</span></button>}
+const DEMO_CLIPS: Clip[] = [
+  {
+    id: '1',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-vertical-shot-of-a-woman-smiling-at-the-camera-41525-large.mp4',
+    author: '@mrhkw3',
+    avatar: 'https://picsum.photos/100',
+    isVerified: true,
+    description: 'Deeplay Clips Engine! Full TikTok experience with double tap heart, custom sound disc, speed controller & smart drawers #deeplay #clips',
+    musicTitle: 'Original Sound - @mrhkw3',
+    likes: 42300,
+    commentsCount: 1580,
+    favorites: 6200,
+    shares: 2800,
+    category: 'Trending'
+  },
+  {
+    id: '2',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-sign-1232-large.mp4',
+    author: '@deeplay_official',
+    avatar: 'https://picsum.photos/101',
+    isVerified: true,
+    description: 'Fast, smooth buffering free clips feed. Enjoy continuous scrolling with auto-play feature! #shorts #trending',
+    musicTitle: 'Deeplay Beat - Special Remix',
+    likes: 18900,
+    commentsCount: 640,
+    favorites: 3100,
+    shares: 950,
+    category: 'Music'
+  }
+];
 
-function MorePanel({item,muted,dataSaver,clear,setClear,onMute,onSaver,onSpeed,onHelp,onTune}:{item:ClipItem;muted:boolean;dataSaver:boolean;clear:boolean;setClear:(v:boolean)=>void;onMute:()=>void;onSaver:(v:boolean)=>void;onSpeed:()=>void;onHelp:()=>void;onTune:(i:ClipItem,t:"not_interested"|"hide_creator"|"hide_topic")=>Promise<void>}){return <div className="space-y-1"><Panel label={clear?"Restore screen":"Clear screen"} onClick={()=>setClear(!clear)}/><Panel label={muted?"Sound off":"Sound on"} onClick={onMute}/><Panel label="Playback speed" onClick={onSpeed}/><Panel label={dataSaver?"Data saver on":"Data saver off"} onClick={()=>onSaver(!dataSaver)}/><Panel label="Not interested" onClick={()=>void onTune(item,"not_interested")}/><Panel label="Hide creator" onClick={()=>void onTune(item,"hide_creator")}/><Panel label="Report" onClick={()=>{window.location.href=`/watch/${item.id}#comments`}}/><Panel label="Clips help" onClick={onHelp}/></div>}
+export const ClipsView: React.FC = () => {
+  const [clips] = useState<Clip[]>(DEMO_CLIPS);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(false);
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [likeCountMap, setLikeCountMap] = useState<Record<string, number>>({});
+  const [favMap, setFavMap] = useState<Record<string, boolean>>({});
+  const [favCountMap, setFavCountMap] = useState<Record<string, number>>({});
+  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
+  const [heartAnim, setHeartAnim] = useState<{ x: number; y: number } | null>(null);
+  const [activeSheet, setActiveSheet] = useState<'comment' | 'report' | 'share' | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [comments, setComments] = useState([
+    { id: '1', user: '@usman_dev', text: 'Deeplay Clips UI ab bilkul original short-video style lag raha hai!', time: '1m ago' },
+    { id: '2', user: '@ali_king', text: 'Saare action buttons aur animations smooth hain.', time: 'Just now' }
+  ]);
+  const [newCommentText, setNewCommentText] = useState('');
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const toastTimerRef = useRef<number | null>(null);
+  const heartTimerRef = useRef<number | null>(null);
 
-function Panel({label,onClick}:{label:string;onClick:()=>void}){return <button type="button" onClick={onClick} className="flex w-full items-center rounded-2xl px-3 py-3 text-left text-sm font-black hover:bg-white/[.06]">{label}</button>}
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 2000);
+  };
+
+  useEffect(() => {
+    videoRefs.current.forEach((video, idx) => {
+      if (!video) return;
+      if (idx === activeIndex) {
+        video.playbackRate = playbackSpeed;
+        video.muted = isMuted;
+        if (isPlaying) {
+          void video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+        } else {
+          video.pause();
+        }
+      } else {
+        video.pause();
+      }
+    });
+  }, [activeIndex, playbackSpeed, isMuted]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    if (heartTimerRef.current) window.clearTimeout(heartTimerRef.current);
+  }, []);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const index = Math.round(container.scrollTop / Math.max(container.clientHeight, 1));
+    if (index !== activeIndex && index >= 0 && index < clips.length) {
+      setActiveIndex(index);
+      setIsPlaying(true);
+    }
+  };
+
+  const togglePlayPause = () => {
+    const current = videoRefs.current[activeIndex];
+    if (!current) return;
+    if (current.paused) {
+      void current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    } else {
+      current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const cycleSpeed = () => {
+    const speeds = [1.0, 1.5, 2.0];
+    const nextSpeed = speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length];
+    setPlaybackSpeed(nextSpeed);
+    showToast(`Playback Speed: ${nextSpeed.toFixed(1)}x`);
+  };
+
+  const handleDoubleTap = (e: React.MouseEvent<HTMLDivElement>, clipId: string, defaultLikes: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHeartAnim({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    if (heartTimerRef.current) window.clearTimeout(heartTimerRef.current);
+    heartTimerRef.current = window.setTimeout(() => setHeartAnim(null), 800);
+
+    if (!likedMap[clipId]) {
+      setLikedMap(p => ({ ...p, [clipId]: true }));
+      setLikeCountMap(p => ({ ...p, [clipId]: (p[clipId] ?? defaultLikes) + 1 }));
+    }
+  };
+
+  const toggleLike = (id: string, defaultLikes: number) => {
+    const isLiked = !!likedMap[id];
+    setLikedMap(p => ({ ...p, [id]: !isLiked }));
+    setLikeCountMap(p => ({ ...p, [id]: Math.max(0, (p[id] ?? defaultLikes) + (isLiked ? -1 : 1)) }));
+  };
+
+  const toggleFavorite = (id: string, defaultFavs: number) => {
+    const isFav = !!favMap[id];
+    setFavMap(p => ({ ...p, [id]: !isFav }));
+    setFavCountMap(p => ({ ...p, [id]: Math.max(0, (p[id] ?? defaultFavs) + (isFav ? -1 : 1)) }));
+    showToast(isFav ? 'Removed from Favorites' : 'Saved to Favorites');
+  };
+
+  const toggleFollow = (author: string) => {
+    setFollowingMap(p => {
+      const state = !p[author];
+      showToast(state ? `Followed ${author}` : `Unfollowed ${author}`);
+      return { ...p, [author]: state };
+    });
+  };
+
+  const handleAddComment = () => {
+    const text = newCommentText.trim();
+    if (!text) return;
+    setComments(p => [...p, { id: Date.now().toString(), user: '@you', text, time: 'Just now' }]);
+    setNewCommentText('');
+    showToast('Comment posted');
+  };
+
+  const copyCurrentLink = async () => {
+    const clip = clips[activeIndex];
+    if (!clip) return;
+    const url = window.location.href.split('#')[0] + `#clip-${clip.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied');
+    } catch {
+      showToast('Could not copy link');
+    }
+  };
+
+  return (
+    <div className="relative w-full h-[100dvh] bg-black text-white overflow-hidden select-none font-sans">
+      {toastMsg && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl text-white text-xs font-semibold px-4 py-2.5 rounded-full border border-white/20 shadow-2xl z-[80]">
+          {toastMsg}
+        </div>
+      )}
+
+      <div className="fixed top-0 left-0 w-full px-4 py-3 flex justify-between items-center z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-[max(12px,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2 min-w-0">
+          <DeeplayLogoSVG className="w-8 h-8 drop-shadow-md shrink-0" />
+          <span className="font-extrabold text-lg text-white">Deeplay</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-600 to-pink-600 text-white uppercase tracking-wider">CLIPS</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button type="button" aria-label="Change playback speed" onClick={cycleSpeed} className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold transition active:scale-95">
+            {playbackSpeed.toFixed(1)}x
+          </button>
+          <button type="button" aria-label="Toggle automatic next clip" onClick={() => setAutoScroll(v => !v)} className={`backdrop-blur-md border px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 ${autoScroll ? 'bg-emerald-500/30 border-emerald-500 text-emerald-400' : 'bg-white/10 border-white/20 text-white'}`}>
+            {autoScroll ? 'Auto ON' : 'Auto OFF'}
+          </button>
+          <button type="button" aria-label={isMuted ? 'Unmute' : 'Mute'} onClick={() => setIsMuted(v => !v)} className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-xs active:scale-95">
+            {isMuted ? 'Mute' : 'Sound'}
+          </button>
+        </div>
+      </div>
+
+      <div className="h-full w-full overflow-y-auto snap-y snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" onScroll={handleScroll}>
+        {clips.map((clip, index) => {
+          const isLiked = !!likedMap[clip.id];
+          const isFav = !!favMap[clip.id];
+          const isFollowing = !!followingMap[clip.author];
+          const currentLikes = likeCountMap[clip.id] ?? clip.likes;
+          const currentFavs = favCountMap[clip.id] ?? clip.favorites;
+
+          return (
+            <div
+              key={clip.id}
+              id={`clip-${clip.id}`}
+              className="relative h-[100dvh] w-full snap-start snap-always bg-black flex justify-center items-center overflow-hidden"
+              onDoubleClick={e => handleDoubleTap(e, clip.id, clip.likes)}
+            >
+              <video
+                ref={el => { videoRefs.current[index] = el; }}
+                src={clip.videoUrl}
+                className="w-full h-full object-cover cursor-pointer"
+                loop={!autoScroll}
+                playsInline
+                muted={isMuted}
+                preload={index === activeIndex || index === activeIndex + 1 ? 'auto' : 'metadata'}
+                poster={clip.avatar}
+                onClick={togglePlayPause}
+                onPlay={() => index === activeIndex && setIsPlaying(true)}
+                onPause={() => index === activeIndex && setIsPlaying(false)}
+                onEnded={() => {
+                  if (autoScroll && activeIndex < clips.length - 1) {
+                    setActiveIndex(i => i + 1);
+                  }
+                }}
+                onError={() => index === activeIndex && showToast('Unable to play this Clip')}
+              />
+
+              {!isPlaying && activeIndex === index && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                  <div className="w-16 h-16 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white pl-1 border border-white/20 shadow-2xl">
+                    <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              )}
+
+              {heartAnim && activeIndex === index && (
+                <div className="absolute pointer-events-none z-50 animate-ping" style={{ top: heartAnim.y, left: heartAnim.x, transform: 'translate(-50%, -50%)' }}>
+                  <svg className="w-20 h-20 fill-pink-500 drop-shadow-2xl" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </div>
+              )}
+
+              <div className="absolute inset-0 flex justify-between items-end p-4 pb-[max(48px,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none">
+                <div className="max-w-[70%] pointer-events-auto space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm text-white drop-shadow">{clip.author}</span>
+                    {clip.isVerified && <svg className="w-4 h-4 fill-cyan-400" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l1.41 1.41-9 9z"/></svg>}
+                    <button type="button" onClick={() => toggleFollow(clip.author)} className={`px-3 py-1 rounded-full text-xs font-bold transition shadow ${isFollowing ? 'bg-white/20 text-white border border-white/30' : 'bg-gradient-to-r from-pink-600 to-purple-600 text-white'}`}>
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-gray-100 leading-relaxed drop-shadow font-normal">{clip.description}</p>
+
+                  <div className="flex items-center gap-2 text-xs text-gray-200 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full w-fit">
+                    <svg className="w-3.5 h-3.5 fill-current animate-spin" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                    <span className="truncate w-36 font-medium">{clip.musicTitle}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-4 pointer-events-auto z-10">
+                  <div className="relative mb-1">
+                    <img src={clip.avatar} className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-2xl" alt="" />
+                    <button type="button" aria-label={isFollowing ? 'Unfollow creator' : 'Follow creator'} onClick={() => toggleFollow(clip.author)} className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center font-bold text-white text-xs border border-black shadow ${isFollowing ? 'bg-emerald-500' : 'bg-pink-600'}`}>
+                      {isFollowing ? '✓' : '+'}
+                    </button>
+                  </div>
+
+                  <button type="button" aria-label={isLiked ? 'Unlike Clip' : 'Like Clip'} onClick={() => toggleLike(clip.id, clip.likes)} className="flex flex-col items-center gap-1 group">
+                    <div className={`p-3 rounded-full backdrop-blur-md transition-all duration-200 group-active:scale-125 ${isLiked ? 'bg-pink-600/30 text-pink-500 border border-pink-500/40' : 'bg-black/40 text-white border border-white/10'}`}>
+                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <span className="text-[11px] font-bold text-white drop-shadow">{currentLikes.toLocaleString()}</span>
+                  </button>
+
+                  <button type="button" aria-label="Open comments" onClick={() => setActiveSheet('comment')} className="flex flex-col items-center gap-1 group">
+                    <div className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white group-active:scale-125 transition-all">
+                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
+                    </div>
+                    <span className="text-[11px] font-bold text-white drop-shadow">{clip.commentsCount}</span>
+                  </button>
+
+                  <button type="button" aria-label={isFav ? 'Remove favorite' : 'Save to favorites'} onClick={() => toggleFavorite(clip.id, clip.favorites)} className="flex flex-col items-center gap-1 group">
+                    <div className={`p-3 rounded-full backdrop-blur-md transition-all duration-200 group-active:scale-125 ${isFav ? 'bg-yellow-500/30 text-yellow-400 border border-yellow-500/40' : 'bg-black/40 text-white border border-white/10'}`}>
+                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    </div>
+                    <span className="text-[11px] font-bold text-white drop-shadow">{currentFavs.toLocaleString()}</span>
+                  </button>
+
+                  <button type="button" aria-label="Share Clip" onClick={() => setActiveSheet('share')} className="flex flex-col items-center gap-1 group">
+                    <div className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white group-active:scale-125 transition-all">
+                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>
+                    </div>
+                    <span className="text-[11px] font-bold text-white drop-shadow">{clip.shares}</span>
+                  </button>
+
+                  <button type="button" aria-label="Report Clip" onClick={() => setActiveSheet('report')} className="flex flex-col items-center gap-1 group">
+                    <div className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-gray-300 group-active:scale-125 transition-all">
+                      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+                    </div>
+                    <span className="text-[10px] font-medium text-gray-300">Report</span>
+                  </button>
+
+                  <div className="w-10 h-10 bg-zinc-900 border-2 border-purple-500/80 rounded-full flex items-center justify-center animate-spin mt-1 overflow-hidden shadow-2xl relative">
+                    <img src={clip.avatar} className="w-6 h-6 rounded-full object-cover" alt="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {activeSheet && <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={() => setActiveSheet(null)} />}
+
+      <div className={`fixed bottom-0 left-0 w-full h-[65vh] bg-zinc-900/95 backdrop-blur-2xl rounded-t-3xl z-50 p-4 flex flex-col transition-transform duration-300 border-t border-zinc-800 ${activeSheet === 'comment' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm">
+          <span>Comments ({comments.length})</span>
+          <button type="button" aria-label="Close comments" onClick={() => setActiveSheet(null)} className="p-1 text-gray-400 hover:text-white">✕</button>
+        </div>
+        <div className="flex-1 overflow-y-auto py-3 space-y-3">
+          {comments.map(c => (
+            <div key={c.id} className="flex gap-3 text-xs">
+              <img src="https://picsum.photos/50" className="w-8 h-8 rounded-full border border-zinc-700" alt="" />
+              <div className="flex-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-gray-300">{c.user}</span>
+                  <span className="text-[10px] text-gray-500">{c.time}</span>
+                </div>
+                <p className="text-gray-200 mt-0.5">{c.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+          <input type="text" value={newCommentText} onChange={e => setNewCommentText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddComment(); }} placeholder="Add a comment..." className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500" />
+          <button type="button" onClick={handleAddComment} className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2.5 rounded-full text-white text-xs font-bold">Post</button>
+        </div>
+      </div>
+
+      <div className={`fixed bottom-0 left-0 w-full h-[35vh] bg-zinc-900/95 backdrop-blur-2xl rounded-t-3xl z-50 p-5 flex flex-col transition-transform duration-300 border-t border-zinc-800 ${activeSheet === 'share' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm">
+          <span>Share Video</span>
+          <button type="button" aria-label="Close share" onClick={() => setActiveSheet(null)} className="p-1 text-gray-400 hover:text-white">✕</button>
+        </div>
+        <div className="grid grid-cols-4 gap-4 mt-6 text-center text-xs">
+          <button type="button" onClick={() => { void copyCurrentLink(); setActiveSheet(null); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center shadow">Copy</div>
+            Copy Link
+          </button>
+          <button type="button" onClick={() => { showToast('Opening WhatsApp...'); setActiveSheet(null); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center shadow">Chat</div>
+            WhatsApp
+          </button>
+          <button type="button" onClick={() => { showToast('Reposted!'); setActiveSheet(null); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center shadow">Repost</div>
+            Repost
+          </button>
+          <button type="button" onClick={() => { showToast('Video Saved!'); setActiveSheet(null); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center shadow">Save</div>
+            Save
+          </button>
+        </div>
+      </div>
+
+      <div className={`fixed bottom-0 left-0 w-full h-[40vh] bg-zinc-900/95 backdrop-blur-2xl rounded-t-3xl z-50 p-5 flex flex-col transition-transform duration-300 border-t border-zinc-800 ${activeSheet === 'report' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm text-red-400">
+          <span>Report Content</span>
+          <button type="button" aria-label="Close report" onClick={() => setActiveSheet(null)} className="p-1 text-gray-400 hover:text-white">✕</button>
+        </div>
+        <div className="flex flex-col gap-2.5 mt-4">
+          {['Spam or Misleading', 'Inappropriate Content', 'Copyright Infringement'].map(reason => (
+            <button key={reason} type="button" onClick={() => { showToast('Report Submitted'); setActiveSheet(null); }} className="bg-zinc-800/80 border border-zinc-700 p-3.5 rounded-xl text-left text-xs hover:bg-zinc-700 transition">
+              {reason}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
