@@ -21,3 +21,52 @@ export const signInWithGoogle = async () => {
 export const signOut = async () => {
   await supabase.auth.signOut();
 };
+
+export interface SupabaseProfile {
+  id: string;
+  username: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  banner_url?: string | null;
+  bio?: string | null;
+  is_verified: boolean;
+  created_at: string;
+}
+
+export interface SupabaseVideo {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  video_url: string;
+  thumbnail_url?: string | null;
+  is_short: boolean;
+  views_count: number;
+  visibility: "public" | "private" | "unlisted";
+  status: string;
+  created_at: string;
+  profiles?: SupabaseProfile | null;
+}
+
+export const signInWithPassword = (email: string, password: string) =>
+  supabase.auth.signInWithPassword({ email, password });
+
+export const registerWithPassword = async ({ email, password, username }: { email: string; password: string; username: string }) => {
+  const result = await supabase.auth.signUp({ email, password, options: { data: { username } } });
+  if (result.error || !result.data.user) return result;
+
+  const profile = await supabase.from("profiles").upsert({
+    id: result.data.user.id,
+    username,
+    display_name: username,
+  });
+  if (profile.error) return { ...result, error: profile.error };
+  return result;
+};
+
+export const getCurrentProfile = async () => {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) return { profile: null, error: authError };
+  const result = await supabase.from("profiles").select("*").eq("id", authData.user.id).maybeSingle<SupabaseProfile>();
+  return { profile: result.data, error: result.error };
+};
