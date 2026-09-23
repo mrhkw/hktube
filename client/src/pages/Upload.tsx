@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeft,
   Camera,
@@ -383,7 +383,7 @@ export default function UploadPage() {
     recordingTimerRef.current = null;
   }
 
-  async function openRecorder() {
+  async function openRecorder(facing: CameraFacing = cameraFacing) {
     if (uploading || recording) return;
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setNotice({ type: "error", text: "Camera recording is not supported by this browser. Use Choose video instead." });
