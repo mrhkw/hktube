@@ -11,6 +11,9 @@ export type VideoRecord = {
   viewCount: number;
   category: VideoCategory;
   uploadedAt: Date;
+  channelId?: number | string | null;
+  channelName?: string | null;
+  channelAvatarUrl?: string | null;
 };
 
 export function formatDuration(seconds: number) {
