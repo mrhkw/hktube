@@ -395,8 +395,8 @@ export default function UploadPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isClip
-          ? { facingMode: cameraFacing, width: { ideal: 1080 }, height: { ideal: 1920 } }
-          : { facingMode: cameraFacing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          ? { facingMode: facing, width: { ideal: 1080 }, height: { ideal: 1920 } }
+          : { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: true,
       });
 
@@ -420,9 +420,10 @@ export default function UploadPage() {
 
   async function switchCamera() {
     if (recording) return;
+    const nextFacing: CameraFacing = cameraFacing === "user" ? "environment" : "user";
     cleanupRecordingStream();
-    setCameraFacing(value => (value === "user" ? "environment" : "user"));
-    await openRecorder();
+    setCameraFacing(nextFacing);
+    await openRecorder(nextFacing);
   }
 
   function startRecording() {
@@ -1496,7 +1497,7 @@ function ModeButton({
   accent = "violet",
 }: {
   active: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   text: string;
   onClick: () => void;
