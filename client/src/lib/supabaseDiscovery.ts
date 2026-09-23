@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import type { SupabaseVideo } from "./supabaseVideos";
-import { mapVideo } from "./supabaseVideos";
+import { mapVideo, VIDEO_SELECT } from "./supabaseVideos";
 
 export type RecommendationReason = "interest_match" | "followed_creator" | "similar_to_watched" | "trending" | "fresh_creator" | "search_related" | "fresh";
 export type RankedVideo = SupabaseVideo & { reason: RecommendationReason; score: number };
@@ -49,8 +49,7 @@ export async function setRecommendationFeedback(contentId: string, feedbackType:
   if (!user) throw new Error("Sign in to personalize your feed.");
   const { error } = await supabase.from("recommendation_feedback").upsert({ user_id: user.id, content_id: contentId, feedback_type: feedbackType, topic: topic?.trim() || null }, { onConflict: "user_id,content_id" });
   if (error) throw error;
-  const { data: video } = await supabase.from("videos").select("category,tags").eq("id", contentId).maybeSingle();
-  const topics = [...new Set([video?.category, ...(video?.tags ?? []), topic].filter(Boolean).map(value => String(value).trim().toLowerCase()).filter(Boolean))].slice(0, 12);
+  const topics = [...new Set([topic].filter(Boolean).map(value => String(value).trim().toLowerCase()).filter(Boolean))].slice(0, 12);
   if (topics.length) {
     const delta = feedbackType === "more_like_this" ? 0.35 : feedbackType === "less_like_this" || feedbackType === "hide_topic" ? -0.35 : feedbackType === "not_interested" ? -0.15 : 0;
     if (delta !== 0) {
@@ -74,11 +73,11 @@ export async function resetRecommendationFeedback() {
 }
 
 async function candidateRows(shorts = false, limit = 180) {
-  let q = supabase.from("videos").select("id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,likes_count,published_at,created_at,tags,category,language,status,moderation_status,visibility").eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved");
-  if (shorts) q = q.contains("tags", ["shorts"]);
+  let q = supabase.from("videos").select(VIDEO_SELECT).eq("visibility", "public").eq("status", "published");
+  if (shorts) q = q.eq("is_short", true);
   // Pull a much wider pool than the visible shelf. Ranking is responsible for choosing
   // the final items, so a single creator cannot dominate simply by uploading frequently.
-  const { data, error } = await q.order("published_at", { ascending: false }).limit(Math.min(600, Math.max(180, limit)));
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(Math.min(600, Math.max(180, limit)));
   if (error) throw error;
   return (data ?? []).map(mapVideo);
 }
@@ -116,22 +115,12 @@ async function loadPersonalSignals(userId: string) {
   const feedbackContentIds = [...new Set(feedbackRows.map(x => String(x.content_id)))];
   const hiddenCreators = new Set<string>();
   const hiddenTopics = new Set<string>(feedbackRows.filter(x => x.feedback_type === "hide_topic" && x.topic).map(x => String(x.topic).toLowerCase()));
+  // The legacy videos table does not expose channel/category/tag columns. Keep
+  // feedback usable without issuing a query that would reject the whole feed.
   if (feedbackContentIds.length) {
-    const { data: feedbackVideos } = await supabase.from("videos").select("id,creator_id,channel_id,category,tags").in("id", feedbackContentIds);
-    const channelIds = [...new Set((feedbackVideos ?? []).map(v => v.channel_id).filter(Boolean))] as string[];
-    if (channelIds.length) {
-      const { data: feedbackChannels } = await supabase.from("channels").select("id,owner_id").in("id", channelIds);
-      const ownerByChannel = new Map((feedbackChannels ?? []).map(x => [String(x.id), String(x.owner_id)]));
-      for (const v of feedbackVideos ?? []) {
-        const feedbackType = feedbackRows.find(x => String(x.content_id) === String(v.id))?.feedback_type;
-        if (feedbackType === "hide_creator") {
-          const owner = v.channel_id ? ownerByChannel.get(String(v.channel_id)) : String(v.creator_id);
-          if (owner) hiddenCreators.add(owner);
-        }
-        if (feedbackType === "hide_topic") {
-          if (v.category) hiddenTopics.add(String(v.category).toLowerCase());
-          for (const tag of v.tags ?? []) hiddenTopics.add(String(tag).toLowerCase());
-        }
+    for (const feedback of feedbackRows) {
+      if (feedback.feedback_type === "hide_topic" && feedback.topic) {
+        hiddenTopics.add(String(feedback.topic).toLowerCase());
       }
     }
   }

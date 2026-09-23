@@ -27,22 +27,37 @@ function publicUrl(bucket: string, path: string | null): string | null {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
+export const VIDEO_SELECT =
+  "id,user_id,title,description,video_url,thumbnail_url,duration,views_count,likes_count,created_at,status,visibility,is_short";
+
 function mapVideo(row: Record<string, unknown>): SupabaseVideo {
   return {
     id: String(row.id),
-    creatorId: String(row.creator_id),
-    channelId: String(row.channel_id),
+    creatorId: String(row.creator_id ?? row.user_id ?? ""),
+    channelId: String(row.channel_id ?? row.user_id ?? ""),
     title: String(row.title ?? "Untitled video"),
     description: typeof row.description === "string" ? row.description : null,
-    videoUrl: publicUrl("videos", typeof row.video_path === "string" ? row.video_path : null) ?? "",
+    videoUrl:
+      typeof row.video_url === "string"
+        ? row.video_url
+        : publicUrl("videos", typeof row.video_path === "string" ? row.video_path : null) ?? "",
     thumbnailUrl: publicUrl(
       "thumbnails",
-      typeof row.thumbnail_path === "string" ? row.thumbnail_path : null,
-    ),
-    durationSeconds: Number(row.duration_seconds ?? 0),
-    viewCount: Number(row.views ?? 0),
+      typeof row.thumbnail_url === "string"
+        ? row.thumbnail_url
+        : typeof row.thumbnail_path === "string"
+          ? row.thumbnail_path
+          : null,
+    ) ?? (typeof row.thumbnail_url === "string" ? row.thumbnail_url : null),
+    durationSeconds: Number(row.duration ?? row.duration_seconds ?? 0),
+    viewCount: Number(row.views_count ?? row.views ?? 0),
     likesCount: Number(row.likes_count ?? row.likes ?? 0),
-    publishedAt: typeof row.published_at === "string" ? row.published_at : null,
+    publishedAt:
+      typeof row.published_at === "string"
+        ? row.published_at
+        : typeof row.created_at === "string"
+          ? row.created_at
+          : null,
     createdAt:
       typeof row.created_at === "string"
         ? row.created_at
@@ -50,15 +65,12 @@ function mapVideo(row: Record<string, unknown>): SupabaseVideo {
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
     category: typeof row.category === "string" ? row.category : null,
     language: typeof row.language === "string" ? row.language : null,
-    isShort: Boolean(row.is_short),
+    isShort: Boolean(row.is_short) || (Array.isArray(row.tags) && row.tags.map(String).includes("shorts")),
     moderationStatus:
       typeof row.moderation_status === "string" ? row.moderation_status : null,
     status: typeof row.status === "string" ? row.status : null,
   };
 }
-
-const VIDEO_SELECT =
-  "id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,published_at,created_at,tags,category,language,status,moderation_status,is_short";
 
 async function requireUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -121,7 +133,7 @@ export async function listMySupabaseVideos(userId: string) {
   const { data, error } = await supabase
     .from("videos")
     .select(VIDEO_SELECT)
-    .eq("creator_id", userId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -135,8 +147,7 @@ export async function listPublicSupabaseVideos(limit = 20) {
     .select(VIDEO_SELECT)
     .eq("visibility", "public")
     .eq("status", "published")
-    .eq("moderation_status", "approved")
-    .order("published_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw new Error(error.message);
@@ -149,9 +160,8 @@ export async function listPublicSupabaseShorts(limit = 40) {
     .select(VIDEO_SELECT)
     .eq("visibility", "public")
     .eq("status", "published")
-    .eq("moderation_status", "approved")
     .eq("is_short", true)
-    .order("published_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw new Error(error.message);
@@ -266,38 +276,25 @@ export async function createSupabaseVideo(input: {
 
     input.onProgress?.(82);
 
-    const tags = Array.from(
-      new Set([
-        ...(input.tags ?? [])
-          .map((tag) => tag.trim().toLowerCase())
-          .filter(Boolean),
-        ...(isShort ? ["shorts"] : []),
-      ]),
-    );
+    const videoPublicUrl = supabase.storage.from("videos").getPublicUrl(videoPath).data.publicUrl;
+    const thumbnailPublicUrl = thumbnailPath
+      ? supabase.storage.from("thumbnails").getPublicUrl(thumbnailPath).data.publicUrl
+      : null;
 
     const { data, error } = await supabase
       .from("videos")
       .insert({
-        creator_id: user.id,
-        channel_id: input.channelId,
+        user_id: user.id,
         title: cleanTitle,
         description: input.description.trim() || null,
-        tags,
-        category: input.category?.trim() || null,
-        language: input.language?.trim() || null,
-        visibility: input.visibility || "public",
-        status: "processing",
-        moderation_status: "pending",
-        video_path: videoPath,
-        thumbnail_path: thumbnailPath,
-        duration_seconds: duration,
-        allow_comments: input.allowComments !== false,
-        allow_download: false,
-        made_for_kids: Boolean(input.madeForKids),
-        is_short: isShort,
-        views: 0,
+        video_url: videoPublicUrl,
+        thumbnail_url: thumbnailPublicUrl,
+        duration,
+        views_count: 0,
         likes_count: 0,
-        published_at: null,
+        visibility: input.visibility || "public",
+        status: "published",
+        is_short: isShort,
       })
       .select(VIDEO_SELECT)
       .single();
