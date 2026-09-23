@@ -18,6 +18,10 @@ function tone(video: CreatorVideo) {
   return { label: video.moderation_status === "pending" ? "In review" : "Processing", icon: Clock3, className: "text-amber-300 bg-amber-400/10 border-amber-400/15" };
 }
 
+function StudioAction({ icon: Icon, title, text, href }: { icon: typeof Sparkles; title: string; text: string; href: string }) {
+  return <Link href={href} className="rounded-2xl border border-white/8 bg-white/[.025] p-4 transition hover:border-violet-300/25 hover:bg-violet-500/[.06]"><Icon className="size-5 text-violet-300" /><p className="mt-3 text-sm font-bold text-white">{title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{text}</p></Link>;
+}
+
 export default function CreatorStudio() {
   const { user, isAuthenticated } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);

@@ -10,6 +10,7 @@ export type SupabaseVideo = {
   thumbnailUrl: string | null;
   durationSeconds: number;
   viewCount: number;
+  likesCount: number;
   publishedAt: string | null;
   createdAt: string;
   tags: string[];
@@ -40,6 +41,7 @@ function mapVideo(row: Record<string, unknown>): SupabaseVideo {
     ),
     durationSeconds: Number(row.duration_seconds ?? 0),
     viewCount: Number(row.views ?? 0),
+    likesCount: Number(row.likes_count ?? row.likes ?? 0),
     publishedAt: typeof row.published_at === "string" ? row.published_at : null,
     createdAt:
       typeof row.created_at === "string"
@@ -307,8 +309,7 @@ export async function createSupabaseVideo(input: {
         bytes_uploaded: input.file.size,
         status: "completed",
       })
-      .then(() => undefined)
-      .catch(() => undefined);
+      .then(() => undefined, () => undefined);
 
     input.onProgress?.(100);
     return mapVideo(data as Record<string, unknown>);

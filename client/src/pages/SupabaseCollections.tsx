@@ -27,7 +27,7 @@ export function SupabaseCollections({ kind }: { kind: "shorts" | "trending" }) {
     try {
       let ranked: RankedVideo[] = [];
       try {
-        ranked = await rankPublicVideos({ shorts: kind === "shorts", limit: kind === "shorts" ? 50 : 40, userId: user?.id });
+        ranked = await rankPublicVideos({ shorts: kind === "shorts", limit: kind === "shorts" ? 50 : 40, userId: user?.id == null ? undefined : String(user.id) });
       } catch {
         ranked = [];
       }

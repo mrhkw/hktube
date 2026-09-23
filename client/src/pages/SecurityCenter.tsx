@@ -20,13 +20,13 @@ export default function SecurityCenter() {
 
   async function load() {
     setLoading(true); setMessage("");
-    const [{data:{user}}, {data:{factors:dataFactors}, error}] = await Promise.all([
+    const [{data:{user}}, {data: dataFactors, error}] = await Promise.all([
       supabase.auth.getUser(),
       supabase.auth.mfa.listFactors(),
     ]);
     setUserEmail(user?.email || "");
-    if (!error) setFactors([...(dataFactors?.totp || []), ...(dataFactors?.phone || [])] as Factor[]);
-    else setMessage(error.message);
+    if (!error && dataFactors) setFactors([...(dataFactors.totp || []), ...(dataFactors.phone || [])] as Factor[]);
+    else setMessage(error?.message || "Could not load authentication factors.");
     setLoading(false);
   }
   useEffect(()=>{ void load(); },[]);

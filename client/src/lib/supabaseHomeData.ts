@@ -13,8 +13,8 @@ export async function loadSupabaseHomeData(userId?: number | string) {
 
   try {
     [ranked, rankedShorts] = await Promise.all([
-      rankPublicVideos({ limit: 60, userId }),
-      rankPublicVideos({ shorts: true, limit: 12, userId }),
+      rankPublicVideos({ limit: 60, userId: userId == null ? undefined : String(userId) }),
+      rankPublicVideos({ shorts: true, limit: 12, userId: userId == null ? undefined : String(userId) }),
     ]);
   } catch (error) {
     rankingError = error;

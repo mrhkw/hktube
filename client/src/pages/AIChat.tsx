@@ -74,7 +74,7 @@ export default function AIChat() {
       const result = await chat.mutateAsync({
         messages: requestMessages.map(({ role, content: value }) => ({ role, content: value })),
       });
-      setMessages(current => [...current, { id: crypto.randomUUID(), role: "assistant", content: result.content, sources }].slice(-40));
+      setMessages(current => [...current, { id: crypto.randomUUID(), role: "assistant" as const, content: result.content, sources }].slice(-40));
     } catch (error) {
       setMessages(current => current.filter(message => message.id !== userMessage.id));
       toast.error(error instanceof Error ? error.message : "AI response nahi aa saki.");
