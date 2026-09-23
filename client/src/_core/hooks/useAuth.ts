@@ -49,7 +49,7 @@ export function useAuth(options?: UseAuthOptions) {
     }
   }, [logoutMutation, navigate, utils]);
 
-  const fallbackUser = session ? { id: 0, openId: `supabase:${session.user.id}`, name: session.user.user_metadata?.display_name ?? session.user.user_metadata?.full_name ?? session.user.email?.split("@")[0] ?? "HkTube member", email: session.user.email ?? null, loginMethod: session.user.app_metadata?.provider ?? "supabase", role: "user", avatarUrl: session.user.user_metadata?.avatar_url ?? null } : null;
+  const fallbackUser = session ? { id: session.user.id, openId: `supabase:${session.user.id}`, name: session.user.user_metadata?.display_name ?? session.user.user_metadata?.full_name ?? session.user.email?.split("@")[0] ?? "HkTube member", email: session.user.email ?? null, loginMethod: session.user.app_metadata?.provider ?? "supabase", role: "user", avatarUrl: session.user.user_metadata?.avatar_url ?? null } : null;
   const user = meQuery.data ?? fallbackUser;
   const isAuthenticated = Boolean(session);
   const loading = !sessionReady || (Boolean(session) && meQuery.isLoading) || logoutMutation.isPending;
