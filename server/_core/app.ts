@@ -14,6 +14,9 @@ const GENERAL_LIMIT = 120;
 const AUTH_LIMIT = 12;
 const UPLOAD_LIMIT = 12;
 const MAX_RATE_BUCKETS = 5000;
+const MAX_URL_LENGTH = 4096;
+const MAX_HEADER_BYTES = 32_768;
+const ALLOWED_METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 
 function clientIp(req: express.Request) {
   return req.ip || req.socket.remoteAddress || "unknown";
@@ -50,6 +53,15 @@ function isTrustedOrigin(req: express.Request, origin: string) {
 
 function securityGate(req: express.Request, res: express.Response) {
   const rawPath = req.originalUrl || req.url;
+  if (!ALLOWED_METHODS.has(req.method) || rawPath.length > MAX_URL_LENGTH) {
+    res.status(400).json({ error: { message: "Invalid request." } });
+    return false;
+  }
+  const headerBytes = Object.entries(req.headers).reduce((total, [key, value]) => total + key.length + String(value ?? "").length, 0);
+  if (headerBytes > MAX_HEADER_BYTES) {
+    res.status(431).json({ error: { message: "Request headers are too large." } });
+    return false;
+  }
   if (/\0|\.\.(?:\/|\\)|%2e%2e|%00/i.test(rawPath)) {
     console.warn(`[Security] blocked path traversal ip=${clientIp(req)}`);
     res.status(400).json({ error: { message: "Invalid request path." } });
@@ -115,8 +127,8 @@ export function createApiApp(): Express {
     if (securityGate(req, res)) next();
   });
   app.use((req, res, next) => rateLimit(req, res) ? next() : undefined);
-  app.use(express.json({ limit: "2mb" }));
-  app.use(express.urlencoded({ limit: "256kb", extended: false }));
+  app.use(express.json({ limit: "2mb", strict: true }));
+  app.use(express.urlencoded({ limit: "256kb", extended: false, parameterLimit: 100 }));
   app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "hktube", timestamp: new Date().toISOString() }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
