@@ -263,10 +263,10 @@ export function movingAverage(values: readonly number[], windowSize=5): number {
 export function zScore(value:number, mean:number, standardDeviation:number):number{return standardDeviation>0?(value-mean)/standardDeviation:0;}
 export function percentileRank(value:number, values:readonly number[]):number{if(!values.length)return 0;return values.filter(item=>item<=value).length/values.length;}
 export function reservoirSample<T>(items:readonly T[], count:number, random=Math.random):T[]{const result:T[]=[];const n=Math.max(0,count);items.forEach((item,index)=>{if(index<n)result.push(item);else{const slot=Math.floor(random()*(index+1));if(slot<n)result[slot]=item;}});return result;}
-export function parseCursor(cursor:string|null|undefined):number{if(!cursor)return 0;const decoded=atob(cursor);const value=Number(decoded);return Number.isFinite(value)&&value>=0?Math.floor(value):0;}
+export function parseCursor(cursor:string|null|undefined):number{if(!cursor)return 0;try{const decoded=atob(cursor);const value=Number(decoded);return Number.isFinite(value)&&value>=0?Math.floor(value):0;}catch{return 0;}}
 export function encodeCursor(offset:number):string{return btoa(String(Math.max(0,Math.floor(offset))));}
 export function isSafeExternalUrl(value:string):boolean{try{const url=new URL(value);return url.protocol==="https:"||url.protocol==="http:";}catch{return false;}}
-export function escapeHtml(value:string):string{return value.replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\\"":"&quot;","'":"&#39;"}[character]??character));}
+export function escapeHtml(value:string):string{return value.replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[character]??character));}
 
 export class SlidingWindowRateLimiter {
   private readonly hits = new Map<string, number[]>();
