@@ -20,7 +20,8 @@ async function renderTrim(file:File,start:number,end:number,rotation:number):Pro
   if(rotation%180===0){canvas.width=w;canvas.height=h}else{canvas.width=h;canvas.height=w}
   const ctx=canvas.getContext("2d"); if(!ctx){URL.revokeObjectURL(url);throw new Error("Video editor is unavailable in this browser.")}
   const stream=canvas.captureStream(30);
-  const source=typeof video.captureStream==="function"?video.captureStream():null;
+  const videoWithCapture = video as HTMLVideoElement & { captureStream?: () => MediaStream };
+  const source = typeof videoWithCapture.captureStream === "function" ? videoWithCapture.captureStream() : null;
   source?.getAudioTracks().forEach(t=>stream.addTrack(t));
   const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(x=>MediaRecorder.isTypeSupported(x));
   if(!mime){URL.revokeObjectURL(url);throw new Error("This browser does not support local video export.")}
