@@ -171,7 +171,7 @@ function Editor(p:EditorProps){
 
 function Advanced(p:EditorProps&{isPost:boolean;isStory:boolean;isClip:boolean}){
  return <div className="mt-4 grid gap-3 sm:grid-cols-2">
-  {(p.isVideo)&&<Select label="Publishing channel" value={p.channelId} set={p.setChannelId} options={p.channels.map(c=>c.id)}/>}
+  {(p.mode==="video"||p.mode==="clip")&&<Select label="Publishing channel" value={p.channelId} set={p.setChannelId} options={p.channels.map(c=>c.id)}/>}
   <Select label="Visibility" value={p.isStory?p.storyAudience:p.visibility} set={v=>p.isStory?p.setStoryAudience(v as "followers"|"public"|"private"):p.setVisibility(v as Visibility)} options={p.isStory?["followers","public","private"]:["public","unlisted","private"]}/>
   {!p.isStory&&<Select label="Audience" value={p.kids?"kids":"general"} set={v=>p.setKids(v==="kids")} options={["general","kids"]}/>}
   {!p.isStory&&<Toggle checked={p.comments} set={p.setComments} title="Comments" text="Allow viewers to comment."/>}
