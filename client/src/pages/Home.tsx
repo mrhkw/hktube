@@ -32,7 +32,7 @@ export default function Home() {
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const videos = (latestQuery.data ?? []) as VideoRecord[];
-  const feedVideos = buildHomeFeed(videos.map(video => ({ ...video, id: String(video.id), creatorId: String((video as VideoRecord & { channel_id?: string | null }).channel_id ?? ""), topic: video.category ?? null })), {}, 20) as unknown as VideoRecord[];
+  const feedVideos = buildHomeFeed(videos.map(video => ({ ...video, id: String(video.id), creatorId: String(video.channelId ?? ""), topic: video.category ?? null, createdAt: new Date(video.uploadedAt).toISOString() })), {}, 20) as unknown as VideoRecord[];
   const featuredVideos = feedVideos.slice(0, 4);
 
   useEffect(() => {
