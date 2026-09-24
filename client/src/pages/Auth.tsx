@@ -51,7 +51,7 @@ export default function Auth() {
   async function signInWithGoogle() {
     setGooglePending(true);
     try {
-      const redirectTo = `${window.location.origin}/`;
+      const redirectTo = `${window.location.origin}/auth/callback`;
       const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo, queryParams: { prompt: "select_account" } } }), "Google login is taking too long. Please try again.");
       if (error) throw error;
     } catch (error) {
@@ -71,7 +71,7 @@ export default function Auth() {
         navigate("/menu");
       } else {
         if (!validSignupPassword(password)) throw new Error("Password should be at least 8 characters and contain at least one letter and one number.");
-        const { data, error } = await withTimeout(supabase.auth.signUp({ email: email.trim(), password, options: { data: { display_name: name.trim() }, emailRedirectTo: `${window.location.origin}/auth` } }), "Account creation is taking too long. Please try again.");
+        const { data, error } = await withTimeout(supabase.auth.signUp({ email: email.trim(), password, options: { data: { display_name: name.trim() }, emailRedirectTo: `${window.location.origin}/auth/callback` } }), "Account creation is taking too long. Please try again.");
         if (error) throw error;
         if (data.session) {
           toast.success("Your HkTube account is ready.");
