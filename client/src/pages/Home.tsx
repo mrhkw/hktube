@@ -5,6 +5,7 @@ import { VideoCard } from "@/components/VideoCard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VideoRecord } from "@/lib/video";
+import { buildHomeFeed } from "@/lib/feedEngine";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, BookOpen, Compass, FileText, Flame, Loader2, PenLine, Play, Plus, RefreshCw, Search, ShieldCheck, Sparkles, UploadCloud, UsersRound, Video } from "lucide-react";
 
@@ -31,7 +32,8 @@ export default function Home() {
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const videos = (latestQuery.data ?? []) as VideoRecord[];
-  const featuredVideos = videos.slice(0, 4);
+  const feedVideos = buildHomeFeed(videos.map(video => ({ ...video, id: String(video.id), creatorId: String((video as VideoRecord & { channel_id?: string | null }).channel_id ?? ""), topic: video.category ?? null })), {}, 20) as unknown as VideoRecord[];
+  const featuredVideos = feedVideos.slice(0, 4);
 
   useEffect(() => {
     if (!latestQuery.isLoading) { setLoadingTimedOut(false); return; }
@@ -76,7 +78,7 @@ export default function Home() {
       <section>
         <div className="mb-5 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-violet-300/70">Personalized-style discovery</p><h2 className="mt-1 text-2xl font-black tracking-[-.035em] text-white sm:text-3xl">Recommended for you</h2></div><Link href="/trending" className="hidden items-center text-sm font-bold text-slate-300 transition hover:text-white sm:inline-flex">View trending <ArrowRight className="ml-1 size-4" /></Link></div>
         {isLoading ? <div className="grid min-h-[38vh] place-items-center rounded-3xl border border-white/8 bg-white/[.02]" role="status"><Loader2 className="size-8 animate-spin text-violet-300" /><span className="sr-only">Loading HkTube recommendations</span></div> : latestQuery.isError || loadingTimedOut ? <div className="grid min-h-[30vh] place-items-center rounded-3xl border border-white/8 bg-white/[.02] px-6 text-center"><div><h2 className="text-2xl font-bold text-white">We couldn't refresh the feed</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">The live catalog did not respond in time. Your account and uploads are unchanged.</p><Button type="button" onClick={() => { setLoadingTimedOut(false); void latestQuery.refetch(); }} className="mt-5 rounded-full bg-white text-slate-950 hover:bg-slate-100"><RefreshCw className="mr-2 size-4" />Retry</Button></div></div> : videos.length ? <>
-          <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">{videos.map(video => <VideoCard key={video.id} video={video} />)}</div>
+          <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">{feedVideos.map(video => <VideoCard key={video.id} video={video} />)}</div>
         </> : <div className="grid min-h-[30vh] place-items-center rounded-3xl border border-white/8 bg-white/[.02] px-6 text-center"><div><UploadCloud className="mx-auto size-9 text-violet-200" /><h2 className="mt-4 text-2xl font-bold text-white">Your feed is ready for its first upload</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">There are no public videos yet. Upload an original video and it will appear here after publishing.</p><Link href="/upload" className="mt-5 inline-flex items-center rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950 hover:bg-slate-100">Upload a video</Link></div></div>}
       </section>
 
