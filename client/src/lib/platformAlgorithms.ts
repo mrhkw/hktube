@@ -230,3 +230,65 @@ export function createAbortableTimeout(ms: number): AbortController {
   window.setTimeout(() => controller.abort(), Math.max(0, ms));
   return controller;
 }
+
+
+export class Trie {
+  private readonly root = new Map<string, Map<string, unknown>>();
+  add(value: string): void { let node: Map<string, unknown> = this.root; for (const char of value.toLocaleLowerCase()) { let next = node.get(char) as Map<string, unknown> | undefined; if (!next) { next = new Map<string, unknown>(); node.set(char, next); } node = next; } node.set("\\0", true); }
+  startsWith(prefix: string, limit = 12): string[] { const normalized = prefix.toLocaleLowerCase(); let node: Map<string, unknown> = this.root; for (const char of normalized) { const next = node.get(char) as Map<string, unknown> | undefined; if (!next) return []; node = next; } const result: string[] = []; const walk = (current: Map<string, unknown>, value: string) => { if (result.length >= limit) return; if (current.has("\\0")) result.push(value); for (const [char, child] of current) if (char !== "\\0") walk(child as Map<string, unknown>, value + char); }; walk(node, normalized); return result; }
+}
+
+export class BloomFilter {
+  private readonly bits: Uint8Array;
+  constructor(private readonly size = 4096, private readonly hashes = 4) { this.bits = new Uint8Array(Math.ceil(size / 8)); }
+  private index(value: string, seed: number): number { return stableHash(value + ":" + seed) % this.size; }
+  add(value: string): void { for (let i = 0; i < this.hashes; i += 1) { const index = this.index(value, i); this.bits[index >> 3] |= 1 << (index & 7); } }
+  has(value: string): boolean { for (let i = 0; i < this.hashes; i += 1) { const index = this.index(value, i); if ((this.bits[index >> 3] & (1 << (index & 7))) === 0) return false; } return true; }
+}
+
+export class InvertedIndex {
+  private readonly index = new Map<string, Set<string>>();
+  add(documentId: string, text: string): void { for (const token of text.toLocaleLowerCase().split(/[^\\p{L}\\p{N}_-]+/gu).filter(Boolean)) { const set = this.index.get(token) ?? new Set<string>(); set.add(documentId); this.index.set(token, set); } }
+  search(tokens: readonly string[]): string[] { if (!tokens.length) return []; const sets = tokens.map(token => this.index.get(token.toLocaleLowerCase()) ?? new Set<string>()).sort((a,b)=>a.size-b.size); if (!sets[0].size) return []; return [...sets[0]].filter(id => sets.every(set => set.has(id))); }
+}
+
+export function jaccardSimilarity(left: readonly string[], right: readonly string[]): number { const a = new Set(left), b = new Set(right); if (!a.size && !b.size) return 1; let intersection = 0; for (const value of a) if (b.has(value)) intersection += 1; return intersection / Math.max(1, new Set([...a, ...b]).size); }
+export function hammingDistance(left: string, right: string): number { const length = Math.max(left.length, right.length); let distance = Math.abs(left.length-right.length); for (let i=0;i<Math.min(left.length,right.length);i+=1) if(left[i]!==right[i]) distance += 1; return distance; }
+export function clamp(value: number, min: number, max: number): number { return Math.min(max, Math.max(min, value)); }
+export function weightedChoice<T>(items: readonly T[], weightOf: (item: T) => number, random = Math.random): T | undefined { const total = items.reduce((sum,item)=>sum+Math.max(0,weightOf(item)),0); if(!items.length || total<=0) return items[0]; let cursor=random()*total; for(const item of items){cursor-=Math.max(0,weightOf(item));if(cursor<=0)return item;} return items[items.length-1]; }
+export function topK<T>(items: readonly T[], k: number, scoreOf: (item:T)=>number): T[] { return [...items].sort((a,b)=>scoreOf(b)-scoreOf(a)).slice(0,Math.max(0,k)); }
+export function chunk<T>(items: readonly T[], size: number): T[][] { const result:T[][]=[]; for(let i=0;i<items.length;i+=Math.max(1,size)) result.push([...items.slice(i,i+Math.max(1,size))]); return result; }
+export function ewma(previous: number, current: number, alpha = 0.2): number { return previous + clamp(alpha,0,1)*(current-previous); }
+export function movingAverage(values: readonly number[], windowSize=5): number { const valuesToUse=values.slice(-Math.max(1,windowSize)); return valuesToUse.length?valuesToUse.reduce((a,b)=>a+b,0)/valuesToUse.length:0; }
+export function zScore(value:number, mean:number, standardDeviation:number):number{return standardDeviation>0?(value-mean)/standardDeviation:0;}
+export function percentileRank(value:number, values:readonly number[]):number{if(!values.length)return 0;return values.filter(item=>item<=value).length/values.length;}
+export function reservoirSample<T>(items:readonly T[], count:number, random=Math.random):T[]{const result:T[]=[];const n=Math.max(0,count);items.forEach((item,index)=>{if(index<n)result.push(item);else{const slot=Math.floor(random()*(index+1));if(slot<n)result[slot]=item;}});return result;}
+export function parseCursor(cursor:string|null|undefined):number{if(!cursor)return 0;const decoded=atob(cursor);const value=Number(decoded);return Number.isFinite(value)&&value>=0?Math.floor(value):0;}
+export function encodeCursor(offset:number):string{return btoa(String(Math.max(0,Math.floor(offset))));}
+export function isSafeExternalUrl(value:string):boolean{try{const url=new URL(value);return url.protocol==="https:"||url.protocol==="http:";}catch{return false;}}
+export function escapeHtml(value:string):string{return value.replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\\"":"&quot;","'":"&#39;"}[character]??character));}
+
+export class SlidingWindowRateLimiter {
+  private readonly hits = new Map<string, number[]>();
+  constructor(private readonly limit=60, private readonly windowMs=60_000) {}
+  allow(key:string, now=Date.now()):boolean { const recent=(this.hits.get(key)??[]).filter(timestamp=>timestamp>now-this.windowMs); if(recent.length>=this.limit){this.hits.set(key,recent);return false;} recent.push(now); this.hits.set(key,recent); return true; }
+  reset(key:string):void{this.hits.delete(key);}
+}
+
+export class CircuitBreaker {
+  private failures=0; private openedAt=0;
+  constructor(private readonly threshold=5, private readonly cooldownMs=30_000) {}
+  canRequest(now=Date.now()):boolean{return this.openedAt===0||now-this.openedAt>=this.cooldownMs;}
+  success():void{this.failures=0;this.openedAt=0;}
+  failure(now=Date.now()):void{this.failures+=1;if(this.failures>=this.threshold)this.openedAt=now;}
+}
+
+export class IdempotencyStore {
+  private readonly entries = new Map<string,{value:unknown;expiresAt:number}>();
+  constructor(private readonly ttlMs=300_000) {}
+  get<T>(key:string):T|undefined{const entry=this.entries.get(key);if(!entry)return undefined;if(entry.expiresAt<=Date.now()){this.entries.delete(key);return undefined;}return entry.value as T;}
+  set<T>(key:string,value:T):void{this.entries.set(key,{value,expiresAt:Date.now()+this.ttlMs});}
+}
+
+export type StateTransition<S extends string,E extends string>={from:S;event:E;to:S};
+export function transitionState<S extends string,E extends string>(state:S,event:E,transitions:readonly StateTransition<S,E>[]):S{ return transitions.find(item=>item.from===state&&item.event===event)?.to??state; }
