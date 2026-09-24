@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import {
-  ArrowLeft, Camera, Check, ChevronRight, Crop, Download, Eye, FileImage,
-  FileVideo2, Hash, ImagePlus, Lock, MessageCircle, Palette, Play, RotateCw,
-  Save, Settings2, ShieldCheck, Sparkles, Sticker, UploadCloud, Users, Video,
-  WandSparkles, X, Clock3, Globe2
+  ArrowLeft, ChevronRight, Crop, Eye, FileVideo2, ImagePlus, RotateCw,
+  Save, Settings2, ShieldCheck, Sparkles, UploadCloud, Users, Video, X
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
@@ -172,7 +170,7 @@ function Advanced(p:EditorProps&{isPost:boolean;isStory:boolean;isClip:boolean})
   {!p.isStory&&<Select label="Audience" value={p.kids?"kids":"general"} set={v=>p.setKids(v==="kids")} options={["general","kids"]}/>}
   {!p.isStory&&<Toggle checked={p.comments} set={p.setComments} title="Comments" text="Allow viewers to comment."/>}
   {p.isStory?<Toggle checked={p.allowReplies} set={p.setAllowReplies} title="Story replies" text="Allow replies to this story."/>:<Toggle checked={p.downloads} set={p.setDownloads} title="Downloads" text="Allow viewers to download where supported."/>}
-  {p.isVideo&&!p.isStory&&<><Toggle checked={p.embed} set={p.setEmbed} title="Embedding" text="Allow external embeds."/><Toggle checked={p.remix} set={p.setRemix} title="Remix / reuse" text="Allow eligible remix features."/><Toggle checked={p.notify} set={p.setNotify} title="Notify followers" text="Send normal publish notifications."/><Toggle checked={p.caption} set={p.setCaption} title="Captions" text="Mark captions as available."/><Field label="Schedule" value={p.schedule} set={p.setSchedule} placeholder="YYYY-MM-DDTHH:mm"/></>}
+  {(p.mode==="video"||p.mode==="clip")&&!p.isStory&&<><Toggle checked={p.embed} set={p.setEmbed} title="Embedding" text="Allow external embeds."/><Toggle checked={p.remix} set={p.setRemix} title="Remix / reuse" text="Allow eligible remix features."/><Toggle checked={p.notify} set={p.setNotify} title="Notify followers" text="Send normal publish notifications."/><Toggle checked={p.caption} set={p.setCaption} title="Captions" text="Mark captions as available."/><Field label="Schedule" value={p.schedule} set={p.setSchedule} placeholder="YYYY-MM-DDTHH:mm"/></>}
   {p.isPost&&<Toggle checked={p.comments} set={p.setComments} title="Comments" text="Allow comments on this post."/>}
   <div className="sm:col-span-2 rounded-2xl border border-amber-300/10 bg-amber-500/[.04] p-4 text-xs leading-5 text-slate-400"><b className="text-amber-200">Rights declaration:</b> Upload media you created or have permission/licensing to publish. HkTube can place content under review when a rights or safety signal is raised.</div>
  </div>
