@@ -4,7 +4,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Bell, Clock3, Compass, Loader2, RefreshCw, Search, Sparkles, TrendingUp, UploadCloud } from "lucide-react";
+import { Bell, Clock3, Compass, Loader2, RefreshCw, Search, Sparkles, TrendingUp, UploadCloud, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
