@@ -67,7 +67,7 @@ export default function UploadPage(){
    const file=files[0]; if(!ACCEPT_VIDEO.has(file.type))return toast.error("Use MP4/H.264 or WebM.");
    if(file.size>MAX_VIDEO)return toast.error(`Video must be 900 MB or smaller. This file is ${bytes(file.size)}.`);
    void videoMeta(file).then(async info=>{
-     if(mode==="clip"&&(info.width>info.height||info.duration>180))throw new Error("Clips need a vertical video up to 180 seconds.");
+     if(mode==="clip"&&info.duration>180)throw new Error("Clips can be up to 180 seconds. Trim the video in the editor.");
      
      const url=URL.createObjectURL(file);setMedia([{file,url,kind:"video"}]);
      const t=await makeThumb(file);if(t)setThumbnail(t);
