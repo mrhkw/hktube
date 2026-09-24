@@ -373,13 +373,27 @@ export async function createSupabaseVideo(input: {
 
   input.onProgress?.(10);
 
-  await resumableUpload(
-    "videos",
-    videoPath,
-    input.file,
-    fraction => input.onProgress?.(10 + Math.round(fraction * 55)),
-    input.signal,
-  );
+  try {
+    await resumableUpload(
+      "videos",
+      videoPath,
+      input.file,
+      fraction => input.onProgress?.(10 + Math.round(fraction * 55)),
+      input.signal,
+    );
+  } catch (uploadError) {
+    if (input.signal?.aborted) throw uploadError;
+    const message = uploadError instanceof Error ? uploadError.message : "Resumable upload failed.";
+    input.onProgress?.(15);
+    const { error: fallbackError } = await supabase.storage.from("videos").upload(videoPath, input.file, {
+      contentType,
+      upsert: false,
+      cacheControl: "31536000",
+    });
+    if (fallbackError) {
+      throw new Error(`Video upload failed. Resumable: ${message} Fallback: ${fallbackError.message}`);
+    }
+  }
   input.onProgress?.(65);
 
   let thumbnailPath: string | null = null;
