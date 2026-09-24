@@ -7,6 +7,7 @@ import { registerMediaUploadRoute } from "../mediaUpload";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
+import { observeSecurityRequest } from "./securityFabric";
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -122,6 +123,11 @@ export function createApiApp(): Express {
       ...SECURITY_HEADERS,
       "Content-Security-Policy": CONTENT_SECURITY_POLICY,
     });
+    const securityObservation = observeSecurityRequest(req);
+    res.set("X-Security-Trace", securityObservation.requestId);
+    if (securityObservation.suspicious) {
+      console.warn(`[Security] elevated-risk request score=${securityObservation.score} trace=${securityObservation.requestId} path=${req.path}`);
+    }
     if (req.path.startsWith("/api/")) res.set("Cache-Control", "no-store");
     if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
     if (securityGate(req, res)) next();
