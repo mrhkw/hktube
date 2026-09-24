@@ -30,6 +30,48 @@ export function sanitizeUrl(input: string | null | undefined): string | null {
   }
 }
 
+const BLOCKED_HOSTNAMES = new Set([
+  "localhost",
+  "localhost.localdomain",
+  "metadata.google.internal",
+  "metadata.google",
+  "instance-data.ec2.internal",
+]);
+
+function isPrivateIpv4(hostname: string): boolean {
+  const parts = hostname.split(".").map(Number);
+  if (parts.length !== 4 || parts.some(part => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  const [a, b] = parts;
+  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
+function isPrivateIpv6(hostname: string): boolean {
+  const value = hostname.toLowerCase();
+  return value === "::1" || value === "::" || value.startsWith("fc") || value.startsWith("fd") ||
+    value.startsWith("fe8") || value.startsWith("fe9") || value.startsWith("fea") || value.startsWith("feb");
+}
+
+/**
+ * Reject URLs that could target local/private infrastructure when a server
+ * is asked to fetch an externally supplied URL. This is deliberately stricter
+ * than sanitizeUrl because SSRF protection is a server-side trust boundary.
+ */
+export function isSafeExternalUrl(input: string | null | undefined): boolean {
+  if (!input || input.length > 2048) return false;
+  try {
+    const url = new URL(input.trim());
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    if (url.username || url.password) return false;
+    const hostname = url.hostname.replace(/^\\[|\\]$/g, "").toLowerCase();
+    if (!hostname || BLOCKED_HOSTNAMES.has(hostname)) return false;
+    if (isPrivateIpv4(hostname) || isPrivateIpv6(hostname)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function validateVideoUrl(url: string): boolean {
   return sanitizeUrl(url) !== null;
 }
