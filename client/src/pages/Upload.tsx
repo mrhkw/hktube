@@ -242,6 +242,7 @@ export default function UploadPage() {
   const [eta, setEta] = useState<number | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [autoThumbnail, setAutoThumbnail] = useState(false);
+  const [thumbnailFrame, setThumbnailFrame] = useState(0.12);
 
   const [recorderOpen, setRecorderOpen] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -549,7 +550,7 @@ export default function UploadPage() {
       setVideoInfo(info);
       setMode(forcedClip ? "clip" : mode === "video" ? "video" : inferredClip ? "clip" : "video");
 
-      const generated = await generateThumbnail(next, info);
+      const generated = await generateThumbnailAt(next, info, thumbnailFrame);
       if (generated) {
         setThumbnail(generated);
         setAutoThumbnail(true);
@@ -574,6 +575,16 @@ export default function UploadPage() {
       setFile(null);
       setVideoInfo(null);
       setNotice({ type: "error", text: friendlyUploadError(error) });
+    }
+  }
+
+  async function chooseThumbnailFrame(position: number) {
+    if (!file || !videoInfo || uploading) return;
+    setThumbnailFrame(position);
+    const generated = await generateThumbnailAt(file, videoInfo, position);
+    if (generated) {
+      setThumbnail(generated);
+      setAutoThumbnail(true);
     }
   }
 
@@ -1200,11 +1211,22 @@ export default function UploadPage() {
                       </label>
                     </div>
                     {thumbnailPreview && (
-                      <img
-                        src={thumbnailPreview}
-                        alt="Video thumbnail preview"
-                        className="mt-4 aspect-video w-full max-w-sm rounded-xl object-cover"
-                      />
+                      <>
+                        <img
+                          src={thumbnailPreview}
+                          alt="Video thumbnail preview"
+                          className="mt-4 aspect-video w-full max-w-sm rounded-xl object-cover"
+                        />
+                        {file && videoInfo && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="mr-1 text-[11px] font-bold text-slate-500">Pick frame:</span>
+                            {[0.05, 0.2, 0.35, 0.5, 0.7, 0.9].map(position => (
+                              <button key={position} type="button" disabled={uploading} onClick={() => void chooseThumbnailFrame(position)} className={cn("rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition", Math.abs(thumbnailFrame - position) < 0.001 ? "border-violet-300/50 bg-violet-500/15 text-white" : "border-white/10 bg-white/[.03] text-slate-400 hover:bg-white/[.06]")}>{Math.round(position * 100)}%</button>
+                            ))}
+                            <span className="text-[11px] text-slate-600">Choose the frame where the subject/face is positioned best.</span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
