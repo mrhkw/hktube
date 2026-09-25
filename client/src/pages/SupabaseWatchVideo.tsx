@@ -5,65 +5,821 @@ import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { rankPublicVideos, recordDiscoveryEvent, setRecommendationFeedback, type RecommendationReason } from "@/lib/supabaseDiscovery";
-import { addVideoComment, getVideoEngagement, listVideoComments, recordVideoView, reportVideo, toggleChannelSubscription, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
-import { mapVideo, VIDEO_SELECT, type SupabaseVideo } from "@/lib/supabaseVideos";
-import { Bookmark, Check, Heart, Loader2, MessageCircle, MoreVertical, Share2, UserPlus } from "lucide-react";
+import {
+  rankPublicVideos,
+  recordDiscoveryEvent,
+  setRecommendationFeedback,
+  type RecommendationReason,
+} from "@/lib/supabaseDiscovery";
+import {
+  addVideoComment,
+  getVideoEngagement,
+  listVideoComments,
+  recordVideoView,
+  reportVideo,
+  toggleChannelSubscription,
+  toggleVideoLike,
+  toggleVideoSave,
+} from "@/lib/supabaseEngagement";
+import {
+  mapVideo,
+  VIDEO_SELECT,
+  type SupabaseVideo,
+} from "@/lib/supabaseVideos";
+import {
+  Bookmark,
+  Check,
+  Heart,
+  Loader2,
+  MessageCircle,
+  MoreVertical,
+  Share2,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Video = SupabaseVideo;
-type Channel = { id: string; handle: string; name: string; avatar_url: string | null; subscriber_count: number };
-function mediaUrl(bucket: string, path: string | null) { return path ? (/^https?:\/\//i.test(path) ? path : supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl) : null; }
+type Channel = {
+  id: string;
+  handle: string;
+  name: string;
+  avatar_url: string | null;
+  subscriber_count: number;
+};
+function mediaUrl(bucket: string, path: string | null) {
+  return path
+    ? /^https?:\/\//i.test(path)
+      ? path
+      : supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+    : null;
+}
 
 export default function SupabaseWatchVideo() {
-  const [, params] = useRoute("/watch/:id"); const id = params?.id || ""; const { user } = useAuth();
+  const [, params] = useRoute("/watch/:id");
+  const id = params?.id || "";
+  const { user } = useAuth();
   const [video, setVideo] = useState<Video | null>(null);
-  const [mediaError, setMediaError] = useState(false); const [channel, setChannel] = useState<Channel | null>(null); const [related, setRelated] = useState<SupabaseVideo[]>([]); const [comments, setComments] = useState<any[]>([]); const [comment, setComment] = useState(""); const [replyTo, setReplyTo] = useState<string | null>(null); const [resumePosition, setResumePosition] = useState(0);
-  const [engagement, setEngagement] = useState({ liked: false, saved: false, subscribed: false, likeCount: 0, subscriberCount: 0 }); const [recommendationReason, setRecommendationReason] = useState<RecommendationReason | null>(null); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [expanded, setExpanded] = useState(false); const [moreOpen, setMoreOpen] = useState(false);
-  const playerRef = useRef<HTMLVideoElement | null>(null); const viewed = useRef(false); const lastSavedSecond = useRef(0); const lastBucket = useRef<string | null>(null);
+  const [mediaError, setMediaError] = useState(false);
+  const [channel, setChannel] = useState<Channel | null>(null);
+  const [related, setRelated] = useState<SupabaseVideo[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const [comment, setComment] = useState("");
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [resumePosition, setResumePosition] = useState(0);
+  const [engagement, setEngagement] = useState({
+    liked: false,
+    saved: false,
+    subscribed: false,
+    likeCount: 0,
+    subscriberCount: 0,
+  });
+  const [recommendationReason, setRecommendationReason] =
+    useState<RecommendationReason | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const playerRef = useRef<HTMLVideoElement | null>(null);
+  const viewed = useRef(false);
+  const lastSavedSecond = useRef(0);
+  const lastBucket = useRef<string | null>(null);
   async function load() {
-    if (!id) return; setLoading(true);
-    const { data, error } = await supabase.from("videos").select(VIDEO_SELECT).eq("id", id).eq("visibility", "public").eq("status", "published").maybeSingle();
-    if (error || !data) { setVideo(null); setLoading(false); return; }
+    if (!id) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("videos")
+      .select(VIDEO_SELECT)
+      .eq("id", id)
+      .eq("visibility", "public")
+      .eq("status", "published")
+      .maybeSingle();
+    if (error || !data) {
+      setVideo(null);
+      setLoading(false);
+      return;
+    }
     const mapped = mapVideo(data as Record<string, unknown>);
     setVideo(mapped);
-    if (mapped.channelId) { const channelResult = await supabase.from("channels").select("id,handle,name,avatar_url,subscriber_count").eq("id", mapped.channelId).maybeSingle(); setChannel((channelResult.data as Channel | null) || null); }
-    try { const ranked = await rankPublicVideos({ query: data.title, limit: 32, userId: user?.id == null ? undefined : String(user.id) }); const current = ranked.find(item => item.id === id); setRecommendationReason(current?.reason ?? null); setRelated(ranked.filter(item => item.id !== id).slice(0, 12)); } catch { setRelated([]); setRecommendationReason(null); }
+    if (mapped.channelId) {
+      const channelResult = await supabase
+        .from("channels")
+        .select("id,handle,name,avatar_url,subscriber_count")
+        .eq("id", mapped.channelId)
+        .maybeSingle();
+      setChannel((channelResult.data as Channel | null) || null);
+    }
+    try {
+      const ranked = await rankPublicVideos({
+        query: data.title,
+        limit: 32,
+        userId: user?.id == null ? undefined : String(user.id),
+      });
+      const current = ranked.find(item => item.id === id);
+      setRecommendationReason(current?.reason ?? null);
+      setRelated(ranked.filter(item => item.id !== id).slice(0, 12));
+    } catch {
+      setRelated([]);
+      setRecommendationReason(null);
+    }
     setComments(await listVideoComments(id));
-    if (user?.id) { const { data: history } = await supabase.from("watch_history").select("progress_seconds").eq("user_id", user.id).eq("video_id", id).maybeSingle(); setResumePosition(Number(history?.progress_seconds || 0)); }
-    try { setEngagement(await getVideoEngagement(id, mapped.channelId)); } catch {}
+    if (user?.id) {
+      const { data: history } = await supabase
+        .from("watch_history")
+        .select("progress_seconds")
+        .eq("user_id", user.id)
+        .eq("video_id", id)
+        .maybeSingle();
+      setResumePosition(Number(history?.progress_seconds || 0));
+    }
+    try {
+      setEngagement(await getVideoEngagement(id, mapped.channelId));
+    } catch {}
     setLoading(false);
   }
-  useEffect(() => { void load(); }, [id, user?.id]);
-  useEffect(() => { if (!video) return; void recordDiscoveryEvent({ eventType: "open", objectType: video.tags?.includes("shorts") ? "short" : "video", objectId: video.id }).catch(() => undefined); }, [video?.id]);
-  useEffect(() => { const onKey = (event: KeyboardEvent) => { if (!playerRef.current || (event.target as HTMLElement)?.tagName === "INPUT" || (event.target as HTMLElement)?.tagName === "TEXTAREA") return; const el = playerRef.current; if (event.key === " ") { event.preventDefault(); if (el.paused) void el.play(); else el.pause(); } if (event.key.toLowerCase() === "f") { event.preventDefault(); if (document.fullscreenElement) void document.exitFullscreen(); else void el.requestFullscreen?.(); } if (event.key === "ArrowLeft") el.currentTime = Math.max(0, el.currentTime - 5); if (event.key === "ArrowRight") el.currentTime = Math.min(el.duration || Infinity, el.currentTime + 5); if (event.key.toLowerCase() === "m") el.muted = !el.muted; }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, []);
-  const videoUrl = useMemo(() => video?.videoUrl || null, [video?.videoUrl]); const thumbnailUrl = useMemo(() => video?.thumbnailUrl || null, [video?.thumbnailUrl]);
-  async function like() { if (!user) return startLogin(); try { const result = await toggleVideoLike(id); setEngagement(current => ({ ...current, liked: result.liked, likeCount: Number(result.count) })); void recordDiscoveryEvent({eventType:result.liked?"like":"unlike",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to like this video."); } }
-  async function save() { if (!user) return startLogin(); try { const saved = await toggleVideoSave(id); setEngagement(current => ({ ...current, saved })); void recordDiscoveryEvent({eventType:saved?"save":"unsave",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); toast.success(saved ? "Added to Watch Later." : "Removed from Watch Later."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to save this video."); } }
-  async function subscribe() { if (!user) return startLogin(); if (!channel) return; try { const result = await toggleChannelSubscription(channel.id); setEngagement(current => ({ ...current, subscribed: result.subscribed, subscriberCount: Number(result.count) })); setChannel(current => current ? { ...current, subscriber_count: Number(result.count) } : current); if(result.subscribed)void recordDiscoveryEvent({eventType:"follow",objectType:"channel",objectId:channel.id}).catch(()=>undefined); toast.success(result.subscribed ? "Subscribed." : "Unsubscribed."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to update subscription."); } }
-  async function submitComment(event: React.FormEvent) { event.preventDefault(); if (!comment.trim()) return; if (!user) return startLogin(); setBusy(true); try { await addVideoComment(id, comment.trim(), replyTo); setComment(""); setReplyTo(null); setComments(await listVideoComments(id)); void recordDiscoveryEvent({eventType:"comment",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); toast.success(replyTo ? "Reply published." : "Comment published."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to post comment."); } finally { setBusy(false); } }
-  async function share() { const url = window.location.href; try { if (navigator.share) await navigator.share({ title: video?.title, url }); else { await navigator.clipboard.writeText(url); toast.success("Video link copied."); } void recordDiscoveryEvent({eventType:"share",objectType:video?.tags?.includes("shorts")?"short":"video",objectId:id}).catch(()=>undefined); } catch {} }
-  async function report() { if (!user) return startLogin(); try { await reportVideo(id, "policy_violation", "User reported this video from the watch page."); setMoreOpen(false); toast.success("Report sent to moderation."); } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to report this video."); } }
-  async function recommendationFeedback(type: "not_interested" | "hide_creator" | "hide_topic" | "more_like_this" | "less_like_this") {
+  useEffect(() => {
+    void load();
+  }, [id, user?.id]);
+  useEffect(() => {
+    if (!video) return;
+    void recordDiscoveryEvent({
+      eventType: "open",
+      objectType: video.tags?.includes("shorts") ? "short" : "video",
+      objectId: video.id,
+    }).catch(() => undefined);
+  }, [video?.id]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (
+        !playerRef.current ||
+        (event.target as HTMLElement)?.tagName === "INPUT" ||
+        (event.target as HTMLElement)?.tagName === "TEXTAREA"
+      )
+        return;
+      const el = playerRef.current;
+      if (event.key === " ") {
+        event.preventDefault();
+        if (el.paused) void el.play();
+        else el.pause();
+      }
+      if (event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        if (document.fullscreenElement) void document.exitFullscreen();
+        else void el.requestFullscreen?.();
+      }
+      if (event.key === "ArrowLeft")
+        el.currentTime = Math.max(0, el.currentTime - 5);
+      if (event.key === "ArrowRight")
+        el.currentTime = Math.min(el.duration || Infinity, el.currentTime + 5);
+      if (event.key.toLowerCase() === "m") el.muted = !el.muted;
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const videoUrl = useMemo(() => video?.videoUrl || null, [video?.videoUrl]);
+  const thumbnailUrl = useMemo(
+    () => video?.thumbnailUrl || null,
+    [video?.thumbnailUrl]
+  );
+  async function like() {
+    if (!user) return startLogin();
+    try {
+      const result = await toggleVideoLike(id);
+      setEngagement(current => ({
+        ...current,
+        liked: result.liked,
+        likeCount: Number(result.count),
+      }));
+      void recordDiscoveryEvent({
+        eventType: result.liked ? "like" : "unlike",
+        objectType: video?.tags?.includes("shorts") ? "short" : "video",
+        objectId: id,
+      }).catch(() => undefined);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Unable to like this video."
+      );
+    }
+  }
+  async function save() {
+    if (!user) return startLogin();
+    try {
+      const saved = await toggleVideoSave(id);
+      setEngagement(current => ({ ...current, saved }));
+      void recordDiscoveryEvent({
+        eventType: saved ? "save" : "unsave",
+        objectType: video?.tags?.includes("shorts") ? "short" : "video",
+        objectId: id,
+      }).catch(() => undefined);
+      toast.success(
+        saved ? "Added to Watch Later." : "Removed from Watch Later."
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Unable to save this video."
+      );
+    }
+  }
+  async function subscribe() {
+    if (!user) return startLogin();
+    if (!channel) return;
+    try {
+      const result = await toggleChannelSubscription(channel.id);
+      setEngagement(current => ({
+        ...current,
+        subscribed: result.subscribed,
+        subscriberCount: Number(result.count),
+      }));
+      setChannel(current =>
+        current
+          ? { ...current, subscriber_count: Number(result.count) }
+          : current
+      );
+      if (result.subscribed)
+        void recordDiscoveryEvent({
+          eventType: "follow",
+          objectType: "channel",
+          objectId: channel.id,
+        }).catch(() => undefined);
+      toast.success(result.subscribed ? "Subscribed." : "Unsubscribed.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Unable to update subscription."
+      );
+    }
+  }
+  async function submitComment(event: React.FormEvent) {
+    event.preventDefault();
+    if (!comment.trim()) return;
+    if (!user) return startLogin();
+    setBusy(true);
+    try {
+      await addVideoComment(id, comment.trim(), replyTo);
+      setComment("");
+      setReplyTo(null);
+      setComments(await listVideoComments(id));
+      void recordDiscoveryEvent({
+        eventType: "comment",
+        objectType: video?.tags?.includes("shorts") ? "short" : "video",
+        objectId: id,
+      }).catch(() => undefined);
+      toast.success(replyTo ? "Reply published." : "Comment published.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Unable to post comment.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function share() {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: video?.title, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Video link copied.");
+      }
+      void recordDiscoveryEvent({
+        eventType: "share",
+        objectType: video?.tags?.includes("shorts") ? "short" : "video",
+        objectId: id,
+      }).catch(() => undefined);
+    } catch {}
+  }
+  async function report() {
+    if (!user) return startLogin();
+    try {
+      await reportVideo(
+        id,
+        "policy_violation",
+        "User reported this video from the watch page."
+      );
+      setMoreOpen(false);
+      toast.success("Report sent to moderation.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Unable to report this video."
+      );
+    }
+  }
+  async function recommendationFeedback(
+    type:
+      | "not_interested"
+      | "hide_creator"
+      | "hide_topic"
+      | "more_like_this"
+      | "less_like_this"
+  ) {
     if (!user) return startLogin();
     try {
       await setRecommendationFeedback(id, type, video?.tags?.[0] || null);
       setMoreOpen(false);
-      toast.success(type === "more_like_this" ? "HkTube will show more like this." : type === "less_like_this" ? "HkTube will reduce similar recommendations." : type === "hide_creator" ? "This creator will be reduced in recommendations." : type === "hide_topic" ? "This topic will be reduced in recommendations." : "Got it. This video will be removed from your recommendation preference.");
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to update recommendation preference."); }
+      toast.success(
+        type === "more_like_this"
+          ? "HkTube will show more like this."
+          : type === "less_like_this"
+            ? "HkTube will reduce similar recommendations."
+            : type === "hide_creator"
+              ? "This creator will be reduced in recommendations."
+              : type === "hide_topic"
+                ? "This topic will be reduced in recommendations."
+                : "Got it. This video will be removed from your recommendation preference."
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Unable to update recommendation preference."
+      );
+    }
   }
-  if (loading) return <HkTubeShell><div className="grid min-h-[60vh] place-items-center"><Loader2 className="size-8 animate-spin" /></div></HkTubeShell>;
-  if (!video || !videoUrl) return <HkTubeShell title="Video unavailable"><div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white p-8 text-center"><h1 className="text-2xl font-black text-black">This video is unavailable</h1><p className="mt-2 text-sm text-neutral-500">It may still be in moderation, removed, or the link may be incorrect.</p><Link href="/" className="mt-5 inline-flex rounded-full bg-black px-5 py-2.5 text-sm font-bold text-white">Back to HkTube</Link></div></HkTubeShell>;
+  if (loading)
+    return (
+      <HkTubeShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <Loader2 className="size-8 animate-spin" />
+        </div>
+      </HkTubeShell>
+    );
+  if (!video || !videoUrl)
+    return (
+      <HkTubeShell title="Video unavailable">
+        <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white p-8 text-center">
+          <h1 className="text-2xl font-black text-black">
+            This video is unavailable
+          </h1>
+          <p className="mt-2 text-sm text-neutral-500">
+            It may still be in moderation, removed, or the link may be
+            incorrect.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-flex rounded-full bg-black px-5 py-2.5 text-sm font-bold text-white"
+          >
+            Back to HkTube
+          </Link>
+        </div>
+      </HkTubeShell>
+    );
   const isShort = Boolean(video.isShort || video.tags?.includes("shorts"));
-  return <HkTubeShell immersive={isShort}><main className="mx-auto grid w-full max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_360px]"><section className="min-w-0">
-    {mediaError && <div className="mb-3 rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">Video stream could not be decoded by this browser. The thumbnail is preserved and you can retry/open the source.</div>}
-    <div className={isShort ? "mx-auto max-w-[720px] overflow-hidden rounded-2xl bg-black" : "overflow-hidden rounded-2xl bg-black"}><video ref={playerRef} src={videoUrl} poster={thumbnailUrl || undefined} controls playsInline preload="metadata" className={isShort ? "mx-auto aspect-[9/16] max-h-[82vh] w-full object-contain" : "aspect-video w-full object-contain"} onError={()=>setMediaError(true)} onLoadedData={()=>setMediaError(false)} onLoadedMetadata={e=>{if(resumePosition>0&&resumePosition<(e.currentTarget.duration-2)){e.currentTarget.currentTime=resumePosition;toast.info(`Resuming at ${Math.floor(resumePosition/60)}:${String(Math.floor(resumePosition%60)).padStart(2,"0")}`);}}} onPlay={()=>{if(!viewed.current){viewed.current=true;void recordVideoView(video.id).then(result=>setVideo(current=>current?{...current,viewCount:Number(result.views)}:current)).catch(()=>undefined);}void recordDiscoveryEvent({eventType:"play_start",objectType:isShort?"short":"video",objectId:video.id}).catch(()=>undefined)}} onTimeUpdate={e=>{const el=e.currentTarget;const seconds=Math.floor(el.currentTime);if(user&&seconds>0&&seconds-lastSavedSecond.current>=15){lastSavedSecond.current=seconds;void supabase.from("watch_history").upsert({user_id:user.id,video_id:video.id,progress_seconds:seconds,watched_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"user_id,video_id"}).then(()=>undefined,()=>undefined);}if(el.duration>0){const pct=el.currentTime/el.duration;const bucket=pct>=.9?"watch_90_percent":pct>=.75?"watch_75_percent":pct>=.5?"watch_50_percent":pct>=.25?"watch_25_percent":pct>=.1?"watch_10_percent":null;if(bucket&&bucket!==lastBucket.current){lastBucket.current=bucket;void recordDiscoveryEvent({eventType:bucket,objectType:isShort?"short":"video",objectId:video.id,watchSeconds:seconds,positionSeconds:seconds}).catch(()=>undefined);}}}} onEnded={()=>{if(user?.id)void supabase.from("watch_history").upsert({user_id:user.id,video_id:video.id,progress_seconds:Math.floor(video.durationSeconds||0),watched_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"user_id,video_id"}).then(()=>undefined,()=>undefined);void recordDiscoveryEvent({eventType:"complete",objectType:isShort?"short":"video",objectId:video.id}).catch(()=>undefined);}} onError={e=>void recordDiscoveryEvent({eventType:"playback_error",objectType:isShort?"short":"video",objectId:video.id,context:{media_error_code:e.currentTarget.error?.code??null}}).catch(()=>undefined)} /></div>
-    <div className="border-b border-white/10 py-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-violet-300">{isShort ? "HkTube Short" : "HkTube Video"}</p><h1 className="mt-1 text-2xl font-black text-white">{video.title}</h1></div><div className="relative"><button type="button" onClick={()=>setMoreOpen(v=>!v)} className="grid size-9 place-items-center rounded-full border border-white/10 bg-white/[.04] text-slate-300" aria-label="More video options"><MoreVertical className="size-4"/></button>{moreOpen&&<div className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-white/10 bg-[#151a25] p-2 shadow-2xl"><button onClick={()=>void recommendationFeedback("not_interested")} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Not interested</button><button onClick={()=>void recommendationFeedback("more_like_this")} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Show more like this</button><button onClick={()=>void recommendationFeedback("less_like_this")} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Show less like this</button><button onClick={()=>void recommendationFeedback("hide_creator")} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Reduce this creator</button><button onClick={()=>void recommendationFeedback("hide_topic")} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Reduce this topic</button><button onClick={()=>void report()} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Report this video</button><button onClick={()=>{setMoreOpen(false);navigator.clipboard?.writeText(window.location.href).then(()=>toast.success("Link copied."))}} className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5">Copy video link</button></div>}</div></div>
-      {channel&&<div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-3"><Link href={`/channel/${channel.handle}`} className="flex min-w-0 flex-1 items-center gap-3"><span className="grid size-10 place-items-center overflow-hidden rounded-full bg-violet-500/20 font-bold text-white">{channel.avatar_url?<img src={channel.avatar_url} alt="" className="size-full object-cover"/>:channel.name.slice(0,1)}</span><span className="min-w-0"><span className="block truncate font-bold text-white">{channel.name}</span><span className="block text-xs text-slate-500">@{channel.handle} · {engagement.subscriberCount.toLocaleString()} subscribers</span></span></Link><Button onClick={()=>void subscribe()} disabled={busy} className="rounded-full bg-violet-500 text-white">{engagement.subscribed?<><Check className="mr-1 size-4"/>Subscribed</>:<><UserPlus className="mr-1 size-4"/>Subscribe</>}</Button></div>}
-      <div className="mt-4 flex flex-wrap gap-2"><Button variant="outline" onClick={()=>void like()} className={engagement.liked?"border-rose-400/40 bg-rose-500/15 text-rose-100":"text-white"}><Heart className={`mr-1.5 size-4 ${engagement.liked?"fill-current":""}`}/>{engagement.likeCount}</Button><Button variant="outline" onClick={()=>void save()} className="text-white"><Bookmark className={`mr-1.5 size-4 ${engagement.saved?"fill-current":""}`}/>{engagement.saved?"Saved":"Watch later"}</Button><Button variant="outline" onClick={()=>void share()} className="text-white"><Share2 className="mr-1.5 size-4"/>Share</Button></div>
-      <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">{video.tags.filter(tag=>tag!=="shorts").map(tag=><Link key={tag} href={`/search?q=${encodeURIComponent(tag)}`} className="rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5 hover:text-white">#{tag}</Link>)}<span className="rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5">Keyboard: Space · ←/→ · F · M</span></div>
-      <div className="mt-4 rounded-2xl border border-cyan-300/10 bg-cyan-300/[.035] p-4"><div className="flex items-start gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-cyan-300/10 text-cyan-200">✦</span><div><p className="text-xs font-bold uppercase tracking-[.14em] text-cyan-200">Why you are seeing this</p><p className="mt-1 text-sm leading-6 text-slate-300">{recommendationReason==="followed_creator"?"You follow this creator.":recommendationReason==="similar_to_watched"?"It is similar to videos you watched.":recommendationReason==="interest_match"?"It matches topics and interests inferred from your activity.":recommendationReason==="search_related"?"It matches your current search context.":recommendationReason==="fresh_creator"?"It is being explored as newer or less-exposed creator content.":recommendationReason==="fresh"?"It is fresh content that may be relevant to you.":"It was selected using HkTube discovery signals such as viewing, engagement, freshness and diversity."}</p></div></div></div><div className="mt-4 rounded-2xl bg-white/[.035] p-4"><p className={`whitespace-pre-wrap text-sm leading-6 text-slate-300 ${expanded?"":"line-clamp-4"}`}>{video.description||"No description."}</p>{video.description&&video.description.length>300&&<button className="mt-2 text-xs font-bold text-cyan-300" onClick={()=>setExpanded(v=>!v)}>{expanded?"Show less":"Show more"}</button>}</div>
-    </div>
-    <section id="comments" className="py-6"><div className="flex items-center gap-2"><MessageCircle className="size-5 text-fuchsia-300"/><h2 className="text-lg font-black text-white">Comments</h2><span className="text-xs text-slate-500">{comments.length}</span></div>{replyTo&&<div className="mt-3 flex items-center justify-between rounded-xl bg-violet-500/10 px-3 py-2 text-xs text-violet-200">Replying to a comment<button onClick={()=>setReplyTo(null)} className="font-bold">Cancel</button></div>}<form onSubmit={submitComment} className="mt-4 flex gap-2"><input value={comment} onChange={e=>setComment(e.target.value)} placeholder={user?(replyTo?"Write a reply…":"Add a public comment…"):"Sign in to comment"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.04] px-3 py-2.5 text-sm text-white outline-none"/><Button type="submit" disabled={busy||!comment.trim()}>Post</Button></form><div className="mt-5 space-y-3">{comments.map(item=><article key={item.id} className={`rounded-xl border border-white/8 bg-white/[.025] p-4 ${item.parent_id?"ml-5 border-l-violet-400/30":""}`}><div className="flex items-start justify-between gap-3"><p className="text-sm leading-6 text-slate-300">{item.body}</p>{!item.parent_id&&<button onClick={()=>setReplyTo(item.id)} className="shrink-0 text-xs font-bold text-violet-300">Reply</button>}</div><p className="mt-2 text-xs text-slate-600">{new Date(item.created_at).toLocaleString()}</p></article>)}{!comments.length&&<p className="py-8 text-sm text-slate-500">No comments yet.</p>}</div></section>
-  </section><aside><h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">More like this</h2><div className="grid gap-4">{related.map(item=><Link key={item.id} href={`/watch/${item.id}`} className="flex gap-3 rounded-xl p-2 transition hover:bg-white/[.05]"><div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-black"><img src={mediaUrl("thumbnails",item.thumbnailUrl)||""} alt="" className="size-full object-cover"/><span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{Number(item.viewCount).toLocaleString()}</span></div><span className="line-clamp-3 text-sm font-semibold text-slate-200">{item.title}</span></Link>)}</div></aside></main></HkTubeShell>;
+  return (
+    <HkTubeShell immersive={isShort}>
+      <main className="mx-auto grid w-full max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0">
+          {mediaError && (
+            <div className="mb-3 rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+              Video stream could not be decoded by this browser. The thumbnail
+              is preserved and you can retry/open the source.
+            </div>
+          )}
+          <div
+            className={
+              isShort
+                ? "mx-auto max-w-[720px] overflow-hidden rounded-2xl bg-black"
+                : "overflow-hidden rounded-2xl bg-black"
+            }
+          >
+            <video
+              ref={playerRef}
+              src={videoUrl}
+              poster={thumbnailUrl || undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className={
+                isShort
+                  ? "mx-auto aspect-[9/16] max-h-[82vh] w-full object-contain"
+                  : "aspect-video w-full object-contain"
+              }
+              onLoadedData={() => setMediaError(false)}
+              onLoadedMetadata={e => {
+                if (
+                  resumePosition > 0 &&
+                  resumePosition < e.currentTarget.duration - 2
+                ) {
+                  e.currentTarget.currentTime = resumePosition;
+                  toast.info(
+                    `Resuming at ${Math.floor(resumePosition / 60)}:${String(Math.floor(resumePosition % 60)).padStart(2, "0")}`
+                  );
+                }
+              }}
+              onPlay={() => {
+                if (!viewed.current) {
+                  viewed.current = true;
+                  void recordVideoView(video.id)
+                    .then(result =>
+                      setVideo(current =>
+                        current
+                          ? { ...current, viewCount: Number(result.views) }
+                          : current
+                      )
+                    )
+                    .catch(() => undefined);
+                }
+                void recordDiscoveryEvent({
+                  eventType: "play_start",
+                  objectType: isShort ? "short" : "video",
+                  objectId: video.id,
+                }).catch(() => undefined);
+              }}
+              onTimeUpdate={e => {
+                const el = e.currentTarget;
+                const seconds = Math.floor(el.currentTime);
+                if (
+                  user &&
+                  seconds > 0 &&
+                  seconds - lastSavedSecond.current >= 15
+                ) {
+                  lastSavedSecond.current = seconds;
+                  void supabase
+                    .from("watch_history")
+                    .upsert(
+                      {
+                        user_id: user.id,
+                        video_id: video.id,
+                        progress_seconds: seconds,
+                        watched_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      },
+                      { onConflict: "user_id,video_id" }
+                    )
+                    .then(
+                      () => undefined,
+                      () => undefined
+                    );
+                }
+                if (el.duration > 0) {
+                  const pct = el.currentTime / el.duration;
+                  const bucket =
+                    pct >= 0.9
+                      ? "watch_90_percent"
+                      : pct >= 0.75
+                        ? "watch_75_percent"
+                        : pct >= 0.5
+                          ? "watch_50_percent"
+                          : pct >= 0.25
+                            ? "watch_25_percent"
+                            : pct >= 0.1
+                              ? "watch_10_percent"
+                              : null;
+                  if (bucket && bucket !== lastBucket.current) {
+                    lastBucket.current = bucket;
+                    void recordDiscoveryEvent({
+                      eventType: bucket,
+                      objectType: isShort ? "short" : "video",
+                      objectId: video.id,
+                      watchSeconds: seconds,
+                      positionSeconds: seconds,
+                    }).catch(() => undefined);
+                  }
+                }
+              }}
+              onEnded={() => {
+                if (user?.id)
+                  void supabase
+                    .from("watch_history")
+                    .upsert(
+                      {
+                        user_id: user.id,
+                        video_id: video.id,
+                        progress_seconds: Math.floor(
+                          video.durationSeconds || 0
+                        ),
+                        watched_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      },
+                      { onConflict: "user_id,video_id" }
+                    )
+                    .then(
+                      () => undefined,
+                      () => undefined
+                    );
+                void recordDiscoveryEvent({
+                  eventType: "complete",
+                  objectType: isShort ? "short" : "video",
+                  objectId: video.id,
+                }).catch(() => undefined);
+              }}
+              onError={e => {
+                setMediaError(true);
+                void recordDiscoveryEvent({
+                  eventType: "playback_error",
+                  objectType: isShort ? "short" : "video",
+                  objectId: video.id,
+                  context: {
+                    media_error_code: e.currentTarget.error?.code ?? null,
+                  },
+                }).catch(() => undefined);
+              }}
+            />
+          </div>
+          <div className="border-b border-white/10 py-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.16em] text-violet-300">
+                  {isShort ? "HkTube Short" : "HkTube Video"}
+                </p>
+                <h1 className="mt-1 text-2xl font-black text-white">
+                  {video.title}
+                </h1>
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(v => !v)}
+                  className="grid size-9 place-items-center rounded-full border border-white/10 bg-white/[.04] text-slate-300"
+                  aria-label="More video options"
+                >
+                  <MoreVertical className="size-4" />
+                </button>
+                {moreOpen && (
+                  <div className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-white/10 bg-[#151a25] p-2 shadow-2xl">
+                    <button
+                      onClick={() =>
+                        void recommendationFeedback("not_interested")
+                      }
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Not interested
+                    </button>
+                    <button
+                      onClick={() =>
+                        void recommendationFeedback("more_like_this")
+                      }
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Show more like this
+                    </button>
+                    <button
+                      onClick={() =>
+                        void recommendationFeedback("less_like_this")
+                      }
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Show less like this
+                    </button>
+                    <button
+                      onClick={() =>
+                        void recommendationFeedback("hide_creator")
+                      }
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Reduce this creator
+                    </button>
+                    <button
+                      onClick={() => void recommendationFeedback("hide_topic")}
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Reduce this topic
+                    </button>
+                    <button
+                      onClick={() => void report()}
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Report this video
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMoreOpen(false);
+                        navigator.clipboard
+                          ?.writeText(window.location.href)
+                          .then(() => toast.success("Link copied."));
+                      }}
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-white hover:bg-white/5"
+                    >
+                      Copy video link
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            {channel && (
+              <div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-3">
+                <Link
+                  href={`/channel/${channel.handle}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  <span className="grid size-10 place-items-center overflow-hidden rounded-full bg-violet-500/20 font-bold text-white">
+                    {channel.avatar_url ? (
+                      <img
+                        src={channel.avatar_url}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      channel.name.slice(0, 1)
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-bold text-white">
+                      {channel.name}
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      @{channel.handle} ·{" "}
+                      {engagement.subscriberCount.toLocaleString()} subscribers
+                    </span>
+                  </span>
+                </Link>
+                <Button
+                  onClick={() => void subscribe()}
+                  disabled={busy}
+                  className="rounded-full bg-violet-500 text-white"
+                >
+                  {engagement.subscribed ? (
+                    <>
+                      <Check className="mr-1 size-4" />
+                      Subscribed
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-1 size-4" />
+                      Subscribe
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => void like()}
+                className={
+                  engagement.liked
+                    ? "border-rose-400/40 bg-rose-500/15 text-rose-100"
+                    : "text-white"
+                }
+              >
+                <Heart
+                  className={`mr-1.5 size-4 ${engagement.liked ? "fill-current" : ""}`}
+                />
+                {engagement.likeCount}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void save()}
+                className="text-white"
+              >
+                <Bookmark
+                  className={`mr-1.5 size-4 ${engagement.saved ? "fill-current" : ""}`}
+                />
+                {engagement.saved ? "Saved" : "Watch later"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void share()}
+                className="text-white"
+              >
+                <Share2 className="mr-1.5 size-4" />
+                Share
+              </Button>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
+              {video.tags
+                .filter(tag => tag !== "shorts")
+                .map(tag => (
+                  <Link
+                    key={tag}
+                    href={`/search?q=${encodeURIComponent(tag)}`}
+                    className="rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5 hover:text-white"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              <span className="rounded-full border border-white/10 bg-white/[.03] px-3 py-1.5">
+                Keyboard: Space · ←/→ · F · M
+              </span>
+            </div>
+            <div className="mt-4 rounded-2xl border border-cyan-300/10 bg-cyan-300/[.035] p-4">
+              <div className="flex items-start gap-3">
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-cyan-300/10 text-cyan-200">
+                  ✦
+                </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[.14em] text-cyan-200">
+                    Why you are seeing this
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-slate-300">
+                    {recommendationReason === "followed_creator"
+                      ? "You follow this creator."
+                      : recommendationReason === "similar_to_watched"
+                        ? "It is similar to videos you watched."
+                        : recommendationReason === "interest_match"
+                          ? "It matches topics and interests inferred from your activity."
+                          : recommendationReason === "search_related"
+                            ? "It matches your current search context."
+                            : recommendationReason === "fresh_creator"
+                              ? "It is being explored as newer or less-exposed creator content."
+                              : recommendationReason === "fresh"
+                                ? "It is fresh content that may be relevant to you."
+                                : "It was selected using HkTube discovery signals such as viewing, engagement, freshness and diversity."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 rounded-2xl bg-white/[.035] p-4">
+              <p
+                className={`whitespace-pre-wrap text-sm leading-6 text-slate-300 ${expanded ? "" : "line-clamp-4"}`}
+              >
+                {video.description || "No description."}
+              </p>
+              {video.description && video.description.length > 300 && (
+                <button
+                  className="mt-2 text-xs font-bold text-cyan-300"
+                  onClick={() => setExpanded(v => !v)}
+                >
+                  {expanded ? "Show less" : "Show more"}
+                </button>
+              )}
+            </div>
+          </div>
+          <section id="comments" className="py-6">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-fuchsia-300" />
+              <h2 className="text-lg font-black text-white">Comments</h2>
+              <span className="text-xs text-slate-500">{comments.length}</span>
+            </div>
+            {replyTo && (
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-violet-500/10 px-3 py-2 text-xs text-violet-200">
+                Replying to a comment
+                <button onClick={() => setReplyTo(null)} className="font-bold">
+                  Cancel
+                </button>
+              </div>
+            )}
+            <form onSubmit={submitComment} className="mt-4 flex gap-2">
+              <input
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder={
+                  user
+                    ? replyTo
+                      ? "Write a reply…"
+                      : "Add a public comment…"
+                    : "Sign in to comment"
+                }
+                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.04] px-3 py-2.5 text-sm text-white outline-none"
+              />
+              <Button type="submit" disabled={busy || !comment.trim()}>
+                Post
+              </Button>
+            </form>
+            <div className="mt-5 space-y-3">
+              {comments.map(item => (
+                <article
+                  key={item.id}
+                  className={`rounded-xl border border-white/8 bg-white/[.025] p-4 ${item.parent_id ? "ml-5 border-l-violet-400/30" : ""}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm leading-6 text-slate-300">
+                      {item.body}
+                    </p>
+                    {!item.parent_id && (
+                      <button
+                        onClick={() => setReplyTo(item.id)}
+                        className="shrink-0 text-xs font-bold text-violet-300"
+                      >
+                        Reply
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-slate-600">
+                    {new Date(item.created_at).toLocaleString()}
+                  </p>
+                </article>
+              ))}
+              {!comments.length && (
+                <p className="py-8 text-sm text-slate-500">No comments yet.</p>
+              )}
+            </div>
+          </section>
+        </section>
+        <aside>
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-slate-300">
+            More like this
+          </h2>
+          <div className="grid gap-4">
+            {related.map(item => (
+              <Link
+                key={item.id}
+                href={`/watch/${item.id}`}
+                className="flex gap-3 rounded-xl p-2 transition hover:bg-white/[.05]"
+              >
+                <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-black">
+                  <img
+                    src={mediaUrl("thumbnails", item.thumbnailUrl) || ""}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                  <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">
+                    {Number(item.viewCount).toLocaleString()}
+                  </span>
+                </div>
+                <span className="line-clamp-3 text-sm font-semibold text-slate-200">
+                  {item.title}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </aside>
+      </main>
+    </HkTubeShell>
+  );
 }

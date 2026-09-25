@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeft,
   Camera,
@@ -25,9 +33,13 @@ import {
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { listMySupabaseChannels, type SupabaseChannel } from "@/lib/supabaseChannels";
+import {
+  listMySupabaseChannels,
+  type SupabaseChannel,
+} from "@/lib/supabaseChannels";
 import { createSupabaseVideo } from "@/lib/supabaseVideos";
 import { startLogin } from "@/const";
+import { cn } from "@/lib/utils";
 
 type Notice = { type: "success" | "error" | "info"; text: string } | null;
 type Step = "media" | "details";
@@ -38,13 +50,21 @@ type CameraFacing = "user" | "environment";
 const MAX_VIDEO_BYTES = 900 * 1024 * 1024;
 const MAX_THUMBNAIL_BYTES = 12 * 1024 * 1024;
 const ACCEPTED_VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
-const ACCEPTED_THUMBNAIL_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+const ACCEPTED_THUMBNAIL_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+]);
 const DRAFT_KEY = "hktube-upload-draft-v3";
 
 function formatBytes(bytes: number) {
   if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
   return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
 }
 
@@ -60,7 +80,8 @@ function formatDuration(seconds: number) {
 }
 
 function formatEta(seconds: number | null) {
-  if (!seconds || !Number.isFinite(seconds) || seconds <= 0) return "calculating…";
+  if (!seconds || !Number.isFinite(seconds) || seconds <= 0)
+    return "calculating…";
   if (seconds < 60) return `${Math.ceil(seconds)}s left`;
   return `${Math.floor(seconds / 60)}m ${Math.ceil(seconds % 60)}s left`;
 }
@@ -80,7 +101,9 @@ function suggestedTags(title: string, category: string) {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(word => word.length >= 3);
-  return Array.from(new Set([category.trim().toLowerCase(), ...words].filter(Boolean)))
+  return Array.from(
+    new Set([category.trim().toLowerCase(), ...words].filter(Boolean))
+  )
     .slice(0, 10)
     .join(", ");
 }
@@ -122,8 +145,11 @@ async function inspectVideo(file: File): Promise<VideoInfo> {
     };
 
     const timeout = window.setTimeout(
-      () => finishError("HkTube could not read this video. Export a standard MP4/H.264 or WebM file."),
-      12000,
+      () =>
+        finishError(
+          "HkTube could not read this video. Export a standard MP4/H.264 or WebM file."
+        ),
+      12000
     );
 
     video.preload = "metadata";
@@ -135,20 +161,32 @@ async function inspectVideo(file: File): Promise<VideoInfo> {
         return;
       }
       finished = true;
-      const duration = Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
-      const info = { width: video.videoWidth, height: video.videoHeight, duration };
+      const duration = Number.isFinite(video.duration)
+        ? Math.max(0, video.duration)
+        : 0;
+      const info = {
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration,
+      };
       cleanup();
       resolve(info);
     };
     video.onerror = () => {
       window.clearTimeout(timeout);
-      finishError("HkTube could not decode this video. Use a standard MP4/H.264 or WebM export.");
+      finishError(
+        "HkTube could not decode this video. Use a standard MP4/H.264 or WebM export."
+      );
     };
     video.src = url;
   });
 }
 
-async function generateThumbnailAt(file: File, info: VideoInfo, position: number): Promise<File | null> {
+async function generateThumbnailAt(
+  file: File,
+  info: VideoInfo,
+  position: number
+): Promise<File | null> {
   return new Promise(resolve => {
     const video = document.createElement("video");
     const url = URL.createObjectURL(file);
@@ -177,27 +215,34 @@ async function generateThumbnailAt(file: File, info: VideoInfo, position: number
     video.onloadedmetadata = () => {
       const target = Math.min(
         Math.max(info.duration * position, 0.1),
-        Math.max(info.duration - 0.1, 0.1),
+        Math.max(info.duration - 0.1, 0.1)
       );
       video.currentTime = target;
     };
 
     video.onseeked = () => {
       canvas.width = Math.min(info.width, 1280);
-      canvas.height = Math.max(1, Math.round(canvas.width * info.height / info.width));
+      canvas.height = Math.max(
+        1,
+        Math.round((canvas.width * info.height) / info.width)
+      );
       const ctx = canvas.getContext("2d");
       if (!ctx) return finish(null);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
-        if (!blob) return finish(null);
-        finish(
-          new File(
-            [blob],
-            `${file.name.replace(/\.[^.]+$/, "")}-thumbnail.jpg`,
-            { type: "image/jpeg" },
-          ),
-        );
-      }, "image/jpeg", 0.84);
+      canvas.toBlob(
+        blob => {
+          if (!blob) return finish(null);
+          finish(
+            new File(
+              [blob],
+              `${file.name.replace(/\.[^.]+$/, "")}-thumbnail.jpg`,
+              { type: "image/jpeg" }
+            )
+          );
+        },
+        "image/jpeg",
+        0.84
+      );
     };
 
     video.onerror = () => finish(null);
@@ -224,7 +269,9 @@ export default function UploadPage() {
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
   const [language, setLanguage] = useState("English");
-  const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
+  const [visibility, setVisibility] = useState<
+    "public" | "unlisted" | "private"
+  >("public");
   const [file, setFile] = useState<File | null>(null);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState("");
@@ -257,10 +304,17 @@ export default function UploadPage() {
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
 
-  const isClip = mode === "clip" || (mode === "auto" && Boolean(videoInfo && videoInfo.height >= videoInfo.width && videoInfo.duration <= 180));
+  const isClip =
+    mode === "clip" ||
+    (mode === "auto" &&
+      Boolean(
+        videoInfo &&
+          videoInfo.height >= videoInfo.width &&
+          videoInfo.duration <= 180
+      ));
   const selectedChannel = useMemo(
     () => channels.find(channel => channel.id === channelId),
-    [channels, channelId],
+    [channels, channelId]
   );
   const modeLabel = isClip ? "Clip" : "Long Video";
   const canSubmit = Boolean(
@@ -269,26 +323,30 @@ export default function UploadPage() {
       title.trim() &&
       channelId &&
       videoInfo &&
-      !channelsLoading,
+      !channelsLoading
   );
 
   useEffect(() => {
     try {
-      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") as
-        | Record<string, unknown>
-        | null;
+      const draft = JSON.parse(
+        localStorage.getItem(DRAFT_KEY) || "null"
+      ) as Record<string, unknown> | null;
       if (!draft) return;
       if (typeof draft.title === "string") setTitle(draft.title);
-      if (typeof draft.description === "string") setDescription(draft.description);
+      if (typeof draft.description === "string")
+        setDescription(draft.description);
       if (typeof draft.category === "string") setCategory(draft.category);
       if (typeof draft.tags === "string") setTags(draft.tags);
       if (typeof draft.language === "string") setLanguage(draft.language);
       if (typeof draft.visibility === "string") {
         setVisibility(draft.visibility as "public" | "unlisted" | "private");
       }
-      if (typeof draft.madeForKids === "boolean") setMadeForKids(draft.madeForKids);
-      if (typeof draft.allowComments === "boolean") setAllowComments(draft.allowComments);
-      if (typeof draft.allowDownload === "boolean") setAllowDownload(draft.allowDownload);
+      if (typeof draft.madeForKids === "boolean")
+        setMadeForKids(draft.madeForKids);
+      if (typeof draft.allowComments === "boolean")
+        setAllowComments(draft.allowComments);
+      if (typeof draft.allowDownload === "boolean")
+        setAllowDownload(draft.allowDownload);
     } catch {
       localStorage.removeItem(DRAFT_KEY);
     }
@@ -307,7 +365,7 @@ export default function UploadPage() {
         madeForKids,
         allowComments,
         allowDownload,
-      }),
+      })
     );
   }, [
     title,
@@ -372,7 +430,8 @@ export default function UploadPage() {
   useEffect(() => {
     return () => {
       recordingStreamRef.current?.getTracks().forEach(track => track.stop());
-      if (recordingTimerRef.current) window.clearInterval(recordingTimerRef.current);
+      if (recordingTimerRef.current)
+        window.clearInterval(recordingTimerRef.current);
     };
   }, []);
 
@@ -380,14 +439,21 @@ export default function UploadPage() {
     recordingStreamRef.current?.getTracks().forEach(track => track.stop());
     recordingStreamRef.current = null;
     if (recordingVideoRef.current) recordingVideoRef.current.srcObject = null;
-    if (recordingTimerRef.current) window.clearInterval(recordingTimerRef.current);
+    if (recordingTimerRef.current)
+      window.clearInterval(recordingTimerRef.current);
     recordingTimerRef.current = null;
   }
 
   async function openRecorder(facing: CameraFacing = cameraFacing) {
     if (uploading || recording) return;
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      setNotice({ type: "error", text: "Camera recording is not supported by this browser. Use Choose video instead." });
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === "undefined"
+    ) {
+      setNotice({
+        type: "error",
+        text: "Camera recording is not supported by this browser. Use Choose video instead.",
+      });
       return;
     }
 
@@ -396,8 +462,16 @@ export default function UploadPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isClip
-          ? { facingMode: facing, width: { ideal: 1080 }, height: { ideal: 1920 } }
-          : { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          ? {
+              facingMode: facing,
+              width: { ideal: 1080 },
+              height: { ideal: 1920 },
+            }
+          : {
+              facingMode: facing,
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
         audio: true,
       });
 
@@ -421,7 +495,8 @@ export default function UploadPage() {
 
   async function switchCamera() {
     if (recording) return;
-    const nextFacing: CameraFacing = cameraFacing === "user" ? "environment" : "user";
+    const nextFacing: CameraFacing =
+      cameraFacing === "user" ? "environment" : "user";
     cleanupRecordingStream();
     setCameraFacing(nextFacing);
     await openRecorder(nextFacing);
@@ -431,16 +506,17 @@ export default function UploadPage() {
     const stream = recordingStreamRef.current;
     if (!stream || recording) return;
 
-    const preferred = [
-      "video/webm;codecs=vp9,opus",
-      "video/webm;codecs=vp8,opus",
-      "video/webm",
-    ].find(type => MediaRecorder.isTypeSupported(type)) || "";
+    const preferred =
+      [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ].find(type => MediaRecorder.isTypeSupported(type)) || "";
 
     try {
       const recorder = new MediaRecorder(
         stream,
-        preferred ? { mimeType: preferred } : undefined,
+        preferred ? { mimeType: preferred } : undefined
       );
 
       recordingChunksRef.current = [];
@@ -451,7 +527,10 @@ export default function UploadPage() {
       recorder.onerror = () => {
         cleanupRecordingStream();
         setRecording(false);
-        setNotice({ type: "error", text: "Camera recording failed. Your browser did not provide a usable recording." });
+        setNotice({
+          type: "error",
+          text: "Camera recording failed. Your browser did not provide a usable recording.",
+        });
       };
 
       recorder.onstop = () => {
@@ -461,7 +540,7 @@ export default function UploadPage() {
         const recordedFile = new File(
           [blob],
           `HkTube-recording-${Date.now()}.webm`,
-          { type: blob.type || "video/webm", lastModified: Date.now() },
+          { type: blob.type || "video/webm", lastModified: Date.now() }
         );
 
         cleanupRecordingStream();
@@ -478,15 +557,19 @@ export default function UploadPage() {
       setRecordingSeconds(0);
       recordingTimerRef.current = window.setInterval(
         () => setRecordingSeconds(value => value + 1),
-        1000,
+        1000
       );
     } catch {
-      setNotice({ type: "error", text: "HkTube could not start the camera recorder on this device." });
+      setNotice({
+        type: "error",
+        text: "HkTube could not start the camera recorder on this device.",
+      });
     }
   }
 
   function stopRecording() {
-    if (!recorderRef.current || recorderRef.current.state === "inactive") return;
+    if (!recorderRef.current || recorderRef.current.state === "inactive")
+      return;
     recorderRef.current.stop();
     recorderRef.current = null;
   }
@@ -504,13 +587,19 @@ export default function UploadPage() {
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   }
 
-  async function chooseVideo(next: File | undefined, source: "file" | "recording" = "file") {
+  async function chooseVideo(
+    next: File | undefined,
+    source: "file" | "recording" = "file"
+  ) {
     if (!next || uploading) return;
 
     setNotice(null);
 
     if (!ACCEPTED_VIDEO_TYPES.has(next.type.toLowerCase())) {
-      setNotice({ type: "error", text: "Use MP4/H.264 or WebM for reliable playback." });
+      setNotice({
+        type: "error",
+        text: "Use MP4/H.264 or WebM for reliable playback.",
+      });
       return;
     }
 
@@ -532,23 +621,40 @@ export default function UploadPage() {
       const inferredClip = info.height >= info.width && info.duration <= 180;
 
       if (forcedClip && info.width > info.height) {
-        setNotice({ type: "error", text: "Clip mode needs a vertical portrait video." });
+        setNotice({
+          type: "error",
+          text: "Clip mode needs a vertical portrait video.",
+        });
         return;
       }
 
       if (mode === "video" && info.width <= info.height) {
-        setNotice({ type: "error", text: "Long Video mode needs a landscape video." });
+        setNotice({
+          type: "error",
+          text: "Long Video mode needs a landscape video.",
+        });
         return;
       }
 
-      if ((forcedClip || (mode === "auto" && inferredClip)) && info.duration > 180) {
+      if (
+        (forcedClip || (mode === "auto" && inferredClip)) &&
+        info.duration > 180
+      ) {
         setNotice({ type: "error", text: "Clips are limited to 3 minutes." });
         return;
       }
 
       setFile(next);
       setVideoInfo(info);
-      setMode(forcedClip ? "clip" : mode === "video" ? "video" : inferredClip ? "clip" : "video");
+      setMode(
+        forcedClip
+          ? "clip"
+          : mode === "video"
+            ? "video"
+            : inferredClip
+              ? "clip"
+              : "video"
+      );
 
       const generated = await generateThumbnailAt(next, info, thumbnailFrame);
       if (generated) {
@@ -592,7 +698,10 @@ export default function UploadPage() {
     if (!next || uploading) return;
 
     if (!ACCEPTED_THUMBNAIL_TYPES.has(next.type.toLowerCase())) {
-      setNotice({ type: "error", text: "Thumbnail must be JPG, PNG, WebP, or AVIF." });
+      setNotice({
+        type: "error",
+        text: "Thumbnail must be JPG, PNG, WebP, or AVIF.",
+      });
       return;
     }
 
@@ -619,11 +728,17 @@ export default function UploadPage() {
     setMode(next);
 
     if (next === "clip" && videoInfo && videoInfo.width > videoInfo.height) {
-      setNotice({ type: "info", text: "Clip mode requires a vertical video. Select or record a portrait video." });
+      setNotice({
+        type: "info",
+        text: "Clip mode requires a vertical video. Select or record a portrait video.",
+      });
     }
 
     if (next === "video" && videoInfo && videoInfo.width <= videoInfo.height) {
-      setNotice({ type: "info", text: "Long Video mode requires a landscape video. Select or record a landscape video." });
+      setNotice({
+        type: "info",
+        text: "Long Video mode requires a landscape video. Select or record a landscape video.",
+      });
     }
   }
 
@@ -636,7 +751,10 @@ export default function UploadPage() {
     }
 
     if (!file || !videoInfo) {
-      setNotice({ type: "error", text: "Choose or record a valid video first." });
+      setNotice({
+        type: "error",
+        text: "Choose or record a valid video first.",
+      });
       setStep("media");
       return;
     }
@@ -676,7 +794,10 @@ export default function UploadPage() {
         description: description.trim(),
         category: category.trim() || null,
         language: language.trim() || null,
-        tags: tags.split(",").map(tag => tag.trim()).filter(Boolean),
+        tags: tags
+          .split(",")
+          .map(tag => tag.trim())
+          .filter(Boolean),
         file,
         thumbnail,
         isShort: isClip,
@@ -746,9 +867,12 @@ export default function UploadPage() {
         madeForKids,
         allowComments,
         allowDownload,
-      }),
+      })
     );
-    setNotice({ type: "success", text: "Draft settings saved on this device." });
+    setNotice({
+      type: "success",
+      text: "Draft settings saved on this device.",
+    });
   }
 
   function resetComposer() {
@@ -777,7 +901,9 @@ export default function UploadPage() {
       <HkTubeShell title="Create">
         <div className="mx-auto max-w-xl px-5 py-16 text-center">
           <UploadCloud className="mx-auto size-12 text-violet-300" />
-          <h1 className="mt-5 text-3xl font-black text-white">Sign in to upload</h1>
+          <h1 className="mt-5 text-3xl font-black text-white">
+            Sign in to upload
+          </h1>
           <p className="mt-3 text-sm leading-6 text-slate-400">
             Uploads are connected to your channel and protected by your account.
           </p>
@@ -797,15 +923,21 @@ export default function UploadPage() {
     return (
       <HkTubeShell title="Create">
         <div className="mx-auto max-w-xl px-5 py-12">
-          <Link href="/" className="inline-flex items-center text-sm font-semibold text-slate-300">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm font-semibold text-slate-300"
+          >
             <ArrowLeft className="mr-1.5 size-4" />
             Back to Home
           </Link>
           <div className="mt-8 rounded-3xl border border-violet-300/15 bg-violet-500/[.05] p-8 text-center">
             <FileVideo2 className="mx-auto size-10 text-violet-300" />
-            <h1 className="mt-4 text-2xl font-black text-white">Create your channel first</h1>
+            <h1 className="mt-4 text-2xl font-black text-white">
+              Create your channel first
+            </h1>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Every upload needs an owner channel so viewers know where it came from.
+              Every upload needs an owner channel so viewers know where it came
+              from.
             </p>
             {channelError && (
               <p className="mt-4 rounded-xl bg-rose-500/10 p-3 text-left text-xs text-rose-200">
@@ -825,7 +957,10 @@ export default function UploadPage() {
   }
 
   return (
-    <HkTubeShell title="Create" subtitle="One polished composer for Long Videos, Clips and camera recording.">
+    <HkTubeShell
+      title="Create"
+      subtitle="One polished composer for Long Videos, Clips and camera recording."
+    >
       <main className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-7 lg:px-10">
         {notice && (
           <div
@@ -854,20 +989,27 @@ export default function UploadPage() {
           <div className="p-5 sm:p-7">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[.2em] text-violet-300">HkTube Creator</p>
+                <p className="text-xs font-black uppercase tracking-[.2em] text-violet-300">
+                  HkTube Creator
+                </p>
                 <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">
                   Create once. Publish cleanly.
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                  Long-form uploads use a YouTube-style metadata flow. Clips use a vertical short-form flow.
-                  Camera recording enters the exact same publishing pipeline.
+                  Long-form uploads use a YouTube-style metadata flow. Clips use
+                  a vertical short-form flow. Camera recording enters the exact
+                  same publishing pipeline.
                 </p>
               </div>
               <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                 <ShieldCheck className="size-5 text-emerald-300" />
                 <div>
-                  <p className="text-xs font-bold text-white">Protected upload</p>
-                  <p className="text-[11px] text-slate-500">Account + channel ownership</p>
+                  <p className="text-xs font-bold text-white">
+                    Protected upload
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Account + channel ownership
+                  </p>
                 </div>
               </div>
             </div>
@@ -921,16 +1063,24 @@ export default function UploadPage() {
           </span>
         </div>
 
-        <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <form
+          onSubmit={submit}
+          className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
+        >
           <div className="space-y-5">
             {step === "media" ? (
               <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5 transition-all duration-300 sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">Step 1</p>
-                    <h2 className="mt-1 text-2xl font-black text-white">Choose or record media</h2>
+                    <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">
+                      Step 1
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black text-white">
+                      Choose or record media
+                    </h2>
                     <p className="mt-2 text-sm leading-6 text-slate-400">
-                      The composer validates orientation, duration, size and the readable video track before the upload begins.
+                      The composer validates orientation, duration, size and the
+                      readable video track before the upload begins.
                     </p>
                   </div>
                   <Video className="size-8 text-violet-300" />
@@ -955,7 +1105,9 @@ export default function UploadPage() {
                     type="file"
                     accept="video/mp4,video/webm"
                     className="sr-only"
-                    onChange={event => void chooseVideo(event.target.files?.[0])}
+                    onChange={event =>
+                      void chooseVideo(event.target.files?.[0])
+                    }
                   />
                   <input
                     id="video-camera"
@@ -963,17 +1115,22 @@ export default function UploadPage() {
                     accept="video/mp4,video/webm"
                     capture="environment"
                     className="sr-only"
-                    onChange={event => void chooseVideo(event.target.files?.[0])}
+                    onChange={event =>
+                      void chooseVideo(event.target.files?.[0])
+                    }
                   />
 
                   <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-violet-500/10">
                     <UploadCloud className="size-8 text-violet-300" />
                   </div>
                   <h3 className="mt-4 text-lg font-black text-white">
-                    {file ? file.name : "Drop a video here or choose from your device"}
+                    {file
+                      ? file.name
+                      : "Drop a video here or choose from your device"}
                   </h3>
                   <p className="mt-2 text-xs text-slate-500">
-                    MP4/H.264 or WebM · up to 900 MB · resumable upload for large files
+                    MP4/H.264 or WebM · up to 900 MB · resumable upload for
+                    large files
                   </p>
 
                   <div className="mt-5 flex flex-wrap justify-center gap-3">
@@ -1002,9 +1159,21 @@ export default function UploadPage() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  <InfoCard icon={<ShieldCheck className="size-4 text-emerald-300" />} title="Pre-check" text="Format, dimensions and readable track." />
-                  <InfoCard icon={<UploadCloud className="size-4 text-violet-300" />} title="Resumable" text="Large files upload in small chunks." />
-                  <InfoCard icon={<Sparkles className="size-4 text-sky-300" />} title="Smart cover" text="A thumbnail frame is generated automatically." />
+                  <InfoCard
+                    icon={<ShieldCheck className="size-4 text-emerald-300" />}
+                    title="Pre-check"
+                    text="Format, dimensions and readable track."
+                  />
+                  <InfoCard
+                    icon={<UploadCloud className="size-4 text-violet-300" />}
+                    title="Resumable"
+                    text="Large files upload in small chunks."
+                  />
+                  <InfoCard
+                    icon={<Sparkles className="size-4 text-sky-300" />}
+                    title="Smart cover"
+                    text="A thumbnail frame is generated automatically."
+                  />
                 </div>
 
                 {file && videoInfo && (
@@ -1036,7 +1205,8 @@ export default function UploadPage() {
                         </span>
                       </div>
                       <p className="mt-3 text-xs leading-5 text-slate-500">
-                        The browser successfully read the media before upload. This prevents many broken-video submissions.
+                        The browser successfully read the media before upload.
+                        This prevents many broken-video submissions.
                       </p>
                       <div className="mt-4 flex flex-wrap gap-2">
                         <button
@@ -1063,8 +1233,12 @@ export default function UploadPage() {
               <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5 transition-all duration-300 sm:p-7">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">Step 2</p>
-                    <h2 className="mt-1 text-2xl font-black text-white">Details & publish</h2>
+                    <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">
+                      Step 2
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black text-white">
+                      Details & publish
+                    </h2>
                   </div>
                   <span className="rounded-full bg-violet-500/15 px-3 py-1.5 text-xs font-black text-violet-200">
                     {modeLabel}
@@ -1077,7 +1251,9 @@ export default function UploadPage() {
                       <span className="text-sm font-black text-white">
                         Title <b className="text-rose-300">*</b>
                       </span>
-                      <span className="text-[11px] text-slate-600">{title.length}/100</span>
+                      <span className="text-[11px] text-slate-600">
+                        {title.length}/100
+                      </span>
                     </div>
                     <input
                       value={title}
@@ -1085,19 +1261,33 @@ export default function UploadPage() {
                       maxLength={100}
                       required
                       className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-violet-300/50"
-                      placeholder={isClip ? "Write a strong Clip title" : "Give your video a clear title"}
+                      placeholder={
+                        isClip
+                          ? "Write a strong Clip title"
+                          : "Give your video a clear title"
+                      }
                     />
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => file && setTitle(titleFromFilename(file.name))}
+                        onClick={() =>
+                          file && setTitle(titleFromFilename(file.name))
+                        }
                         className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-300 transition hover:bg-white/[.05]"
                       >
                         Use filename
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTags(suggestedTags(title || (file ? titleFromFilename(file.name) : ""), category))}
+                        onClick={() =>
+                          setTags(
+                            suggestedTags(
+                              title ||
+                                (file ? titleFromFilename(file.name) : ""),
+                              category
+                            )
+                          )
+                        }
                         className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-300 transition hover:bg-white/[.05]"
                       >
                         Auto-generate tags
@@ -1107,8 +1297,12 @@ export default function UploadPage() {
 
                   <label className="block">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-black text-white">Description</span>
-                      <span className="text-[11px] text-slate-600">{description.length}/5000</span>
+                      <span className="text-sm font-black text-white">
+                        Description
+                      </span>
+                      <span className="text-[11px] text-slate-600">
+                        {description.length}/5000
+                      </span>
                     </div>
                     <textarea
                       value={description}
@@ -1133,7 +1327,11 @@ export default function UploadPage() {
                     <FieldSelect
                       label="Visibility"
                       value={visibility}
-                      onChange={value => setVisibility(value as "public" | "unlisted" | "private")}
+                      onChange={value =>
+                        setVisibility(
+                          value as "public" | "unlisted" | "private"
+                        )
+                      }
                       options={[
                         { value: "public", label: "Public · publish now" },
                         { value: "unlisted", label: "Unlisted" },
@@ -1158,7 +1356,10 @@ export default function UploadPage() {
                         { value: "Travel", label: "Travel" },
                         { value: "Science", label: "Science" },
                         { value: "People & Blogs", label: "People & Blogs" },
-                        { value: "Film & Animation", label: "Film & Animation" },
+                        {
+                          value: "Film & Animation",
+                          label: "Film & Animation",
+                        },
                         { value: "Other", label: "Other" },
                       ]}
                     />
@@ -1186,14 +1387,18 @@ export default function UploadPage() {
                       className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-violet-300/50"
                       placeholder="gaming, tutorial, tech"
                     />
-                    <span className="mt-1 block text-[11px] text-slate-600">Separate tags with commas.</span>
+                    <span className="mt-1 block text-[11px] text-slate-600">
+                      Separate tags with commas.
+                    </span>
                   </label>
 
                   <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                     <div className="flex items-center gap-3">
                       <ImagePlus className="size-5 text-violet-300" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-white">Thumbnail</p>
+                        <p className="text-sm font-black text-white">
+                          Thumbnail
+                        </p>
                         <p className="mt-0.5 text-xs text-slate-500">
                           {autoThumbnail
                             ? "Generated from the video. Replace it with your own cover when needed."
@@ -1206,7 +1411,9 @@ export default function UploadPage() {
                           type="file"
                           accept="image/jpeg,image/png,image/webp,image/avif"
                           className="sr-only"
-                          onChange={event => chooseThumbnail(event.target.files?.[0])}
+                          onChange={event =>
+                            chooseThumbnail(event.target.files?.[0])
+                          }
                         />
                       </label>
                     </div>
@@ -1219,11 +1426,31 @@ export default function UploadPage() {
                         />
                         {file && videoInfo && (
                           <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="mr-1 text-[11px] font-bold text-slate-500">Pick frame:</span>
+                            <span className="mr-1 text-[11px] font-bold text-slate-500">
+                              Pick frame:
+                            </span>
                             {[0.05, 0.2, 0.35, 0.5, 0.7, 0.9].map(position => (
-                              <button key={position} type="button" disabled={uploading} onClick={() => void chooseThumbnailFrame(position)} className={cn("rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition", Math.abs(thumbnailFrame - position) < 0.001 ? "border-violet-300/50 bg-violet-500/15 text-white" : "border-white/10 bg-white/[.03] text-slate-400 hover:bg-white/[.06]")}>{Math.round(position * 100)}%</button>
+                              <button
+                                key={position}
+                                type="button"
+                                disabled={uploading}
+                                onClick={() =>
+                                  void chooseThumbnailFrame(position)
+                                }
+                                className={cn(
+                                  "rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition",
+                                  Math.abs(thumbnailFrame - position) < 0.001
+                                    ? "border-violet-300/50 bg-violet-500/15 text-white"
+                                    : "border-white/10 bg-white/[.03] text-slate-400 hover:bg-white/[.06]"
+                                )}
+                              >
+                                {Math.round(position * 100)}%
+                              </button>
                             ))}
-                            <span className="text-[11px] text-slate-600">Choose the frame where the subject/face is positioned best.</span>
+                            <span className="text-[11px] text-slate-600">
+                              Choose the frame where the subject/face is
+                              positioned best.
+                            </span>
                           </div>
                         )}
                       </>
@@ -1252,10 +1479,13 @@ export default function UploadPage() {
                     <div className="rounded-2xl border border-emerald-300/10 bg-emerald-500/[.04] p-4">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="size-4 text-emerald-300" />
-                        <p className="text-xs font-black text-emerald-100">Automatic checks</p>
+                        <p className="text-xs font-black text-emerald-100">
+                          Automatic checks
+                        </p>
                       </div>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        HkTube validates media before the upload transaction is created.
+                        HkTube validates media before the upload transaction is
+                        created.
                       </p>
                     </div>
                   </div>
@@ -1268,33 +1498,45 @@ export default function UploadPage() {
                     <span className="flex items-center gap-3">
                       <Settings2 className="size-5 text-violet-300" />
                       <span>
-                        <b className="block text-sm text-white">More settings</b>
+                        <b className="block text-sm text-white">
+                          More settings
+                        </b>
                         <span className="mt-1 block text-xs text-slate-500">
                           Audience, comments and download controls
                         </span>
                       </span>
                     </span>
-                    <span className="text-xs font-bold text-slate-500">{advancedOpen ? "Hide" : "Show"}</span>
+                    <span className="text-xs font-bold text-slate-500">
+                      {advancedOpen ? "Hide" : "Show"}
+                    </span>
                   </button>
 
                   {advancedOpen && (
                     <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4 sm:grid-cols-2">
                       <div className="rounded-xl border border-white/10 p-3">
-                        <p className="text-xs font-black text-white">Audience</p>
+                        <p className="text-xs font-black text-white">
+                          Audience
+                        </p>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Current audience declaration is stored with the video metadata.
+                          Current audience declaration is stored with the video
+                          metadata.
                         </p>
                       </div>
                       <div className="rounded-xl border border-white/10 p-3">
                         <p className="text-xs font-black text-white">Privacy</p>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Public, unlisted and private visibility are available before publishing.
+                          Public, unlisted and private visibility are available
+                          before publishing.
                         </p>
                       </div>
                       <div className="rounded-xl border border-white/10 p-3 sm:col-span-2">
-                        <p className="text-xs font-black text-white">Media architecture</p>
+                        <p className="text-xs font-black text-white">
+                          Media architecture
+                        </p>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          The browser sends media to HkTube's Supabase Storage backend using resumable transfer. Vercel serves the application and deployment layer.
+                          The browser sends media to HkTube's Supabase Storage
+                          backend using resumable transfer. Vercel serves the
+                          application and deployment layer.
                         </p>
                       </div>
                     </div>
@@ -1361,7 +1603,9 @@ export default function UploadPage() {
           <aside className="space-y-4">
             <section className="sticky top-20 rounded-3xl border border-white/10 bg-white/[.03] p-5 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">Live preview</p>
+                <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">
+                  Live preview
+                </p>
                 <span className="rounded-full bg-white/[.06] px-2.5 py-1 text-[10px] font-black text-slate-400">
                   {modeLabel}
                 </span>
@@ -1397,8 +1641,10 @@ export default function UploadPage() {
                   {title || "Your video title"}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {selectedChannel ? `@${selectedChannel.handle}` : "@yourchannel"} ·{" "}
-                  {videoInfo ? formatDuration(videoInfo.duration) : "0:00"}
+                  {selectedChannel
+                    ? `@${selectedChannel.handle}`
+                    : "@yourchannel"}{" "}
+                  · {videoInfo ? formatDuration(videoInfo.duration) : "0:00"}
                 </p>
               </div>
             </section>
@@ -1406,14 +1652,22 @@ export default function UploadPage() {
             <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4 text-emerald-300" />
-                <p className="text-sm font-black text-white">Upload reliability</p>
+                <p className="text-sm font-black text-white">
+                  Upload reliability
+                </p>
               </div>
               <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-500">
                 <li>• Large files use resumable 6 MB chunks.</li>
                 <li>• Interrupted chunks retry automatically.</li>
-                <li>• The same transfer can continue when the stored upload URL is valid.</li>
+                <li>
+                  • The same transfer can continue when the stored upload URL is
+                  valid.
+                </li>
                 <li>• Media is linked to the selected channel owner.</li>
-                <li>• Public videos are published after the metadata transaction succeeds.</li>
+                <li>
+                  • Public videos are published after the metadata transaction
+                  succeeds.
+                </li>
               </ul>
             </section>
 
@@ -1423,11 +1677,26 @@ export default function UploadPage() {
                 <p className="text-sm font-black text-white">Creator flow</p>
               </div>
               <div className="mt-3 space-y-2 text-xs text-slate-500">
-                <p><span className="font-bold text-slate-300">1.</span> Choose or record.</p>
-                <p><span className="font-bold text-slate-300">2.</span> Validate and generate cover.</p>
-                <p><span className="font-bold text-slate-300">3.</span> Edit title, metadata and privacy.</p>
-                <p><span className="font-bold text-slate-300">4.</span> Resumable upload.</p>
-                <p><span className="font-bold text-slate-300">5.</span> Publish to the selected channel.</p>
+                <p>
+                  <span className="font-bold text-slate-300">1.</span> Choose or
+                  record.
+                </p>
+                <p>
+                  <span className="font-bold text-slate-300">2.</span> Validate
+                  and generate cover.
+                </p>
+                <p>
+                  <span className="font-bold text-slate-300">3.</span> Edit
+                  title, metadata and privacy.
+                </p>
+                <p>
+                  <span className="font-bold text-slate-300">4.</span> Resumable
+                  upload.
+                </p>
+                <p>
+                  <span className="font-bold text-slate-300">5.</span> Publish
+                  to the selected channel.
+                </p>
               </div>
             </section>
           </aside>
@@ -1439,7 +1708,9 @@ export default function UploadPage() {
           <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b0d13] shadow-2xl shadow-black/60">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">HkTube Camera</p>
+                <p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">
+                  HkTube Camera
+                </p>
                 <h3 className="mt-1 text-lg font-black text-white">
                   {isClip ? "Record a Clip" : "Record a Long Video"}
                 </h3>
@@ -1545,7 +1816,9 @@ function ModeButton({
       onClick={onClick}
       className={[
         "rounded-2xl border p-4 text-left transition-all duration-300",
-        active ? activeClass : "border-transparent bg-transparent hover:border-white/10 hover:bg-white/[.04]",
+        active
+          ? activeClass
+          : "border-transparent bg-transparent hover:border-white/10 hover:bg-white/[.04]",
       ].join(" ")}
     >
       <span className={iconClass}>{icon}</span>
@@ -1635,7 +1908,9 @@ function Toggle({
       />
       <span>
         <b className="block text-sm text-white">{title}</b>
-        <span className="mt-1 block text-xs leading-5 text-slate-500">{text}</span>
+        <span className="mt-1 block text-xs leading-5 text-slate-500">
+          {text}
+        </span>
       </span>
     </label>
   );
