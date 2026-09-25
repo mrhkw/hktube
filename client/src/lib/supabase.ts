@@ -66,6 +66,38 @@ export const registerWithPassword = async ({ email, password, username }: { emai
   return result;
 };
 
+export async function ensureSupabaseProfile() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) throw new Error("Your session expired. Please sign in again.");
+
+  const user = authData.user;
+  const existing = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
+  if (existing.error) throw new Error(existing.error.message);
+  if (existing.data) return;
+
+  const rawBase =
+    (typeof user.user_metadata?.username === "string" && user.user_metadata.username) ||
+    (typeof user.user_metadata?.name === "string" && user.user_metadata.name) ||
+    (typeof user.email === "string" ? user.email.split("@")[0] : "") ||
+    "creator";
+  const base = sanitizeInput(rawBase).toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 48) || "creator";
+  const username = `${base}_${user.id.replace(/-/g, "").slice(0, 8)}`;
+  const displayName =
+    (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
+    (typeof user.user_metadata?.name === "string" && user.user_metadata.name) ||
+    username;
+
+  const profile = await supabase.from("profiles").insert({
+    id: user.id,
+    username,
+    display_name: sanitizeInput(displayName).slice(0, 120),
+    avatar_url: typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : null,
+  });
+  if (profile.error && !/duplicate|already exists/i.test(profile.error.message)) {
+    throw new Error(profile.error.message);
+  }
+}
+
 export const getCurrentProfile = async () => {
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData.user) return { profile: null, error: authError };
