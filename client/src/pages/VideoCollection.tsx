@@ -4,7 +4,7 @@ import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { formatDate, formatViews, VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { Bookmark, EyeOff, Heart, MessageCircle, MoreVertical, Play, Radio, Send, Settings2, Volume2, VolumeX } from "lucide-react";
+import { Bookmark, EyeOff, Heart, MessageCircle, MoreVertical, Play, Radio, Send, Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -34,11 +34,11 @@ function ShortCard({ video, autoplay, dataSaver }: { video: VideoRecord; autopla
   const like = trpc.videos.toggleLike.useMutation({ onSuccess: data => utils.videos.engagement.setData({ id: video.id }, data), onError: error => toast.error(error.message) });
   const save = trpc.library.toggleSaved.useMutation({ onSuccess: result => toast.success(result?.saved ? "Saved to Watch Later." : "Removed from Watch Later."), onError: error => toast.error(error.message) });
   const report = trpc.reports.create.useMutation({ onSuccess: () => toast.success("Report submitted."), onError: error => toast.error(error.message) });
-  const [muted, setMuted] = useState(true);
+  
   const [paused, setPaused] = useState(!autoplay);
   const [progress, setProgress] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
-  const [clearScreen, setClearScreen] = useState(false);
+  const [clearScreen, setClearScreen] = useState(false); const [mediaError, setMediaError] = useState(false);
   const [speed, setSpeed] = useState(1);
   const cardRef = useRef<HTMLElement>(null);
   const mediaRef = useRef<HTMLVideoElement>(null);
@@ -55,9 +55,9 @@ function ShortCard({ video, autoplay, dataSaver }: { video: VideoRecord; autopla
   const endHold = () => { if (holdTimer.current) { window.clearTimeout(holdTimer.current); holdTimer.current = null; } };
   const share = async () => { const url = new URL(`/watch/${video.id}`, window.location.origin).toString(); try { if (navigator.share) await navigator.share({ title: video.title, url }); else { await navigator.clipboard.writeText(url); toast.success("Link copied."); } } catch (error) { if ((error as DOMException | undefined)?.name !== "AbortError") toast.error("Unable to share this clip."); } };
 
-  return <article ref={cardRef} className="relative aspect-[9/16] overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl shadow-violet-950/30 max-lg:h-[100dvh] max-lg:w-full max-lg:snap-start max-lg:rounded-none max-lg:border-0">
-    <video ref={mediaRef} className="absolute inset-0 size-full object-cover" src={video.videoUrl} poster={video.thumbnailUrl ?? undefined} autoPlay={autoplay} loop muted={muted} preload={dataSaver ? "metadata" : "auto"} playsInline controls={false} onClick={handleTap} onPointerDown={startHold} onPointerUp={endHold} onPointerCancel={endHold} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onTimeUpdate={event => setProgress(event.currentTarget.duration ? event.currentTarget.currentTime / event.currentTarget.duration * 100 : 0)} />
-    {!clearScreen && <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/25" />}
+  return <article ref={cardRef} className="relative aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl shadow-violet-950/30 max-lg:w-full max-lg:snap-start max-lg:rounded-none max-lg:border-0">
+    <video ref={mediaRef} className="absolute inset-0 size-full object-contain" src={video.videoUrl} poster={video.thumbnailUrl ?? undefined} autoPlay={autoplay} loop muted preload={dataSaver ? "metadata" : "auto"} playsInline controls={false} onClick={handleTap} onPointerDown={startHold} onPointerUp={endHold} onPointerCancel={endHold} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onError={() => setMediaError(true)} onTimeUpdate={event => setProgress(event.currentTarget.duration ? event.currentTarget.currentTime / event.currentTarget.duration * 100 : 0)} />
+    {!clearScreen && {mediaError&&<div className="absolute inset-0 z-30 grid place-items-center bg-black/85 p-6 text-center"><div><p className="font-black">Video could not be displayed</p><p className="mt-1 text-xs text-white/60">This browser could not decode the video track.</p><Link href={"/watch/"+video.id} className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black text-black">Open video</Link></div></div>}<div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/25" />}
     {!clearScreen && paused && <button type="button" onClick={togglePlayback} className="absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:scale-105" aria-label="Play clip"><Play className="size-7 fill-current" /></button>}
     {!clearScreen && <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/55 to-transparent px-5 pb-10 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm font-bold text-white"><Link href="/" className="rounded-full bg-black/30 px-3 py-1.5 backdrop-blur">HkTube</Link><div className="flex items-center gap-2"><span className="rounded-full bg-white/10 px-3 py-1.5 backdrop-blur">Clips</span><button type="button" onClick={() => setClearScreen(true)} className="grid size-8 place-items-center rounded-full bg-black/35 backdrop-blur" aria-label="Clear screen"><EyeOff className="size-4" /></button></div></div>}
     {clearScreen && <button type="button" onClick={() => setClearScreen(false)} className="absolute right-4 top-4 z-20 rounded-full bg-black/45 px-3 py-2 text-xs font-semibold text-white backdrop-blur" aria-label="Show clip controls">Show controls</button>}
@@ -70,7 +70,7 @@ function ShortCard({ video, autoplay, dataSaver }: { video: VideoRecord; autopla
       <div className="relative"><ShortAction icon={MoreVertical} label="More" onClick={() => setShowMenu(value => !value)} />{showMenu && <div className="absolute bottom-0 right-12 min-w-44 rounded-xl border border-white/15 bg-black/90 p-1 text-left text-xs text-white shadow-2xl backdrop-blur"><button type="button" onClick={() => { setClearScreen(true); setShowMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-white/10"><EyeOff className="size-4" />Clear screen</button><button type="button" onClick={() => { if (requireLogin()) report.mutate({ videoId: video.id, reason: "Not interested in this clip" }); setShowMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-white/10">Not interested</button><button type="button" onClick={() => { if (requireLogin()) report.mutate({ videoId: video.id, reason: "User report" }); setShowMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-white/10">Report clip</button><Link href={`/watch/${video.id}`} className="block rounded-lg px-3 py-2 hover:bg-white/10">Open watch page</Link></div>}</div>
     </div>}
     {!clearScreen && <div className="absolute inset-x-4 bottom-5 pr-16"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full border border-white/30 bg-violet-500/60 text-sm font-bold text-white">Hk</span><div className="min-w-0"><p className="font-bold text-white">Published on HkTube</p><p className="text-xs text-slate-300">Published {formatDate(video.uploadedAt)}</p></div></div><h2 className="mt-3 line-clamp-2 text-lg font-bold text-white">{video.title}</h2>{video.description && <p className="mt-1 line-clamp-3 text-sm leading-5 text-slate-200">{video.description}</p>}<div className="mt-4 h-1 overflow-hidden rounded-full bg-white/25"><div className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400 transition-[width] duration-100" style={{ width: `${progress}%` }} /></div></div>}
-    {!clearScreen && <button className="absolute bottom-20 left-4 grid size-9 place-items-center rounded-full bg-black/40 text-white" onClick={() => setMuted(value => !value)} aria-label={muted ? "Unmute" : "Mute"}>{muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}</button>}
+    {}
   </article>;
 }
 
