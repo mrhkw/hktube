@@ -187,4 +187,16 @@ button,a,input,textarea,select{transition-property:color,background-color,border
 .hktube-save-burst{animation-name:hktube-save-burst}
 .hktube-action-spark{display:block;width:4px;height:10px;border-radius:999px;transform-origin:center;animation:hktube-spark 620ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*18ms)}
 @media (prefers-reduced-motion:reduce){.hktube-like-pop,.hktube-float,.hktube-heart-burst,.hktube-save-burst,.hktube-action-spark{animation:none!important}}
-\n/* HkTube completion layer: 25 feature areas share one mobile-first interaction contract. */\n@layer components {\n  .hktube-touch-target { min-width:44px; min-height:44px; }\n  .hktube-mobile-card { content-visibility:auto; contain-intrinsic-size:320px 220px; }\n}\n@media(max-width:767px){\n  a,button,[role="button"],select,input[type="checkbox"],input[type="radio"]{min-height:44px;}\n  nav.fixed[aria-label="Mobile navigation"] a,nav.fixed[aria-label="Mobile navigation"] button{min-width:44px;}\n  video{max-height:calc(100dvh - 92px);}\n  main{scroll-margin-top:60px;}\n}\n@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important;} .hktube-mobile-card{content-visibility:visible;}}\n
+
+/* HkTube completion layer: 25 feature areas share one mobile-first interaction contract. */
+@layer components {
+  .hktube-touch-target { min-width:44px; min-height:44px; }
+  .hktube-mobile-card { content-visibility:auto; contain-intrinsic-size:320px 220px; }
+}
+@media(max-width:767px){
+  a,button,[role="button"],select,input[type="checkbox"],input[type="radio"]{min-height:44px;}
+  nav.fixed[aria-label="Mobile navigation"] a,nav.fixed[aria-label="Mobile navigation"] button{min-width:44px;}
+  video{max-height:calc(100dvh - 92px);}
+  main{scroll-margin-top:60px;}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important;} .hktube-mobile-card{content-visibility:visible;}}
