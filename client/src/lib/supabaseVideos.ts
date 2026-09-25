@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { ensureSupabaseProfile, supabase } from "./supabase";
 import { sanitizeInput } from "@shared/security";
 
 export type SupabaseVideo = {
@@ -313,6 +313,7 @@ export async function createSupabaseVideo(input: {
   signal?: AbortSignal;
 }) {
   const user = await requireUser();
+  await ensureSupabaseProfile();
 
   if (input.file.size > 900 * 1024 * 1024) {
     throw new Error("Video file must be 900 MB or smaller.");
