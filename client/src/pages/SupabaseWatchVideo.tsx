@@ -515,15 +515,15 @@ export default function SupabaseWatchVideo() {
                   {video.title}
                 </h1>
               </div>
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <ReportMenu videoId={id} />
                 <button
                   type="button"
                   onClick={() => setMoreOpen(v => !v)}
                   className="grid size-9 place-items-center rounded-full border border-white/10 bg-white/[.04] text-slate-300"
                   aria-label="More video options"
                 >
-                  <ReportMenu videoId={id} className="shrink-0" />
-              <MoreVertical className="size-4" />
+                  <MoreVertical className="size-4" />
                 </button>
                 {moreOpen && (
                   <div className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-white/10 bg-[#151a25] p-2 shadow-2xl">
