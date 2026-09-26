@@ -11,6 +11,7 @@ import { invokeLLM } from "./_core/llm";
 import { loadAIMemory, saveAIMemories, saveAIConversation, searchWeb, shouldSearchWeb } from "./_core/aiKnowledge";
 import { adminProcedure, protectedProcedure, publicProcedure, router, sessionProcedure } from "./_core/trpc";
 import { sanitizeInput } from "@shared/security";
+import { moderateText } from "./moderation";
 import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listFollowingVideos, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markAllNotificationsRead, markNotificationRead, recordWatchHistory, removeOwnedVideo, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
 const videoCategory = z.enum(["regular", "shorts"]);
 const mediaUrl = z.string().trim().refine(value => { if (value.startsWith("/manus-storage/")) return true; try { const parsed = new URL(value); return parsed.protocol === "https:" || parsed.protocol === "http:"; } catch { return false; } }, "Provide a valid HTTP(S) URL or stored media path.");
@@ -21,6 +22,13 @@ const channelInputSchema = z.object({ handle: z.string().trim().regex(/^[A-Za-z0
 const channelUpdateSchema = z.object({ id: z.number().int().positive(), displayName: requiredSafeText(255), description: safeText(5000).optional().nullable(), avatarUrl: mediaUrl.optional().nullable(), bannerUrl: mediaUrl.optional().nullable() });
 const commentInput = z.object({ body: requiredSafeText(2000), videoId: z.number().int().positive().optional(), postId: z.number().int().positive().optional(), parentId: z.number().int().positive().optional() }).refine(value => Boolean(value.videoId) !== Boolean(value.postId), "A comment must target exactly one video or post.");
 export const appRouter = router({
+  moderation: router({
+    check: protectedProcedure.input(z.object({ title: z.string().trim().max(255).optional(), description: z.string().trim().max(5000).optional(), text: z.string().trim().max(12000).optional() })).mutation(async ({ input }) => {
+      const result = await moderateText([input.title ?? "", input.description ?? "", input.text ?? ""]);
+      if (!result.allowed) throw new TRPCError({ code: "BAD_REQUEST", message: "This content violates community guidelines" });
+      return { allowed: true } as const;
+    }),
+  }),
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
