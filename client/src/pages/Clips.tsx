@@ -492,7 +492,7 @@ export default function ClipsPage() {
                 <img
                   src={current.thumbnailUrl}
                   alt=""
-                  className="absolute inset-0 size-full object-contain"
+                  className="absolute inset-0 size-full object-cover"
                   decoding="async"
                 />
               )}
@@ -507,7 +507,7 @@ export default function ClipsPage() {
                 preload="auto"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
                 }
                 onPlay={() => {
                   setMediaError(false);

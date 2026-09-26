@@ -157,7 +157,13 @@ export function HkTubeShell({
     notificationsQuery.data?.filter(item => !item.readAt).length ?? 0;
 
   return (
-    <div className="min-h-[100dvh] bg-[#090c14] text-slate-100 selection:bg-violet-500/35">
+    <div
+      className={cn(
+        immersive
+          ? "h-[100dvh] overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
+          : "min-h-[100dvh] bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
+      )}
+    >
       <header
         className={cn(
           "sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
