@@ -2,12 +2,191 @@ import { MoreVertical, Play, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 
-export type FeedbackType="not_interested"|"hide_creator"|"hide_topic"|"more_like_this"|"less_like_this";
-export type SupabaseVideoCardData = { id: string; title: string; thumbnailUrl: string | null; durationSeconds: number | null; views: number; publishedAt: string | null; isShort?: boolean; channelName?: string | null; channelHandle?: string | null; reason?: string | null; onNotInterested?: () => void; onFeedback?: (type:FeedbackType) => void };
-function duration(seconds: number | null) { const value = Math.max(0, Math.floor(seconds || 0)); if (!value) return null; const h = Math.floor(value / 3600); const m = Math.floor((value % 3600) / 60); const s = value % 60; return h ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`; }
-function reasonLabel(reason?: string | null) { return ({ interest_match:"Based on your interests", followed_creator:"From a creator you follow", similar_to_watched:"Similar to what you watched", trending:"Trending for you", fresh_creator:"New creator", search_related:"Related to your search", fresh:"Fresh on HkTube" } as Record<string,string>)[reason || ""] || null; }
+export type FeedbackType =
+  | "not_interested"
+  | "hide_creator"
+  | "hide_topic"
+  | "more_like_this"
+  | "less_like_this";
+export type SupabaseVideoCardData = {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+  durationSeconds: number | null;
+  views: number;
+  publishedAt: string | null;
+  isShort?: boolean;
+  channelName?: string | null;
+  channelHandle?: string | null;
+  reason?: string | null;
+  onNotInterested?: () => void;
+  onFeedback?: (type: FeedbackType) => void;
+};
+function duration(seconds: number | null) {
+  const value = Math.max(0, Math.floor(seconds || 0));
+  if (!value) return null;
+  const h = Math.floor(value / 3600);
+  const m = Math.floor((value % 3600) / 60);
+  const s = value % 60;
+  return h
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${m}:${String(s).padStart(2, "0")}`;
+}
+function reasonLabel(reason?: string | null) {
+  return (
+    (
+      {
+        interest_match: "Based on your interests",
+        followed_creator: "From a creator you follow",
+        similar_to_watched: "Similar to what you watched",
+        trending: "Trending for you",
+        fresh_creator: "New creator",
+        search_related: "Related to your search",
+        fresh: "Fresh on HkTube",
+      } as Record<string, string>
+    )[reason || ""] || null
+  );
+}
 export function SupabaseVideoCard({ video }: { video: SupabaseVideoCardData }) {
-  const reason = reasonLabel(video.reason); const [menuOpen,setMenuOpen]=useState(false); const [thumbnailFailed,setThumbnailFailed]=useState(false);
-  const act=(type:FeedbackType)=>{video.onFeedback?.(type);setMenuOpen(false);}; const time=duration(video.durationSeconds);
-  return <article className="group relative min-w-0"><Link href={`/watch/${video.id}`} className="block"><div className={`relative overflow-hidden rounded-2xl bg-[#171c28] ${video.isShort ? "aspect-[9/16]" : "aspect-video"}`}>{video.thumbnailUrl && !thumbnailFailed ? <img src={video.thumbnailUrl} alt="" loading="lazy" className="size-full object-cover transition duration-300 group-hover:scale-[1.03]" onError={() => setThumbnailFailed(true)} /> : <div className="grid size-full place-items-center bg-[radial-gradient(circle_at_25%_20%,rgba(139,92,246,.32),transparent_38%),linear-gradient(135deg,#161b2a,#0d111a)] p-5 text-center"><div><span className="mx-auto grid size-12 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/15"><Play className="size-5 fill-current" /></span><p className="mt-3 line-clamp-2 text-sm font-bold text-white/90">{video.title}</p></div></div>}{time&&<span className="absolute bottom-2 right-2 rounded-md bg-black/85 px-2 py-1 text-[11px] font-semibold text-white">{time}</span>}{video.isShort&&<span className="absolute left-2 top-2 rounded-md bg-black px-2 py-1 text-[10px] font-bold text-white">CLIP</span>}</div><div className="mt-3 flex gap-3"><div className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-[10px] font-black text-slate-200">{(video.channelName || video.channelHandle || "H").slice(0,1).toUpperCase()}</div><div className="min-w-0"><h3 className="line-clamp-2 text-[15px] font-bold leading-5 text-white">{video.title}</h3><p className="mt-1 truncate text-xs text-slate-500">{video.channelName || (video.channelHandle ? `@${video.channelHandle}` : "HkTube creator")}</p><p className="mt-0.5 text-xs text-slate-500">{Number(video.views).toLocaleString()} views · {video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : "Recently"}</p>{reason&&<p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-violet-300"><Sparkles className="size-3" />{reason}</p>}</div></div></Link>{video.onFeedback&&<div className="absolute right-1 top-1 z-20"><button type="button" onClick={event=>{event.preventDefault();event.stopPropagation();setMenuOpen(v=>!v)}} className="grid size-8 place-items-center rounded-full bg-black/70 text-white opacity-100 shadow-md transition md:opacity-0 md:group-hover:opacity-100" aria-label="Recommendation options"><MoreVertical className="size-4"/></button>{menuOpen&&<div onClick={event=>{event.preventDefault();event.stopPropagation()}} className="absolute right-0 top-9 w-52 rounded-2xl border border-white/10 bg-[#151a25] p-2 shadow-2xl"><button onClick={()=>act("not_interested")} className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5">Not interested</button><button onClick={()=>act("hide_creator")} className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5">Hide this creator</button><button onClick={()=>act("hide_topic")} className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5">Hide this topic</button><button onClick={()=>act("more_like_this")} className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5">Show more like this</button><button onClick={()=>act("less_like_this")} className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5">Show less like this</button><Link href={`/watch/${video.id}`} className="mt-1 block rounded-xl px-3 py-2 text-left text-xs font-semibold text-violet-200 hover:bg-white/5">Why am I seeing this?</Link></div>}</div>}</article>;
+  const reason = reasonLabel(video.reason);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const act = (type: FeedbackType) => {
+    video.onFeedback?.(type);
+    setMenuOpen(false);
+  };
+  const time = duration(video.durationSeconds);
+  return (
+    <article className="group relative min-w-0">
+      <Link href={`/watch/${video.id}`} className="block">
+        <div
+          className={`relative overflow-hidden bg-[#171c28] ${video.isShort ? "aspect-[9/16] rounded-2xl" : "aspect-video rounded-none sm:rounded-2xl"}`}
+        >
+          {video.thumbnailUrl && !thumbnailFailed ? (
+            <img
+              src={video.thumbnailUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover transition duration-300 group-hover:scale-[1.03]"
+              onError={() => setThumbnailFailed(true)}
+            />
+          ) : (
+            <div className="grid size-full place-items-center bg-[radial-gradient(circle_at_25%_20%,rgba(139,92,246,.32),transparent_38%),linear-gradient(135deg,#161b2a,#0d111a)] p-5 text-center">
+              <div>
+                <span className="mx-auto grid size-12 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/15">
+                  <Play className="size-5 fill-current" />
+                </span>
+                <p className="mt-3 line-clamp-2 text-sm font-bold text-white/90">
+                  {video.title}
+                </p>
+              </div>
+            </div>
+          )}
+          {time && (
+            <span className="absolute bottom-2 right-2 rounded-md bg-black/85 px-2 py-1 text-[11px] font-semibold text-white">
+              {time}
+            </span>
+          )}
+          {video.isShort && (
+            <span className="absolute left-2 top-2 rounded-md bg-black px-2 py-1 text-[10px] font-bold text-white">
+              CLIP
+            </span>
+          )}
+        </div>
+        <div className="mt-3 flex gap-3 px-4 sm:px-0">
+          <div className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-[10px] font-black text-slate-200">
+            {(video.channelName || video.channelHandle || "H")
+              .slice(0, 1)
+              .toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-[15px] font-bold leading-5 text-white">
+              {video.title}
+            </h3>
+            <p className="mt-1 truncate text-xs text-slate-500">
+              {video.channelName ||
+                (video.channelHandle
+                  ? `@${video.channelHandle}`
+                  : "HkTube creator")}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {Number(video.views).toLocaleString()} views ·{" "}
+              {video.publishedAt
+                ? new Date(video.publishedAt).toLocaleDateString()
+                : "Recently"}
+            </p>
+            {reason && (
+              <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-violet-300">
+                <Sparkles className="size-3" />
+                {reason}
+              </p>
+            )}
+          </div>
+        </div>
+      </Link>
+      {video.onFeedback && (
+        <div className="absolute right-1 top-1 z-20">
+          <button
+            type="button"
+            onClick={event => {
+              event.preventDefault();
+              event.stopPropagation();
+              setMenuOpen(v => !v);
+            }}
+            className="grid size-8 place-items-center rounded-full bg-black/70 text-white opacity-100 shadow-md transition md:opacity-0 md:group-hover:opacity-100"
+            aria-label="Recommendation options"
+          >
+            <MoreVertical className="size-4" />
+          </button>
+          {menuOpen && (
+            <div
+              onClick={event => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              className="absolute right-0 top-9 w-52 rounded-2xl border border-white/10 bg-[#151a25] p-2 shadow-2xl"
+            >
+              <button
+                onClick={() => act("not_interested")}
+                className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5"
+              >
+                Not interested
+              </button>
+              <button
+                onClick={() => act("hide_creator")}
+                className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5"
+              >
+                Hide this creator
+              </button>
+              <button
+                onClick={() => act("hide_topic")}
+                className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5"
+              >
+                Hide this topic
+              </button>
+              <button
+                onClick={() => act("more_like_this")}
+                className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5"
+              >
+                Show more like this
+              </button>
+              <button
+                onClick={() => act("less_like_this")}
+                className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-white hover:bg-white/5"
+              >
+                Show less like this
+              </button>
+              <Link
+                href={`/watch/${video.id}`}
+                className="mt-1 block rounded-xl px-3 py-2 text-left text-xs font-semibold text-violet-200 hover:bg-white/5"
+              >
+                Why am I seeing this?
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </article>
+  );
 }
