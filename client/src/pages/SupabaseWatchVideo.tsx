@@ -361,8 +361,8 @@ export default function SupabaseWatchVideo() {
     );
   const isShort = Boolean(video.isShort || video.tags?.includes("shorts"));
   return (
-    <HkTubeShell immersive={isShort}>
-      <main className="mx-auto grid w-full max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <HkTubeShell immersive>
+      <main className="hktube-watch-layout mx-auto grid w-full max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0">
           {mediaError && (
             <div className="mb-3 rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">
@@ -370,13 +370,7 @@ export default function SupabaseWatchVideo() {
               is preserved and you can retry/open the source.
             </div>
           )}
-          <div
-            className={
-              isShort
-                ? "mx-auto max-w-[720px] overflow-hidden rounded-2xl bg-black"
-                : "overflow-hidden rounded-2xl bg-black"
-            }
-          >
+          <div className={`hktube-watch-frame ${isShort ? "hktube-watch-frame--short" : "hktube-watch-frame--long"}`}>
             <video
               ref={playerRef}
               src={videoUrl}
@@ -384,11 +378,7 @@ export default function SupabaseWatchVideo() {
               controls
               playsInline
               preload="metadata"
-              className={
-                isShort
-                  ? "mx-auto aspect-[9/16] max-h-[82vh] w-full object-contain"
-                  : "aspect-video w-full object-contain"
-              }
+              className="hktube-watch-video"
               onLoadedData={() => setMediaError(false)}
               onLoadedMetadata={e => {
                 if (
