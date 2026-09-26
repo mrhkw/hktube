@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { ReportMenu } from "@/components/moderation/ReportMenu";
+import { BlockUserButton } from "@/components/moderation/BlockUserButton";
 import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -92,6 +94,8 @@ export default function SupabaseWatchVideo() {
       .eq("id", id)
       .eq("visibility", "public")
       .eq("status", "published")
+      .eq("moderation_status", "approved")
+      .is("deleted_at", null)
       .maybeSingle();
     if (error || !data) {
       setVideo(null);
@@ -518,7 +522,8 @@ export default function SupabaseWatchVideo() {
                   className="grid size-9 place-items-center rounded-full border border-white/10 bg-white/[.04] text-slate-300"
                   aria-label="More video options"
                 >
-                  <MoreVertical className="size-4" />
+                  <ReportMenu videoId={id} className="shrink-0" />
+              <MoreVertical className="size-4" />
                 </button>
                 {moreOpen && (
                   <div className="absolute right-0 top-11 z-30 w-52 rounded-2xl border border-white/10 bg-[#151a25] p-2 shadow-2xl">
