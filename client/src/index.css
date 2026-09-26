@@ -816,3 +816,17 @@ select {
   .hktube-clips-page .clips-action { min-width: 56px; min-height: 56px; }
   .hktube-clips-page .clips-action > span:first-child { width: 48px; height: 48px; }
 }
+
+
+/* Keep Clips controls visually independent from the light site theme. */
+.hktube-clips-page .clips-action,
+.hktube-clips-page .clips-action span:first-child {
+  color: #fff !important;
+}
+.hktube-clips-page .clips-action span:first-child {
+  background: rgb(0 0 0 / 0.38) !important;
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+.hktube-clips-page .clips-action-active span:first-child {
+  background: rgb(236 72 153 / 0.78) !important;
+}

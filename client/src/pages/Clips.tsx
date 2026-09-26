@@ -376,10 +376,7 @@ export default function ClipsPage() {
     <HkTubeShell immersive minimalHeader>
       <div className="hktube-clips-page relative h-[100dvh] overflow-hidden bg-black text-white">
         <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/75 to-transparent">
-          <div className="flex items-center gap-2">
-            <ClipsLogo />
-            <span className="text-lg font-black">Clips</span>
-          </div>
+          <Link href="/" className="grid size-9 place-items-center rounded-full bg-black/30 text-2xl leading-none text-white backdrop-blur" aria-label="Back to HkTube">‹</Link>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSearchOpen(v => !v)}
@@ -388,12 +385,6 @@ export default function ClipsPage() {
             >
               <Search className="size-5" />
             </button>
-            <Link
-              href="/"
-              className="rounded-full bg-black/35 px-3 py-2 text-xs font-black backdrop-blur"
-            >
-              Home
-            </Link>
           </div>
         </div>
         <div className="absolute left-1/2 top-3 z-40 flex -translate-x-1/2 rounded-full bg-black/35 p-1 backdrop-blur">
@@ -816,18 +807,18 @@ function Action({
   return (
     <button
       onClick={onClick}
-      className="clips-action flex min-h-12 min-w-12 flex-col items-center justify-center gap-1 text-[10px] font-black drop-shadow-md"
+      className="clips-action flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-4 text-white drop-shadow-md"
       aria-label={label}
     >
       <span
         className={
-          "grid size-11 place-items-center rounded-full backdrop-blur " +
-          (active ? "clips-action-active bg-fuchsia-500/80" : "bg-black/45")
+          "grid size-12 place-items-center rounded-full backdrop-blur-md " +
+          (active ? "clips-action-active bg-fuchsia-500/80" : "bg-black/35")
         }
       >
         <Icon
           className={
-            "size-5 " + (active && Icon === Heart ? "fill-current" : "")
+            "size-6 stroke-[1.8] " + (active && Icon === Heart ? "fill-current" : "")
           }
         />
       </span>
