@@ -35,12 +35,12 @@ export default function VideoPlayer({ src, poster, isShort = false }: VideoPlaye
   };
 
   return (
-    <div className={`relative group bg-black overflow-hidden rounded-xl ${isShort ? 'max-w-[360px] h-[640px] mx-auto' : 'w-full aspect-video'}`}>
+    <div className={`hktube-watch-frame relative group bg-black overflow-hidden ${isShort ? 'hktube-watch-frame--short' : 'hktube-watch-frame--long'}`}>
       <video
         ref={videoRef}
         src={src}
         poster={poster}
-        className="w-full h-full object-contain cursor-pointer"
+        className={`hktube-watch-video cursor-pointer ${isShort ? 'object-cover' : 'object-contain'}`}
         onClick={togglePlay}
         playsInline
         loop={isShort}

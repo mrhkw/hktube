@@ -43,11 +43,11 @@ export const ShortsPlayer: React.FC<{ video: VideoItem; isActive: boolean }> = (
   };
 
   return (
-    <div className="relative w-full h-full snap-start snap-always flex items-center justify-center bg-black overflow-hidden">
+    <div className="relative h-[100dvh] min-h-[100svh] w-screen snap-start snap-always flex items-center justify-center bg-black overflow-hidden">
       <video
         ref={videoRef}
         src={video.video_url}
-        className="w-full h-full object-cover cursor-pointer"
+        className="size-full object-cover cursor-pointer"
         loop
         playsInline
         muted={isMuted}
@@ -62,12 +62,12 @@ export const ShortsPlayer: React.FC<{ video: VideoItem; isActive: boolean }> = (
 
       <button
         onClick={() => setIsMuted(!isMuted)}
-        className="absolute top-5 right-5 p-3 rounded-full bg-black/40 text-white backdrop-blur-md z-10 hover:bg-black/60 transition"
+        className="absolute right-5 top-[max(1.25rem,env(safe-area-inset-top))] z-10 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition hover:bg-black/60"
       >
         {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
       </button>
 
-      <div className="absolute right-4 bottom-20 flex flex-col items-center gap-6 z-10 text-white">
+      <div className="absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] right-4 z-10 flex flex-col items-center gap-6 text-white">
         <button onClick={toggleLike} className="flex flex-col items-center gap-1 group">
           <div className={`p-3 rounded-full bg-black/40 backdrop-blur-md group-hover:scale-110 transition ${liked ? 'text-red-500' : 'text-white'}`}>
             <Heart className={`w-7 h-7 ${liked ? 'fill-red-500' : ''}`} />
@@ -90,7 +90,7 @@ export const ShortsPlayer: React.FC<{ video: VideoItem; isActive: boolean }> = (
         </button>
       </div>
 
-      <div className="absolute bottom-6 left-4 right-16 z-10 text-white">
+      <div className="absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] left-4 right-16 z-10 text-white">
         <h3 className="font-bold text-base mb-1">@{video.user_name || 'deeplay_creator'}</h3>
         <p className="text-sm line-clamp-2 text-gray-200">{video.title}</p>
       </div>
