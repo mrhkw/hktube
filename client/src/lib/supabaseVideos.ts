@@ -29,7 +29,7 @@ function publicUrl(bucket: string, path: string | null): string | null {
 }
 
 export const VIDEO_SELECT =
-  "id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,likes_count,created_at,updated_at,status,visibility,is_short,tags,category,language,moderation_status,published_at,allow_comments,allow_download,made_for_kids";
+  "id,creator_id,channel_id,title,description,video_path,thumbnail_path,duration_seconds,views,likes_count,created_at,updated_at,status,visibility,is_short,tags,category,language,moderation_status,moderation_reason,moderation_checked_at,deleted_at,published_at,allow_comments,allow_download,made_for_kids";
 
 function mapVideo(row: Record<string, unknown>): SupabaseVideo {
   return {
@@ -149,6 +149,7 @@ export async function listPublicSupabaseVideos(limit = 20) {
     .eq("visibility", "public")
     .eq("status", "published")
     .eq("moderation_status", "approved")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -423,8 +424,11 @@ export async function createSupabaseVideo(input: {
         visibility: input.visibility || "public",
         status: "published",
         is_short: isShort,
-        moderation_status: "approved",
-        published_at: new Date().toISOString(),
+        moderation_status: "pending",
+        moderation_reason: null,
+        moderation_checked_at: null,
+        deleted_at: null,
+        published_at: null,
         allow_comments: input.allowComments !== false,
         allow_download: Boolean(input.allowDownload),
         made_for_kids: Boolean(input.madeForKids),
