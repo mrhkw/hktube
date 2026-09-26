@@ -1,33 +1,240 @@
-import { Badge } from "@/components/ui/badge";
 import { formatDate, formatDuration, formatViews, VideoRecord } from "@/lib/video";
-import { Inbox, Play, Sparkles, type LucideIcon } from "lucide-react";
+import {
+  CheckCircle2,
+  Heart,
+  Inbox,
+  MessageCircle,
+  MoreHorizontal,
+  Play,
+  Share2,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 
+function formatCount(value: number): string {
+  if (value >= 1_000_000) return (value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1) + "M";
+  if (value >= 1_000) return (value / 1_000).toFixed(value >= 10_000 ? 0 : 1) + "K";
+  return String(value);
+}
+
 export function VideoCard({ video, compact = false }: { video: VideoRecord; compact?: boolean }) {
+  const mediaRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [followed, setFollowed] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [ratio, setRatio] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    setPlaying(false);
+    setMuted(true);
+    setFollowed(false);
+    setLiked(false);
+    setRatio(null);
+    setProgress(0);
+  }, [video.id]);
+
+  const togglePlayback = async () => {
+    const media = mediaRef.current;
+    if (!media) return;
+    if (media.paused) {
+      try {
+        await media.play();
+      } catch {
+        setPlaying(false);
+      }
+    } else {
+      media.pause();
+    }
+  };
+
+  const toggleMute = () => {
+    const media = mediaRef.current;
+    if (!media) return;
+    const nextMuted = !media.muted;
+    media.muted = nextMuted;
+    setMuted(nextMuted);
+  };
+
+  const shareVideo = async () => {
+    const url = new URL(`/watch/${video.id}`, window.location.origin).toString();
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: video.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+      }
+    } catch {
+      // Native sharing may be cancelled or unavailable.
+    }
+  };
+
   return (
-    <Link href={`/watch/${video.id}`} className="group block min-w-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-4">
-      <article className="overflow-hidden rounded-2xl">
-        <div className={`relative overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] shadow-[0_1px_2px_rgba(0,0,0,.2)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-violet-300/30 group-hover:shadow-[0_12px_30px_rgba(99,102,241,.14)] ${compact ? "aspect-[16/10]" : "aspect-video"}`}>
-          {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt={`${video.title} thumbnail`} loading="lazy" decoding="async" className="size-full object-cover transition duration-500 group-hover:scale-[1.025]" /> : <div className="grid size-full place-items-center bg-neutral-100"><span className="grid size-12 place-items-center rounded-full bg-black text-white shadow-sm"><Play className="size-5 fill-current" /></span></div>}
-          <span className="pointer-events-none absolute left-1/2 top-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 scale-90 place-items-center rounded-full bg-black/85 text-white opacity-0 shadow-lg transition duration-200 group-hover:scale-100 group-hover:opacity-100"><Play className="size-5 fill-current" /></span>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent opacity-80" />
-          <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/90 px-2 py-1 text-[11px] font-semibold tabular-nums text-white">{formatDuration(video.durationSeconds)}</span>
-          {video.category === "shorts" && <Badge className="absolute left-2.5 top-2.5 border-0 bg-black text-[10px] font-bold text-white shadow-sm">CLIP</Badge>}
-          {video.category === "regular" && <Badge className="absolute left-2.5 top-2.5 border-0 bg-white/95 text-[10px] font-bold text-neutral-900 shadow-sm">VIDEO</Badge>}
-        </div>
-        <div className="flex gap-3 px-1 pt-3">
-          <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/20 text-white">{video.channelAvatarUrl ? <img src={video.channelAvatarUrl} alt="" className="size-full object-cover" /> : <Sparkles className="size-4" />}</span>
-          <div className="min-w-0">
-            <h3 className="line-clamp-2 text-[15px] font-bold leading-5 tracking-[-0.01em] text-white transition group-hover:text-violet-200">{video.title}</h3>
-            {video.channelName && <p className="mt-1 truncate text-xs font-medium text-slate-400">{video.channelName}</p>}
-            <p className="mt-1.5 text-xs font-medium text-slate-500">{formatViews(video.viewCount)} <span className="mx-1">•</span> {formatDate(video.uploadedAt)}</p>
+    <article className="group block min-w-0 overflow-hidden rounded-2xl bg-white text-neutral-950 shadow-sm ring-1 ring-black/5">
+      <div className="flex items-center gap-3 px-3 py-3 sm:px-4">
+        <Link
+          href={`/watch/${video.id}`}
+          className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-100 text-sm font-black text-violet-700"
+          aria-label="Open creator video"
+        >
+          {video.channelAvatarUrl ? (
+            <img src={video.channelAvatarUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+          ) : (
+            video.channelName?.slice(0, 1).toUpperCase() || "H"
+          )}
+        </Link>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1">
+            <span className="truncate text-sm font-bold text-neutral-950">
+              {video.channelName || "HkTube Creator"}
+            </span>
+            <CheckCircle2 className="size-3.5 shrink-0 fill-sky-500 text-white" aria-label="Verified creator" />
           </div>
+          <p className="truncate text-[11px] text-neutral-500">
+            {formatViews(video.viewCount)} views · {formatDate(video.uploadedAt)}
+          </p>
         </div>
-      </article>
-    </Link>
+
+        <button
+          type="button"
+          onClick={() => setFollowed(value => !value)}
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition ${followed ? "bg-neutral-100 text-neutral-700" : "bg-violet-600 text-white hover:bg-violet-700"}`}
+          aria-pressed={followed}
+        >
+          {followed ? "Following" : "Follow"}
+        </button>
+
+        <button type="button" className="grid size-9 shrink-0 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100" aria-label="More options">
+          <MoreHorizontal className="size-5" />
+        </button>
+      </div>
+
+      <div className="px-3 pb-2 sm:px-4">
+        <Link href={`/watch/${video.id}`} className="block">
+          <h3 className="line-clamp-2 text-[15px] font-bold leading-5 sm:text-base">{video.title}</h3>
+        </Link>
+      </div>
+
+      <div className="relative w-full overflow-hidden bg-black" style={ratio ? { aspectRatio: String(ratio) } : undefined}>
+        {video.thumbnailUrl && !playing && (
+          <img src={video.thumbnailUrl} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover" />
+        )}
+
+        <video
+          ref={mediaRef}
+          src={video.videoUrl}
+          poster={video.thumbnailUrl ?? undefined}
+          playsInline
+          preload="metadata"
+          muted={muted}
+          className="relative block h-auto w-full cursor-pointer bg-black"
+          onLoadedMetadata={event => {
+            const media = event.currentTarget;
+            if (media.videoWidth > 0 && media.videoHeight > 0) setRatio(media.videoWidth / media.videoHeight);
+          }}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onTimeUpdate={event => {
+            const media = event.currentTarget;
+            setProgress(media.duration > 0 ? (media.currentTime / media.duration) * 100 : 0);
+          }}
+          onClick={() => void togglePlayback()}
+        />
+
+        {!playing && (
+          <button
+            type="button"
+            onClick={event => {
+              event.preventDefault();
+              void togglePlayback();
+            }}
+            className="absolute left-1/2 top-1/2 grid size-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white shadow-xl backdrop-blur-sm transition hover:scale-105 active:scale-95"
+            aria-label="Play video"
+          >
+            <Play className="ml-1 size-6 fill-current" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={event => {
+            event.preventDefault();
+            toggleMute();
+          }}
+          className="absolute bottom-3 right-3 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm"
+          aria-label={muted ? "Unmute video" : "Mute video"}
+        >
+          {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+        </button>
+
+        {progress > 0 && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
+            <div className="h-full bg-white" style={{ width: `${Math.min(100, progress)}%` }} />
+          </div>
+        )}
+
+        {video.durationSeconds > 0 && !playing && (
+          <span className="absolute bottom-3 left-3 rounded-md bg-black/70 px-2 py-1 text-[11px] font-semibold tabular-nums text-white">
+            {formatDuration(video.durationSeconds)}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 border-b border-black/5 px-2 py-2">
+        <button
+          type="button"
+          onClick={() => setLiked(value => !value)}
+          className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition ${liked ? "text-violet-600" : "text-neutral-600 hover:bg-neutral-100"}`}
+          aria-pressed={liked}
+        >
+          <Heart className={`size-5 ${liked ? "fill-current" : ""}`} />
+          <span>{formatCount(video.likesCount + (liked ? 1 : 0))}</span>
+        </button>
+
+        <Link href={`/watch/${video.id}#comments`} className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-100">
+          <MessageCircle className="size-5" />
+          <span>Comment</span>
+        </Link>
+
+        <button type="button" onClick={() => void shareVideo()} className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-100">
+          <Share2 className="size-5" />
+          <span>Share</span>
+        </button>
+
+        <button type="button" className="grid min-h-11 min-w-11 place-items-center rounded-xl text-neutral-600 hover:bg-neutral-100" aria-label="More video actions">
+          <MoreHorizontal className="size-5" />
+        </button>
+      </div>
+
+      {!compact && (
+        <div className="px-3 py-3 sm:px-4">
+          <p className="line-clamp-2 text-sm leading-5 text-neutral-700">{video.description || "Watch this video on HkTube."}</p>
+        </div>
+      )}
+    </article>
   );
 }
 
-export function EmptyVideos({ title, copy, icon: Icon = Inbox }: { title: string; copy: string; icon?: LucideIcon }) {
-  return <div className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-16 text-center"><span className="mx-auto grid size-12 place-items-center rounded-2xl bg-black text-white"><Icon className="size-5" aria-hidden="true" /></span><h2 className="mt-4 text-lg font-bold text-neutral-950">{title}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-neutral-500">{copy}</p></div>;
+export function EmptyVideos({
+  title,
+  copy,
+  icon: Icon = Inbox,
+}: {
+  title: string;
+  copy: string;
+  icon?: typeof Inbox;
+}) {
+  return (
+    <div className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-16 text-center">
+      <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-black text-white">
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+      <h2 className="mt-4 text-lg font-bold text-neutral-950">{title}</h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-neutral-500">{copy}</p>
+    </div>
+  );
 }
