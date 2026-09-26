@@ -46,6 +46,15 @@ alter table public.moderation_actions enable row level security;
 alter table public.user_blocks enable row level security;
 alter table public.videos enable row level security;
 
+drop policy if exists "Public videos viewable by everyone" on public.videos;
+drop policy if exists "hktube_videos_public_approved" on public.videos;
+create policy "hktube_videos_public_approved"
+on public.videos for select to public
+using (
+  (visibility = 'public' and status = 'published' and moderation_status = 'approved' and deleted_at is null)
+  or creator_id = auth.uid()
+);
+
 drop policy if exists "hktube_reports_insert_own" on public.reports;
 create policy "hktube_reports_insert_own"
 on public.reports for insert to authenticated
