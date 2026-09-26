@@ -19,10 +19,8 @@ import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
-import {
-  listPublicSupabaseShorts,
-  type SupabaseVideo,
-} from "@/lib/supabaseVideos";
+import { type SupabaseVideo } from "@/lib/supabaseVideos";
+import { rankPublicVideos, recordDiscoveryEvent } from "@/lib/supabaseDiscovery";
 import {
   addVideoComment,
   listVideoComments,
@@ -158,7 +156,11 @@ export default function ClipsPage() {
     let live = true;
     void (async () => {
       try {
-        const data = await listPublicSupabaseShorts(80);
+        const data = await rankPublicVideos({
+          shorts: true,
+          limit: 80,
+          userId: user?.id == null ? undefined : String(user.id),
+        });
         if (!live) return;
         setVideos(data);
         const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
@@ -186,7 +188,7 @@ export default function ClipsPage() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [user?.id]);
   useEffect(() => {
     if (!user) return;
     void (async () => {
@@ -278,6 +280,7 @@ export default function ClipsPage() {
       setHeartBurst(true);
       window.setTimeout(() => setHeartBurst(false), 620);
       const r = await toggleVideoLike(current.id);
+      void recordDiscoveryEvent({ eventType: r.liked ? "like" : "unlike", objectType: "short", objectId: current.id }).catch(() => undefined);
       setLiked(p => {
         const n = new Set(p);
         r.liked ? n.add(current.id) : n.delete(current.id);
@@ -291,6 +294,7 @@ export default function ClipsPage() {
     if (!current || !(await auth())) return;
     try {
       const r = await toggleVideoSave(current.id);
+      void recordDiscoveryEvent({ eventType: r ? "save" : "unsave", objectType: "short", objectId: current.id }).catch(() => undefined);
       setSaved(p => {
         const n = new Set(p);
         r ? n.add(current.id) : n.delete(current.id);
@@ -305,6 +309,7 @@ export default function ClipsPage() {
     if (!current || !(await auth())) return;
     try {
       const r = await toggleChannelSubscription(current.channelId);
+      void recordDiscoveryEvent({ eventType: r.subscribed ? "follow" : "unfollow", objectType: "channel", objectId: current.channelId }).catch(() => undefined);
       setFollowed(p => {
         const n = new Set(p);
         r.subscribed ? n.add(current.channelId) : n.delete(current.channelId);
@@ -323,6 +328,7 @@ export default function ClipsPage() {
         await navigator.clipboard.writeText(url);
         toast.success("Clip link copied");
       }
+      void recordDiscoveryEvent({ eventType: "share", objectType: "short", objectId: current.id }).catch(() => undefined);
     } catch (e) {
       if ((e as DOMException).name !== "AbortError")
         toast.error("Share failed");
@@ -333,6 +339,7 @@ export default function ClipsPage() {
     try {
       setComments(await listVideoComments(current.id));
       setCommentsOpen(true);
+      void recordDiscoveryEvent({ eventType: "comment_open", objectType: "short", objectId: current.id }).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Comments could not load");
     }
@@ -341,6 +348,7 @@ export default function ClipsPage() {
     if (!current || !(await auth()) || !comment.trim()) return;
     try {
       await addVideoComment(current.id, comment.trim());
+      void recordDiscoveryEvent({ eventType: "comment", objectType: "short", objectId: current.id }).catch(() => undefined);
       setComment("");
       setComments(await listVideoComments(current.id));
     } catch (e) {
@@ -504,6 +512,7 @@ export default function ClipsPage() {
                   setMediaError(false);
                   setMediaReady(true);
                   setPlaying(true);
+                  void recordDiscoveryEvent({ eventType: "play_start", objectType: "short", objectId: current.id }).catch(() => undefined);
                 }}
                 onCanPlay={() => setMediaReady(true)}
                 onLoadedData={() => setMediaReady(true)}
@@ -529,7 +538,13 @@ export default function ClipsPage() {
                     void recordVideoView(current.id, v.currentTime).catch(
                       () => undefined
                     );
+                  if (v.duration > 0) {
+                    const ratio = v.currentTime / v.duration;
+                    const eventType = ratio >= 0.9 ? "watch_90_percent" : ratio >= 0.75 ? "watch_75_percent" : ratio >= 0.5 ? "watch_50_percent" : ratio >= 0.25 ? "watch_25_percent" : null;
+                    if (eventType) void recordDiscoveryEvent({ eventType, objectType: "short", objectId: current.id, watchSeconds: v.currentTime, positionSeconds: v.currentTime }).catch(() => undefined);
+                  }
                 }}
+                onEnded={() => void recordDiscoveryEvent({ eventType: "complete", objectType: "short", objectId: current.id }).catch(() => undefined)}
               />
               {mediaError && (
                 <div className="absolute inset-0 z-30 grid place-items-center bg-black/90 p-6 text-center">
