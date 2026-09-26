@@ -73,7 +73,7 @@ export async function resetRecommendationFeedback() {
 }
 
 async function candidateRows(shorts = false, limit = 180) {
-  let q = supabase.from("videos").select(VIDEO_SELECT).eq("visibility", "public").eq("status", "published");
+  let q = supabase.from("videos").select(VIDEO_SELECT).eq("visibility", "public").eq("status", "published").eq("moderation_status", "approved").is("deleted_at", null);
   if (shorts) q = q.eq("is_short", true);
   // Pull a much wider pool than the visible shelf. Ranking is responsible for choosing
   // the final items, so a single creator cannot dominate simply by uploading frequently.
