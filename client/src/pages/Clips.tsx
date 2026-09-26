@@ -152,6 +152,7 @@ export default function ClipsPage() {
   const media = useRef<HTMLVideoElement | null>(null);
   const watched = useRef(new Set<string>());
   const [mediaError, setMediaError] = useState(false);
+  const [mediaReady, setMediaReady] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
   useEffect(() => {
     let live = true;
@@ -232,7 +233,9 @@ export default function ClipsPage() {
     const v = media.current;
     if (!v || !current) return;
     setMediaError(false);
+    setMediaReady(false);
     v.muted = true;
+    v.load();
     if (playing) void v.play().catch(() => setPlaying(false));
     else v.pause();
     watched.current.add(current.id);
@@ -361,9 +364,17 @@ export default function ClipsPage() {
     setActive(i => Math.min(i + 1, Math.max(visible.length - 1, 0)));
     toast.success("Recommendation adjusted");
   }
+  function retryMedia() {
+    const v = media.current;
+    if (!v) return;
+    setMediaError(false);
+    setMediaReady(false);
+    v.load();
+    void v.play().catch(() => setPlaying(false));
+  }
   return (
     <HkTubeShell immersive minimalHeader>
-      <div className="relative h-[100dvh] overflow-hidden bg-black text-white">
+      <div className="hktube-clips-page relative h-[100dvh] overflow-hidden bg-black text-white">
         <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/75 to-transparent">
           <div className="flex items-center gap-2">
             <ClipsLogo />
@@ -477,6 +488,14 @@ export default function ClipsPage() {
             }}
           >
             <div className="relative mx-auto h-full w-full max-w-[620px] bg-black">
+              {current.thumbnailUrl && (
+                <img
+                  src={current.thumbnailUrl}
+                  alt=""
+                  className="absolute inset-0 size-full object-contain"
+                  decoding="async"
+                />
+              )}
               <video
                 ref={media}
                 src={current.videoUrl}
@@ -485,11 +504,18 @@ export default function ClipsPage() {
                 autoPlay
                 playsInline
                 loop
-                className="size-full min-h-0 object-contain bg-black sm:rounded-3xl"
+                preload="auto"
+                className={
+                  (mediaReady ? "opacity-100" : "opacity-0") +
+                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300 sm:rounded-3xl"
+                }
                 onPlay={() => {
                   setMediaError(false);
+                  setMediaReady(true);
                   setPlaying(true);
                 }}
+                onCanPlay={() => setMediaReady(true)}
+                onLoadedData={() => setMediaReady(true)}
                 onPause={() => setPlaying(false)}
                 onError={() => setMediaError(true)}
                 onClick={() => {
@@ -517,13 +543,22 @@ export default function ClipsPage() {
               {mediaError && (
                 <div className="absolute inset-0 z-30 grid place-items-center bg-black/90 p-6 text-center">
                   <div>
-                    <p className="font-black">Video could not be displayed</p>
-                    <p className="mt-1 text-xs text-white/60">
-                      The stream has no browser-playable video track.
+                    <p className="font-black">
+                      This Clip cannot play on this device
                     </p>
+                    <p className="mt-1 text-xs text-white/60">
+                      Try again, or open it in the full video player.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={retryMedia}
+                      className="mt-3 inline-flex rounded-full bg-violet-500 px-4 py-2 text-xs font-black text-white"
+                    >
+                      Try again
+                    </button>
                     <Link
                       href={"/watch/" + current.id}
-                      className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black text-black"
+                      className="ml-2 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black text-black"
                     >
                       Open video
                     </Link>
@@ -781,13 +816,13 @@ function Action({
   return (
     <button
       onClick={onClick}
-      className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-1 text-[10px] font-black drop-shadow-md"
+      className="clips-action flex min-h-12 min-w-12 flex-col items-center justify-center gap-1 text-[10px] font-black drop-shadow-md"
       aria-label={label}
     >
       <span
         className={
           "grid size-11 place-items-center rounded-full backdrop-blur " +
-          (active ? "bg-fuchsia-500/80" : "bg-black/45")
+          (active ? "clips-action-active bg-fuchsia-500/80" : "bg-black/45")
         }
       >
         <Icon
