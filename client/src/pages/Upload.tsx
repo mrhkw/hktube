@@ -257,6 +257,7 @@ async function generateThumbnail(file: File, info: VideoInfo) {
 
 export default function UploadPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const moderationCheck = trpc.moderation.check.useMutation();
 
   const [channels, setChannels] = useState<SupabaseChannel[]>([]);
   const [channelsLoading, setChannelsLoading] = useState(true);
@@ -796,7 +797,7 @@ export default function UploadPage() {
     });
 
     try {
-      await trpc.moderation.check.mutate({
+      await moderationCheck.mutateAsync({
         title: title.trim(),
         description: description.trim(),
       });
