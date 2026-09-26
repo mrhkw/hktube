@@ -40,6 +40,7 @@ import {
 import { createSupabaseVideo } from "@/lib/supabaseVideos";
 import { startLogin } from "@/const";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 
 type Notice = { type: "success" | "error" | "info"; text: string } | null;
 type Step = "media" | "details";
@@ -281,6 +282,7 @@ export default function UploadPage() {
   const [madeForKids, setMadeForKids] = useState(false);
   const [allowComments, setAllowComments] = useState(true);
   const [allowDownload, setAllowDownload] = useState(false);
+  const [ugcConfirmed, setUgcConfirmed] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [dragActive, setDragActive] = useState(false);
@@ -323,7 +325,8 @@ export default function UploadPage() {
       title.trim() &&
       channelId &&
       videoInfo &&
-      !channelsLoading
+      !channelsLoading &&
+      ugcConfirmed
   );
 
   useEffect(() => {
@@ -774,6 +777,11 @@ export default function UploadPage() {
       return;
     }
 
+    if (!ugcConfirmed) {
+      setNotice({ type: "error", text: "Confirm the HkTube community and applicable PTA rules before uploading." });
+      return;
+    }
+
     if (uploading) return;
 
     setUploading(true);
@@ -788,6 +796,11 @@ export default function UploadPage() {
     });
 
     try {
+      await trpc.moderation.check.mutate({
+        title: title.trim(),
+        description: description.trim(),
+      });
+
       await createSupabaseVideo({
         channelId,
         title: title.trim(),
@@ -1067,6 +1080,10 @@ export default function UploadPage() {
           onSubmit={submit}
           className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
         >
+          <label className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/[.04] p-4 text-sm text-slate-300">
+            <input type="checkbox" checked={ugcConfirmed} onChange={e=>setUgcConfirmed(e.target.checked)} className="mt-1 size-4 accent-fuchsia-500" />
+            <span>I confirm this content does not violate Pakistan PTA / Religious / 18+ rules.</span>
+          </label>
           <div className="space-y-5">
             {step === "media" ? (
               <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5 transition-all duration-300 sm:p-7">
