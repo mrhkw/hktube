@@ -772,3 +772,47 @@ select {
     border-radius: 1rem;
   }
 }
+
+
+/* Clips viewport contract: the feed itself owns the full screen; header and
+   action rail float above the media instead of creating document-flow gaps. */
+.hktube-clips-page {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100svh;
+  overflow: hidden !important;
+  background: #000 !important;
+}
+.hktube-clips-page > .hktube-clips-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  height: 100% !important;
+  width: 100%;
+}
+.hktube-clips-viewport {
+  height: 100% !important;
+  width: 100%;
+  max-width: 620px;
+  overflow: hidden;
+  background: #000;
+}
+.hktube-clips-viewport > video,
+.hktube-clips-viewport > img {
+  width: 100%;
+  height: 100%;
+  max-height: none !important;
+  object-fit: cover;
+}
+.hktube-clips-page > :not(.hktube-clips-stage) { position: relative; z-index: 20; }
+.hktube-clips-page .hktube-clips-stage { isolation: isolate; }
+@media (max-width: 767px) {
+  body:has(.hktube-clips-page),
+  body:has(.hktube-clips-page) #root,
+  body:has(.hktube-clips-page) main { overflow: hidden !important; }
+  body:has(.hktube-clips-page) main { padding: 0 !important; }
+  .hktube-clips-page .hktube-clips-viewport { max-width: none; }
+  .hktube-clips-page .clips-action { min-width: 56px; min-height: 56px; }
+  .hktube-clips-page .clips-action > span:first-child { width: 48px; height: 48px; }
+}

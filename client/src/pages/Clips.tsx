@@ -473,7 +473,7 @@ export default function ClipsPage() {
           </div>
         ) : (
           <div
-            className="h-full"
+            className="hktube-clips-stage h-full"
             onTouchStart={e => setTouchY(e.touches[0]?.clientY ?? null)}
             onTouchEnd={e => {
               if (touchY == null) return;
@@ -487,7 +487,7 @@ export default function ClipsPage() {
               setTouchY(null);
             }}
           >
-            <div className="relative mx-auto h-full w-full max-w-[620px] bg-black">
+            <div className="hktube-clips-viewport relative mx-auto h-full w-full max-w-[620px] bg-black">
               {current.thumbnailUrl && (
                 <img
                   src={current.thumbnailUrl}
@@ -580,7 +580,7 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-20 left-4 right-20 z-20 sm:bottom-24 sm:left-6">
+              <div className="absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] left-4 right-20 z-20 sm:bottom-24 sm:left-6">
                 <span className="mb-2 inline-flex rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black text-white/80 backdrop-blur">
                   {active + 1} / {visible.length}
                 </span>
@@ -646,7 +646,7 @@ export default function ClipsPage() {
                   {compact(current.viewCount)} views · {ago(current.createdAt)}
                 </p>
               </div>
-              <div className="absolute bottom-24 right-3 z-30 flex flex-col items-center gap-3 sm:right-5">
+              <div className="absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] right-3 z-30 flex flex-col items-center gap-3 sm:right-5">
                 <Action
                   icon={Heart}
                   label={compact(
