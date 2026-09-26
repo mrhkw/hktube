@@ -6,9 +6,11 @@ import {
   MessageCircle,
   MoreHorizontal,
   Play,
+  Save,
   Share2,
   Volume2,
   VolumeX,
+  Maximize2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
@@ -26,7 +28,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
   const [followed, setFollowed] = useState(false);
   const [liked, setLiked] = useState(false);
   const [ratio, setRatio] = useState<number | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(0);\n  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setPlaying(false);
@@ -34,7 +36,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
     setFollowed(false);
     setLiked(false);
     setRatio(null);
-    setProgress(0);
+    setProgress(0);\n    setSaved(false);
   }, [video.id]);
 
   const togglePlayback = async () => {
@@ -59,7 +61,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
     setMuted(nextMuted);
   };
 
-  const shareVideo = async () => {
+  const toggleFullscreen = async () => {\n    const media = mediaRef.current;\n    if (!media) return;\n    try {\n      if (document.fullscreenElement) await document.exitFullscreen();\n      else if (media.requestFullscreen) await media.requestFullscreen();\n    } catch {\n      // Fullscreen can be blocked by browser policy.\n    }\n  };\n\n  const shareVideo = async () => {
     const url = new URL(`/watch/${video.id}`, window.location.origin).toString();
     try {
       if (navigator.share) {
@@ -73,7 +75,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
   };
 
   return (
-    <article className="group block min-w-0 overflow-hidden rounded-2xl bg-white text-neutral-950 shadow-sm ring-1 ring-black/5">
+    <article className="group block min-w-0 overflow-hidden bg-white text-neutral-950 sm:rounded-2xl sm:shadow-sm sm:ring-1 sm:ring-black/5">
       <div className="flex items-center gap-3 px-3 py-3 sm:px-4">
         <Link
           href={`/watch/${video.id}`}
@@ -119,7 +121,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
         </Link>
       </div>
 
-      <div className="relative w-full overflow-hidden bg-black" style={ratio ? { aspectRatio: String(ratio) } : undefined}>
+      <div className="relative -mx-0 w-full overflow-hidden bg-black" style={ratio ? { aspectRatio: String(ratio) } : { aspectRatio: "16 / 9" }}>
         {video.thumbnailUrl && !playing && (
           <img src={video.thumbnailUrl} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover" />
         )}
@@ -131,7 +133,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
           playsInline
           preload="metadata"
           muted={muted}
-          className="relative block h-auto w-full cursor-pointer bg-black"
+          className="relative block size-full cursor-pointer bg-black object-contain"
           onLoadedMetadata={event => {
             const media = event.currentTarget;
             if (media.videoWidth > 0 && media.videoHeight > 0) setRatio(media.videoWidth / media.videoHeight);
@@ -171,7 +173,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
           {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
         </button>
 
-        {progress > 0 && (
+        <button\n          type="button"\n          onClick={event => {\n            event.preventDefault();\n            void toggleFullscreen();\n          }}\n          className="absolute bottom-3 right-14 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm"\n          aria-label="Fullscreen video"\n        >\n          <Maximize2 className="size-5" />\n        </button>\n\n        {progress > 0 && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
             <div className="h-full bg-white" style={{ width: `${Math.min(100, progress)}%` }} />
           </div>
