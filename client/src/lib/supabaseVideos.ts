@@ -171,7 +171,9 @@ export async function listPublicSupabaseShorts(limit = 40) {
   return (data ?? []).map((row) => mapVideo(row as Record<string, unknown>));
 }
 
-const TUS_CHUNK_SIZE = 6 * 1024 * 1024;
+const TUS_CHUNK_SIZE = Math.max(1, Number(import.meta.env.VITE_SUPABASE_CHUNK_SIZE || 6 * 1024 * 1024));
+const VIDEO_BUCKET = String(import.meta.env.VITE_SUPABASE_VIDEO_BUCKET || "videos").trim() || "videos";
+const THUMBNAIL_BUCKET = String(import.meta.env.VITE_SUPABASE_THUMBNAIL_BUCKET || "thumbnails").trim() || "thumbnails";
 
 const DEFAULT_STORAGE_PROJECT_URL = "https://jpdvunotyykfqmmkhmml.supabase.co";
 
@@ -375,7 +377,7 @@ export async function createSupabaseVideo(input: {
   input.onProgress?.(10);
 
   await resumableUpload(
-    "videos",
+    VIDEO_BUCKET,
     videoPath,
     input.file,
     fraction => input.onProgress?.(10 + Math.round(fraction * 55)),
@@ -453,9 +455,9 @@ export async function createSupabaseVideo(input: {
   } catch (error) {
     const cancelled = error instanceof DOMException && error.name === "AbortError";
     if (!cancelled) {
-      await supabase.storage.from("videos").remove([videoPath]).catch(() => undefined);
+      await supabase.storage.from(VIDEO_BUCKET).remove([videoPath]).catch(() => undefined);
       if (thumbnailPath) {
-        await supabase.storage.from("thumbnails").remove([thumbnailPath]).catch(() => undefined);
+        await supabase.storage.from(THUMBNAIL_BUCKET).remove([thumbnailPath]).catch(() => undefined);
       }
     }
     throw error;
