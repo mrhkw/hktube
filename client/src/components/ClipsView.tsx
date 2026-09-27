@@ -750,14 +750,23 @@ export const ClipsView = () => {
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => toast.info("Original sound is from this Clip.")}
-                  className="mt-4 flex max-w-full items-center gap-2 rounded-full text-left text-[14px] font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.9)]"
-                >
-                  <Music2 className="size-5 shrink-0" />
-                  <span className="truncate">{formatMusic(clip)}</span>
-                </button>
+                <div className="mt-4 flex max-w-full items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toast.info("Original sound is from this Clip.")}
+                    className="flex min-w-0 items-center gap-2 rounded-full text-left text-[14px] font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.9)]"
+                  >
+                    <Music2 className="size-5 shrink-0" />
+                    <span className="truncate">{formatMusic(clip)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/clips/create")}
+                    className="shrink-0 rounded-full bg-black/45 px-4 py-2 text-[13px] font-bold text-white backdrop-blur-md transition active:scale-95"
+                  >
+                    Use sound
+                  </button>
+                </div>
               </div>
 
               <button
@@ -960,7 +969,7 @@ function ActionButton({
   label: string;
   active?: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button
