@@ -643,7 +643,7 @@ export const ClipsView = () => {
                 <button
                   type="button"
                   onClick={openSearch}
-                  className="pointer-events-auto absolute right-4 top-2 grid size-11 place-items-center rounded-full text-white drop-shadow-[0_2px_7px_rgba(0,0,0,.7)]"
+                  className="pointer-events-auto absolute right-4 top-[max(8px,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full text-white drop-shadow-[0_2px_7px_rgba(0,0,0,.7)]"
                   aria-label="Search Clips"
                 >
                   <Search className="size-8 stroke-[2.2]" />
@@ -685,7 +685,7 @@ export const ClipsView = () => {
                 </ActionButton>
 
                 <ActionButton
-                  label={formatCount(clip.viewCount)}
+                  label={isSaved ? "Saved" : "Save"}
                   active={isSaved}
                   onClick={() => void saveClip(clip)}
                 >
