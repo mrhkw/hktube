@@ -715,7 +715,7 @@ export default function ClipsPage() {
                     )}
                   </Link>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="truncate font-black">
                         {channel ? "@" + channel.handle : "HkTube Creator"}
                       </span>
@@ -724,18 +724,16 @@ export default function ClipsPage() {
                           <Check className="size-3" />
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => void follow()}
+                        className="rounded-full bg-white px-3.5 py-1.5 text-[11px] font-black leading-none text-black shadow-none transition-opacity hover:opacity-85 active:opacity-70"
+                      >
+                        {followed.has(current.channelId)
+                          ? "Following"
+                          : "Follow"}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => void follow()}
-                      className={
-                        "mt-1 rounded-full border px-3 py-1 text-[11px] font-black " +
-                        (followed.has(current.channelId)
-                          ? "border-white/25 bg-white/10"
-                          : "border-fuchsia-300/50 bg-fuchsia-500/80")
-                      }
-                    >
-                      {followed.has(current.channelId) ? "Following" : "Follow"}
-                    </button>
                   </div>
                 </div>
                 <h1 className="mt-3 line-clamp-2 text-base font-black sm:text-lg">
