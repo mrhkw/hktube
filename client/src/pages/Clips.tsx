@@ -148,13 +148,15 @@ export default function ClipsPage() {
   const [more, setMore] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [touchY, setTouchY] = useState<number | null>(null);
   const [lastTap, setLastTap] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
   const media = useRef<HTMLVideoElement | null>(null);
   const watched = useRef(new Set<string>());
+  const swipeStartY = useRef<number | null>(null);
+  const swipeLockUntil = useRef(0);
+  const switchingClip = useRef(false);
   const [mediaError, setMediaError] = useState(false);
   const [mediaReady, setMediaReady] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
@@ -240,16 +242,40 @@ export default function ClipsPage() {
   useEffect(() => {
     const v = media.current;
     if (!v || !current) return;
+    switchingClip.current = true;
     setMediaError(false);
     setMediaReady(false);
     v.muted = muted;
+    v.pause();
     v.load();
-    if (playing) void v.play().catch(() => setPlaying(false));
-    else v.pause();
+    void v
+      .play()
+      .then(() => {
+        switchingClip.current = false;
+        setPlaying(true);
+      })
+      .catch(() => {
+        switchingClip.current = false;
+        setPlaying(false);
+      });
     watched.current.add(current.id);
     void recordVideoView(current.id, 0).catch(() => undefined);
-    return () => v.pause();
-  }, [current?.id, playing, muted]);
+    return () => {
+      switchingClip.current = true;
+      v.pause();
+    };
+  }, [current?.id]);
+  useEffect(() => {
+    const v = media.current;
+    if (!v || switchingClip.current) return;
+    v.muted = muted;
+  }, [muted]);
+  useEffect(() => {
+    const v = media.current;
+    if (!v || switchingClip.current) return;
+    if (playing) void v.play().catch(() => setPlaying(false));
+    else v.pause();
+  }, [playing]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (
@@ -407,8 +433,19 @@ export default function ClipsPage() {
     if (!v) return;
     setMediaError(false);
     setMediaReady(false);
+    switchingClip.current = false;
+    setPlaying(true);
     v.load();
     void v.play().catch(() => setPlaying(false));
+  }
+  function moveClip(direction: 1 | -1) {
+    const now = Date.now();
+    if (now < swipeLockUntil.current || visible.length < 2) return;
+    swipeLockUntil.current = now + 260;
+    setActive(index =>
+      Math.max(0, Math.min(index + direction, visible.length - 1))
+    );
+    setPlaying(true);
   }
   return (
     <HkTubeShell immersive minimalHeader>
@@ -515,25 +552,18 @@ export default function ClipsPage() {
         ) : (
           <div
             className="hktube-clips-stage h-full"
-            onTouchStart={e => setTouchY(e.touches[0]?.clientY ?? null)}
+            onTouchStart={e => {
+              swipeStartY.current = e.touches[0]?.clientY ?? null;
+            }}
             onTouchEnd={e => {
-              if (touchY == null) return;
-              const d = (e.changedTouches[0]?.clientY ?? touchY) - touchY;
-              if (Math.abs(d) > 55)
-                setActive(i =>
-                  d < 0
-                    ? Math.min(i + 1, visible.length - 1)
-                    : Math.max(i - 1, 0)
-                );
-              setTouchY(null);
+              const start = swipeStartY.current;
+              swipeStartY.current = null;
+              if (start == null) return;
+              const delta = (e.changedTouches[0]?.clientY ?? start) - start;
+              if (Math.abs(delta) > 42) moveClip(delta < 0 ? 1 : -1);
             }}
             onWheel={e => {
-              if (Math.abs(e.deltaY) < 30) return;
-              setActive(i =>
-                e.deltaY > 0
-                  ? Math.min(i + 1, visible.length - 1)
-                  : Math.max(i - 1, 0)
-              );
+              if (Math.abs(e.deltaY) >= 30) moveClip(e.deltaY > 0 ? 1 : -1);
             }}
           >
             <div className="hktube-clips-viewport relative mx-auto bg-black">
@@ -570,7 +600,9 @@ export default function ClipsPage() {
                 }}
                 onCanPlay={() => setMediaReady(true)}
                 onLoadedData={() => setMediaReady(true)}
-                onPause={() => setPlaying(false)}
+                onPause={() => {
+                  if (!switchingClip.current) setPlaying(false);
+                }}
                 onError={() => setMediaError(true)}
                 onClick={() => {
                   const now = Date.now();
@@ -663,9 +695,6 @@ export default function ClipsPage() {
                 </button>
               )}
               <div className="absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] left-4 right-20 z-20 sm:bottom-24 sm:left-6">
-                <span className="mb-2 inline-flex rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black text-white/80 backdrop-blur">
-                  {active + 1} / {visible.length}
-                </span>
                 <div className="flex items-center gap-3">
                   <Link
                     href={
@@ -769,14 +798,6 @@ export default function ClipsPage() {
                   icon={MoreVertical}
                   label="More"
                   onClick={() => setMore(v => !v)}
-                />
-              </div>
-              <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
-                <div
-                  className="h-full bg-violet-400 transition-[width] duration-150"
-                  style={{
-                    width: `${Math.min(100, ((active + 1) / Math.max(visible.length, 1)) * 100)}%`,
-                  }}
                 />
               </div>
               <div className="absolute right-3 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 sm:flex">
