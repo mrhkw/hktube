@@ -32,6 +32,9 @@ export interface SupabaseProfile {
   bio?: string | null;
   is_verified: boolean;
   created_at: string;
+  country_code?: string | null;
+  age_band?: "under_13" | "13_15" | "16_17" | "18_plus" | null;
+  is_banned?: boolean;
 }
 
 export interface SupabaseVideo {
@@ -61,6 +64,8 @@ export const registerWithPassword = async ({ email, password, username }: { emai
     id: result.data.user.id,
     username: cleanUsername,
     display_name: cleanUsername,
+    country_code: null,
+    age_band: null,
   });
   if (profile.error) return { ...result, error: profile.error };
   return result;

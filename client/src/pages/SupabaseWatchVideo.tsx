@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { ReportMenu } from "@/components/moderation/ReportMenu";
+import { BlockUserButton } from "@/components/moderation/BlockUserButton";
 import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -92,6 +94,8 @@ export default function SupabaseWatchVideo() {
       .eq("id", id)
       .eq("visibility", "public")
       .eq("status", "published")
+      .eq("moderation_status", "approved")
+      .is("deleted_at", null)
       .maybeSingle();
     if (error || !data) {
       setVideo(null);
@@ -511,7 +515,8 @@ export default function SupabaseWatchVideo() {
                   {video.title}
                 </h1>
               </div>
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <ReportMenu videoId={id} />
                 <button
                   type="button"
                   onClick={() => setMoreOpen(v => !v)}
