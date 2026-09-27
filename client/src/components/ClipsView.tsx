@@ -176,8 +176,9 @@ export const ClipsView = () => {
   const [busy, setBusy] = useState(false);
   const [moreClip, setMoreClip] = useState<ClipItem | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const feedRef = useRef<HTMLDivElement | null>(null);
   const lastProgress = useRef<Record<string, number>>({});
-  const touchStartY = useRef<number | null>(null);
 
   const activeClip = clips[activeIndex] ?? null;
 
@@ -246,6 +247,37 @@ export const ClipsView = () => {
   }, [activeClip?.id, activeClip?.channelId]);
 
   useEffect(() => {
+    const root = feedRef.current;
+    if (!root || !clips.length) return;
+
+    const sections = Object.values(sectionRefs.current).filter(
+      (section): section is HTMLElement => Boolean(section),
+    );
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+
+        const id = visible.target.getAttribute("data-clip-id");
+        if (!id) return;
+        const nextIndex = clips.findIndex(clip => clip.id === id);
+        if (nextIndex < 0 || nextIndex === activeIndex) return;
+
+        setActiveIndex(nextIndex);
+        setPlaying(true);
+      },
+      { root, threshold: [0.6, 0.75, 0.9] },
+    );
+
+    sections.forEach(section => observer.observe(section));
+    return () => observer.disconnect();
+  }, [clips, activeIndex]);
+
+  useEffect(() => {
     Object.entries(videoRefs.current).forEach(([id, video]) => {
       if (!video) return;
       if (id === activeClip?.id) {
@@ -254,31 +286,15 @@ export const ClipsView = () => {
         video.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
       } else {
         video.pause();
-        video.currentTime = 0;
       }
     });
   }, [activeClip?.id]);
 
   const setActive = (index: number) => {
     const next = Math.max(0, Math.min(index, clips.length - 1));
-    if (next !== activeIndex) {
-      setActiveIndex(next);
-      setPlaying(true);
-    }
-  };
-
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (Math.abs(event.deltaY) < 30) return;
-    if (event.deltaY > 0) setActive(activeIndex + 1);
-    else setActive(activeIndex - 1);
-  };
-
-  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartY.current === null) return;
-    const delta = touchStartY.current - event.changedTouches[0].clientY;
-    touchStartY.current = null;
-    if (Math.abs(delta) < 45) return;
-    setActive(delta > 0 ? activeIndex + 1 : activeIndex - 1);
+    const target = clips[next];
+    if (!target) return;
+    sectionRefs.current[target.id]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const togglePlayback = () => {
@@ -525,16 +541,9 @@ export const ClipsView = () => {
   }
 
   return (
-    <main
-      className="clips-feed-shell fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white"
-      onWheel={handleWheel}
-      onTouchStart={event => {
-        touchStartY.current = event.touches[0].clientY;
-      }}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div className="clips-feed-frame">
-        <div className="clips-feed-track absolute inset-0 flex h-full w-full flex-col will-change-transform" style={{ transform: `translate3d(0, ${-activeIndex * 100}%, 0)` }}>
+    <main className="clips-feed-shell fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white">
+      <div ref={feedRef} className="clips-feed-frame" aria-label="Clips feed">
+        <div className="clips-feed-track">
         {clips.map((clip, index) => {
           const isActive = index === activeIndex;
           const isLiked = Boolean(liked[clip.id]);
@@ -545,20 +554,25 @@ export const ClipsView = () => {
           return (
             <section
               key={clip.id}
-              className="relative h-full w-full shrink-0 overflow-hidden bg-black"
+              ref={element => {
+                sectionRefs.current[clip.id] = element;
+              }}
+              data-clip-id={clip.id}
+              className="relative min-h-[100dvh] h-[100dvh] w-full shrink-0 snap-start overflow-hidden bg-black"
               aria-hidden={!isActive}
             >
-              <video
-                ref={element => {
-                  videoRefs.current[clip.id] = element;
-                }}
-                src={clip.videoUrl}
-                poster={clip.thumbnailUrl || undefined}
-                playsInline
-                muted
-                loop
-                preload={isActive ? "auto" : "metadata"}
-                className="absolute inset-0 size-full object-cover"
+              {clip.videoUrl ? (
+                <video
+                  ref={element => {
+                    videoRefs.current[clip.id] = element;
+                  }}
+                  src={clip.videoUrl}
+                  poster={clip.thumbnailUrl || undefined}
+                  playsInline
+                  muted
+                  loop
+                  preload={isActive ? "auto" : "metadata"}
+                  className="absolute inset-0 size-full object-cover object-center"
                 onPlay={() => {
                   if (!isActive) return;
                   setPlaying(true);
@@ -593,8 +607,23 @@ export const ClipsView = () => {
                   }).catch(() => undefined);
                   setActive(activeIndex + 1);
                 }}
-                onClick={togglePlayback}
-              />
+                  onClick={togglePlayback}
+                />
+              ) : clip.thumbnailUrl ? (
+                <img
+                  src={clip.thumbnailUrl}
+                  alt={clip.title}
+                  className="absolute inset-0 size-full object-cover object-center"
+                  draggable={false}
+                />
+              ) : (
+                <div className="absolute inset-0 grid place-items-center bg-neutral-950 text-center">
+                  <div className="px-8">
+                    <Play className="mx-auto size-12 text-white/50" />
+                    <p className="mt-3 text-sm font-semibold text-white/60">Clip media unavailable</p>
+                  </div>
+                </div>
+              )}
 
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/85" />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
