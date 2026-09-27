@@ -1448,4 +1448,9 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
   .clips-reference-screen.clips-reference-transitioning .clips-reference-shade {
     transition-duration: 1ms !important;
   }
+
+  .clips-reference-intro {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
