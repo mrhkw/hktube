@@ -170,8 +170,41 @@ export default function ClipsPage() {
           userId: user?.id == null ? undefined : String(user.id),
         });
         if (!live) return;
-        setVideos(data);
-        const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
+        const demoVideo: SupabaseVideo = {
+          id: "reference-clip",
+          creatorId: "reference-creator",
+          channelId: "reference-channel",
+          title: "Waking up to views like this 🏔️",
+          description: null,
+          videoUrl: "",
+          thumbnailUrl: "/clip-reference.jpeg",
+          durationSeconds: 15,
+          viewCount: 2600,
+          likesCount: 2600,
+          publishedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          tags: ["travel", "nature", "adventure", "explore"],
+          category: "shorts",
+          language: "en",
+          isShort: true,
+          moderationStatus: "approved",
+          status: "published",
+        };
+        const feed = data.length ? data : [demoVideo];
+        setVideos(feed);
+        const ids = [...new Set(feed.map(v => v.channelId).filter(Boolean))];
+        if (!data.length) {
+          setChannels({
+            "reference-channel": {
+              id: "reference-channel",
+              handle: "hktube_creator",
+              name: "HkTube Creator",
+              avatar_url: null,
+              subscriber_count: 0,
+              verification_status: "verified",
+            },
+          });
+        }
         if (ids.length) {
           const { data: rows } = await supabase
             .from("channels")
