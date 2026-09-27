@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Heart,
   Inbox,
+  Maximize2,
   MessageCircle,
   MoreHorizontal,
   Play,
@@ -10,7 +11,6 @@ import {
   Share2,
   Volume2,
   VolumeX,
-  Maximize2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
@@ -27,16 +27,18 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
   const [muted, setMuted] = useState(true);
   const [followed, setFollowed] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [ratio, setRatio] = useState<number | null>(null);
-  const [progress, setProgress] = useState(0);\n  const [saved, setSaved] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     setPlaying(false);
     setMuted(true);
     setFollowed(false);
     setLiked(false);
+    setSaved(false);
     setRatio(null);
-    setProgress(0);\n    setSaved(false);
+    setProgress(0);
   }, [video.id]);
 
   const togglePlayback = async () => {
@@ -61,7 +63,18 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
     setMuted(nextMuted);
   };
 
-  const toggleFullscreen = async () => {\n    const media = mediaRef.current;\n    if (!media) return;\n    try {\n      if (document.fullscreenElement) await document.exitFullscreen();\n      else if (media.requestFullscreen) await media.requestFullscreen();\n    } catch {\n      // Fullscreen can be blocked by browser policy.\n    }\n  };\n\n  const shareVideo = async () => {
+  const toggleFullscreen = async () => {
+    const media = mediaRef.current;
+    if (!media) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await media.requestFullscreen();
+    } catch {
+      // Fullscreen can be blocked by browser policy.
+    }
+  };
+
+  const shareVideo = async () => {
     const url = new URL(`/watch/${video.id}`, window.location.origin).toString();
     try {
       if (navigator.share) {
@@ -96,9 +109,6 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
             </span>
             <CheckCircle2 className="size-3.5 shrink-0 fill-sky-500 text-white" aria-label="Verified creator" />
           </div>
-          <p className="truncate text-[11px] text-neutral-500">
-            {formatViews(video.viewCount)} views · {formatDate(video.uploadedAt)}
-          </p>
         </div>
 
         <button
@@ -121,7 +131,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
         </Link>
       </div>
 
-      <div className="relative -mx-0 w-full overflow-hidden bg-black" style={ratio ? { aspectRatio: String(ratio) } : { aspectRatio: "16 / 9" }}>
+      <div className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: ratio ? String(ratio) : "16 / 9" }}>
         {video.thumbnailUrl && !playing && (
           <img src={video.thumbnailUrl} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover" />
         )}
@@ -161,19 +171,32 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={event => {
-            event.preventDefault();
-            toggleMute();
-          }}
-          className="absolute bottom-3 right-3 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm"
-          aria-label={muted ? "Unmute video" : "Mute video"}
-        >
-          {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
-        </button>
+        <div className="absolute bottom-3 right-3 flex gap-2">
+          <button
+            type="button"
+            onClick={event => {
+              event.preventDefault();
+              toggleMute();
+            }}
+            className="grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm"
+            aria-label={muted ? "Unmute video" : "Mute video"}
+          >
+            {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+          </button>
+          <button
+            type="button"
+            onClick={event => {
+              event.preventDefault();
+              void toggleFullscreen();
+            }}
+            className="grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm"
+            aria-label="Fullscreen video"
+          >
+            <Maximize2 className="size-5" />
+          </button>
+        </div>
 
-        <button\n          type="button"\n          onClick={event => {\n            event.preventDefault();\n            void toggleFullscreen();\n          }}\n          className="absolute bottom-3 right-14 grid size-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm"\n          aria-label="Fullscreen video"\n        >\n          <Maximize2 className="size-5" />\n        </button>\n\n        {progress > 0 && (
+        {progress > 0 && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
             <div className="h-full bg-white" style={{ width: `${Math.min(100, progress)}%` }} />
           </div>
@@ -187,12 +210,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
       </div>
 
       <div className="flex items-center gap-1 border-b border-black/5 px-2 py-2">
-        <button
-          type="button"
-          onClick={() => setLiked(value => !value)}
-          className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition ${liked ? "text-violet-600" : "text-neutral-600 hover:bg-neutral-100"}`}
-          aria-pressed={liked}
-        >
+        <button type="button" onClick={() => setLiked(value => !value)} className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition ${liked ? "text-violet-600" : "text-neutral-600 hover:bg-neutral-100"}`} aria-pressed={liked}>
           <Heart className={`size-5 ${liked ? "fill-current" : ""}`} />
           <span>{formatCount(video.likesCount + (liked ? 1 : 0))}</span>
         </button>
@@ -207,14 +225,26 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
           <span>Share</span>
         </button>
 
+        <button type="button" onClick={() => setSaved(value => !value)} className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition ${saved ? "text-violet-600" : "text-neutral-600 hover:bg-neutral-100"}`} aria-pressed={saved}>
+          <Save className={`size-5 ${saved ? "fill-current" : ""}`} />
+          <span>Save</span>
+        </button>
+
         <button type="button" className="grid min-h-11 min-w-11 place-items-center rounded-xl text-neutral-600 hover:bg-neutral-100" aria-label="More video actions">
           <MoreHorizontal className="size-5" />
         </button>
       </div>
 
       {!compact && (
-        <div className="px-3 py-3 sm:px-4">
-          <p className="line-clamp-2 text-sm leading-5 text-neutral-700">{video.description || "Watch this video on HkTube."}</p>
+        <div className="flex gap-3 px-3 py-3 sm:px-4">
+          <Link href={`/watch/${video.id}`} className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-100 text-xs font-black text-violet-700">
+            {video.channelAvatarUrl ? <img src={video.channelAvatarUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : (video.channelName?.slice(0, 1).toUpperCase() || "H")}
+          </Link>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-neutral-900">{video.channelName || "HkTube Creator"}</p>
+            <p className="mt-0.5 text-xs text-neutral-500">{formatViews(video.viewCount)} views · {formatDate(video.uploadedAt)}</p>
+            <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-neutral-700">{video.description || "Watch this video on HkTube."}</p>
+          </div>
         </div>
       )}
     </article>
