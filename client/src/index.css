@@ -1456,19 +1456,45 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
 }
 
 
-/* Clips feed viewport: mobile fills the screen; larger screens use a centered 9:16 player. */
+/* Clips feed viewport: native vertical scrolling + CSS scroll snap. */
+.clips-feed-shell {
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  overflow: hidden;
+}
 .clips-feed-frame {
   position: relative;
   width: 100vw;
   height: 100dvh;
   margin-inline: auto;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #000;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 0;
+}
+.clips-feed-frame::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 .clips-feed-track {
-  transition: transform 420ms cubic-bezier(.22,.8,.2,1);
-  touch-action: pan-y;
-  overscroll-behavior-y: contain;
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+}
+.clips-feed-track > section {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 @media (min-width: 768px) {
   .clips-feed-frame {
@@ -1477,5 +1503,7 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .clips-feed-track { transition-duration: 1ms; }
+  .clips-feed-frame {
+    scroll-behavior: auto;
+  }
 }
