@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import {
   BadgeCheck,
   Bookmark,
   Check,
-  ChevronDown,
   Copy,
   Flag,
   Heart,
@@ -13,7 +12,6 @@ import {
   MessageCircle,
   MoreHorizontal,
   Music2,
-  Pause,
   Play,
   Search,
   Send,
@@ -537,7 +535,6 @@ export const ClipsView = () => {
           const isSaved = Boolean(saved[clip.id]);
           const isFollowed = Boolean(followed[clip.channelId]);
           const likes = likeCounts[clip.id] ?? clip.likesCount;
-          const viewCount = viewCounts[clip.id] ?? clip.viewCount;
 
           return (
             <section
