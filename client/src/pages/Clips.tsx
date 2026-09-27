@@ -1,18 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bookmark,
   Check,
-  ChevronDown,
-  ChevronUp,
   Flag,
   Heart,
   MessageCircle,
   MoreVertical,
-  Pause,
   Play,
   Search,
   Send,
-  Share2,
   X,
 } from "lucide-react";
 import { Link } from "wouter";
