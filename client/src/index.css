@@ -895,7 +895,7 @@ select {
   color: #111827;
 }
 .hktube-reference-header .hktube-reference-logo span {
-  color: #111827;
+  color: #dc2626;
 }
 .hktube-reference-header .hktube-reference-logo span span {
   color: #dc2626;
@@ -944,6 +944,12 @@ select {
   .hktube-reference-header .hktube-header-action.ml-auto {
     margin-left: auto;
   }
+  .hktube-reference-header .hktube-notification-action {
+    order: 4;
+  }
+  .hktube-reference-header .hktube-search-action {
+    order: 5;
+  }
   .hktube-reference-header nav {
     background: #fff;
     border-top-color: #f3f4f6;
@@ -975,6 +981,9 @@ select {
     height: 58px;
     padding-top: 0;
     padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  }
+  body:has(.hktube-home-feed) > div > main {
+    padding-bottom: 62px !important;
   }
   body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] a,
   body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button {

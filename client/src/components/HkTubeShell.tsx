@@ -67,7 +67,7 @@ function HkTubeMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "grid place-items-center rounded-[11px] bg-gradient-to-br from-violet-500 to-fuchsia-500 text-[11px] font-black text-white shadow-[0_5px_18px_rgba(139,92,246,.28)]",
+        "grid place-items-center rounded-[5px] bg-red-600 text-[9px] font-black text-white shadow-[0_3px_10px_rgba(220,38,38,.22)]",
         className
       )}
       aria-hidden="true"
@@ -185,8 +185,8 @@ export function HkTubeShell({
             aria-label="HkTube home"
           >
             <HkTubeMark className="size-9 sm:size-9" />
-            <span className="whitespace-nowrap text-[18px] font-black tracking-[-.04em] text-white">
-              Hk<span className="text-red-500">Tube</span>
+            <span className="whitespace-nowrap text-[18px] font-black tracking-[-.04em] text-red-600">
+              HkTube
             </span>
           </Link>
           <form
@@ -211,7 +211,7 @@ export function HkTubeShell({
           )}
           <Link
             href="/search"
-            className="hktube-header-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
+            className="hktube-header-action hktube-search-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
             aria-label="Open search"
           >
             <Search className="size-5" />
@@ -236,7 +236,7 @@ export function HkTubeShell({
             )}
             <Link
               href="/notifications"
-              className="hktube-header-action relative grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white"
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-5" />

@@ -4,7 +4,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { ChevronDown, Heart, Loader2, MessageCircle, MoreVertical, Play, RefreshCw, Save, Share2, UploadCloud, Volume2, Maximize2 } from "lucide-react";
+import { ChevronDown, Heart, Loader2, MessageCircle, MoreVertical, Play, RefreshCw, Save, Share2, UploadCloud, Volume2, VolumeX, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { startLogin } from "@/const";
@@ -80,6 +80,7 @@ function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) 
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [followed, setFollowed] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [menu, setMenu] = useState(false);
   const creator = index === 0 ? "HkTube Creator" : "Wanderlust Diaries";
@@ -138,9 +139,9 @@ function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) 
         <ChevronDown className="ml-auto mt-1 size-5 text-slate-500" />
       </Link>
       <div className="relative w-full bg-black aspect-video overflow-hidden">
-        <video ref={media} src={video.videoUrl} poster={video.thumbnailUrl || undefined} muted playsInline preload="metadata" className="size-full object-cover" onPlay={() => { setPaused(false); void recordVideoView(video.id, 0).catch(() => undefined); }} onPause={() => setPaused(true)} onTimeUpdate={event => setProgress(event.currentTarget.duration ? event.currentTarget.currentTime / event.currentTarget.duration : 0)} />
+        <video ref={media} src={video.videoUrl} poster={video.thumbnailUrl || undefined} muted={muted} playsInline preload="metadata" className="size-full object-cover" onPlay={() => { setPaused(false); void recordVideoView(video.id, 0).catch(() => undefined); }} onPause={() => setPaused(true)} onTimeUpdate={event => setProgress(event.currentTarget.duration ? event.currentTarget.currentTime / event.currentTarget.duration : 0)} />
         <button type="button" onClick={play} className="absolute inset-0 m-auto grid size-16 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm" aria-label={paused ? "Play video" : "Pause video"}>{paused ? <Play className="ml-1 size-8 fill-current" /> : <span className="text-3xl font-black">Ⅱ</span>}</button>
-        <div className="absolute inset-x-3 bottom-3 flex items-center gap-3 text-xs font-semibold text-white"><span>0:00</span><div className="h-1 flex-1 overflow-hidden rounded-full bg-white/40"><div className="h-full bg-red-500" style={{ width: `${progress * 100}%` }} /></div><span>{Math.floor(video.durationSeconds / 60)}:{String(video.durationSeconds % 60).padStart(2, "0")}</span><Volume2 className="size-5" /><button type="button" onClick={() => media.current?.requestFullscreen()} aria-label="Fullscreen"><Maximize2 className="size-5" /></button></div>
+        <div className="absolute inset-x-3 bottom-3 flex items-center gap-3 text-xs font-semibold text-white"><span>0:00</span><div className="h-1 flex-1 overflow-hidden rounded-full bg-white/40"><div className="h-full bg-red-500" style={{ width: `${progress * 100}%` }} /></div><span>{Math.floor(video.durationSeconds / 60)}:{String(video.durationSeconds % 60).padStart(2, "0")}</span><button type="button" onClick={() => { setMuted(value => !value); if (media.current) media.current.muted = !media.current.muted; }} aria-label={muted ? "Unmute video" : "Mute video"}>{muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}</button><button type="button" onClick={() => media.current?.requestFullscreen()} aria-label="Fullscreen"><Maximize2 className="size-5" /></button></div>
       </div>
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
         <button type="button" onClick={() => void like()} className={`home-action ${liked ? "text-violet-700" : ""}`}><Heart className={`size-5 ${liked ? "fill-current" : ""}`} /><span>{(video.likesCount + (liked ? 1 : 0)).toLocaleString()}</span></button>
