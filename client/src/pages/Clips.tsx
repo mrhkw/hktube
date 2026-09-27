@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Heart, MessageCircle, Music2, Search, Send, Star } from "lucide-react";
 
-const POSTER = "/clip-reference.jpeg";
+const POSTER = "https://raw.githubusercontent.com/mrhkw/hktube/19511f2b1c097329478176aedf2eb7f122e3272a/client/public/clip-reference.jpeg";
 const VIDEO = String(import.meta.env.VITE_CLIPS_VIDEO_URL || "").trim();
 const SWIPE_THRESHOLD = 36;
 
@@ -14,6 +14,7 @@ export default function ClipsPage() {
   const [following, setFollowing] = useState(false);
   const [playing, setPlaying] = useState(Boolean(VIDEO));
   const [soundOn, setSoundOn] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -25,16 +26,21 @@ export default function ClipsPage() {
 
   const revealFinalState = () => {
     if (!introVisible || transitioning) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setTransitioning(true);
     window.setTimeout(() => {
       setIntroVisible(false);
       setTransitioning(false);
-    }, 420);
+    }, reduceMotion ? 1 : 420);
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     pointerStart.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handlePointerCancel = () => {
+    pointerStart.current = null;
   };
 
   const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -66,10 +72,11 @@ export default function ClipsPage() {
         aria-label="Clips"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
       >
         <div className="clips-reference-media" aria-hidden="true">
           <img className="clips-reference-poster" src={POSTER} alt="" />
-          {VIDEO ? (
+          {VIDEO && !videoFailed ? (
             <video
               ref={videoRef}
               className="clips-reference-video"
@@ -82,7 +89,10 @@ export default function ClipsPage() {
               preload="metadata"
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
-              onError={() => setPlaying(false)}
+              onError={() => {
+                setVideoFailed(true);
+                setPlaying(false);
+              }}
             />
           ) : null}
           <div className="clips-reference-shade" />
