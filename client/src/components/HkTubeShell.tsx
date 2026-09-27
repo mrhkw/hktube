@@ -190,7 +190,7 @@ export function HkTubeShell({
             className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
             aria-label="HkTube home"
           >
-            <HkTubeMark className="size-8 md:size-9" />
+            <HkTubeMark className="hidden size-8 md:grid md:size-9" />
             <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] md:text-red-600">
               <span className="text-neutral-950 md:text-red-600">Hk</span><span className="text-red-600">Tube</span>
             </span>
