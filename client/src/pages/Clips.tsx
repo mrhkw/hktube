@@ -79,8 +79,7 @@ export default function ClipsPage() {
         <section className="clips-reference-details" aria-label="Creator and clip details">
           <div className="clips-reference-creator-row">
             <div className="clips-reference-creator-avatar" aria-hidden="true">
-              <span>HK</span>
-              <small>TUBE</small>
+              <img src="/hktube-icon.svg" alt="" />
             </div>
             <strong>HkTube Creator</strong>
             <button type="button" className="clips-reference-follow" onClick={() => setFollowing(value => !value)}>
