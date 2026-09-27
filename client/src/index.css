@@ -1454,3 +1454,28 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Clips feed viewport: mobile fills the screen; larger screens use a centered 9:16 player. */
+.clips-feed-frame {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  margin-inline: auto;
+  overflow: hidden;
+  background: #000;
+}
+.clips-feed-track {
+  transition: transform 420ms cubic-bezier(.22,.8,.2,1);
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+}
+@media (min-width: 768px) {
+  .clips-feed-frame {
+    width: min(100vw, calc(100dvh * 9 / 16));
+    max-width: calc(100dvh * 9 / 16);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clips-feed-track { transition-duration: 1ms; }
+}
