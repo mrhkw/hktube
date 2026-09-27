@@ -1338,123 +1338,6 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
 }
 
 
-/* Interactive opening-state reference: the media and UI stay fixed while the
-   opening logo layer leaves the screen as one short-video gesture. */
-.clips-reference-screen {
-  touch-action: none;
-}
-
-.clips-reference-media {
-  transition:
-    transform 420ms cubic-bezier(.22, .8, .2, 1),
-    opacity 420ms ease;
-  will-change: transform, opacity;
-}
-
-.clips-reference-screen.clips-reference-transitioning .clips-reference-media,
-.clips-reference-screen.clips-reference-final .clips-reference-media {
-  transform: translate3d(0, -1.5%, 0) scale(1.015);
-}
-
-.clips-reference-screen.clips-reference-transitioning .clips-reference-shade,
-.clips-reference-screen.clips-reference-final .clips-reference-shade {
-  transition: opacity 420ms ease;
-}
-
-.clips-reference-gesture-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  background: transparent;
-  cursor: pointer;
-}
-
-.clips-reference-intro {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  background: transparent;
-  animation: clips-intro-enter 260ms ease-out both;
-}
-
-.clips-reference-intro-circle {
-  position: relative;
-  width: min(57%, calc(185px * var(--clip-scale)));
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 8px 30px rgb(0 0 0 / .24);
-  transform: translateZ(0);
-  transition:
-    transform 420ms cubic-bezier(.22, .8, .2, 1),
-    opacity 420ms ease;
-}
-
-.clips-reference-screen.clips-reference-transitioning .clips-reference-intro-circle {
-  transform: scale(.72) translateY(-18px);
-  opacity: 0;
-}
-
-.clips-reference-p-mark {
-  position: absolute;
-  left: 38%;
-  top: 27%;
-  color: #050505;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: calc(68px * var(--clip-scale));
-  line-height: .8;
-  font-weight: 900;
-  letter-spacing: -.12em;
-  transform: rotate(-8deg);
-}
-
-.clips-reference-p-arrow {
-  position: absolute;
-  left: 55%;
-  top: 51%;
-  width: calc(47px * var(--clip-scale));
-  height: calc(13px * var(--clip-scale));
-  background: #050505;
-  border-radius: 999px;
-  transform: rotate(-35deg);
-  transform-origin: left center;
-}
-
-.clips-reference-p-arrow::after {
-  content: "";
-  position: absolute;
-  right: calc(-1px * var(--clip-scale));
-  top: calc(-10px * var(--clip-scale));
-  width: calc(23px * var(--clip-scale));
-  height: calc(23px * var(--clip-scale));
-  border-top: calc(7px * var(--clip-scale)) solid #050505;
-  border-right: calc(7px * var(--clip-scale)) solid #050505;
-  transform: rotate(45deg);
-}
-
-@keyframes clips-intro-enter {
-  from { opacity: 0; transform: scale(.96); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .clips-reference-media,
-  .clips-reference-intro-circle,
-  .clips-reference-screen.clips-reference-transitioning .clips-reference-shade {
-    transition-duration: 1ms !important;
-  }
-
-  .clips-reference-intro {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-  }
-}
-
 
 /* Clips feed viewport: native vertical scrolling + CSS scroll snap. */
 .clips-feed-shell {
@@ -1506,4 +1389,47 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
   .clips-feed-frame {
     scroll-behavior: auto;
   }
+}
+
+/* Permanent Clips media guard. Keep these rules last so legacy/global styles cannot
+   turn the actual clip media into an avatar, circle, contained image, or logo. */
+.hktube-clips-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+}
+
+.hktube-clips-page .hktube-clip-media {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  object-fit: cover !important;
+  object-position: center center;
+  z-index: 1;
+}
+
+.hktube-clips-page .hktube-clip-avatar {
+  position: relative;
+  z-index: 30;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  object-fit: cover;
+}
+
+.hktube-clips-page .clips-old-logo,
+.hktube-clips-page .clips-reference-intro-circle,
+.hktube-clips-page .reference-intro,
+.hktube-clips-page .giant-logo,
+.hktube-clips-page .p-arrow-overlay {
+  display: none !important;
 }
