@@ -706,11 +706,12 @@ select {
   }
 }
 
-
 /* Pixel-perfect watch player contract. This block intentionally comes last so
    the legacy global mobile video max-height cannot shrink the player. */
 .hktube-watch-layout,
-.hktube-watch-layout > * { min-width: 0; }
+.hktube-watch-layout > * {
+  min-width: 0;
+}
 .hktube-watch-layout .hktube-watch-frame {
   position: relative;
   overflow: hidden;
@@ -732,14 +733,25 @@ select {
   aspect-ratio: 9 / 16;
   border-radius: 0;
 }
-.hktube-watch-layout .hktube-watch-frame--short .hktube-watch-video { object-fit: cover; }
-.hktube-watch-layout .hktube-watch-frame--long { aspect-ratio: 16 / 9; }
-.hktube-watch-layout .hktube-watch-frame--long .hktube-watch-video { object-fit: contain; }
+.hktube-watch-layout .hktube-watch-frame--short .hktube-watch-video {
+  object-fit: cover;
+}
+.hktube-watch-layout .hktube-watch-frame--long {
+  aspect-ratio: 16 / 9;
+}
+.hktube-watch-layout .hktube-watch-frame--long .hktube-watch-video {
+  object-fit: contain;
+}
 @media (max-width: 1023px) {
   .hktube-watch-layout,
   .hktube-watch-layout > section,
-  .hktube-watch-layout .hktube-watch-frame { width: 100vw; max-width: 100vw; }
-  .hktube-watch-layout .hktube-watch-frame--long { border-radius: 0; }
+  .hktube-watch-layout .hktube-watch-frame {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  .hktube-watch-layout .hktube-watch-frame--long {
+    border-radius: 0;
+  }
 }
 @media (orientation: landscape) and (max-width: 1199px) {
   .hktube-watch-layout .hktube-watch-frame--long {
@@ -773,7 +785,6 @@ select {
   }
 }
 
-
 /* Clips viewport contract: the feed itself owns the full screen; header and
    action rail float above the media instead of creating document-flow gaps. */
 .hktube-clips-page {
@@ -805,18 +816,34 @@ select {
   max-height: none !important;
   object-fit: cover;
 }
-.hktube-clips-page > :not(.hktube-clips-stage) { position: relative; z-index: 20; }
-.hktube-clips-page .hktube-clips-stage { isolation: isolate; }
+.hktube-clips-page > :not(.hktube-clips-stage) {
+  position: relative;
+  z-index: 20;
+}
+.hktube-clips-page .hktube-clips-stage {
+  isolation: isolate;
+}
 @media (max-width: 767px) {
   body:has(.hktube-clips-page),
   body:has(.hktube-clips-page) #root,
-  body:has(.hktube-clips-page) main { overflow: hidden !important; }
-  body:has(.hktube-clips-page) main { padding: 0 !important; }
-  .hktube-clips-page .hktube-clips-viewport { max-width: none; }
-  .hktube-clips-page .clips-action { min-width: 56px; min-height: 56px; }
-  .hktube-clips-page .clips-action > span:first-child { width: 48px; height: 48px; }
+  body:has(.hktube-clips-page) main {
+    overflow: hidden !important;
+  }
+  body:has(.hktube-clips-page) main {
+    padding: 0 !important;
+  }
+  .hktube-clips-page .hktube-clips-viewport {
+    max-width: none;
+  }
+  .hktube-clips-page .clips-action {
+    min-width: 56px;
+    min-height: 56px;
+  }
+  .hktube-clips-page .clips-action > span:first-child {
+    width: 48px;
+    height: 48px;
+  }
 }
-
 
 /* Keep Clips controls visually independent from the light site theme. */
 .hktube-clips-page .clips-action,
@@ -824,11 +851,17 @@ select {
   color: #fff !important;
 }
 .hktube-clips-page .clips-action span:first-child {
-  background: rgb(0 0 0 / 0.38) !important;
-  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(0 0 0 / 0.24) !important;
+  border: 1px solid rgb(255 255 255 / 0.08);
 }
 .hktube-clips-page .clips-action-active span:first-child {
   background: rgb(236 72 153 / 0.78) !important;
+}
+.hktube-clips-page .clips-action svg {
+  filter: drop-shadow(0 2px 5px rgb(0 0 0 / 0.45));
+}
+.hktube-clips-page .hktube-clips-viewport > img {
+  filter: saturate(1.08) contrast(1.04);
 }
 
 /* Android Home reference layout: one social post per row, full-width media. */
@@ -872,23 +905,33 @@ body:has(.hktube-home-feed) > #root > div {
   color: #16181d;
   font-size: 0.82rem;
   font-weight: 650;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
 }
 .home-action:hover,
 .home-action:focus-visible {
   background: #f0edff;
   color: #4c3fb4;
 }
-body:has(.hktube-home-feed) .hktube-reference-logo > span[aria-hidden="true"]::before {
+body:has(.hktube-home-feed)
+  .hktube-reference-logo
+  > span[aria-hidden="true"]::before {
   color: #111827 !important;
 }
 body:has(.hktube-home-feed) .hktube-reference-logo > span:last-child {
   display: none !important;
 }
-body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] a[aria-current="page"] svg {
+body:has(.hktube-home-feed)
+  nav.fixed[aria-label="Mobile navigation"]
+  a[aria-current="page"]
+  svg {
   color: #8878ed !important;
 }
-body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] button > span:first-child {
+body:has(.hktube-home-feed)
+  nav.fixed[aria-label="Mobile navigation"]
+  button
+  > span:first-child {
   border-radius: 999px !important;
   background: #f0ebff !important;
   color: #17191e !important;
@@ -902,7 +945,9 @@ body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] button > s
   body:has(.hktube-home-feed) .hktube-home-feed > section:first-child {
     background: #fff;
   }
-  .hktube-home-post { border-radius: 0; }
+  .hktube-home-post {
+    border-radius: 0;
+  }
   .hktube-home-post .home-action span {
     font-size: 0.75rem;
   }
@@ -1012,7 +1057,10 @@ body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] button > s
     padding-bottom: 62px !important;
   }
   body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] a,
-  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button {
+  body:has(.hktube-home-feed)
+    > div
+    > nav[aria-label="Mobile navigation"]
+    button {
     min-height: 52px;
     gap: 0.1rem;
     font-size: 0.62rem;
@@ -1021,7 +1069,11 @@ body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] button > s
     width: 1.2rem;
     height: 1.2rem;
   }
-  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button span {
+  body:has(.hktube-home-feed)
+    > div
+    > nav[aria-label="Mobile navigation"]
+    button
+    span {
     width: 2.25rem;
     height: 2.25rem;
   }

@@ -13,6 +13,8 @@ import {
   Search,
   Send,
   Share2,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -20,7 +22,10 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { type SupabaseVideo } from "@/lib/supabaseVideos";
-import { rankPublicVideos, recordDiscoveryEvent } from "@/lib/supabaseDiscovery";
+import {
+  rankPublicVideos,
+  recordDiscoveryEvent,
+} from "@/lib/supabaseDiscovery";
 import {
   addVideoComment,
   listVideoComments,
@@ -135,6 +140,7 @@ export default function ClipsPage() {
   const [tab, setTab] = useState<"for-you" | "following">("for-you");
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(true);
+  const [muted, setMuted] = useState(true);
   const [liked, setLiked] = useState(new Set<string>());
   const [saved, setSaved] = useState(new Set<string>());
   const [followed, setFollowed] = useState(new Set<string>());
@@ -236,14 +242,14 @@ export default function ClipsPage() {
     if (!v || !current) return;
     setMediaError(false);
     setMediaReady(false);
-    v.muted = true;
+    v.muted = muted;
     v.load();
     if (playing) void v.play().catch(() => setPlaying(false));
     else v.pause();
     watched.current.add(current.id);
     void recordVideoView(current.id, 0).catch(() => undefined);
     return () => v.pause();
-  }, [current?.id, playing]);
+  }, [current?.id, playing, muted]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (
@@ -280,7 +286,11 @@ export default function ClipsPage() {
       setHeartBurst(true);
       window.setTimeout(() => setHeartBurst(false), 620);
       const r = await toggleVideoLike(current.id);
-      void recordDiscoveryEvent({ eventType: r.liked ? "like" : "unlike", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: r.liked ? "like" : "unlike",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
       setLiked(p => {
         const n = new Set(p);
         r.liked ? n.add(current.id) : n.delete(current.id);
@@ -294,7 +304,11 @@ export default function ClipsPage() {
     if (!current || !(await auth())) return;
     try {
       const r = await toggleVideoSave(current.id);
-      void recordDiscoveryEvent({ eventType: r ? "save" : "unsave", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: r ? "save" : "unsave",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
       setSaved(p => {
         const n = new Set(p);
         r ? n.add(current.id) : n.delete(current.id);
@@ -309,7 +323,11 @@ export default function ClipsPage() {
     if (!current || !(await auth())) return;
     try {
       const r = await toggleChannelSubscription(current.channelId);
-      void recordDiscoveryEvent({ eventType: r.subscribed ? "follow" : "unfollow", objectType: "channel", objectId: current.channelId }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: r.subscribed ? "follow" : "unfollow",
+        objectType: "channel",
+        objectId: current.channelId,
+      }).catch(() => undefined);
       setFollowed(p => {
         const n = new Set(p);
         r.subscribed ? n.add(current.channelId) : n.delete(current.channelId);
@@ -328,7 +346,11 @@ export default function ClipsPage() {
         await navigator.clipboard.writeText(url);
         toast.success("Clip link copied");
       }
-      void recordDiscoveryEvent({ eventType: "share", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: "share",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
     } catch (e) {
       if ((e as DOMException).name !== "AbortError")
         toast.error("Share failed");
@@ -339,7 +361,11 @@ export default function ClipsPage() {
     try {
       setComments(await listVideoComments(current.id));
       setCommentsOpen(true);
-      void recordDiscoveryEvent({ eventType: "comment_open", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: "comment_open",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Comments could not load");
     }
@@ -348,7 +374,11 @@ export default function ClipsPage() {
     if (!current || !(await auth()) || !comment.trim()) return;
     try {
       await addVideoComment(current.id, comment.trim());
-      void recordDiscoveryEvent({ eventType: "comment", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: "comment",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
       setComment("");
       setComments(await listVideoComments(current.id));
     } catch (e) {
@@ -383,43 +413,55 @@ export default function ClipsPage() {
   return (
     <HkTubeShell immersive minimalHeader>
       <div className="hktube-clips-page relative h-[100dvh] overflow-hidden bg-black text-white">
-        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/75 to-transparent">
-          <Link href="/" className="grid size-9 place-items-center rounded-full bg-black/30 text-2xl leading-none text-white backdrop-blur" aria-label="Back to HkTube">‹</Link>
-          <div className="flex items-center gap-2">
+        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pb-12 pt-[max(14px,env(safe-area-inset-top))] bg-gradient-to-b from-black/80 via-black/35 to-transparent">
+          <Link
+            href="/"
+            className="grid size-9 place-items-center rounded-full bg-black/25 text-2xl leading-none text-white backdrop-blur"
+            aria-label="Back to HkTube"
+          >
+            ‹
+          </Link>
+          <div className="absolute left-1/2 top-[max(12px,env(safe-area-inset-top))] flex -translate-x-1/2 items-center gap-5 whitespace-nowrap">
             <button
-              onClick={() => setSearchOpen(v => !v)}
-              className="grid size-10 place-items-center rounded-full bg-black/35 backdrop-blur"
-              aria-label="Search Clips"
+              onClick={() => {
+                setTab("following");
+                setActive(0);
+              }}
+              className={
+                "relative px-1 py-2 text-[17px] font-semibold tracking-tight transition " +
+                (tab === "following" ? "text-white" : "text-white/60")
+              }
             >
-              <Search className="size-5" />
+              Following
+              {tab === "following" && (
+                <span className="absolute -bottom-0.5 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-white" />
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setTab("for-you");
+                setActive(0);
+              }}
+              className={
+                "relative px-1 py-2 text-[17px] font-semibold tracking-tight transition " +
+                (tab === "for-you" ? "text-white" : "text-white/60")
+              }
+            >
+              For You
+              {tab === "for-you" && (
+                <span className="absolute -bottom-0.5 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-white" />
+              )}
             </button>
           </div>
-        </div>
-        <div className="absolute left-1/2 top-3 z-40 flex -translate-x-1/2 rounded-full bg-black/35 p-1 backdrop-blur">
-          <button
-            onClick={() => {
-              setTab("for-you");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-4 py-2 text-xs font-black " +
-              (tab === "for-you" ? "bg-white text-black" : "text-white")
-            }
-          >
-            For You
-          </button>
-          <button
-            onClick={() => {
-              setTab("following");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-4 py-2 text-xs font-black " +
-              (tab === "following" ? "bg-white text-black" : "text-white")
-            }
-          >
-            Following
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setSearchOpen(v => !v)}
+              className="grid size-10 place-items-center rounded-full bg-black/25 backdrop-blur"
+              aria-label="Search Clips"
+            >
+              <Search className="size-6" />
+            </button>
+          </div>
         </div>
         {searchOpen && (
           <div className="absolute left-4 right-4 top-16 z-50 flex items-center rounded-2xl border border-white/10 bg-black/85 p-2 backdrop-blur-xl">
@@ -485,34 +527,47 @@ export default function ClipsPage() {
                 );
               setTouchY(null);
             }}
+            onWheel={e => {
+              if (Math.abs(e.deltaY) < 30) return;
+              setActive(i =>
+                e.deltaY > 0
+                  ? Math.min(i + 1, visible.length - 1)
+                  : Math.max(i - 1, 0)
+              );
+            }}
           >
             <div className="hktube-clips-viewport relative mx-auto h-full w-full max-w-[620px] bg-black">
               {current.thumbnailUrl && (
                 <img
                   src={current.thumbnailUrl}
                   alt=""
-                  className="absolute inset-0 size-full object-cover"
+                  className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl"
                   decoding="async"
                 />
               )}
+              <div className="absolute inset-0 bg-black/20" />
               <video
                 ref={media}
                 src={current.videoUrl}
                 poster={current.thumbnailUrl ?? undefined}
-                muted
+                muted={muted}
                 autoPlay
                 playsInline
                 loop
                 preload="auto"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-cover bg-transparent transition-opacity duration-300 sm:rounded-3xl"
                 }
                 onPlay={() => {
                   setMediaError(false);
                   setMediaReady(true);
                   setPlaying(true);
-                  void recordDiscoveryEvent({ eventType: "play_start", objectType: "short", objectId: current.id }).catch(() => undefined);
+                  void recordDiscoveryEvent({
+                    eventType: "play_start",
+                    objectType: "short",
+                    objectId: current.id,
+                  }).catch(() => undefined);
                 }}
                 onCanPlay={() => setMediaReady(true)}
                 onLoadedData={() => setMediaReady(true)}
@@ -540,11 +595,33 @@ export default function ClipsPage() {
                     );
                   if (v.duration > 0) {
                     const ratio = v.currentTime / v.duration;
-                    const eventType = ratio >= 0.9 ? "watch_90_percent" : ratio >= 0.75 ? "watch_75_percent" : ratio >= 0.5 ? "watch_50_percent" : ratio >= 0.25 ? "watch_25_percent" : null;
-                    if (eventType) void recordDiscoveryEvent({ eventType, objectType: "short", objectId: current.id, watchSeconds: v.currentTime, positionSeconds: v.currentTime }).catch(() => undefined);
+                    const eventType =
+                      ratio >= 0.9
+                        ? "watch_90_percent"
+                        : ratio >= 0.75
+                          ? "watch_75_percent"
+                          : ratio >= 0.5
+                            ? "watch_50_percent"
+                            : ratio >= 0.25
+                              ? "watch_25_percent"
+                              : null;
+                    if (eventType)
+                      void recordDiscoveryEvent({
+                        eventType,
+                        objectType: "short",
+                        objectId: current.id,
+                        watchSeconds: v.currentTime,
+                        positionSeconds: v.currentTime,
+                      }).catch(() => undefined);
                   }
                 }}
-                onEnded={() => void recordDiscoveryEvent({ eventType: "complete", objectType: "short", objectId: current.id }).catch(() => undefined)}
+                onEnded={() =>
+                  void recordDiscoveryEvent({
+                    eventType: "complete",
+                    objectType: "short",
+                    objectId: current.id,
+                  }).catch(() => undefined)
+                }
               />
               {mediaError && (
                 <div className="absolute inset-0 z-30 grid place-items-center bg-black/90 p-6 text-center">
@@ -648,9 +725,21 @@ export default function ClipsPage() {
                     </span>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-slate-300">
-                  {compact(current.viewCount)} views · {ago(current.createdAt)}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setMuted(value => !value)}
+                  className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full bg-black/45 px-3 py-2 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-black/65 active:scale-95"
+                  aria-label={muted ? "Turn sound on" : "Mute video"}
+                >
+                  {muted ? (
+                    <VolumeX className="size-4" />
+                  ) : (
+                    <Volume2 className="size-4" />
+                  )}
+                  <span className="truncate">
+                    Original Sound · HkTube Creator
+                  </span>
+                </button>
               </div>
               <div className="absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] right-3 z-30 flex flex-col items-center gap-3 sm:right-5">
                 <Action
@@ -833,7 +922,8 @@ function Action({
       >
         <Icon
           className={
-            "size-6 stroke-[1.8] " + (active && Icon === Heart ? "fill-current" : "")
+            "size-6 stroke-[1.8] " +
+            (active && Icon === Heart ? "fill-current" : "")
           }
         />
       </span>
