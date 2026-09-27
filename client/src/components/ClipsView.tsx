@@ -156,6 +156,22 @@ async function loadProfiles(videos: RankedVideo[]) {
 }
 
 export const ClipsView = () => {
+  useEffect(() => {
+    const marker = "clips-fix-2026-09-27";
+    let meta = document.head.querySelector<HTMLMetaElement>('meta[name="hktube-clips-build"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "hktube-clips-build";
+      document.head.appendChild(meta);
+    }
+    meta.content = marker;
+    console.info("[Clips] permanent media fix loaded: clips-fix-2026-09-27");
+
+    return () => {
+      meta?.remove();
+    };
+  }, []);
+
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<"for-you" | "following">("for-you");
@@ -541,7 +557,7 @@ export const ClipsView = () => {
   }
 
   return (
-    <main className="clips-feed-shell fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white">
+    <main className="hktube-clips-page clips-feed-shell fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white">
       <div ref={feedRef} className="clips-feed-frame" aria-label="Clips feed">
         <div className="clips-feed-track">
         {clips.map((clip, index) => {
@@ -572,7 +588,7 @@ export const ClipsView = () => {
                   muted
                   loop
                   preload={isActive ? "auto" : "metadata"}
-                  className="absolute inset-0 size-full object-cover object-center"
+                  className="hktube-clip-media absolute inset-0 size-full object-cover object-center"
                 onPlay={() => {
                   if (!isActive) return;
                   setPlaying(true);
@@ -694,7 +710,7 @@ export const ClipsView = () => {
                   aria-label={isFollowed ? "Unfollow creator" : "Follow creator"}
                 >
                   {clip.profile.avatarUrl ? (
-                    <img src={clip.profile.avatarUrl} alt="" className="size-full rounded-full object-cover" />
+                    <img src={clip.profile.avatarUrl} alt="" className="hktube-clip-avatar size-full rounded-full object-cover" />
                   ) : (
                     <span className="text-xs font-black">HK</span>
                   )}
@@ -753,9 +769,9 @@ export const ClipsView = () => {
               <div className="absolute bottom-[max(22px,env(safe-area-inset-bottom))] left-4 z-30 max-w-[calc(100%-100px)] pb-1">
                 <div className="flex items-center gap-2">
                   {clip.profile.avatarUrl ? (
-                    <img src={clip.profile.avatarUrl} alt="" className="size-10 rounded-full border border-white/80 object-cover" />
+                    <img src={clip.profile.avatarUrl} alt="" className="hktube-clip-avatar size-10 rounded-full border border-white/80 object-cover" />
                   ) : (
-                    <div className="grid size-10 place-items-center rounded-full border border-white/80 bg-black text-xs font-black">HK</div>
+                    <div className="hktube-clip-avatar grid size-10 place-items-center rounded-full border border-white/80 bg-black text-xs font-black">HK</div>
                   )}
                   <button
                     type="button"
