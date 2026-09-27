@@ -536,16 +536,15 @@ export default function ClipsPage() {
               );
             }}
           >
-            <div className="hktube-clips-viewport relative mx-auto h-full w-full max-w-[620px] bg-black">
+            <div className="hktube-clips-viewport relative mx-auto bg-black">
               {current.thumbnailUrl && (
                 <img
                   src={current.thumbnailUrl}
                   alt=""
-                  className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl"
+                  className="absolute inset-0 size-full object-contain opacity-100"
                   decoding="async"
                 />
               )}
-              <div className="absolute inset-0 bg-black/20" />
               <video
                 ref={media}
                 src={current.videoUrl}
@@ -557,7 +556,7 @@ export default function ClipsPage() {
                 preload="auto"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-cover bg-transparent transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300"
                 }
                 onPlay={() => {
                   setMediaError(false);
