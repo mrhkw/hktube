@@ -1,728 +1,990 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
+import {
+  BadgeCheck,
+  Bookmark,
+  Check,
+  ChevronDown,
+  Copy,
+  Flag,
+  Heart,
+  Loader2,
+  MessageCircle,
+  MoreHorizontal,
+  Music2,
+  Pause,
+  Play,
+  Search,
+  Send,
+  Share2,
+  Star,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
+import {
+  addVideoComment,
+  getVideoEngagement,
+  listVideoComments,
+  recordVideoView,
+  reportVideo,
+  toggleChannelSubscription,
+  toggleVideoLike,
+  toggleVideoSave,
+} from "@/lib/supabaseEngagement";
+import {
+  rankPublicVideos,
+  recordDiscoveryEvent,
+  setRecommendationFeedback,
+  type RankedVideo,
+} from "@/lib/supabaseDiscovery";
+import { listPublicSupabaseShorts } from "@/lib/supabaseVideos";
 
-// Deeplay Unique Custom Pinwheel Brand Logo
-export const DeeplayLogoSVG = ({
-  className = "w-8 h-8",
-}: {
-  className?: string;
-}) => (
-  <svg
-    viewBox="0 0 500 500"
-    className={className}
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g filter="drop-shadow(0px 4px 8px rgba(0,0,0,0.5))">
-      <path
-        d="M250 50 C320 50 380 90 410 150 L310 190 C290 160 270 150 250 150 Z"
-        fill="#9333EA"
-      />
-      <path
-        d="M450 250 C450 320 410 380 350 410 L310 310 C340 290 350 270 350 250 Z"
-        fill="#9333EA"
-      />
-      <path
-        d="M250 450 C180 450 120 410 90 350 L190 310 C210 340 230 350 250 350 Z"
-        fill="#9333EA"
-      />
-      <path
-        d="M50 250 C50 180 90 120 150 90 L190 190 C160 210 150 230 150 250 Z"
-        fill="#9333EA"
-      />
-      <path
-        d="M250 110 C300 110 340 140 360 190 L280 220 C270 190 260 180 250 180 Z"
-        fill="#EAB308"
-      />
-      <path
-        d="M390 250 C390 300 360 340 310 360 L280 280 C310 270 320 260 320 250 Z"
-        fill="#EAB308"
-      />
-      <path
-        d="M250 390 C200 390 160 360 140 310 L220 280 C230 310 240 320 250 320 Z"
-        fill="#EAB308"
-      />
-      <path
-        d="M110 250 C110 200 140 160 190 140 L220 220 C190 230 180 240 180 250 Z"
-        fill="#EAB308"
-      />
-      <rect
-        x="200"
-        y="200"
-        width="100"
-        height="100"
-        rx="12"
-        transform="rotate(45 250 250)"
-        fill="#14B8A6"
-        stroke="#0F766E"
-        strokeWidth="6"
-      />
-    </g>
-  </svg>
-);
+type ClipProfile = {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  verified: boolean;
+  handle: string;
+};
 
-export interface Clip {
+type ClipItem = RankedVideo & {
+  profile: ClipProfile;
+};
+
+type CommentRow = {
   id: string;
-  videoUrl: string;
-  author: string;
-  avatar: string;
-  isVerified: boolean;
-  description: string;
-  musicTitle: string;
-  likes: number;
-  commentsCount: number;
-  favorites: number;
-  shares: number;
-  category: string;
+  body: string;
+  created_at: string;
+  profiles?: {
+    username?: string | null;
+    avatar_url?: string | null;
+  } | null;
+};
+
+type Sheet = "comments" | "share" | "more" | null;
+
+const FALLBACK_PROFILE: ClipProfile = {
+  username: "hktube_creator",
+  displayName: "HkTube Creator",
+  avatarUrl: null,
+  verified: true,
+  handle: "hktube_creator",
+};
+
+function formatCount(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}K`;
+  return String(Math.max(0, value));
 }
 
-const DEMO_CLIPS: Clip[] = [
-  {
-    id: "1",
-    videoUrl:
-      "https://assets.mixkit.co/videos/preview/mixkit-vertical-shot-of-a-woman-smiling-at-the-camera-41525-large.mp4",
-    author: "@mrhkw3",
-    avatar: "https://picsum.photos/100",
-    isVerified: true,
-    description:
-      "Deeplay Clips Engine! Full TikTok experience with double tap heart, custom sound disc, speed controller & smart drawers 🚀 #deeplay #clips",
-    musicTitle: "Original Sound - @mrhkw3",
-    likes: 42300,
-    commentsCount: 1580,
-    favorites: 6200,
-    shares: 2800,
-    category: "Trending",
-  },
-  {
-    id: "2",
-    videoUrl:
-      "https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-sign-1232-large.mp4",
-    author: "@deeplay_official",
-    avatar: "https://picsum.photos/101",
-    isVerified: true,
-    description:
-      "Fast, smooth buffering free clips feed. Enjoy continuous scrolling with auto-play feature! ⚡ #shorts #trending",
-    musicTitle: "Deeplay Beat - Special Remix",
-    likes: 18900,
-    commentsCount: 640,
-    favorites: 3100,
-    shares: 950,
-    category: "Music",
-  },
-];
-export const ClipsView: React.FC = () => {
-  // Feed & Video Logic State
-  const [clips] = useState<Clip[]>(DEMO_CLIPS);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
-  const [isMuted, setIsMuted] = useState(true);
-  const [autoScroll, setAutoScroll] = useState(false);
+function formatAgo(value: string | null) {
+  if (!value) return "Recently";
+  const ms = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
-  // Interactive Engagement States
-  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
-  const [likeCountMap, setLikeCountMap] = useState<Record<string, number>>({});
-  const [favMap, setFavMap] = useState<Record<string, boolean>>({});
-  const [favCountMap, setFavCountMap] = useState<Record<string, number>>({});
-  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
+function formatMusic(video: ClipItem) {
+  const clean = (video.tags.find(tag => /sound|music|audio/i.test(tag)) || video.category || "Original Sound").trim();
+  return clean ? `${clean} · HkTube Creator` : "Original Sound · HkTube Creator";
+}
 
-  // UI Animations & Overlay Sheets
-  const [heartAnim, setHeartAnim] = useState<{ x: number; y: number } | null>(
-    null
-  );
-  const [activeSheet, setActiveSheet] = useState<
-    "comment" | "report" | "share" | null
-  >(null);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const [comments, setComments] = useState([
-    {
-      id: "1",
-      user: "@usman_dev",
-      text: "Deeplay Clips UI ab bilkul original TikTok style lag raha hai! 🔥",
-      time: "1m ago",
-    },
-    {
-      id: "2",
-      user: "@ali_king",
-      text: "Saare action buttons aur animations ekdam smooth hain 👍",
-      time: "Just now",
-    },
+async function loadProfiles(videos: RankedVideo[]) {
+  const channelIds = [...new Set(videos.map(video => video.channelId).filter(Boolean))];
+  const creatorIds = [...new Set(videos.map(video => video.creatorId).filter(Boolean))];
+
+  const [channelsResult, profilesResult] = await Promise.all([
+    channelIds.length
+      ? supabase
+          .from("channels")
+          .select("id,handle,name,avatar_url,verification_status")
+          .in("id", channelIds)
+      : Promise.resolve({ data: [], error: null }),
+    creatorIds.length
+      ? supabase
+          .from("profiles")
+          .select("id,username,display_name,avatar_url,is_verified")
+          .in("id", creatorIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  const [newCommentText, setNewCommentText] = useState("");
 
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 2000);
-  };
-
-  // Auto-play / Pause handling on scroll
-  useEffect(() => {
-    videoRefs.current.forEach((video, idx) => {
-      if (video) {
-        if (idx === activeIndex) {
-          video.currentTime = 0;
-          video.playbackRate = playbackSpeed;
-          video.muted = isMuted;
-          video
-            .play()
-            .then(() => setIsPlaying(true))
-            .catch(() => setIsPlaying(false));
-        } else {
-          video.pause();
-        }
-      }
-    });
-  }, [activeIndex, playbackSpeed, isMuted]);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    const index =
-      container.clientHeight > 0
-        ? Math.round(container.scrollTop / container.clientHeight)
-        : 0;
-    const boundedIndex = Math.max(0, Math.min(index, clips.length - 1));
-    if (
-      boundedIndex !== activeIndex &&
-      boundedIndex >= 0 &&
-      boundedIndex < clips.length
-    ) {
-      setActiveIndex(boundedIndex);
-    }
-  };
-
-  const togglePlayPause = () => {
-    const current = videoRefs.current[activeIndex];
-    if (current) {
-      if (isPlaying) {
-        current.pause();
-        setIsPlaying(false);
-      } else {
-        current.play();
-        setIsPlaying(true);
-      }
-    }
-  };
-
-  const cycleSpeed = () => {
-    const speeds = [1.0, 1.5, 2.0];
-    const nextSpeed =
-      speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length];
-    setPlaybackSpeed(nextSpeed);
-    showToast(`Playback Speed: ${nextSpeed.toFixed(1)}x`);
-  };
-
-  const handleDoubleTap = (
-    e: React.MouseEvent<HTMLDivElement>,
-    clipId: string,
-    defaultLikes: number
-  ) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setHeartAnim({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    setTimeout(() => setHeartAnim(null), 800);
-
-    if (!likedMap[clipId]) {
-      setLikedMap(p => ({ ...p, [clipId]: true }));
-      setLikeCountMap(p => ({
-        ...p,
-        [clipId]: (p[clipId] ?? defaultLikes) + 1,
-      }));
-    }
-  };
-
-  const toggleLike = (id: string, defaultLikes: number) => {
-    const isLiked = !!likedMap[id];
-    setLikedMap(p => ({ ...p, [id]: !isLiked }));
-    setLikeCountMap(p => ({
-      ...p,
-      [id]: (p[id] ?? defaultLikes) + (isLiked ? -1 : 1),
-    }));
-  };
-
-  const toggleFavorite = (id: string, defaultFavs: number) => {
-    const isFav = !!favMap[id];
-    setFavMap(p => ({ ...p, [id]: !isFav }));
-    setFavCountMap(p => ({
-      ...p,
-      [id]: (p[id] ?? defaultFavs) + (isFav ? -1 : 1),
-    }));
-    showToast(isFav ? "Saved to Favorites" : "Removed from Favorites");
-  };
-
-  const toggleFollow = (author: string) => {
-    setFollowingMap(p => {
-      const state = !p[author];
-      showToast(state ? `Followed ${author}` : `Unfollowed ${author}`);
-      return { ...p, [author]: state };
-    });
-  };
-
-  const handleAddComment = () => {
-    if (!newCommentText.trim()) return;
-    setComments(p => [
-      ...p,
+  const channels = new Map(
+    (channelsResult.data ?? []).map(row => [
+      String(row.id),
       {
-        id: Date.now().toString(),
-        user: "@you",
-        text: newCommentText,
-        time: "Just now",
+        handle: String(row.handle ?? ""),
+        name: String(row.name ?? ""),
+        avatar: typeof row.avatar_url === "string" ? row.avatar_url : null,
+        verified: String(row.verification_status ?? "") === "verified",
       },
-    ]);
-    setNewCommentText("");
+    ])
+  );
+  const profiles = new Map(
+    (profilesResult.data ?? []).map(row => [
+      String(row.id),
+      {
+        username: String(row.username ?? ""),
+        displayName: String(row.display_name ?? row.username ?? "HkTube Creator"),
+        avatar: typeof row.avatar_url === "string" ? row.avatar_url : null,
+        verified: Boolean(row.is_verified),
+      },
+    ])
+  );
+
+  return videos.map(video => {
+    const channel = channels.get(video.channelId);
+    const profile = profiles.get(video.creatorId);
+    const name = channel?.name || profile?.displayName || FALLBACK_PROFILE.displayName;
+    const username = profile?.username || channel?.handle || FALLBACK_PROFILE.username;
+    return {
+      ...video,
+      profile: {
+        username,
+        displayName: name,
+        avatarUrl: channel?.avatar || profile?.avatar || null,
+        verified: channel?.verified || profile?.verified || false,
+        handle: channel?.handle || username,
+      },
+    };
+  });
+}
+
+export const ClipsView = () => {
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const [mode, setMode] = useState<"for-you" | "following">("for-you");
+  const [clips, setClips] = useState<ClipItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [followed, setFollowed] = useState<Record<string, boolean>>({});
+  const [commentCache, setCommentCache] = useState<Record<string, CommentRow[]>>({});
+  const [commentText, setCommentText] = useState("");
+  const [heartBurst, setHeartBurst] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [moreClip, setMoreClip] = useState<ClipItem | null>(null);
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const lastProgress = useRef<Record<string, number>>({});
+  const touchStartY = useRef<number | null>(null);
+
+  const activeClip = clips[activeIndex] ?? null;
+
+  const loadFeed = useCallback(async () => {
+    setLoading(true);
+    try {
+      let ranked = await rankPublicVideos({
+        shorts: true,
+        limit: 50,
+        userId: user?.id ?? null,
+      });
+
+      if (!ranked.length) ranked = await listPublicSupabaseShorts(50);
+
+      if (mode === "following" && user?.id) {
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("channel_id")
+          .eq("subscriber_id", user.id);
+        const followedChannels = new Set((data ?? []).map(row => String(row.channel_id)));
+        ranked = ranked.filter(video => followedChannels.has(video.channelId));
+      } else if (mode === "following" && !user?.id) {
+        ranked = [];
+      }
+
+      const enriched = await loadProfiles(ranked);
+      setClips(enriched);
+      setActiveIndex(0);
+      setPlaying(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load Clips.");
+      setClips([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [mode, user?.id]);
+
+  useEffect(() => {
+    void loadFeed();
+  }, [loadFeed]);
+
+  useEffect(() => {
+    const clip = activeClip;
+    if (!clip) return;
+
+    let active = true;
+    void getVideoEngagement(clip.id, clip.channelId)
+      .then(state => {
+        if (!active) return;
+        setLiked(current => ({ ...current, [clip.id]: state.liked }));
+        setLikeCounts(current => ({ ...current, [clip.id]: state.likeCount }));
+        setSaved(current => ({ ...current, [clip.id]: state.saved }));
+        setFollowed(current => ({ ...current, [clip.channelId]: state.subscribed }));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [activeClip?.id, activeClip?.channelId]);
+
+  useEffect(() => {
+    Object.entries(videoRefs.current).forEach(([id, video]) => {
+      if (!video) return;
+      if (id === activeClip?.id) {
+        video.currentTime = 0;
+        video.muted = true;
+        video.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      } else {
+        video.pause();
+        video.currentTime = 0;
+      }
+    });
+  }, [activeClip?.id]);
+
+  const setActive = (index: number) => {
+    const next = Math.max(0, Math.min(index, clips.length - 1));
+    if (next !== activeIndex) {
+      setActiveIndex(next);
+      setPlaying(true);
+    }
   };
+
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (Math.abs(event.deltaY) < 30) return;
+    if (event.deltaY > 0) setActive(activeIndex + 1);
+    else setActive(activeIndex - 1);
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartY.current === null) return;
+    const delta = touchStartY.current - event.changedTouches[0].clientY;
+    touchStartY.current = null;
+    if (Math.abs(delta) < 45) return;
+    setActive(delta > 0 ? activeIndex + 1 : activeIndex - 1);
+  };
+
+  const togglePlayback = () => {
+    if (!activeClip) return;
+    const video = videoRefs.current[activeClip.id];
+    if (!video) return;
+    if (video.paused) {
+      video.play().then(() => setPlaying(true)).catch(() => undefined);
+    } else {
+      video.pause();
+      setPlaying(false);
+    }
+  };
+
+  const likeClip = async (clip: ClipItem) => {
+    if (!user) return startLogin();
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await toggleVideoLike(clip.id);
+      setLiked(current => ({ ...current, [clip.id]: result.liked }));
+      setLikeCounts(current => ({ ...current, [clip.id]: Number(result.count) }));
+      void recordDiscoveryEvent({
+        eventType: result.liked ? "like" : "unlike",
+        objectType: "short",
+        objectId: clip.id,
+      }).catch(() => undefined);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update like.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveClip = async (clip: ClipItem) => {
+    if (!user) return startLogin();
+    if (busy) return;
+    setBusy(true);
+    try {
+      const next = await toggleVideoSave(clip.id);
+      setSaved(current => ({ ...current, [clip.id]: next }));
+      void recordDiscoveryEvent({
+        eventType: next ? "save" : "unsave",
+        objectType: "short",
+        objectId: clip.id,
+      }).catch(() => undefined);
+      toast.success(next ? "Saved to Library." : "Removed from Library.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save this Clip.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const followCreator = async (clip: ClipItem) => {
+    if (!user) return startLogin();
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await toggleChannelSubscription(clip.channelId);
+      setFollowed(current => ({ ...current, [clip.channelId]: result.subscribed }));
+      toast.success(result.subscribed ? "Following creator." : "Unfollowed creator.");
+      void recordDiscoveryEvent({
+        eventType: result.subscribed ? "follow" : "unfollow",
+        objectType: "channel",
+        objectId: clip.channelId,
+      }).catch(() => undefined);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update follow.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const shareClip = async (clip: ClipItem) => {
+    const url = `${window.location.origin}/clips?clip=${encodeURIComponent(clip.id)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: clip.title, text: clip.description || clip.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Clip link copied.");
+      }
+      void recordDiscoveryEvent({
+        eventType: "share",
+        objectType: "short",
+        objectId: clip.id,
+      }).catch(() => undefined);
+      setSheet(null);
+    } catch {
+      // Sharing can be cancelled by the user.
+    }
+  };
+
+  const openComments = async (clip: ClipItem) => {
+    setSheet("comments");
+    if (commentCache[clip.id]) return;
+    try {
+      const rows = await listVideoComments(clip.id);
+      setCommentCache(current => ({ ...current, [clip.id]: rows as CommentRow[] }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load comments.");
+    }
+  };
+
+  const postComment = async (clip: ClipItem) => {
+    if (!user) return startLogin();
+    const clean = commentText.trim();
+    if (!clean || busy) return;
+    setBusy(true);
+    try {
+      await addVideoComment(clip.id, clean);
+      const rows = await listVideoComments(clip.id);
+      setCommentCache(current => ({ ...current, [clip.id]: rows as CommentRow[] }));
+      setCommentText("");
+      void recordDiscoveryEvent({
+        eventType: "comment",
+        objectType: "short",
+        objectId: clip.id,
+      }).catch(() => undefined);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not post comment.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reportClip = async (reason: string) => {
+    if (!moreClip) return;
+    if (!user) return startLogin();
+    setBusy(true);
+    try {
+      await reportVideo(moreClip.id, reason, "Reported from HkTube Clips.");
+      toast.success("Report sent to moderation.");
+      setSheet(null);
+      setMoreClip(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not submit report.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const notInterested = async () => {
+    if (!moreClip) return;
+    if (!user) return startLogin();
+    try {
+      await setRecommendationFeedback(
+        moreClip.id,
+        "not_interested",
+        moreClip.category || moreClip.tags[0] || null
+      );
+      setClips(current => current.filter(item => item.id !== moreClip.id));
+      setMoreClip(null);
+      setSheet(null);
+      toast.success("We will show you fewer Clips like this.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update your feed.");
+    }
+  };
+
+  const copyLink = async (clip: ClipItem) => {
+    const url = `${window.location.origin}/clips?clip=${encodeURIComponent(clip.id)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied.");
+      setSheet(null);
+    } catch {
+      toast.error("Could not copy the link.");
+    }
+  };
+
+  const openSearch = () => {
+    setSearchOpen(true);
+    setTimeout(() => document.getElementById("clips-search-input")?.focus(), 50);
+  };
+
+  const submitSearch = () => {
+    const query = searchValue.trim();
+    if (query) navigate(`/search?q=${encodeURIComponent(query)}`);
+  };
+
+  const triggerHeart = (clip: ClipItem) => {
+    if (!liked[clip.id]) void likeClip(clip);
+    setHeartBurst(true);
+    window.setTimeout(() => setHeartBurst(false), 750);
+  };
+
+  const activeComments = activeClip ? commentCache[activeClip.id] ?? [] : [];
+
+  const topTabs = useMemo(
+    () => [
+      { key: "following" as const, label: "Following" },
+      { key: "for-you" as const, label: "For You" },
+    ],
+    []
+  );
+
+  if (loading) {
+    return (
+      <main className="fixed inset-0 z-[70] grid place-items-center bg-black text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="grid size-12 place-items-center rounded-full border border-white/15 bg-white/10">
+            <Loader2 className="size-5 animate-spin" />
+          </div>
+          <span className="text-xs font-semibold tracking-wide text-white/70">Loading Clips</span>
+        </div>
+      </main>
+    );
+  }
+
+  if (!clips.length) {
+    return (
+      <main className="fixed inset-0 z-[70] grid place-items-center bg-black px-6 text-center text-white">
+        <div className="max-w-sm">
+          <div className="mx-auto grid size-16 place-items-center rounded-full bg-white/10">
+            <Play className="size-7" />
+          </div>
+          <h1 className="mt-5 text-2xl font-black">No Clips yet</h1>
+          <p className="mt-2 text-sm leading-6 text-white/60">
+            {mode === "following"
+              ? "You are not following any creators with public Clips yet."
+              : "Publish a vertical Clip and it will appear here."}
+          </p>
+          <div className="mt-5 flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMode("for-you")}
+              className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black"
+            >
+              For You
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/clips/create")}
+              className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold"
+            >
+              Create Clip
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="relative w-full h-screen bg-black text-white overflow-hidden select-none font-sans">
-      {/* Dynamic Toast System */}
-      {toastMsg && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl text-white text-xs font-semibold px-4 py-2.5 rounded-full border border-white/20 shadow-2xl z-50 animate-bounce">
-          {toastMsg}
-        </div>
-      )}
-
-      {/* Top Header Navigation (Deeplay Branding + Player Controls) */}
-      <div className="fixed top-0 left-0 w-full px-4 py-3 flex justify-between items-center z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
-        <div className="flex items-center gap-2">
-          <DeeplayLogoSVG className="w-8 h-8 drop-shadow-md" />
-          <span className="font-extrabold text-lg text-white">Deeplay</span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-600 to-pink-600 text-white uppercase tracking-wider">
-            CLIPS
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={cycleSpeed}
-            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold transition active:scale-95"
-          >
-            ⚡ {playbackSpeed.toFixed(1)}x
-          </button>
-
-          <button
-            onClick={() => setAutoScroll(!autoScroll)}
-            className={`backdrop-blur-md border px-3 py-1 rounded-full text-xs font-bold transition active:scale-95 ${
-              autoScroll
-                ? "bg-emerald-500/30 border-emerald-500 text-emerald-400"
-                : "bg-white/10 border-white/20 text-white"
-            }`}
-          >
-            🔄 {autoScroll ? "Auto ON" : "Auto OFF"}
-          </button>
-
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-xs active:scale-95"
-          >
-            {isMuted ? "🔇" : "🔊"}
-          </button>
-        </div>
-      </div>
-      {/* TikTok Snap Vertical Video Feed */}
-      <div
-        className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scrollbar-none"
-        onScroll={handleScroll}
-      >
+    <main
+      className="fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white"
+      onWheel={handleWheel}
+      onTouchStart={event => {
+        touchStartY.current = event.touches[0].clientY;
+      }}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="absolute inset-0">
         {clips.map((clip, index) => {
-          const isLiked = !!likedMap[clip.id];
-          const isFav = !!favMap[clip.id];
-          const isFollowing = !!followingMap[clip.author];
-          const currentLikes = likeCountMap[clip.id] ?? clip.likes;
-          const currentFavs = favCountMap[clip.id] ?? clip.favorites;
+          const isActive = index === activeIndex;
+          const isLiked = Boolean(liked[clip.id]);
+          const isSaved = Boolean(saved[clip.id]);
+          const isFollowed = Boolean(followed[clip.channelId]);
+          const likes = likeCounts[clip.id] ?? clip.likesCount;
+          const viewCount = viewCounts[clip.id] ?? clip.viewCount;
 
           return (
-            <div
+            <section
               key={clip.id}
-              className="relative h-screen w-full snap-start snap-always bg-black flex justify-center items-center overflow-hidden"
-              onDoubleClick={e => handleDoubleTap(e, clip.id, clip.likes)}
+              className={`absolute inset-0 overflow-hidden bg-black transition-opacity duration-300 ${isActive ? "opacity-100" : "pointer-events-none opacity-0"}`}
+              aria-hidden={!isActive}
             >
-              {/* Main Vertical Video Element */}
               <video
-                ref={el => {
-                  videoRefs.current[index] = el;
+                ref={element => {
+                  videoRefs.current[clip.id] = element;
                 }}
                 src={clip.videoUrl}
-                className="w-full h-full object-cover cursor-pointer"
-                loop={!autoScroll}
-                muted={isMuted}
+                poster={clip.thumbnailUrl || undefined}
                 playsInline
-                onClick={togglePlayPause}
-                onEnded={() =>
-                  autoScroll &&
-                  activeIndex < clips.length - 1 &&
-                  setActiveIndex(i => i + 1)
-                }
+                muted
+                loop
+                preload={isActive ? "auto" : "metadata"}
+                className="absolute inset-0 size-full object-cover"
+                onPlay={() => {
+                  if (!isActive) return;
+                  setPlaying(true);
+                  void recordVideoView(clip.id, 0)
+                    .then(result => {
+                      setViewCounts(current => ({ ...current, [clip.id]: Number(result.views) }));
+                    })
+                    .catch(() => undefined);
+                  void recordDiscoveryEvent({
+                    eventType: "play_start",
+                    objectType: "short",
+                    objectId: clip.id,
+                  }).catch(() => undefined);
+                }}
+                onPause={() => isActive && setPlaying(false)}
+                onTimeUpdate={event => {
+                  if (!isActive) return;
+                  const second = Math.floor(event.currentTarget.currentTime);
+                  if (second > 0 && second - (lastProgress.current[clip.id] ?? 0) >= 15) {
+                    lastProgress.current[clip.id] = second;
+                    void recordDiscoveryEvent({
+                      eventType: "watch_progress",
+                      objectType: "short",
+                      objectId: clip.id,
+                      watchSeconds: second,
+                      positionSeconds: second,
+                    }).catch(() => undefined);
+                  }
+                }}
+                onEnded={() => {
+                  if (!isActive) return;
+                  void recordDiscoveryEvent({
+                    eventType: "complete",
+                    objectType: "short",
+                    objectId: clip.id,
+                  }).catch(() => undefined);
+                  setActive(activeIndex + 1);
+                }}
+                onClick={togglePlayback}
               />
 
-              {/* Play Pause Visual Overlay */}
-              {!isPlaying && activeIndex === index && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
-                  <div className="w-16 h-16 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white pl-1 border border-white/20 shadow-2xl">
-                    <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </div>
-                </div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/85" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+
+              <AnimatePresence>
+                {isActive && heartBurst && (
+                  <motion.div
+                    initial={{ scale: 0.25, opacity: 0, rotate: -15 }}
+                    animate={{ scale: [0.25, 1.15, 1], opacity: [0, 1, 0], rotate: [0, -8, 8] }}
+                    transition={{ duration: 0.72, ease: "easeOut" }}
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"
+                  >
+                    <Heart className="size-28 fill-white text-white drop-shadow-[0_12px_35px_rgba(0,0,0,.45)]" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {isActive && !playing && (
+                <motion.button
+                  type="button"
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  onClick={togglePlayback}
+                  className="absolute left-1/2 top-1/2 z-20 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur-md"
+                  aria-label="Play Clip"
+                >
+                  <Play className="ml-1 size-7 fill-current" />
+                </motion.button>
               )}
 
-              {/* Heart Pop Animation on Double Tap */}
-              {heartAnim && (
-                <div
-                  className="absolute pointer-events-none z-50 animate-ping"
-                  style={{
-                    top: heartAnim.y,
-                    left: heartAnim.x,
-                    transform: "translate(-50%, -50%)",
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(12px,env(safe-area-inset-top))]">
+                <div className="flex items-center justify-center gap-8 px-5 pt-2">
+                  {topTabs.map(tab => {
+                    const selected = mode === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setMode(tab.key)}
+                        className={`pointer-events-auto relative py-2 text-[16px] font-bold tracking-[-.01em] drop-shadow-[0_2px_7px_rgba(0,0,0,.6)] ${selected ? "text-white" : "text-white/70"}`}
+                      >
+                        {tab.label}
+                        {selected && (
+                          <motion.span
+                            layoutId="clips-tab-indicator"
+                            className="absolute -bottom-0.5 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-white"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={openSearch}
+                  className="pointer-events-auto absolute right-4 top-2 grid size-11 place-items-center rounded-full text-white drop-shadow-[0_2px_7px_rgba(0,0,0,.7)]"
+                  aria-label="Search Clips"
+                >
+                  <Search className="size-8 stroke-[2.2]" />
+                </button>
+              </div>
+
+              <div className="absolute bottom-[max(28px,env(safe-area-inset-bottom))] right-3 z-30 flex w-[64px] flex-col items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => void followCreator(clip)}
+                  className="relative grid size-12 place-items-center rounded-full border-2 border-white bg-black/20 shadow-2xl backdrop-blur-sm"
+                  aria-label={isFollowed ? "Unfollow creator" : "Follow creator"}
+                >
+                  {clip.profile.avatarUrl ? (
+                    <img src={clip.profile.avatarUrl} alt="" className="size-full rounded-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-black">HK</span>
+                  )}
+                  <span
+                    className={`absolute -bottom-2 grid size-5 place-items-center rounded-full border border-black text-[11px] font-black ${isFollowed ? "bg-white text-black" : "bg-red-500 text-white"}`}
+                  >
+                    {isFollowed ? <Check className="size-3" /> : "+"}
+                  </span>
+                </button>
+
+                <ActionButton
+                  label={formatCount(likes)}
+                  active={isLiked}
+                  onClick={() => void likeClip(clip)}
+                >
+                  <Heart className={`size-8 ${isLiked ? "fill-current" : ""}`} />
+                </ActionButton>
+
+                <ActionButton
+                  label={formatCount(commentCache[clip.id]?.length ?? 0)}
+                  onClick={() => void openComments(clip)}
+                >
+                  <MessageCircle className="size-8" />
+                </ActionButton>
+
+                <ActionButton
+                  label={formatCount(clip.viewCount)}
+                  active={isSaved}
+                  onClick={() => void saveClip(clip)}
+                >
+                  <Star className={`size-8 ${isSaved ? "fill-current" : ""}`} />
+                </ActionButton>
+
+                <ActionButton
+                  label={formatCount(clip.shares || 0)}
+                  onClick={() => {
+                    setSheet("share");
                   }}
                 >
-                  <svg
-                    className="w-20 h-20 fill-pink-500 drop-shadow-2xl"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                </div>
-              )}
+                  <Send className="size-8 fill-current" />
+                </ActionButton>
 
-              {/* Content Details Overlay (Left Bottom & Right Action Bar) */}
-              <div className="absolute inset-0 flex justify-between items-end p-4 pb-12 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none">
-                {/* Left Profile info & Music track */}
-                <div className="max-w-[70%] pointer-events-auto space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm text-white drop-shadow">
-                      {clip.author}
-                    </span>
-                    {clip.isVerified && (
-                      <svg
-                        className="w-4 h-4 fill-cyan-400"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                      </svg>
-                    )}
-                    <button
-                      onClick={() => toggleFollow(clip.author)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition shadow ${
-                        isFollowing
-                          ? "bg-white/20 text-white border border-white/30"
-                          : "bg-gradient-to-r from-pink-600 to-purple-600 text-white"
-                      }`}
-                    >
-                      {isFollowing ? "Following" : "Follow"}
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-gray-100 leading-relaxed drop-shadow font-normal">
-                    {clip.description}
-                  </p>
-
-                  <div className="flex items-center gap-2 text-xs text-gray-200 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full w-fit">
-                    <svg
-                      className="w-3.5 h-3.5 fill-current animate-spin"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                    </svg>
-                    <span className="truncate w-36 font-medium">
-                      {clip.musicTitle}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right Interactive Vector Action Buttons */}
-                <div className="flex flex-col items-center gap-4 pointer-events-auto z-10">
-                  {/* Avatar + Quick Follow */}
-                  <div className="relative mb-1">
-                    <img
-                      src={clip.avatar}
-                      className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-2xl"
-                      alt="avatar"
-                    />
-                    <button
-                      onClick={() => toggleFollow(clip.author)}
-                      className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center font-bold text-white text-xs border border-black shadow ${
-                        isFollowing ? "bg-emerald-500" : "bg-pink-600"
-                      }`}
-                    >
-                      {isFollowing ? "✓" : "+"}
-                    </button>
-                  </div>
-
-                  {/* Like Button */}
-                  <button
-                    onClick={() => toggleLike(clip.id, clip.likes)}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <div
-                      className={`p-3 rounded-full backdrop-blur-md transition-all duration-200 group-active:scale-125 ${
-                        isLiked
-                          ? "bg-pink-600/30 text-pink-500 border border-pink-500/40"
-                          : "bg-black/40 text-white border border-white/10"
-                      }`}
-                    >
-                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                      </svg>
-                    </div>
-                    <span className="text-[11px] font-bold text-white drop-shadow">
-                      {currentLikes.toLocaleString()}
-                    </span>
-                  </button>
-
-                  {/* Comment Button */}
-                  <button
-                    onClick={() => setActiveSheet("comment")}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <div className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white group-active:scale-125 transition-all">
-                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                        <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z" />
-                      </svg>
-                    </div>
-                    <span className="text-[11px] font-bold text-white drop-shadow">
-                      {clip.commentsCount}
-                    </span>
-                  </button>
-
-                  {/* Bookmark Button */}
-                  <button
-                    onClick={() => toggleFavorite(clip.id, clip.favorites)}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <div
-                      className={`p-3 rounded-full backdrop-blur-md transition-all duration-200 group-active:scale-125 ${
-                        isFav
-                          ? "bg-yellow-500/30 text-yellow-400 border border-yellow-500/40"
-                          : "bg-black/40 text-white border border-white/10"
-                      }`}
-                    >
-                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                      </svg>
-                    </div>
-                    <span className="text-[11px] font-bold text-white drop-shadow">
-                      {currentFavs.toLocaleString()}
-                    </span>
-                  </button>
-
-                  {/* Share Button */}
-                  <button
-                    onClick={() => setActiveSheet("share")}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <div className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white group-active:scale-125 transition-all">
-                      <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                        <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" />
-                      </svg>
-                    </div>
-                    <span className="text-[11px] font-bold text-white drop-shadow">
-                      {clip.shares}
-                    </span>
-                  </button>
-
-                  {/* Report Flag */}
-                  <button
-                    onClick={() => setActiveSheet("report")}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <div className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-gray-300 group-active:scale-125 transition-all">
-                      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                        <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z" />
-                      </svg>
-                    </div>
-                    <span className="text-[10px] font-medium text-gray-300">
-                      Report
-                    </span>
-                  </button>
-
-                  {/* Audio Disc Visual Animation */}
-                  <div className="w-10 h-10 bg-zinc-900 border-2 border-purple-500/80 rounded-full flex items-center justify-center animate-spin mt-1 overflow-hidden shadow-2xl relative">
-                    <img
-                      src={clip.avatar}
-                      className="w-6 h-6 rounded-full object-cover"
-                      alt="disc"
-                    />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreClip(clip);
+                    setSheet("more");
+                  }}
+                  className="grid size-11 place-items-center rounded-full text-white drop-shadow-[0_2px_7px_rgba(0,0,0,.7)] transition active:scale-90"
+                  aria-label="More Clip options"
+                >
+                  <MoreHorizontal className="size-9" />
+                </button>
               </div>
-            </div>
+
+              <div className="absolute bottom-[max(22px,env(safe-area-inset-bottom))] left-4 z-30 max-w-[calc(100%-100px)] pb-1">
+                <div className="flex items-center gap-2">
+                  {clip.profile.avatarUrl ? (
+                    <img src={clip.profile.avatarUrl} alt="" className="size-10 rounded-full border border-white/80 object-cover" />
+                  ) : (
+                    <div className="grid size-10 place-items-center rounded-full border border-white/80 bg-black text-xs font-black">HK</div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void followCreator(clip)}
+                    className="flex items-center gap-1.5 text-[17px] font-extrabold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.8)]"
+                  >
+                    {clip.profile.displayName}
+                    <BadgeCheck className="size-5 fill-sky-500 text-white" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void followCreator(clip)}
+                    className={`rounded-full px-4 py-1.5 text-sm font-bold shadow-lg transition active:scale-95 ${isFollowed ? "bg-white/20 text-white backdrop-blur-md" : "bg-white text-black"}`}
+                  >
+                    {isFollowed ? "Following" : "Follow"}
+                  </button>
+                </div>
+
+                <p className="mt-2 max-w-[520px] text-[15px] font-medium leading-5 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.9)]">
+                  {clip.description || clip.title}
+                </p>
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[14px] font-semibold text-white/95">
+                  {(clip.tags.length ? clip.tags.slice(0, 3) : [clip.category || "travel"]).map(tag => (
+                    <span key={tag} className="drop-shadow-[0_2px_7px_rgba(0,0,0,.8)">
+                      #{tag.replace(/^#/, "")}
+                    </span>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toast.info("Original sound is from this Clip.")}
+                  className="mt-4 flex max-w-full items-center gap-2 rounded-full text-left text-[14px] font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.9)]"
+                >
+                  <Music2 className="size-5 shrink-0" />
+                  <span className="truncate">{formatMusic(clip)}</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onDoubleClick={() => triggerHeart(clip)}
+                onClick={() => {
+                  if (isActive) togglePlayback();
+                }}
+                className="absolute inset-x-[78px] inset-y-[18%] z-10 cursor-pointer"
+                aria-label="Play or pause Clip"
+              />
+            </section>
           );
         })}
       </div>
 
-      {/* Backdrop for Sheets */}
-      {activeSheet && (
-        <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
-          onClick={() => setActiveSheet(null)}
-        />
-      )}
-
-      {/* Interactive Comments Drawer */}
-      <div
-        className={`fixed bottom-0 left-0 w-full h-[65vh] bg-zinc-900/95 backdrop-blur-2xl rounded-t-3xl z-50 p-4 flex flex-col transition-transform duration-300 border-t border-zinc-800 ${
-          activeSheet === "comment" ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm">
-          <span>Comments ({comments.length})</span>
-          <button
-            onClick={() => setActiveSheet(null)}
-            className="p-1 text-gray-400 hover:text-white"
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xl"
           >
-            ✕
-          </button>
-        </div>
+            <div className="mx-auto mt-[max(22px,env(safe-area-inset-top))] flex max-w-xl items-center gap-2 px-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-xl">
+                <Search className="size-5 text-white/70" />
+                <input
+                  id="clips-search-input"
+                  value={searchValue}
+                  onChange={event => setSearchValue(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === "Enter") submitSearch();
+                  }}
+                  placeholder="Search HkTube"
+                  className="min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10"
+                aria-label="Close search"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div className="flex-1 overflow-y-auto py-3 space-y-3">
-          {comments.map(c => (
-            <div key={c.id} className="flex gap-3 text-xs">
-              <img
-                src="https://picsum.photos/50"
-                className="w-8 h-8 rounded-full border border-zinc-700"
-                alt="user"
-              />
-              <div className="flex-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-300">{c.user}</span>
-                  <span className="text-[10px] text-gray-500">{c.time}</span>
+      <AnimatePresence>
+        {sheet && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/65 backdrop-blur-[2px]"
+            onClick={() => setSheet(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {sheet === "comments" && activeClip && (
+          <motion.section
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            className="fixed inset-x-0 bottom-0 z-[120] flex h-[72dvh] flex-col rounded-t-[28px] bg-[#101010] text-white shadow-2xl"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <span className="text-sm font-bold">Comments</span>
+              <button type="button" onClick={() => setSheet(null)} className="grid size-9 place-items-center rounded-full bg-white/10">
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {activeComments.length ? (
+                <div className="space-y-5">
+                  {activeComments.map(comment => (
+                    <div key={comment.id} className="flex gap-3">
+                      <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/10 text-xs font-black">
+                        {comment.profiles?.avatar_url ? (
+                          <img src={comment.profiles.avatar_url} alt="" className="size-full object-cover" />
+                        ) : (
+                          "HK"
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white/65">@{comment.profiles?.username || "user"}</p>
+                        <p className="mt-1 text-sm leading-5 text-white/95">{comment.body}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-gray-200 mt-0.5">{c.text}</p>
+              ) : (
+                <div className="grid h-full place-items-center text-center text-sm text-white/45">
+                  <div>
+                    <MessageCircle className="mx-auto size-8" />
+                    <p className="mt-3">No comments yet.</p>
+                    <p className="mt-1">Be the first to comment.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="border-t border-white/10 p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
+                <input
+                  value={commentText}
+                  onChange={event => setCommentText(event.target.value.slice(0, 2000))}
+                  placeholder="Add a comment..."
+                  className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-white/35"
+                />
+                <button
+                  type="button"
+                  onClick={() => void postComment(activeClip)}
+                  disabled={!commentText.trim() || busy}
+                  className="grid size-10 place-items-center rounded-full bg-white text-black disabled:opacity-35"
+                  aria-label="Post comment"
+                >
+                  <Send className="size-4 fill-current" />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          </motion.section>
+        )}
 
-        <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
-          <input
-            type="text"
-            value={newCommentText}
-            onChange={e => setNewCommentText(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500"
-          />
-          <button
-            onClick={handleAddComment}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2.5 rounded-full text-white text-xs font-bold"
+        {sheet === "share" && activeClip && (
+          <motion.section
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            className="fixed inset-x-0 bottom-0 z-[120] rounded-t-[28px] bg-[#101010] p-5 pb-[max(24px,env(safe-area-inset-bottom))] text-white"
+            onClick={event => event.stopPropagation()}
           >
-            Post
-          </button>
-        </div>
-      </div>
-
-      {/* Interactive Share Drawer */}
-      <div
-        className={`fixed bottom-0 left-0 w-full h-[35vh] bg-zinc-900/95 backdrop-blur-2xl rounded-t-3xl z-50 p-5 flex flex-col transition-transform duration-300 border-t border-zinc-800 ${
-          activeSheet === "share" ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm">
-          <span>Share Video</span>
-          <button
-            onClick={() => setActiveSheet(null)}
-            className="p-1 text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="grid grid-cols-4 gap-4 mt-6 text-center text-xs">
-          <button
-            onClick={() => {
-              showToast("Link Copied!");
-              setActiveSheet(null);
-            }}
-            className="flex flex-col items-center gap-2"
-          >
-            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center text-xl shadow">
-              📋
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold">Share Clip</span>
+              <button type="button" onClick={() => setSheet(null)} className="grid size-9 place-items-center rounded-full bg-white/10">
+                <X className="size-5" />
+              </button>
             </div>
-            Copy Link
-          </button>
-          <button
-            onClick={() => {
-              showToast("Opening WhatsApp...");
-              setActiveSheet(null);
-            }}
-            className="flex flex-col items-center gap-2"
-          >
-            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center text-xl shadow">
-              💬
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => void shareClip(activeClip)} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-left">
+                <Share2 className="size-5" />
+                <span className="text-sm font-bold">Share</span>
+              </button>
+              <button type="button" onClick={() => void copyLink(activeClip)} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-left">
+                <Copy className="size-5" />
+                <span className="text-sm font-bold">Copy link</span>
+              </button>
             </div>
-            WhatsApp
-          </button>
-          <button
-            onClick={() => {
-              showToast("Reposted!");
-              setActiveSheet(null);
-            }}
-            className="flex flex-col items-center gap-2"
-          >
-            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center text-xl shadow">
-              🔁
-            </div>
-            Repost
-          </button>
-          <button
-            onClick={() => {
-              showToast("Video Saved!");
-              setActiveSheet(null);
-            }}
-            className="flex flex-col items-center gap-2"
-          >
-            <div className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-2xl flex items-center justify-center text-xl shadow">
-              ⬇️
-            </div>
-            Save
-          </button>
-        </div>
-      </div>
+          </motion.section>
+        )}
 
-      {/* Content Moderation / Report Drawer */}
-      <div
-        className={`fixed bottom-0 left-0 w-full h-[40vh] bg-zinc-900/95 backdrop-blur-2xl rounded-t-3xl z-50 p-5 flex flex-col transition-transform duration-300 border-t border-zinc-800 ${
-          activeSheet === "report" ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        <div className="flex justify-between items-center pb-3 border-b border-zinc-800 font-bold text-sm text-red-400">
-          <span>🚩 Report Content</span>
-          <button
-            onClick={() => setActiveSheet(null)}
-            className="p-1 text-gray-400 hover:text-white"
+        {sheet === "more" && moreClip && (
+          <motion.section
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            className="fixed inset-x-0 bottom-0 z-[120] rounded-t-[28px] bg-[#101010] p-5 pb-[max(24px,env(safe-area-inset-bottom))] text-white"
+            onClick={event => event.stopPropagation()}
           >
-            ✕
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-2.5 mt-4">
-          <button
-            onClick={() => {
-              showToast("Report Submitted");
-              setActiveSheet(null);
-            }}
-            className="bg-zinc-800/80 border border-zinc-700 p-3.5 rounded-xl text-left text-xs hover:bg-zinc-700 transition"
-          >
-            🚫 Spam or Misleading
-          </button>
-          <button
-            onClick={() => {
-              showToast("Report Submitted");
-              setActiveSheet(null);
-            }}
-            className="bg-zinc-800/80 border border-zinc-700 p-3.5 rounded-xl text-left text-xs hover:bg-zinc-700 transition"
-          >
-            ⚠️ Inappropriate Content
-          </button>
-          <button
-            onClick={() => {
-              showToast("Report Submitted");
-              setActiveSheet(null);
-            }}
-            className="bg-zinc-800/80 border border-zinc-700 p-3.5 rounded-xl text-left text-xs hover:bg-zinc-700 transition"
-          >
-            ©️ Copyright Infringement
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold">Clip options</span>
+              <button type="button" onClick={() => setSheet(null)} className="grid size-9 place-items-center rounded-full bg-white/10">
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <button type="button" onClick={() => void notInterested()} className="flex w-full items-center gap-3 rounded-2xl bg-white/10 p-4 text-left">
+                <Bookmark className="size-5" />
+                <span className="text-sm font-semibold">Not interested</span>
+              </button>
+              <button type="button" onClick={() => void reportClip("policy_violation")} className="flex w-full items-center gap-3 rounded-2xl bg-white/10 p-4 text-left">
+                <Flag className="size-5" />
+                <span className="text-sm font-semibold">Report Clip</span>
+              </button>
+              <button type="button" onClick={() => { setSheet(null); setMoreClip(null); }} className="flex w-full items-center justify-center rounded-2xl bg-white/5 p-4 text-sm font-semibold text-white/60">
+                Cancel
+              </button>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+    </main>
   );
 };
+
+function ActionButton({
+  label,
+  active = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full flex-col items-center gap-1 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.8)]"
+    >
+      <motion.span
+        whileTap={{ scale: 0.82 }}
+        className={`grid size-12 place-items-center rounded-full bg-black/20 backdrop-blur-[2px] transition-colors ${active ? "text-red-500" : "text-white"}`}
+      >
+        {children}
+      </motion.span>
+      <span className="text-[12px] font-bold leading-none">{label}</span>
+    </button>
+  );
+}
+
+export default ClipsView;
