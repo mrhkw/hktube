@@ -1073,3 +1073,41 @@ body:has(.hktube-home-feed)
     height: 2.25rem;
   }
 }
+
+/* Strict reference-only Clips screen. Keep this isolated from the homepage. */
+.clips-reference-page { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; overflow: hidden; background: #000 !important; color: #fff !important; }
+.clips-reference-screen { position: relative; width: min(100vw, calc(100dvh * 9 / 16)); height: min(100dvh, calc(100vw * 16 / 9)); aspect-ratio: 9 / 16; overflow: hidden; background: #000; isolation: isolate; font-family: Arial, Helvetica, sans-serif; }
+.clips-reference-media, .clips-reference-poster, .clips-reference-video, .clips-reference-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
+.clips-reference-media { z-index: 0; overflow: hidden; background: #000; }
+.clips-reference-poster { z-index: 0; object-fit: cover; object-position: center 38%; transform: scale(1.42); transform-origin: center 38%; }
+.clips-reference-video { z-index: 1; object-fit: cover; object-position: center; background: #000; }
+.clips-reference-shade { z-index: 2; pointer-events: none; background: linear-gradient(to bottom, rgb(0 0 0 / .38), transparent 18%, transparent 65%, rgb(0 0 0 / .86) 100%); }
+.clips-reference-top { position: absolute; z-index: 5; top: max(18px, env(safe-area-inset-top)); left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 27px; height: 32px; }
+.clips-reference-tab, .clips-reference-search, .clips-reference-action, .clips-reference-follow, .clips-reference-sound, .clips-reference-use-sound { appearance: none; border: 0; background: transparent; color: #fff; font: inherit; }
+.clips-reference-tab { padding: 0; font-size: clamp(14px, 5.3vw, 18px); line-height: 1; font-weight: 700; letter-spacing: -.02em; }
+.clips-reference-tab-muted { opacity: .74; }
+.clips-reference-tab-active { opacity: 1; }
+.clips-reference-search { position: absolute; right: 25px; top: -3px; padding: 0; }
+.clips-reference-search svg { width: 31px; height: 31px; stroke-width: 2.3; }
+.clips-reference-actions { position: absolute; z-index: 5; right: 17px; bottom: max(91px, calc(env(safe-area-inset-bottom) + 72px)); display: flex; flex-direction: column; align-items: center; gap: 17px; }
+.clips-reference-action { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; text-shadow: 0 1px 4px rgb(0 0 0 / .7); }
+.clips-reference-action span { font-size: clamp(12px, 4vw, 16px); line-height: 1; font-weight: 500; }
+.clips-reference-icon { width: clamp(29px, 10vw, 37px); height: clamp(29px, 10vw, 37px); stroke-width: 2.1; }
+.clips-reference-liked { fill: #fff; }
+.clips-reference-share { transform: rotate(-8deg); }
+.clips-reference-rail-avatar { width: 51px; height: 51px; border: 2px solid #fff; border-radius: 50%; object-fit: cover; object-position: center; }
+.clips-reference-details { position: absolute; z-index: 5; left: 18px; right: 78px; bottom: max(16px, env(safe-area-inset-bottom)); color: #fff; text-shadow: 0 1px 4px rgb(0 0 0 / .75); }
+.clips-reference-creator-row { display: flex; align-items: center; gap: 8px; min-height: 34px; }
+.clips-reference-creator-avatar { position: relative; display: grid; width: 35px; height: 35px; flex: 0 0 auto; place-items: center; border-radius: 2px; background: #050505; font-size: 17px; font-weight: 800; line-height: .8; text-shadow: none; }
+.clips-reference-creator-avatar span { color: #fff; letter-spacing: -.08em; }
+.clips-reference-creator-avatar small { position: absolute; bottom: 3px; color: #e65c70; font-size: 5px; letter-spacing: .08em; }
+.clips-reference-creator-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(14px, 4.5vw, 17px); font-weight: 700; }
+.clips-reference-follow { margin-left: 4px; padding: 7px 14px; border-radius: 18px; background: #fff; color: #111; text-shadow: none; font-size: clamp(12px, 4vw, 15px); font-weight: 700; line-height: 1; }
+.clips-reference-caption { margin: 12px 0 0; font-size: clamp(14px, 4.5vw, 17px); line-height: 1.25; font-weight: 400; }
+.clips-reference-tags { margin: 5px 0 0; color: rgb(255 255 255 / .82); font-size: clamp(13px, 4.1vw, 16px); line-height: 1.2; }
+.clips-reference-sound-row { display: flex; align-items: center; gap: 12px; margin-top: 15px; min-width: 0; }
+.clips-reference-sound { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; padding: 0; text-align: left; }
+.clips-reference-sound svg { width: 23px; height: 23px; flex: 0 0 auto; stroke-width: 1.8; }
+.clips-reference-sound span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(12px, 3.8vw, 15px); }
+.clips-reference-use-sound { flex: 0 0 auto; padding: 10px 15px; border-radius: 20px; background: rgb(45 45 45 / .82); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .08); text-shadow: none; font-size: clamp(12px, 3.8vw, 15px); font-weight: 600; white-space: nowrap; }
+@media (min-width: 700px) { .clips-reference-screen { border-radius: 2px; } }
