@@ -1,160 +1,588 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { ChevronDown, Heart, Loader2, MessageCircle, MoreVertical, Play, RefreshCw, Save, Share2, UploadCloud, Volume2, VolumeX, Maximize2 } from "lucide-react";
+import {
+  BadgeCheck,
+  ChevronDown,
+  Heart,
+  Loader2,
+  MessageCircle,
+  MoreVertical,
+  Play,
+  RefreshCw,
+  Save,
+  Share2,
+  UploadCloud,
+  Volume2,
+  VolumeX,
+  Maximize2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { startLogin } from "@/const";
-import { recordVideoView, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
-
-function Section({
-  title,
-  href,
-  children,
-}: {
-  title: string;
-  href?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section>
-      <div className="mb-4 flex items-center justify-between gap-3 px-4 sm:px-0">
-        <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-          {title}
-        </h2>
-        {href && (
-          <Link
-            href={href}
-            className="shrink-0 text-sm font-bold text-violet-200 hover:text-violet-100"
-          >
-            See all
-          </Link>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-function card(
-  v: RankedVideo,
-  onFeedback: (
-    type:
-      | "not_interested"
-      | "hide_creator"
-      | "hide_topic"
-      | "more_like_this"
-      | "less_like_this"
-  ) => void
-) {
-  return {
-    id: v.id,
-    title: v.title,
-    thumbnailUrl: v.thumbnailUrl,
-    durationSeconds: v.durationSeconds,
-    views: v.viewCount,
-    publishedAt: v.publishedAt,
-    isShort: v.tags.includes("shorts"),
-    reason: v.reason,
-    onFeedback,
-  };
-}
-function uniqueById(items: RankedVideo[]) {
-  return [...new Map(items.map(item => [item.id, item])).values()];
-}
-function withoutIds(items: RankedVideo[], ids: Set<string>) {
-  return items.filter(item => !ids.has(item.id));
-}
+import { supabase } from "@/lib/supabase";
+import {
+  getVideoEngagement,
+  listVideoComments,
+  recordVideoView,
+  reportVideo,
+  toggleChannelSubscription,
+  toggleVideoLike,
+  toggleVideoSave,
+} from "@/lib/supabaseEngagement";
+import {
+  recordDiscoveryEvent,
+  setRecommendationFeedback,
+} from "@/lib/supabaseDiscovery";
 
 function ago(value: string | null) {
   if (!value) return "Recently";
-  const hours = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 36e5));
-  return hours < 24 ? `${hours} hours ago` : `${Math.floor(hours / 24)} days ago`;
+  const hours = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(value).getTime()) / 36e5)
+  );
+  return hours < 24
+    ? `${hours} hours ago`
+    : `${Math.floor(hours / 24)} days ago`;
 }
 
-function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) {
+type HomeChannel = {
+  id: string;
+  handle: string;
+  name: string;
+  avatar_url: string | null;
+  subscriber_count: number;
+  verification_status?: string;
+};
+type HomeProfile = {
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_verified: boolean;
+};
+
+function HomeVideoPost({ video }: { video: RankedVideo }) {
   const media = useRef<HTMLVideoElement>(null);
+  const viewRecorded = useRef(false);
+  const lastSavedSecond = useRef(0);
+  const { user } = useAuth();
   const [paused, setPaused] = useState(true);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [followed, setFollowed] = useState(false);
+  const [likeCount, setLikeCount] = useState(video.likesCount);
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [channel, setChannel] = useState<HomeChannel | null>(null);
+  const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [muted, setMuted] = useState(true);
-  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(video.durationSeconds);
+  const [commentCount, setCommentCount] = useState(0);
   const [menu, setMenu] = useState(false);
-  const creator = index === 0 ? "HkTube Creator" : "Wanderlust Diaries";
-  const description = video.description || "Exploring the most beautiful places on earth. Nature, adventure and amazing views!";
-  const play = () => {
-    const element = media.current;
-    if (!element) return;
-    if (element.paused) {
-      void element.play().then(() => setPaused(false)).catch(() => setPaused(true));
-    } else {
-      element.pause();
-      setPaused(true);
-    }
-  };
+  const [busy, setBusy] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const creator =
+    channel?.name ||
+    profile?.display_name ||
+    profile?.username ||
+    "HkTube Creator";
+  const creatorAvatar = channel?.avatar_url || profile?.avatar_url;
+  const creatorVerified =
+    channel?.verification_status === "verified" ||
+    profile?.is_verified === true;
+  const creatorHref = channel?.handle ? `/channel/${channel.handle}` : null;
+  const description = video.description || "";
+  useEffect(() => {
+    let active = true;
+    void Promise.all([
+      supabase
+        .from("channels")
+        .select(
+          "id,handle,name,avatar_url,subscriber_count,verification_status"
+        )
+        .eq("id", video.channelId)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("username,display_name,avatar_url,is_verified")
+        .eq("id", video.creatorId)
+        .maybeSingle(),
+      getVideoEngagement(video.id, video.channelId),
+      listVideoComments(video.id),
+    ])
+      .then(([channelResult, profileResult, engagement, comments]) => {
+        if (!active) return;
+        if (channelResult.data) {
+          const row = channelResult.data as HomeChannel;
+          setChannel(row);
+          setSubscriberCount(Number(row.subscriber_count || 0));
+        }
+        if (profileResult.data) setProfile(profileResult.data as HomeProfile);
+        setLiked(engagement.liked);
+        setSaved(engagement.saved);
+        setFollowed(engagement.subscribed);
+        setLikeCount(engagement.likeCount);
+        setSubscriberCount(engagement.subscriberCount);
+        setCommentCount(comments.length);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [video.id, video.channelId]);
+
   const like = async () => {
+    if (!user) return startLogin();
+    setBusy(true);
     try {
       const result = await toggleVideoLike(video.id);
       setLiked(result.liked);
+      setLikeCount(Number(result.count));
+      void recordDiscoveryEvent({
+        eventType: result.liked ? "like" : "unlike",
+        objectType: "video",
+        objectId: video.id,
+      }).catch(() => undefined);
     } catch (error) {
-      if (String(error).toLowerCase().includes("sign")) startLogin();
-      else toast.error(error instanceof Error ? error.message : "Could not update like.");
+      toast.error(
+        error instanceof Error ? error.message : "Could not update like."
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  const follow = async () => {
+    if (!user) return startLogin();
+    setBusy(true);
+    try {
+      const result = await toggleChannelSubscription(video.channelId);
+      setFollowed(result.subscribed);
+      setSubscriberCount(Number(result.count));
+      if (result.subscribed)
+        void recordDiscoveryEvent({
+          eventType: "follow",
+          objectType: "channel",
+          objectId: video.channelId,
+        }).catch(() => undefined);
+      toast.success(
+        result.subscribed ? "Following creator." : "Unfollowed creator."
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not update follow."
+      );
+    } finally {
+      setBusy(false);
     }
   };
   const save = async () => {
+    if (!user) return startLogin();
+    setBusy(true);
     try {
-      setSaved(await toggleVideoSave(video.id));
+      const nextSaved = await toggleVideoSave(video.id);
+      setSaved(nextSaved);
+      void recordDiscoveryEvent({
+        eventType: nextSaved ? "save" : "unsave",
+        objectType: "video",
+        objectId: video.id,
+      }).catch(() => undefined);
+      toast.success(
+        nextSaved ? "Saved to your library." : "Removed from your library."
+      );
     } catch (error) {
-      if (String(error).toLowerCase().includes("sign")) startLogin();
-      else toast.error(error instanceof Error ? error.message : "Could not save video.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not update saved videos."
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  const report = async () => {
+    if (!user) return startLogin();
+    try {
+      await reportVideo(
+        video.id,
+        "policy_violation",
+        "Reported from the home feed."
+      );
+      setMenu(false);
+      toast.success("Report sent to moderation.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not report this video."
+      );
+    }
+  };
+  const feedback = async (
+    type: "not_interested" | "less_like_this" | "hide_creator"
+  ) => {
+    if (!user) return startLogin();
+    try {
+      await setRecommendationFeedback(
+        video.id,
+        type,
+        video.category || video.tags[0] || null
+      );
+      setMenu(false);
+      if (type === "not_interested" || type === "hide_creator") setHidden(true);
+      toast.success("Your recommendation preference was saved.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not update recommendations."
+      );
     }
   };
   const share = async () => {
     const url = `${window.location.origin}/watch/${video.id}`;
     try {
       if (navigator.share) await navigator.share({ title: video.title, url });
-      else await navigator.clipboard.writeText(url);
-      toast.success("Video link ready to share.");
-    } catch { /* cancelled share */ }
+      else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Video link copied.");
+      }
+      void recordDiscoveryEvent({
+        eventType: "share",
+        objectType: "video",
+        objectId: video.id,
+      }).catch(() => undefined);
+    } catch {
+      /* share cancelled */
+    }
   };
+  const play = () => {
+    const element = media.current;
+    if (!element) return;
+    if (element.paused) {
+      void element
+        .play()
+        .then(() => setPaused(false))
+        .catch(() => setPaused(true));
+    } else {
+      element.pause();
+      setPaused(true);
+    }
+  };
+  if (hidden) return null;
   return (
     <article className="hktube-home-post bg-white">
       <div className="flex items-center gap-3 px-3 py-3 sm:px-4">
-        <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-sm font-black text-white">
-          {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt="" className="size-full object-cover" /> : "HK"}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1 text-[15px] font-bold text-slate-950">
+        {creatorHref ? (
+          <Link
+            href={creatorHref}
+            className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-sm font-black text-white"
+          >
+            {creatorAvatar ? (
+              <img
+                src={creatorAvatar}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              "HK"
+            )}
+          </Link>
+        ) : (
+          <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-sm font-black text-white">
+            {creatorAvatar ? (
+              <img
+                src={creatorAvatar}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              "HK"
+            )}
+          </span>
+        )}
+        {creatorHref ? (
+          <Link
+            href={creatorHref}
+            className="min-w-0 flex-1 text-[15px] font-bold text-slate-950"
+          >
             <span className="truncate">{creator}</span>
-          </div>
-        </div>
-        <button type="button" onClick={() => setFollowed(value => !value)} className={`rounded-lg px-4 py-2 text-sm font-bold ${followed ? "bg-slate-200 text-slate-700" : "bg-slate-950 text-white"}`}>{followed ? "Following" : "Follow"}</button>
-        <button type="button" onClick={() => setMenu(value => !value)} className="grid size-9 place-items-center text-slate-700" aria-label="More options"><MoreVertical className="size-5" /></button>
+            {creatorVerified && (
+              <BadgeCheck className="ml-1 inline size-4 fill-sky-500 text-white" />
+            )}
+          </Link>
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-slate-950">
+            {creator}
+            {creatorVerified && (
+              <BadgeCheck className="ml-1 inline size-4 fill-sky-500 text-white" />
+            )}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => void follow()}
+          disabled={busy}
+          className={`rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-60 ${followed ? "bg-slate-200 text-slate-700" : "bg-slate-950 text-white"}`}
+        >
+          {followed ? "Following" : "Follow"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMenu(value => !value)}
+          className="grid size-9 place-items-center text-slate-700"
+          aria-label="More options"
+        >
+          <MoreVertical className="size-5" />
+        </button>
       </div>
       <Link href={`/watch/${video.id}`} className="block px-3 pb-3 sm:px-4">
-        <h2 className="line-clamp-2 text-[19px] font-bold leading-6 text-slate-950">{video.title}</h2>
+        <h2 className="line-clamp-2 text-[19px] font-bold leading-6 text-slate-950">
+          {video.title}
+        </h2>
         <ChevronDown className="ml-auto mt-1 size-5 text-slate-500" />
       </Link>
       <div className="relative w-full bg-black aspect-video overflow-hidden">
-        <video ref={media} src={video.videoUrl} poster={video.thumbnailUrl || undefined} muted={muted} playsInline preload="metadata" className="size-full object-cover" onPlay={() => { setPaused(false); void recordVideoView(video.id, 0).catch(() => undefined); }} onPause={() => setPaused(true)} onTimeUpdate={event => setProgress(event.currentTarget.duration ? event.currentTarget.currentTime / event.currentTarget.duration : 0)} />
-        <button type="button" onClick={play} className="absolute inset-0 m-auto grid size-16 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm" aria-label={paused ? "Play video" : "Pause video"}>{paused ? <Play className="ml-1 size-8 fill-current" /> : <span className="text-3xl font-black">Ⅱ</span>}</button>
-        <div className="absolute inset-x-3 bottom-3 flex items-center gap-3 text-xs font-semibold text-white"><span>0:00</span><div className="h-1 flex-1 overflow-hidden rounded-full bg-white/40"><div className="h-full bg-red-500" style={{ width: `${progress * 100}%` }} /></div><span>{Math.floor(video.durationSeconds / 60)}:{String(video.durationSeconds % 60).padStart(2, "0")}</span><button type="button" onClick={() => { setMuted(value => !value); if (media.current) media.current.muted = !media.current.muted; }} aria-label={muted ? "Unmute video" : "Mute video"}>{muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}</button><button type="button" onClick={() => media.current?.requestFullscreen()} aria-label="Fullscreen"><Maximize2 className="size-5" /></button></div>
+        <video
+          ref={media}
+          src={video.videoUrl}
+          poster={video.thumbnailUrl || undefined}
+          muted={muted}
+          playsInline
+          preload="metadata"
+          className="size-full object-cover"
+          onLoadedMetadata={event =>
+            setDuration(
+              Number.isFinite(event.currentTarget.duration)
+                ? event.currentTarget.duration
+                : video.durationSeconds
+            )
+          }
+          onPlay={() => {
+            setPaused(false);
+            if (!viewRecorded.current) {
+              viewRecorded.current = true;
+              void recordVideoView(video.id, 0).catch(() => undefined);
+            }
+            void recordDiscoveryEvent({
+              eventType: "play_start",
+              objectType: "video",
+              objectId: video.id,
+            }).catch(() => undefined);
+          }}
+          onPause={() => setPaused(true)}
+          onEnded={() => {
+            setPaused(true);
+            void recordDiscoveryEvent({
+              eventType: "complete",
+              objectType: "video",
+              objectId: video.id,
+              watchSeconds: duration,
+              positionSeconds: duration,
+            }).catch(() => undefined);
+          }}
+          onTimeUpdate={event => {
+            const element = event.currentTarget;
+            const seconds = Math.floor(element.currentTime);
+            setCurrentTime(element.currentTime);
+            if (
+              user &&
+              seconds > 0 &&
+              seconds - lastSavedSecond.current >= 15
+            ) {
+              lastSavedSecond.current = seconds;
+              void supabase
+                .from("watch_history")
+                .upsert(
+                  {
+                    user_id: user.id,
+                    video_id: video.id,
+                    progress_seconds: seconds,
+                    watched_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  },
+                  { onConflict: "user_id,video_id" }
+                )
+                .then(
+                  () => undefined,
+                  () => undefined
+                );
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={play}
+          className="home-play-button absolute inset-0 m-auto grid size-20 place-items-center rounded-full text-white backdrop-blur-sm"
+          aria-label={paused ? "Play video" : "Pause video"}
+        >
+          {paused ? (
+            <Play className="ml-1 size-8 fill-current" />
+          ) : (
+            <span className="text-3xl font-black">Ⅱ</span>
+          )}
+        </button>
+        <div className="absolute inset-x-3 bottom-3 flex items-center gap-2 text-xs font-semibold text-white">
+          <span className="min-w-9">
+            {Math.floor(currentTime / 60)}:
+            {String(Math.floor(currentTime % 60)).padStart(2, "0")}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={duration || 1}
+            step={0.1}
+            value={Math.min(currentTime, duration || 1)}
+            aria-label="Video progress"
+            className="h-1 min-w-0 flex-1 cursor-pointer accent-red-500"
+            onChange={event => {
+              const time = Number(event.currentTarget.value);
+              setCurrentTime(time);
+              if (media.current) media.current.currentTime = time;
+            }}
+          />
+          <span>
+            {Math.floor(duration / 60)}:
+            {String(Math.floor(duration % 60)).padStart(2, "0")}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setMuted(value => !value);
+              if (media.current) media.current.muted = !media.current.muted;
+            }}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+          >
+            {muted ? (
+              <VolumeX className="size-5" />
+            ) : (
+              <Volume2 className="size-5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const player = media.current;
+              if (player?.requestFullscreen) void player.requestFullscreen();
+              else toast.info("Fullscreen is not supported by this browser.");
+            }}
+            aria-label="Fullscreen"
+          >
+            <Maximize2 className="size-5" />
+          </button>
+        </div>
       </div>
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
-        <button type="button" onClick={() => void like()} className={`home-action ${liked ? "text-violet-700" : ""}`}><Heart className={`size-5 ${liked ? "fill-current" : ""}`} /><span>{(video.likesCount + (liked ? 1 : 0)).toLocaleString()}</span></button>
-        <Link href={`/watch/${video.id}#comments`} className="home-action"><MessageCircle className="size-5" /><span>Comments</span></Link>
-        <button type="button" onClick={() => void share()} className="home-action"><Share2 className="size-5" /><span>Share</span></button>
-        <button type="button" onClick={() => void save()} className={`home-action ${saved ? "text-violet-700" : ""}`}><Save className={`size-5 ${saved ? "fill-current" : ""}`} /><span>Save</span></button>
-        <button type="button" onClick={() => setMenu(value => !value)} className="home-action"><MoreVertical className="size-5" /><span>More</span></button>
+        <button
+          type="button"
+          onClick={() => void like()}
+          disabled={busy}
+          className={`home-action ${liked ? "text-violet-700" : ""}`}
+        >
+          <Heart className={`size-5 ${liked ? "fill-current" : ""}`} />
+          <span>{likeCount.toLocaleString()}</span>
+        </button>
+        <Link href={`/watch/${video.id}#comments`} className="home-action">
+          <MessageCircle className="size-5" />
+          <span>
+            {commentCount ? commentCount.toLocaleString() : "Comments"}
+          </span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => void share()}
+          className="home-action"
+        >
+          <Share2 className="size-5" />
+          <span>Share</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={busy}
+          className={`home-action ${saved ? "text-violet-700" : ""}`}
+        >
+          <Save className={`size-5 ${saved ? "fill-current" : ""}`} />
+          <span>{saved ? "Saved" : "Save"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMenu(value => !value)}
+          className="home-action"
+        >
+          <MoreVertical className="size-5" />
+          <span>More</span>
+        </button>
       </div>
+      {menu && (
+        <div className="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-50 p-3 text-left text-sm sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => void feedback("not_interested")}
+            className="rounded-lg px-3 py-2 text-left hover:bg-white"
+          >
+            Not interested
+          </button>
+          <button
+            type="button"
+            onClick={() => void feedback("less_like_this")}
+            className="rounded-lg px-3 py-2 text-left hover:bg-white"
+          >
+            Show less like this
+          </button>
+          <button
+            type="button"
+            onClick={() => void feedback("hide_creator")}
+            className="rounded-lg px-3 py-2 text-left hover:bg-white"
+          >
+            Reduce creator
+          </button>
+          <button
+            type="button"
+            onClick={() => void report()}
+            className="rounded-lg px-3 py-2 text-left text-rose-700 hover:bg-white"
+          >
+            Report video
+          </button>
+          <Link
+            href={channel?.handle ? `/channel/${channel.handle}` : "/profile"}
+            className="rounded-lg px-3 py-2 hover:bg-white"
+          >
+            Open creator
+          </Link>
+        </div>
+      )}
       <div className="flex gap-3 px-3 py-3 sm:px-4">
-        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-xs font-black text-white">HK</div>
-        <div className="min-w-0"><p className="font-bold text-slate-950">{creator}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{description}</p><p className="mt-1 text-sm text-slate-500">{video.viewCount.toLocaleString()} views · {ago(video.publishedAt)}</p></div>
+        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-xs font-black text-white">
+          {creatorAvatar ? (
+            <img
+              src={creatorAvatar}
+              alt=""
+              className="size-full object-cover"
+            />
+          ) : (
+            "HK"
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="font-bold text-slate-950">
+            {creator}
+            {creatorVerified && (
+              <BadgeCheck className="ml-1 inline size-4 fill-sky-500 text-white" />
+            )}
+            {channel && (
+              <span className="ml-2 text-xs font-normal text-slate-500">
+                {subscriberCount.toLocaleString()} followers
+              </span>
+            )}
+          </p>
+          <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
+            {description}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            {video.viewCount.toLocaleString()} views · {ago(video.publishedAt)}
+          </p>
+        </div>
       </div>
-      {menu && <div className="border-t border-slate-200 px-4 py-2 text-sm text-slate-600">Recommendation options are available on the video page.</div>}
     </article>
   );
 }
@@ -163,10 +591,6 @@ export default function SupabaseHome() {
   const { user } = useAuth();
   const userId = user?.id;
   const [videos, setVideos] = useState<RankedVideo[]>([]);
-  const [shorts, setShorts] = useState<RankedVideo[]>([]);
-  const [continueWatching, setContinueWatching] = useState<RankedVideo[]>([]);
-  const [following, setFollowing] = useState<RankedVideo[]>([]);
-  const [historyVideos, setHistoryVideos] = useState<RankedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,10 +601,6 @@ export default function SupabaseHome() {
       const { loadSupabaseHomeData } = await import("@/lib/supabaseHomeData");
       const result = await loadSupabaseHomeData(userId);
       setVideos(result.videos);
-      setShorts(result.shorts);
-      setFollowing(result.following);
-      setContinueWatching(result.continueWatching);
-      setHistoryVideos(result.historyVideos);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load HkTube feed.");
     } finally {
@@ -191,48 +611,6 @@ export default function SupabaseHome() {
     void load();
   }, [userId]);
 
-  async function feedback(
-    videoId: string,
-    type:
-      | "not_interested"
-      | "hide_creator"
-      | "hide_topic"
-      | "more_like_this"
-      | "less_like_this"
-  ) {
-    try {
-      const { updateRecommendation } = await import("@/lib/supabaseHomeData");
-      await updateRecommendation(videoId, type);
-      if (
-        type === "not_interested" ||
-        type === "hide_creator" ||
-        type === "hide_topic" ||
-        type === "less_like_this"
-      ) {
-        setVideos(items => items.filter(v => v.id !== videoId));
-        setShorts(items => items.filter(v => v.id !== videoId));
-      }
-      toast.success(
-        type === "more_like_this"
-          ? "We’ll show more like this."
-          : type === "less_like_this"
-            ? "We’ll show less like this."
-            : type === "hide_creator"
-              ? "Creator hidden from recommendations."
-              : type === "hide_topic"
-                ? "Topic hidden from recommendations."
-                : "We’ll show fewer like this."
-      );
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Could not update recommendations."
-      );
-    }
-  }
-
-  const compactCards =
-    typeof window !== "undefined" &&
-    localStorage.getItem("hktube-compact-cards") === "enabled";
   const personalizedFeed =
     typeof window !== "undefined"
       ? localStorage.getItem("hktube-personalized-feed") !== "disabled"
@@ -248,83 +626,14 @@ export default function SupabaseHome() {
           ),
     [videos, personalizedFeed]
   );
-  const longFeed = useMemo(
-    () => uniqueById(feedPool.filter(v => !v.tags.includes("shorts"))),
-    [feedPool]
-  );
-  const recommended = useMemo(() => longFeed.slice(0, 12), [longFeed]);
-  const featuredVideo = recommended[0];
-  const recommendedGrid = recommended.slice(2);
-  const usedRecommended = useMemo(
-    () => new Set(recommended.map(v => v.id)),
-    [recommended]
-  );
-  const continueItems = useMemo(
-    () => uniqueById(continueWatching).slice(0, 8),
-    [continueWatching]
-  );
-  const becauseWatched = useMemo(
-    () =>
-      uniqueById([
-        ...historyVideos,
-        ...videos.filter(v => v.reason === "similar_to_watched"),
-      ])
-        .filter(v => !usedRecommended.has(v.id) && !v.tags.includes("shorts"))
-        .slice(0, 8),
-    [historyVideos, videos, usedRecommended]
-  );
-  const followingItems = useMemo(
-    () =>
-      uniqueById(following)
-        .filter(v => !usedRecommended.has(v.id) && !v.tags.includes("shorts"))
-        .slice(0, 8),
-    [following, usedRecommended]
-  );
-  const newCreators = useMemo(
-    () =>
-      uniqueById(
-        videos.filter(
-          v => v.reason === "fresh_creator" && !v.tags.includes("shorts")
-        )
-      )
-        .filter(v => !usedRecommended.has(v.id))
-        .slice(0, 8),
-    [videos, usedRecommended]
-  );
-  const risingNow = useMemo(
-    () =>
-      uniqueById(
-        [...videos]
-          .filter(v => !v.tags.includes("shorts"))
-          .sort((a, b) => Number(b.viewCount || 0) - Number(a.viewCount || 0))
-      )
-        .filter(v => !usedRecommended.has(v.id))
-        .slice(0, 8),
-    [videos, usedRecommended]
-  );
-  const fresh = useMemo(
-    () =>
-      withoutIds(
-        [...videos]
-          .filter(v => !v.tags.includes("shorts"))
-          .sort(
-            (a, b) =>
-              new Date(b.publishedAt || 0).getTime() -
-              new Date(a.publishedAt || 0).getTime()
-          ),
-        usedRecommended
-      ).slice(0, 8),
-    [videos, usedRecommended]
-  );
+  const recommended = useMemo(() => {
+    const longVideos = feedPool.filter(video => !video.tags.includes("shorts"));
+    return [...new Map(longVideos.map(video => [video.id, video])).values()];
+  }, [feedPool]);
 
   return (
     <HkTubeShell>
-      <main className="hktube-home-feed mx-auto w-full max-w-[920px] pb-16 sm:px-4 lg:px-6">
-        <section className="flex justify-end px-3 py-2 sm:px-0">
-          <button type="button" onClick={() => window.location.reload()} className="grid size-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-700" aria-label="Refresh feed">
-            <RefreshCw className="size-4" />
-          </button>
-        </section>
+      <main className="hktube-home-feed mx-auto w-full max-w-[920px] bg-white pb-16 sm:px-4 lg:px-6">
         {loading ? (
           <div className="grid min-h-[42vh] place-items-center">
             <div className="flex items-center gap-3 text-sm text-slate-400">
@@ -347,122 +656,10 @@ export default function SupabaseHome() {
             </Button>
           </div>
         ) : videos.length ? (
-          <div className="space-y-3 sm:space-y-6">
-            {recommended.slice(0, 2).map((video, index) => (
-              <HomeVideoPost key={`home-post-${video.id}`} video={video} index={index} />
+          <div className="space-y-0">
+            {recommended.map(video => (
+              <HomeVideoPost key={`home-post-${video.id}`} video={video} />
             ))}
-
-            {recommendedGrid.length > 0 && (
-              <Section title="More Long Videos">
-                <div
-                  className={`grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 ${compactCards ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}
-                >
-                  {recommendedGrid.map(v => (
-                    <SupabaseVideoCard
-                      key={`recommended-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
-
-            {shorts.length > 0 && (
-              <Section title="Clips" href="/shorts">
-                <div className="flex snap-x gap-4 overflow-x-auto pb-2 [scrollbar-width:none]">
-                  {uniqueById(shorts)
-                    .slice(0, 12)
-                    .map(v => (
-                      <div
-                        key={`clip-${v.id}`}
-                        className="w-[62vw] max-w-[260px] shrink-0 snap-start sm:w-[220px]"
-                      >
-                        <SupabaseVideoCard
-                          video={card(v, type => void feedback(v.id, type))}
-                        />
-                      </div>
-                    ))}
-                </div>
-              </Section>
-            )}
-
-            {continueItems.length > 0 && (
-              <Section title="Continue Watching">
-                <div
-                  className={`grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 ${compactCards ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}
-                >
-                  {continueItems.map(v => (
-                    <SupabaseVideoCard
-                      key={`continue-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
-
-            {becauseWatched.length > 0 && (
-              <Section title="Because You Watched">
-                <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {becauseWatched.map(v => (
-                    <SupabaseVideoCard
-                      key={`because-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
-            {followingItems.length > 0 && (
-              <Section title="From Channels You Follow">
-                <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {followingItems.map(v => (
-                    <SupabaseVideoCard
-                      key={`follow-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
-            {risingNow.length > 0 && (
-              <Section title="Rising Now">
-                <div
-                  className={`grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 ${compactCards ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}
-                >
-                  {risingNow.map(v => (
-                    <SupabaseVideoCard
-                      key={`rising-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
-            {fresh.length > 0 && (
-              <Section title="Fresh on HkTube">
-                <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {fresh.map(v => (
-                    <SupabaseVideoCard
-                      key={`fresh-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
-            {newCreators.length > 0 && (
-              <Section title="Discover New Creators">
-                <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {newCreators.map(v => (
-                    <SupabaseVideoCard
-                      key={`new-${v.id}`}
-                      video={card(v, type => void feedback(v.id, type))}
-                    />
-                  ))}
-                </div>
-              </Section>
-            )}
           </div>
         ) : (
           <div className="mx-auto max-w-2xl rounded-3xl border border-dashed border-white/10 bg-white/[.02] p-10 text-center sm:p-14">
