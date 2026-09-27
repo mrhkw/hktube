@@ -9,6 +9,7 @@ export type VideoRecord = {
   captionUrl: string | null;
   durationSeconds: number;
   viewCount: number;
+  likesCount?: number;
   category: VideoCategory;
   uploadedAt: Date;
   channelId?: number | string | null;

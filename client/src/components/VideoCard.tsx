@@ -212,7 +212,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
       <div className="flex items-center gap-1 border-b border-black/5 px-2 py-2">
         <button type="button" onClick={() => setLiked(value => !value)} className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition ${liked ? "text-violet-600" : "text-neutral-600 hover:bg-neutral-100"}`} aria-pressed={liked}>
           <Heart className={`size-5 ${liked ? "fill-current" : ""}`} />
-          <span>{formatCount(video.likesCount + (liked ? 1 : 0))}</span>
+          <span>{formatCount((video.likesCount ?? 0) + (liked ? 1 : 0))}</span>
         </button>
 
         <Link href={`/watch/${video.id}#comments`} className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-100">

@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Loader2, RefreshCw, UploadCloud } from "lucide-react";
+import { Check, ChevronDown, Heart, Loader2, MessageCircle, MoreVertical, Play, RefreshCw, Save, Share2, UploadCloud, Volume2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { startLogin } from "@/const";
+import { recordVideoView, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
 
 function Section({
   title,
@@ -64,6 +66,95 @@ function uniqueById(items: RankedVideo[]) {
 }
 function withoutIds(items: RankedVideo[], ids: Set<string>) {
   return items.filter(item => !ids.has(item.id));
+}
+
+function ago(value: string | null) {
+  if (!value) return "Recently";
+  const hours = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 36e5));
+  return hours < 24 ? `${hours} hours ago` : `${Math.floor(hours / 24)} days ago`;
+}
+
+function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) {
+  const media = useRef<HTMLVideoElement>(null);
+  const [paused, setPaused] = useState(true);
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [menu, setMenu] = useState(false);
+  const creator = index === 0 ? "HkTube Creator" : "Wanderlust Diaries";
+  const description = video.description || "Exploring the most beautiful places on earth. Nature, adventure and amazing views!";
+  const play = () => {
+    const element = media.current;
+    if (!element) return;
+    if (element.paused) {
+      void element.play().then(() => setPaused(false)).catch(() => setPaused(true));
+    } else {
+      element.pause();
+      setPaused(true);
+    }
+  };
+  const like = async () => {
+    try {
+      const result = await toggleVideoLike(video.id);
+      setLiked(result.liked);
+    } catch (error) {
+      if (String(error).toLowerCase().includes("sign")) startLogin();
+      else toast.error(error instanceof Error ? error.message : "Could not update like.");
+    }
+  };
+  const save = async () => {
+    try {
+      setSaved(await toggleVideoSave(video.id));
+    } catch (error) {
+      if (String(error).toLowerCase().includes("sign")) startLogin();
+      else toast.error(error instanceof Error ? error.message : "Could not save video.");
+    }
+  };
+  const share = async () => {
+    const url = `${window.location.origin}/watch/${video.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: video.title, url });
+      else await navigator.clipboard.writeText(url);
+      toast.success("Video link ready to share.");
+    } catch { /* cancelled share */ }
+  };
+  return (
+    <article className="hktube-home-post bg-white">
+      <div className="flex items-center gap-3 px-3 py-3 sm:px-4">
+        <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-sm font-black text-white">
+          {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt="" className="size-full object-cover" /> : "HK"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1 text-[15px] font-bold text-slate-950">
+            <span className="truncate">{creator}</span><span className="grid size-4 place-items-center rounded-full bg-sky-500 text-white"><Check className="size-3" strokeWidth={3} /></span>
+          </div>
+        </div>
+        <button type="button" className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white">Follow</button>
+        <button type="button" onClick={() => setMenu(value => !value)} className="grid size-9 place-items-center text-slate-700" aria-label="More options"><MoreVertical className="size-5" /></button>
+      </div>
+      <Link href={`/watch/${video.id}`} className="block px-3 pb-3 sm:px-4">
+        <h2 className="line-clamp-2 text-[19px] font-bold leading-6 text-slate-950">{video.title}</h2>
+        <ChevronDown className="ml-auto mt-1 size-5 text-slate-500" />
+      </Link>
+      <div className="relative w-full bg-black aspect-video overflow-hidden">
+        <video ref={media} src={video.videoUrl} poster={video.thumbnailUrl || undefined} muted playsInline preload="metadata" className="size-full object-cover" onPlay={() => { setPaused(false); void recordVideoView(video.id, 0).catch(() => undefined); }} onPause={() => setPaused(true)} onTimeUpdate={event => setProgress(event.currentTarget.duration ? event.currentTarget.currentTime / event.currentTarget.duration : 0)} />
+        <button type="button" onClick={play} className="absolute inset-0 m-auto grid size-16 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm" aria-label={paused ? "Play video" : "Pause video"}>{paused ? <Play className="ml-1 size-8 fill-current" /> : <span className="text-3xl font-black">Ⅱ</span>}</button>
+        <div className="absolute inset-x-3 bottom-3 flex items-center gap-3 text-xs font-semibold text-white"><span>0:00</span><div className="h-1 flex-1 overflow-hidden rounded-full bg-white/40"><div className="h-full bg-red-500" style={{ width: `${progress * 100}%` }} /></div><span>{Math.floor(video.durationSeconds / 60)}:{String(video.durationSeconds % 60).padStart(2, "0")}</span><Volume2 className="size-5" /><button type="button" onClick={() => media.current?.requestFullscreen()} aria-label="Fullscreen"><Maximize2 className="size-5" /></button></div>
+      </div>
+      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
+        <button type="button" onClick={() => void like()} className={`home-action ${liked ? "text-violet-700" : ""}`}><Heart className={`size-5 ${liked ? "fill-current" : ""}`} /><span>{(video.likesCount + (liked ? 1 : 0)).toLocaleString()}</span></button>
+        <Link href={`/watch/${video.id}#comments`} className="home-action"><MessageCircle className="size-5" /><span>Comments</span></Link>
+        <button type="button" onClick={() => void share()} className="home-action"><Share2 className="size-5" /><span>Share</span></button>
+        <button type="button" onClick={() => void save()} className={`home-action ${saved ? "text-violet-700" : ""}`}><Save className={`size-5 ${saved ? "fill-current" : ""}`} /><span>Save</span></button>
+        <button type="button" onClick={() => setMenu(value => !value)} className="home-action"><MoreVertical className="size-5" /><span>More</span></button>
+      </div>
+      <div className="flex gap-3 px-3 py-3 sm:px-4">
+        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-xs font-black text-white">HK</div>
+        <div className="min-w-0"><p className="font-bold text-slate-950">{creator} <span className="text-sky-500">✓</span></p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{description}</p><p className="mt-1 text-sm text-slate-500">{video.viewCount.toLocaleString()} views · {ago(video.publishedAt)}</p></div>
+      </div>
+      {menu && <div className="border-t border-slate-200 px-4 py-2 text-sm text-slate-600">Recommendation options are available on the video page.</div>}
+    </article>
+  );
 }
 
 export default function SupabaseHome() {
@@ -161,7 +252,7 @@ export default function SupabaseHome() {
   );
   const recommended = useMemo(() => longFeed.slice(0, 12), [longFeed]);
   const featuredVideo = recommended[0];
-  const recommendedGrid = recommended.slice(1);
+  const recommendedGrid = recommended.slice(2);
   const usedRecommended = useMemo(
     () => new Set(recommended.map(v => v.id)),
     [recommended]
@@ -226,14 +317,14 @@ export default function SupabaseHome() {
 
   return (
     <HkTubeShell>
-      <main className="mx-auto w-full max-w-[1500px] pb-16 sm:px-7 lg:px-9">
-        <section className="flex items-center justify-between gap-3 border-b border-white/7 px-4 py-3 sm:px-0 sm:py-5">
+      <main className="hktube-home-feed mx-auto w-full max-w-[920px] pb-16 sm:px-4 lg:px-6">
+        <section className="flex items-center justify-between gap-3 border-b border-white/7 px-3 py-3 sm:px-0 sm:py-5">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
               Home feed
             </p>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">
-              Recommended for you
+              Home
             </h1>
           </div>
           <div className="flex shrink-0 gap-2">
@@ -275,44 +366,10 @@ export default function SupabaseHome() {
             </Button>
           </div>
         ) : videos.length ? (
-          <div className="space-y-11">
-            {featuredVideo && (
-              <Section title="Featured for You">
-                <Link
-                  href={`/watch/${featuredVideo.id}`}
-                  className="group block overflow-hidden border-y border-white/10 bg-[#111522] shadow-2xl shadow-black/20 sm:rounded-[28px] sm:border"
-                >
-                  <div className="relative aspect-video w-full overflow-hidden bg-black">
-                    {featuredVideo.thumbnailUrl ? (
-                      <img
-                        src={featuredVideo.thumbnailUrl}
-                        alt=""
-                        className="size-full object-cover transition duration-500 group-hover:scale-[1.015]"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="grid size-full place-items-center text-slate-500">
-                        No thumbnail
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent p-4 sm:p-7">
-                      <p className="max-w-4xl text-xl font-black text-white sm:text-3xl">
-                        {featuredVideo.title}
-                      </p>
-                      <p className="mt-2 text-sm text-slate-300">
-                        {featuredVideo.viewCount.toLocaleString()} views ·{" "}
-                        {featuredVideo.publishedAt
-                          ? new Date(
-                              featuredVideo.publishedAt
-                            ).toLocaleDateString()
-                          : "Recently published"}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              </Section>
-            )}
+          <div className="space-y-3 sm:space-y-6">
+            {recommended.slice(0, 2).map((video, index) => (
+              <HomeVideoPost key={`home-post-${video.id}`} video={video} index={index} />
+            ))}
 
             {recommendedGrid.length > 0 && (
               <Section title="More Long Videos">

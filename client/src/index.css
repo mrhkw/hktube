@@ -830,3 +830,60 @@ select {
 .hktube-clips-page .clips-action-active span:first-child {
   background: rgb(236 72 153 / 0.78) !important;
 }
+
+/* Android Home reference layout: one social post per row, full-width media. */
+.hktube-home-feed {
+  background: #f8f9fb;
+  color: #17191e;
+}
+.hktube-home-post {
+  overflow: hidden;
+  border-bottom: 8px solid #eef0f4;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+.hktube-home-post video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #050608;
+  object-fit: cover;
+}
+.home-action {
+  display: inline-flex;
+  min-height: 40px;
+  min-width: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  color: #16181d;
+  font-size: 0.82rem;
+  font-weight: 650;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.home-action:hover,
+.home-action:focus-visible {
+  background: #f0edff;
+  color: #4c3fb4;
+}
+@media (max-width: 767px) {
+  body:has(.hktube-home-feed) main {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  body:has(.hktube-home-feed) .hktube-home-feed > section:first-child {
+    background: #fff;
+  }
+  .hktube-home-post {
+    border-radius: 0;
+  }
+  .hktube-home-post .home-action span {
+    font-size: 0.75rem;
+  }
+}
+@media (min-width: 768px) {
+  .hktube-home-post {
+    border: 1px solid #e4e7ec;
+    border-radius: 1rem;
+  }
+}
