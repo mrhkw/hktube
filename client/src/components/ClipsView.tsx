@@ -175,7 +175,6 @@ export const ClipsView = () => {
   const [heartBurst, setHeartBurst] = useState(false);
   const [busy, setBusy] = useState(false);
   const [moreClip, setMoreClip] = useState<ClipItem | null>(null);
-  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const lastProgress = useRef<Record<string, number>>({});
   const touchStartY = useRef<number | null>(null);
@@ -556,11 +555,7 @@ export const ClipsView = () => {
                 onPlay={() => {
                   if (!isActive) return;
                   setPlaying(true);
-                  void recordVideoView(clip.id, 0)
-                    .then(result => {
-                      setViewCounts(current => ({ ...current, [clip.id]: Number(result.views) }));
-                    })
-                    .catch(() => undefined);
+                  void recordVideoView(clip.id, 0).catch(() => undefined);
                   void recordDiscoveryEvent({
                     eventType: "play_start",
                     objectType: "short",
