@@ -20,25 +20,28 @@ a[aria-label="HkTube home"] > span[aria-hidden="true"] {
 }
 
 a[aria-label="HkTube home"] > span[aria-hidden="true"]::before {
-  content: "HkTube";
+  content: "Hk";
   font-size: 22px;
   line-height: 1;
   font-weight: 950;
   letter-spacing: -0.065em;
-  color: #ffffff;
+  color: #111827;
 }
 
 a[aria-label="HkTube home"] > span[aria-hidden="true"]::after {
   content: "▶";
-  margin-left: 7px;
-  font-size: 9px;
+  content: "Tube";
+  margin-left: 0;
+  font-size: 22px;
   line-height: 1;
-  color: #a78bfa;
-  transform: translateY(1px);
+  font-weight: 950;
+  letter-spacing: -0.065em;
+  color: #dc2626;
 }
 
 @media (max-width: 640px) {
   a[aria-label="HkTube home"] { width: 94px; }
   a[aria-label="HkTube home"] > span[aria-hidden="true"] { min-width: 88px; }
   a[aria-label="HkTube home"] > span[aria-hidden="true"]::before { font-size: 19px; }
+  a[aria-label="HkTube home"] > span[aria-hidden="true"]::after { font-size: 19px; }
 }

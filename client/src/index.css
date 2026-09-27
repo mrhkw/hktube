@@ -833,13 +833,22 @@ select {
 
 /* Android Home reference layout: one social post per row, full-width media. */
 .hktube-home-feed {
-  background: #f8f9fb;
+  background: #fff;
   color: #17191e;
+}
+html:has(.hktube-home-feed),
+body:has(.hktube-home-feed),
+body:has(.hktube-home-feed) > #root,
+body:has(.hktube-home-feed) > #root > div {
+  background: #fff !important;
 }
 .hktube-home-post {
   overflow: hidden;
   border-bottom: 8px solid #eef0f4;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+.hktube-home-post:hover {
+  transform: none !important;
 }
 .hktube-home-post video {
   display: block;
@@ -847,6 +856,10 @@ select {
   aspect-ratio: 16 / 9;
   background: #050608;
   object-fit: cover;
+}
+.hktube-home-post .home-play-button {
+  background: rgb(0 0 0 / 0.56) !important;
+  color: #fff !important;
 }
 .home-action {
   display: inline-flex;
@@ -866,6 +879,21 @@ select {
   background: #f0edff;
   color: #4c3fb4;
 }
+body:has(.hktube-home-feed) .hktube-reference-logo > span[aria-hidden="true"]::before {
+  color: #111827 !important;
+}
+body:has(.hktube-home-feed) .hktube-reference-logo > span:last-child {
+  display: none !important;
+}
+body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] a[aria-current="page"] svg {
+  color: #8878ed !important;
+}
+body:has(.hktube-home-feed) nav.fixed[aria-label="Mobile navigation"] button > span:first-child {
+  border-radius: 999px !important;
+  background: #f0ebff !important;
+  color: #17191e !important;
+  box-shadow: none !important;
+}
 @media (max-width: 767px) {
   body:has(.hktube-home-feed) main {
     padding-left: 0 !important;
@@ -874,9 +902,7 @@ select {
   body:has(.hktube-home-feed) .hktube-home-feed > section:first-child {
     background: #fff;
   }
-  .hktube-home-post {
-    border-radius: 0;
-  }
+  .hktube-home-post { border-radius: 0; }
   .hktube-home-post .home-action span {
     font-size: 0.75rem;
   }
