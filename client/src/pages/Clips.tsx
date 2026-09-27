@@ -3,9 +3,13 @@ import { Heart, MessageCircle, Music2, Search, Send, Star } from "lucide-react";
 
 const POSTER = "/clip-reference.jpeg";
 const VIDEO = String(import.meta.env.VITE_CLIPS_VIDEO_URL || "").trim();
+const SWIPE_THRESHOLD = 36;
 
 export default function ClipsPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const [introVisible, setIntroVisible] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [playing, setPlaying] = useState(Boolean(VIDEO));
@@ -19,9 +23,50 @@ export default function ClipsPage() {
     else video.pause();
   }, [playing, soundOn]);
 
+  const revealFinalState = () => {
+    if (!introVisible || transitioning) return;
+    setTransitioning(true);
+    window.setTimeout(() => {
+      setIntroVisible(false);
+      setTransitioning(false);
+    }, 420);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    pointerStart.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = pointerStart.current;
+    pointerStart.current = null;
+    if (!start) return;
+
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+
+    if (dy <= -SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx)) {
+      revealFinalState();
+      return;
+    }
+
+    if (Math.abs(dx) < 14 && Math.abs(dy) < 14) {
+      revealFinalState();
+    }
+  };
+
   return (
     <main className="hktube-clips-page clips-reference-page">
-      <section className="clips-reference-screen" aria-label="Clips">
+      <section
+        className={
+          "clips-reference-screen" +
+          (transitioning ? " clips-reference-transitioning" : "") +
+          (!introVisible ? " clips-reference-final" : "")
+        }
+        aria-label="Clips"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      >
         <div className="clips-reference-media" aria-hidden="true">
           <img className="clips-reference-poster" src={POSTER} alt="" />
           {VIDEO ? (
@@ -38,11 +83,21 @@ export default function ClipsPage() {
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
               onError={() => setPlaying(false)}
-              onClick={() => setPlaying(value => !value)}
             />
           ) : null}
           <div className="clips-reference-shade" />
         </div>
+
+        <div className="clips-reference-gesture-layer" aria-hidden="true" />
+
+        {introVisible ? (
+          <div className="clips-reference-intro" aria-hidden="true">
+            <div className="clips-reference-intro-circle">
+              <div className="clips-reference-p-mark">P</div>
+              <div className="clips-reference-p-arrow" />
+            </div>
+          </div>
+        ) : null}
 
         <nav className="clips-reference-top" aria-label="Clip feed navigation">
           <button type="button" className="clips-reference-tab clips-reference-tab-muted">Following</button>
