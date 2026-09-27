@@ -319,31 +319,10 @@ export default function SupabaseHome() {
   return (
     <HkTubeShell>
       <main className="hktube-home-feed mx-auto w-full max-w-[920px] pb-16 sm:px-4 lg:px-6">
-        <section className="flex items-center justify-between gap-3 border-b border-white/7 px-3 py-3 sm:px-0 sm:py-5">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
-              Home feed
-            </p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">
-              Home
-            </h1>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/[.04] text-white"
-              aria-label="Refresh feed"
-            >
-              <RefreshCw className="size-4" />
-            </button>
-            <Link
-              href="/explore"
-              className="hidden rounded-full bg-violet-500 px-4 py-2 text-sm font-bold text-white sm:inline-flex"
-            >
-              Explore
-            </Link>
-          </div>
+        <section className="flex justify-end px-3 py-2 sm:px-0">
+          <button type="button" onClick={() => window.location.reload()} className="grid size-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-700" aria-label="Refresh feed">
+            <RefreshCw className="size-4" />
+          </button>
         </section>
         {loading ? (
           <div className="grid min-h-[42vh] place-items-center">

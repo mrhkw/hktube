@@ -935,7 +935,8 @@ select {
     box-shadow: none;
   }
   .hktube-reference-header .hktube-reference-logo > span:last-child {
-    font-size: 23px;
+    font-size: 19px;
+    letter-spacing: -0.05em;
   }
   .hktube-reference-header .ml-auto {
     margin-left: 0;
@@ -956,5 +957,37 @@ select {
     border-color: #111827;
     background: #111827;
     color: #fff;
+  }
+  .hktube-reference-header nav {
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
+  }
+  .hktube-reference-header nav a {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.7rem;
+  }
+  body:has(.hktube-home-feed) .hktube-home-feed > section:first-child {
+    min-height: 0;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] {
+    height: 58px;
+    padding-top: 0;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  }
+  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] a,
+  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button {
+    min-height: 52px;
+    gap: 0.1rem;
+    font-size: 0.62rem;
+  }
+  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button span {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }
