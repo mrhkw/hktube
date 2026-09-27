@@ -526,14 +526,15 @@ export const ClipsView = () => {
 
   return (
     <main
-      className="fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white"
+      className="clips-feed-shell fixed inset-0 z-[70] h-[100dvh] w-full overflow-hidden bg-black text-white"
       onWheel={handleWheel}
       onTouchStart={event => {
         touchStartY.current = event.touches[0].clientY;
       }}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="absolute inset-0">
+      <div className="clips-feed-frame">
+        <div className="clips-feed-track absolute inset-0 flex h-full w-full flex-col will-change-transform" style={{ transform: `translate3d(0, ${-activeIndex * 100}%, 0)` }}>
         {clips.map((clip, index) => {
           const isActive = index === activeIndex;
           const isLiked = Boolean(liked[clip.id]);
@@ -544,7 +545,7 @@ export const ClipsView = () => {
           return (
             <section
               key={clip.id}
-              className={`absolute inset-0 overflow-hidden bg-black transition-opacity duration-300 ${isActive ? "opacity-100" : "pointer-events-none opacity-0"}`}
+              className="relative h-full w-full shrink-0 overflow-hidden bg-black"
               aria-hidden={!isActive}
             >
               <video
@@ -787,6 +788,7 @@ export const ClipsView = () => {
             </section>
           );
         })}
+        </div>
       </div>
 
       <AnimatePresence>
