@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v12";
+const CACHE_NAME = "hktube-shell-v13-clips-fix-2026-09-27";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
