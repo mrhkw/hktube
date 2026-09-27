@@ -1113,9 +1113,9 @@ body:has(.hktube-home-feed)
 .clips-reference-poster {
   z-index: 0;
   object-fit: cover;
-  object-position: center 35%;
+  object-position: center 40%;
   transform: scale(1.62);
-  transform-origin: center 35%;
+  transform-origin: center 40%;
 }
 .clips-reference-video {
   z-index: 1;
@@ -1326,4 +1326,13 @@ body:has(.hktube-home-feed)
 }
 @media (min-width: 700px) {
   .clips-reference-screen { border-radius: 0; }
+}
+
+
+/* Clips route must remain free of global overlays and splash UI. */
+body:has(.hktube-clips-page) [aria-label="HkTube loading"],
+body:has(.hktube-clips-page) [role="dialog"],
+body:has(.hktube-clips-page) nav.fixed,
+body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
+  display: none !important;
 }
