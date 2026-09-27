@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v11";
+const CACHE_NAME = "hktube-shell-v12";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
@@ -14,23 +14,19 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {
     try { await self.registration.navigationPreload.enable(); } catch {}
-
-    caches.keys()
-      .then(keys => Promise.all(
-        keys
-          .filter(key => key.startsWith("hktube-shell-") && key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
-    );
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key.startsWith("hktube-shell-") && key !== CACHE_NAME).map(key => caches.delete(key)));
+    await self.clients.claim();
   })());
 });
 
-async function fetchFast(request, timeoutMs = 8000) {
+async function fetchNetworkFirst(request, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(request, { signal: controller.signal, cache: "default" });
+    // no-store is intentional: the Service Worker must never pin a deployment's
+    // module graph. Vite/Vercel still provide normal immutable browser caching.
+    return await fetch(new Request(request, { cache: "no-store", signal: controller.signal }));
   } finally {
     clearTimeout(timer);
   }
@@ -42,7 +38,7 @@ async function cacheResponse(request, response) {
     const cache = await caches.open(CACHE_NAME);
     await cache.put(request, response.clone());
   } catch {
-    // Caching is an optimization; never block a successful response on it.
+    // Offline caching is an optimization; never block a successful response.
   }
 }
 
@@ -55,13 +51,11 @@ self.addEventListener("fetch", event => {
     const isNavigation = event.request.mode === "navigate";
     const isStaticAsset = STATIC_ASSET.test(url.pathname);
 
-    // Navigation is always network-first. Never serve an old cached HTML shell.
     if (isNavigation) {
       try {
         const preloaded = await event.preloadResponse;
         if (preloaded) return preloaded;
-        const response = await fetchFast(new Request(event.request, { cache: "no-store" }));
-        return response;
+        return await fetchNetworkFirst(event.request);
       } catch {
         const cache = await caches.open(CACHE_NAME);
         return await cache.match(OFFLINE_URL) || new Response(
@@ -73,15 +67,10 @@ self.addEventListener("fetch", event => {
 
     if (!isStaticAsset) return fetch(event.request);
 
-    // Vite assets are content-hashed, so cached copies are safe and instant.
-    const cached = await caches.match(event.request);
-    if (cached) {
-      event.waitUntil(fetchFast(event.request).then(response => cacheResponse(event.request, response)).catch(() => undefined));
-      return cached;
-    }
-
+    // Network-first is the important invariant. A cached module is used only
+    // when the device is offline, never while a new deployment is available.
     try {
-      const response = await fetchFast(event.request);
+      const response = await fetchNetworkFirst(event.request);
       event.waitUntil(cacheResponse(event.request, response));
       return response;
     } catch {

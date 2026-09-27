@@ -1,6 +1,15 @@
 import { lazy as reactLazy, Suspense, useEffect, useState, type ComponentType, type LazyExoticComponent } from "react";
+import { isLikelyAssetLoadError, recoverFromAssetLoadFailure } from "@/lib/runtimeRecovery";
 
-const lazyWithRetry = <T extends ComponentType<any>>(factory: () => Promise<{ default: T }>): LazyExoticComponent<T> => reactLazy(async () => { try { const module = await factory(); try { sessionStorage.removeItem("hktube-lazy-retry"); } catch {} return module; } catch (error) { try { if (!sessionStorage.getItem("hktube-lazy-retry")) { sessionStorage.setItem("hktube-lazy-retry", "1"); window.location.reload(); } } catch {} throw error; } });
+const lazyWithRetry = <T extends ComponentType<any>>(factory: () => Promise<{ default: T }>): LazyExoticComponent<T> => reactLazy(async () => {
+  try {
+    const module = await factory();
+    return module;
+  } catch (error) {
+    if (isLikelyAssetLoadError(error)) await recoverFromAssetLoadFailure();
+    throw error;
+  }
+});
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";

@@ -190,7 +190,13 @@ export const ClipsView = () => {
         userId: user?.id ?? null,
       });
 
-      if (!ranked.length) ranked = await listPublicSupabaseShorts(50);
+      if (!ranked.length) {
+        ranked = (await listPublicSupabaseShorts(50)).map(video => ({
+          ...video,
+          reason: "fresh" as const,
+          score: 0,
+        }));
+      }
 
       if (mode === "following" && user?.id) {
         const { data } = await supabase
@@ -693,7 +699,7 @@ export const ClipsView = () => {
                 </ActionButton>
 
                 <ActionButton
-                  label={formatCount(clip.shares || 0)}
+                  label="Share"
                   onClick={() => {
                     setSheet("share");
                   }}

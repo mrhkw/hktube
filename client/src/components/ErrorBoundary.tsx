@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
 import { Component, ReactNode } from "react";
+import { clearRecoveryMarker } from "@/lib/runtimeRecovery";
 
 interface Props { children: ReactNode; }
 interface State { hasError: boolean; errorMessage?: string; }
@@ -11,7 +12,7 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: { componentStack: string | null }) {
     console.error("[HkTube] Unhandled UI error", error, info);
   }
-  private retry = () => { try { sessionStorage.removeItem("hktube-lazy-retry"); } catch {} window.location.reload(); };
+  private retry = () => { clearRecoveryMarker(); window.location.reload(); };
   private goHome = () => window.location.assign("/");
   render() {
     if (this.state.hasError) return (
@@ -19,7 +20,7 @@ class ErrorBoundary extends Component<Props, State> {
         <section role="alert" className="flex w-full max-w-md flex-col items-center rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
           <AlertTriangle size={44} className="mb-5 text-destructive" aria-hidden="true" />
           <h1 className="text-xl font-semibold">HkTube had a temporary problem</h1>
-          <p className="mt-2 text-sm text-muted-foreground">The app hit a client-side error. Reloading clears a stale module/session state and retries the current page.</p>
+          <p className="mt-2 text-sm text-muted-foreground">The app hit an unexpected client-side error. Try again once; if it returns, use Home and report the route so the underlying bug can be fixed.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button type="button" onClick={this.retry} className={cn("inline-flex items-center gap-2 rounded-lg px-4 py-2", "bg-primary text-primary-foreground hover:opacity-90")}><RotateCcw size={16} aria-hidden="true" />Try again</button>
             <button type="button" onClick={this.goHome} className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 hover:bg-muted"><Home size={16} aria-hidden="true" />Home</button>
