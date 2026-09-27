@@ -87,7 +87,7 @@ export default function ClipsPage() {
               {following ? "Following" : "Follow"}
             </button>
           </div>
-          <p className="clips-reference-caption">Waking up to views like this 🏔️</p>
+          <p className="clips-reference-caption">Waking up to views like this</p>
           <p className="clips-reference-tags">#travel #nature #adventure #explore</p>
           <div className="clips-reference-sound-row">
             <button type="button" className="clips-reference-sound" onClick={() => setSoundOn(value => !value)} aria-label="Toggle sound">
