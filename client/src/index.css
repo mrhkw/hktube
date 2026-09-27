@@ -887,3 +887,69 @@ select {
     border-radius: 1rem;
   }
 }
+
+/* Home Android header: white toolbar with compact reference icons. */
+.hktube-reference-header {
+  background: rgb(255 255 255 / 0.97) !important;
+  border-bottom-color: #e5e7eb !important;
+  color: #111827;
+}
+.hktube-reference-header .hktube-reference-logo span {
+  color: #111827;
+}
+.hktube-reference-header .hktube-reference-logo span span {
+  color: #dc2626;
+}
+.hktube-reference-header .hktube-header-action,
+.hktube-reference-header > div > button,
+.hktube-reference-header > div > a:not(.hktube-reference-logo) {
+  color: #111827 !important;
+}
+.hktube-reference-header .hktube-header-action:hover,
+.hktube-reference-header > div > button:hover {
+  background: #f3f4f6 !important;
+}
+.hktube-reference-header input {
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+.hktube-reference-header form svg {
+  color: #6b7280 !important;
+}
+@media (max-width: 767px) {
+  .hktube-reference-header > div {
+    height: 64px;
+    padding-inline: 12px;
+  }
+  .hktube-reference-header .hktube-reference-logo {
+    min-width: 0;
+    gap: 0;
+  }
+  .hktube-reference-header .hktube-reference-logo > span:first-child {
+    display: none;
+  }
+  .hktube-reference-header .hktube-reference-logo > span:last-child {
+    font-size: 23px;
+  }
+  .hktube-reference-header .ml-auto {
+    margin-left: 0;
+  }
+  .hktube-reference-header .hktube-header-action.ml-auto {
+    margin-left: auto;
+  }
+  .hktube-reference-header nav {
+    background: #fff;
+    border-top-color: #f3f4f6;
+  }
+  .hktube-reference-header nav a {
+    border-color: #e5e7eb;
+    background: #fff;
+    color: #4b5563;
+  }
+  .hktube-reference-header nav a.bg-violet-500 {
+    border-color: #111827;
+    background: #111827;
+    color: #fff;
+  }
+}

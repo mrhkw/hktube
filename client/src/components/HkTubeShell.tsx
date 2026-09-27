@@ -31,6 +31,8 @@ import {
   Video,
   HelpCircle,
   Camera,
+  Cast,
+  Menu,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -155,6 +157,7 @@ export function HkTubeShell({
     : primaryNav;
   const unread =
     notificationsQuery.data?.filter(item => !item.readAt).length ?? 0;
+  const referenceHeader = location === "/";
 
   return (
     <div
@@ -166,19 +169,24 @@ export function HkTubeShell({
     >
       <header
         className={cn(
-          "sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
+          "hktube-reference-header sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
           immersive && "max-lg:hidden"
         )}
       >
         <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
+          {referenceHeader && (
+            <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] md:hidden" aria-label="Open menu">
+              <Menu className="size-6" />
+            </button>
+          )}
           <Link
             href="/"
-            className="flex min-w-[104px] shrink-0 items-center gap-2.5"
+            className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
             aria-label="HkTube home"
           >
-            <HkTubeMark className="size-9" />
-            <span className="whitespace-nowrap text-[15px] font-black uppercase tracking-[.02em] text-white">
-              HKTUBE
+            <HkTubeMark className="size-9 sm:size-9" />
+            <span className="whitespace-nowrap text-[18px] font-black tracking-[-.04em] text-white">
+              Hk<span className="text-red-500">Tube</span>
             </span>
           </Link>
           <form
@@ -196,9 +204,14 @@ export function HkTubeShell({
               />
             </div>
           </form>
+          {referenceHeader && (
+            <button type="button" className="hktube-header-action ml-auto grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] lg:hidden" aria-label="Cast to device">
+              <Cast className="size-5" />
+            </button>
+          )}
           <Link
             href="/search"
-            className="ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
+            className="hktube-header-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
             aria-label="Open search"
           >
             <Search className="size-5" />
@@ -206,7 +219,7 @@ export function HkTubeShell({
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <Link
               href="/settings"
-              className="grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white"
+              className={cn("grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white", referenceHeader && "hidden sm:grid")}
               aria-label="Open Settings"
             >
               <Settings className="size-5" />
@@ -215,7 +228,7 @@ export function HkTubeShell({
               <button
                 type="button"
                 onClick={openCreate}
-                className="grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95"
+                className={cn("grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95", referenceHeader && "hidden sm:grid")}
                 aria-label="Create content"
               >
                 <Plus className="size-5" />
@@ -223,12 +236,12 @@ export function HkTubeShell({
             )}
             <Link
               href="/notifications"
-              className="relative grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white"
+              className="hktube-header-action relative grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-5" />
               {unread > 0 && (
-                <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-fuchsia-500 px-1 text-[9px] font-black leading-4 text-white">
+                <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
                   {Math.min(unread, 9)}
                   {unread > 9 ? "+" : ""}
                 </span>
@@ -236,7 +249,7 @@ export function HkTubeShell({
             </Link>
             <Link
               href={isAuthenticated ? "/profile" : "/auth"}
-              className="grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20"
+              className={cn("grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20", referenceHeader && "hidden sm:grid")}
               aria-label={
                 isAuthenticated ? "Open profile" : "Sign in or create account"
               }
