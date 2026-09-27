@@ -4,7 +4,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Check, ChevronDown, Heart, Loader2, MessageCircle, MoreVertical, Play, RefreshCw, Save, Share2, UploadCloud, Volume2, Maximize2 } from "lucide-react";
+import { ChevronDown, Heart, Loader2, MessageCircle, MoreVertical, Play, RefreshCw, Save, Share2, UploadCloud, Volume2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { startLogin } from "@/const";
@@ -79,6 +79,7 @@ function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) 
   const [paused, setPaused] = useState(true);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [followed, setFollowed] = useState(false);
   const [progress, setProgress] = useState(0);
   const [menu, setMenu] = useState(false);
   const creator = index === 0 ? "HkTube Creator" : "Wanderlust Diaries";
@@ -126,10 +127,10 @@ function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) 
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1 text-[15px] font-bold text-slate-950">
-            <span className="truncate">{creator}</span><span className="grid size-4 place-items-center rounded-full bg-sky-500 text-white"><Check className="size-3" strokeWidth={3} /></span>
+            <span className="truncate">{creator}</span>
           </div>
         </div>
-        <button type="button" className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white">Follow</button>
+        <button type="button" onClick={() => setFollowed(value => !value)} className={`rounded-lg px-4 py-2 text-sm font-bold ${followed ? "bg-slate-200 text-slate-700" : "bg-slate-950 text-white"}`}>{followed ? "Following" : "Follow"}</button>
         <button type="button" onClick={() => setMenu(value => !value)} className="grid size-9 place-items-center text-slate-700" aria-label="More options"><MoreVertical className="size-5" /></button>
       </div>
       <Link href={`/watch/${video.id}`} className="block px-3 pb-3 sm:px-4">
@@ -150,7 +151,7 @@ function HomeVideoPost({ video, index }: { video: RankedVideo; index: number }) 
       </div>
       <div className="flex gap-3 px-3 py-3 sm:px-4">
         <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-xs font-black text-white">HK</div>
-        <div className="min-w-0"><p className="font-bold text-slate-950">{creator} <span className="text-sky-500">✓</span></p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{description}</p><p className="mt-1 text-sm text-slate-500">{video.viewCount.toLocaleString()} views · {ago(video.publishedAt)}</p></div>
+        <div className="min-w-0"><p className="font-bold text-slate-950">{creator}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{description}</p><p className="mt-1 text-sm text-slate-500">{video.viewCount.toLocaleString()} views · {ago(video.publishedAt)}</p></div>
       </div>
       {menu && <div className="border-t border-slate-200 px-4 py-2 text-sm text-slate-600">Recommendation options are available on the video page.</div>}
     </article>

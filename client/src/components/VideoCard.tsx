@@ -1,6 +1,5 @@
 import { formatDate, formatDuration, formatViews, VideoRecord } from "@/lib/video";
 import {
-  CheckCircle2,
   Heart,
   Inbox,
   Maximize2,
@@ -107,7 +106,6 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
             <span className="truncate text-sm font-bold text-neutral-950">
               {video.channelName || "HkTube Creator"}
             </span>
-            <CheckCircle2 className="size-3.5 shrink-0 fill-sky-500 text-white" aria-label="Verified creator" />
           </div>
         </div>
 
