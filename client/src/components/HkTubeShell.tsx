@@ -170,6 +170,7 @@ export function HkTubeShell({
       <header
         className={cn(
           "hktube-reference-header sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
+          referenceHeader && "max-md:border-black/10 max-md:bg-white max-md:text-neutral-950",
           immersive && "max-lg:hidden"
         )}
       >
@@ -178,7 +179,7 @@ export function HkTubeShell({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="grid size-10 shrink-0 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] md:hidden"
+              className="grid size-10 shrink-0 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:hidden"
               aria-label="Open menu"
             >
               <Menu className="size-6" />
@@ -189,9 +190,9 @@ export function HkTubeShell({
             className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
             aria-label="HkTube home"
           >
-            <HkTubeMark className="size-9 sm:size-9" />
-            <span className="whitespace-nowrap text-[18px] font-black tracking-[-.04em] text-red-600">
-              HkTube
+            <HkTubeMark className="size-8 md:size-9" />
+            <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] md:text-red-600">
+              <span className="text-neutral-950 md:text-red-600">Hk</span><span className="text-red-600">Tube</span>
             </span>
           </Link>
           <form
@@ -244,7 +245,7 @@ export function HkTubeShell({
             )}
             <Link
               href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white"
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-5" />
@@ -258,7 +259,7 @@ export function HkTubeShell({
             {referenceHeader && (
               <Link
                 href="/search"
-                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white"
+                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
                 aria-label="Open search"
               >
                 <Search className="size-5" />
@@ -662,6 +663,7 @@ export function HkTubeShell({
       <nav
         className={cn(
           "fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/8 bg-[#10141e]/98 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl md:hidden",
+          location === "/" && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
             !location.startsWith("/shorts") &&
@@ -691,7 +693,7 @@ export function HkTubeShell({
               onClick={openCreate}
               className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300"
             >
-              <span className="grid size-9 place-items-center rounded-xl bg-violet-500 text-white shadow-[0_5px_18px_rgba(139,92,246,.35)]">
+              <span className={cn("grid size-9 place-items-center rounded-xl bg-violet-500 text-white shadow-[0_5px_18px_rgba(139,92,246,.35)]", location === "/" && "rounded-full bg-[#f1edff] text-blue-600 shadow-none")}>
                 <Plus className="size-5" />
               </span>
             </button>
@@ -702,11 +704,11 @@ export function HkTubeShell({
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
-                active ? "text-violet-300" : "text-slate-500"
+                active ? (location === "/" ? "text-blue-600" : "text-violet-300") : (location === "/" ? "text-neutral-700" : "text-slate-500")
               )}
             >
               <item.icon
-                className={cn("size-6", active && "fill-violet-300/15")}
+                className={cn("size-6", active && (location === "/" ? "fill-blue-600/10" : "fill-violet-300/15"))}
               />
               {item.label}
             </Link>
