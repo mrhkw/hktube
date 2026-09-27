@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Heart, MessageCircle, Music2, Search, Send, Star } from "lucide-react";
 
 const POSTER = "/clip-reference.jpeg";
@@ -32,12 +32,12 @@ export default function ClipsPage() {
     }, 420);
   };
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     pointerStart.current = { x: event.clientX, y: event.clientY };
   };
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     const start = pointerStart.current;
     pointerStart.current = null;
     if (!start) return;
