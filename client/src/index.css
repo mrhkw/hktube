@@ -1105,6 +1105,7 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  touch-action: pan-y;
   padding: 0;
 }
 .clips-feed-frame::-webkit-scrollbar {
@@ -1124,12 +1125,6 @@ body:has(.hktube-clips-page) [aria-label="Mobile navigation"] {
   height: 100dvh;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-}
-@media (min-width: 768px) {
-  .clips-feed-frame {
-    width: min(100vw, calc(100dvh * 9 / 16));
-    max-width: calc(100dvh * 9 / 16);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .clips-feed-frame {
