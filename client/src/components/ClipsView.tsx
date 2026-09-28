@@ -195,6 +195,8 @@ export const ClipsView = () => {
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const feedRef = useRef<HTMLDivElement | null>(null);
   const lastProgress = useRef<Record<string, number>>({});
+  const lastTapAt = useRef(0);
+  const tapTimer = useRef<number | null>(null);
 
   const activeClip = clips[activeIndex] ?? null;
 
@@ -493,11 +495,37 @@ export const ClipsView = () => {
     if (query) navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
+  const handleMediaTap = (clip: ClipItem) => {
+    const now = Date.now();
+    if (now - lastTapAt.current < 280) {
+      if (tapTimer.current !== null) {
+        window.clearTimeout(tapTimer.current);
+        tapTimer.current = null;
+      }
+      lastTapAt.current = 0;
+      triggerHeart(clip);
+      return;
+    }
+    lastTapAt.current = now;
+    if (tapTimer.current !== null) window.clearTimeout(tapTimer.current);
+    tapTimer.current = window.setTimeout(() => {
+      tapTimer.current = null;
+      if (activeClip?.id === clip.id) togglePlayback();
+      lastTapAt.current = 0;
+    }, 280);
+  };
+
   const triggerHeart = (clip: ClipItem) => {
     if (!liked[clip.id]) void likeClip(clip);
     setHeartBurst(true);
     window.setTimeout(() => setHeartBurst(false), 750);
   };
+
+  useEffect(() => {
+    return () => {
+      if (tapTimer.current !== null) window.clearTimeout(tapTimer.current);
+    };
+  }, []);
 
   const activeComments = activeClip ? commentCache[activeClip.id] ?? [] : [];
 
@@ -695,14 +723,14 @@ export const ClipsView = () => {
                 <button
                   type="button"
                   onClick={openSearch}
-                  className="pointer-events-auto absolute right-4 top-[max(8px,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full text-white drop-shadow-[0_2px_7px_rgba(0,0,0,.7)]"
+                  className="pointer-events-auto absolute right-3 top-[max(8px,env(safe-area-inset-top))] grid size-12 place-items-center text-white drop-shadow-[0_2px_7px_rgba(0,0,0,.75)]"
                   aria-label="Search Clips"
                 >
                   <Search className="size-8 stroke-[2.2]" />
                 </button>
               </div>
 
-              <div className="absolute bottom-[max(28px,env(safe-area-inset-bottom))] right-3 z-30 flex w-[64px] flex-col items-center gap-4">
+              <div className="absolute bottom-[max(30px,env(safe-area-inset-bottom))] right-2 z-30 flex w-[68px] flex-col items-center gap-3.5">
                 <button
                   type="button"
                   onClick={() => void followCreator(clip)}
@@ -766,7 +794,7 @@ export const ClipsView = () => {
                 </button>
               </div>
 
-              <div className="absolute bottom-[max(22px,env(safe-area-inset-bottom))] left-4 z-30 max-w-[calc(100%-100px)] pb-1">
+              <div className="absolute bottom-[max(22px,env(safe-area-inset-bottom))] left-4 z-30 max-w-[calc(100%-104px)] pb-1">
                 <div className="flex items-center gap-2">
                   {clip.profile.avatarUrl ? (
                     <img src={clip.profile.avatarUrl} alt="" className="hktube-clip-avatar size-10 rounded-full border border-white/80 object-cover" />
@@ -823,12 +851,9 @@ export const ClipsView = () => {
 
               <button
                 type="button"
-                onDoubleClick={() => triggerHeart(clip)}
-                onClick={() => {
-                  if (isActive) togglePlayback();
-                }}
-                className="absolute inset-x-[78px] inset-y-[18%] z-10 cursor-pointer"
-                aria-label="Play or pause Clip"
+                onClick={() => handleMediaTap(clip)}
+                className="absolute inset-x-[82px] inset-y-[16%] z-10 cursor-pointer"
+                aria-label="Play, pause, or double-tap to like this Clip"
               />
             </section>
           );
@@ -1032,7 +1057,7 @@ function ActionButton({
     >
       <motion.span
         whileTap={{ scale: 0.82 }}
-        className={`grid size-12 place-items-center rounded-full bg-black/20 backdrop-blur-[2px] transition-colors ${active ? "text-red-500" : "text-white"}`}
+        className={`grid size-[58px] place-items-center transition-transform ${active ? "text-white" : "text-white"}`}
       >
         {children}
       </motion.span>
