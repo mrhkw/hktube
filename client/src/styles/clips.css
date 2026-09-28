@@ -47,8 +47,8 @@ body.hktube-clips-document [aria-label="HkTube loading"] {
 
 .hk-clips-item {
   position: relative;
-  width: min(100vw, calc(100dvh * 9 / 16));
-  min-width: min(100vw, calc(100dvh * 9 / 16));
+  width: 100%;
+  min-width: 100%;
   height: 100dvh;
   min-height: 100dvh;
   margin: 0 auto;
@@ -171,8 +171,8 @@ body.hktube-clips-document [aria-label="HkTube loading"] {
 
 .hk-clips-actions {
   position: absolute;
-  top: 42%;
-  right: 7px;
+  right: 12px;
+  bottom: max(80px, calc(72px + env(safe-area-inset-bottom)));
   z-index: 20;
   display: flex;
   width: 70px;
@@ -249,6 +249,25 @@ body.hktube-clips-document [aria-label="HkTube loading"] {
 
 .hk-clips-more {
   min-height: 45px;
+}
+
+.hk-clips-vinyl {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  margin-top: 2px;
+  border: 2px solid rgb(255 255 255 / 88%);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 68%);
+  color: #fff;
+  box-shadow: 0 5px 18px rgb(0 0 0 / 45%);
+  animation: hk-clips-vinyl-spin 4.5s linear infinite;
+}
+
+@keyframes hk-clips-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .hk-clips-media-tap {
@@ -691,8 +710,8 @@ body.hktube-clips-document [aria-label="HkTube loading"] {
   }
 
   .hk-clips-actions {
-    top: 43%;
     right: 3px;
+    bottom: max(76px, calc(68px + env(safe-area-inset-bottom)));
     gap: 8px;
   }
 
@@ -767,4 +786,5 @@ body.hktube-clips-document [aria-label="HkTube loading"] {
 @media (prefers-reduced-motion: reduce) {
   .hk-clips-feed { scroll-behavior: auto; }
   .hk-clips-creator-avatar img { animation: none; }
+  .hk-clips-vinyl { animation: none; }
 }
