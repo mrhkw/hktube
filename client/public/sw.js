@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v13-clips-fix-2026-09-27";
+const CACHE_NAME = "hktube-shell-v14-clips-reference-v2-2026-09-28";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
@@ -24,8 +24,6 @@ async function fetchNetworkFirst(request, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    // no-store is intentional: the Service Worker must never pin a deployment's
-    // module graph. Vite/Vercel still provide normal immutable browser caching.
     return await fetch(new Request(request, { cache: "no-store", signal: controller.signal }));
   } finally {
     clearTimeout(timer);
@@ -37,9 +35,7 @@ async function cacheResponse(request, response) {
   try {
     const cache = await caches.open(CACHE_NAME);
     await cache.put(request, response.clone());
-  } catch {
-    // Offline caching is an optimization; never block a successful response.
-  }
+  } catch {}
 }
 
 self.addEventListener("fetch", event => {
@@ -67,8 +63,6 @@ self.addEventListener("fetch", event => {
 
     if (!isStaticAsset) return fetch(event.request);
 
-    // Network-first is the important invariant. A cached module is used only
-    // when the device is offline, never while a new deployment is available.
     try {
       const response = await fetchNetworkFirst(event.request);
       event.waitUntil(cacheResponse(event.request, response));
