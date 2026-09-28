@@ -657,7 +657,7 @@ export const ClipsView = () => {
                 <img
                   src={clip.thumbnailUrl}
                   alt={clip.title}
-                  className="absolute inset-0 size-full object-cover object-center"
+                  className="hktube-clip-media absolute inset-0 size-full object-cover object-center"
                   draggable={false}
                 />
               ) : (
