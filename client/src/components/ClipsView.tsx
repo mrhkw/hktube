@@ -14,6 +14,8 @@ import "@/styles/clips.css";
 type ClipProfile={username:string;displayName:string;avatarUrl:string|null;verified:boolean;handle:string};
 type ClipItem=RankedVideo&{profile:ClipProfile};
 type CommentRow={id:string;body:string;created_at:string;profiles?:{username?:string|null;avatar_url?:string|null}|null};
+type ChannelRow={id:string;handle?:string|null;name?:string|null;avatar_url?:string|null;verification_status?:string|null};
+type ProfileRow={id:string;username?:string|null;display_name?:string|null;avatar_url?:string|null;is_verified?:boolean|null};
 type Sheet="comments"|"share"|"more"|null;
 const FALLBACK_PROFILE:ClipProfile={username:"hktube_creator",displayName:"HkTube Creator",avatarUrl:null,verified:true,handle:"hktube_creator"};
 
@@ -21,14 +23,57 @@ const formatCount=(v:number)=>v>=1_000_000?`${(v/1_000_000).toFixed(v>=10_000_00
 const formatMusic=(v:ClipItem)=>`${(v.tags.find(t=>/sound|music|audio/i.test(t))||v.category||"Original Sound").trim()} · HkTube Creator`;
 
 async function loadProfiles(videos:RankedVideo[]):Promise<ClipItem[]>{
-  const channelIds=[...new Set(videos.map(v=>v.channelId).filter(Boolean))], creatorIds=[...new Set(videos.map(v=>v.creatorId).filter(Boolean))];
+  const channelIds=[...new Set(videos.map(v=>v.channelId).filter(Boolean))];
+  const creatorIds=[...new Set(videos.map(v=>v.creatorId).filter(Boolean))];
+
   const [channelsResult,profilesResult]=await Promise.all([
-    channelIds.length?supabase.from("channels").select("id,handle,name,avatar_url,verification_status").in("id",channelIds):Promise.resolve({data:[],error:null}),
-    creatorIds.length?supabase.from("profiles").select("id,username,display_name,avatar_url,is_verified").in("id",creatorIds):Promise.resolve({data:[],error:null})
+    channelIds.length
+      ? supabase.from("channels").select("id,handle,name,avatar_url,verification_status").in("id",channelIds)
+      : Promise.resolve({data:[] as ChannelRow[],error:null}),
+    creatorIds.length
+      ? supabase.from("profiles").select("id,username,display_name,avatar_url,is_verified").in("id",creatorIds)
+      : Promise.resolve({data:[] as ProfileRow[],error:null}),
   ]);
-  const channels=new Map((channelsResult.data??[]).map(r=>[String(r.id),{handle:String(r.handle??""),name:String(r.name??""),avatar:typeof r.avatar_url==="string"?r.avatar_url:null,verified:String(r.verification_status??"")==="verified"}]));
-  const profiles=new Map((profilesResult.data??[]).map(r=>[String(r.id),{username:String(r.username??""),displayName:String(r.display_name??r.username??FALLBACK_PROFILE.displayName),avatar:typeof r.avatar_url==="string"?r.avatar_url:null,verified:Boolean(r.is_verified)}]));
-  return videos.map(v=>{const c=channels.get(v.channelId),p=profiles.get(v.creatorId),displayName=(c?.name||p?.displayName||FALLBACK_PROFILE.displayName).trim()||FALLBACK_PROFILE.displayName,username=p?.username||c?.handle||FALLBACK_PROFILE.username;return{...v,profile:{username,displayName,avatarUrl:c?.avatar||p?.avatar||null,verified:Boolean(c?.verified||p?.verified),handle:c?.handle||username}}});
+
+  const channels=new Map(
+    ((channelsResult.data??[]) as ChannelRow[]).map(r=>[
+      String(r.id),
+      {
+        handle:String(r.handle??""),
+        name:String(r.name??""),
+        avatar:typeof r.avatar_url==="string"?r.avatar_url:null,
+        verified:String(r.verification_status??"")==="verified",
+      },
+    ]),
+  );
+  const profiles=new Map(
+    ((profilesResult.data??[]) as ProfileRow[]).map(r=>[
+      String(r.id),
+      {
+        username:String(r.username??""),
+        displayName:String(r.display_name??r.username??FALLBACK_PROFILE.displayName),
+        avatar:typeof r.avatar_url==="string"?r.avatar_url:null,
+        verified:Boolean(r.is_verified),
+      },
+    ]),
+  );
+
+  return videos.map(v=>{
+    const channel=channels.get(v.channelId);
+    const profile=profiles.get(v.creatorId);
+    const displayName=(channel?.name||profile?.displayName||FALLBACK_PROFILE.displayName).trim()||FALLBACK_PROFILE.displayName;
+    const username=profile?.username||channel?.handle||FALLBACK_PROFILE.username;
+    return {
+      ...v,
+      profile:{
+        username,
+        displayName,
+        avatarUrl:channel?.avatar||profile?.avatar||null,
+        verified:Boolean(channel?.verified||profile?.verified),
+        handle:channel?.handle||username,
+      },
+    };
+  });
 }
 
 function ActionButton({icon,label,active,onClick}:{icon:ReactNode;label:string;active?:boolean;onClick:()=>void}){
