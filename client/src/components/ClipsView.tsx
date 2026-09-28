@@ -1,162 +1,282 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { useLocation } from "wouter";
-import { BadgeCheck, Bookmark, Check, Copy, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Music2, Play, Search, Send, Share2, Star, X } from "lucide-react";
-import { toast } from "sonner";
-import { startLogin } from "@/const";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
-import { addVideoComment, getVideoEngagement, listVideoComments, recordVideoView, reportVideo, toggleChannelSubscription, toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
-import { rankPublicVideos, recordDiscoveryEvent, setRecommendationFeedback, type RankedVideo } from "@/lib/supabaseDiscovery";
-import { listPublicSupabaseShorts } from "@/lib/supabaseVideos";
-import "@/styles/clips.css";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  BadgeCheck,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+  Music2,
+  Search,
+  Send,
+  Star,
+} from "lucide-react";
 
-type ClipProfile={username:string;displayName:string;avatarUrl:string|null;verified:boolean;handle:string};
-type ClipItem=RankedVideo&{profile:ClipProfile};
-type CommentRow={id:string;body:string;created_at:string;profiles?:{username?:string|null;avatar_url?:string|null}|null};
-type ChannelRow={id:string;handle?:string|null;name?:string|null;avatar_url?:string|null;verification_status?:string|null};
-type ProfileRow={id:string;username?:string|null;display_name?:string|null;avatar_url?:string|null;is_verified?:boolean|null};
-type Sheet="comments"|"share"|"more"|null;
-const FALLBACK_PROFILE:ClipProfile={username:"hktube_creator",displayName:"HkTube Creator",avatarUrl:null,verified:true,handle:"hktube_creator"};
-
-const formatCount=(v:number)=>v>=1_000_000?`${(v/1_000_000).toFixed(v>=10_000_000?0:1)}M`:v>=1_000?`${(v/1_000).toFixed(v>=10_000?0:1)}K`:String(Math.max(0,Math.floor(v)));
-const formatMusic=(v:ClipItem)=>`${(v.tags.find(t=>/sound|music|audio/i.test(t))||v.category||"Original Sound").trim()} · HkTube Creator`;
-
-async function loadProfiles(videos:RankedVideo[]):Promise<ClipItem[]>{
-  const channelIds=[...new Set(videos.map(v=>v.channelId).filter(Boolean))];
-  const creatorIds=[...new Set(videos.map(v=>v.creatorId).filter(Boolean))];
-
-  const [channelsResult,profilesResult]=await Promise.all([
-    channelIds.length
-      ? supabase.from("channels").select("id,handle,name,avatar_url,verification_status").in("id",channelIds)
-      : Promise.resolve({data:[] as ChannelRow[],error:null}),
-    creatorIds.length
-      ? supabase.from("profiles").select("id,username,display_name,avatar_url,is_verified").in("id",creatorIds)
-      : Promise.resolve({data:[] as ProfileRow[],error:null}),
-  ]);
-
-  const channels=new Map(
-    ((channelsResult.data??[]) as ChannelRow[]).map(r=>[
-      String(r.id),
-      {
-        handle:String(r.handle??""),
-        name:String(r.name??""),
-        avatar:typeof r.avatar_url==="string"?r.avatar_url:null,
-        verified:String(r.verification_status??"")==="verified",
-      },
-    ]),
-  );
-  const profiles=new Map(
-    ((profilesResult.data??[]) as ProfileRow[]).map(r=>[
-      String(r.id),
-      {
-        username:String(r.username??""),
-        displayName:String(r.display_name??r.username??FALLBACK_PROFILE.displayName),
-        avatar:typeof r.avatar_url==="string"?r.avatar_url:null,
-        verified:Boolean(r.is_verified),
-      },
-    ]),
-  );
-
-  return videos.map(v=>{
-    const channel=channels.get(v.channelId);
-    const profile=profiles.get(v.creatorId);
-    const displayName=(channel?.name||profile?.displayName||FALLBACK_PROFILE.displayName).trim()||FALLBACK_PROFILE.displayName;
-    const username=profile?.username||channel?.handle||FALLBACK_PROFILE.username;
-    return {
-      ...v,
-      profile:{
-        username,
-        displayName,
-        avatarUrl:channel?.avatar||profile?.avatar||null,
-        verified:Boolean(channel?.verified||profile?.verified),
-        handle:channel?.handle||username,
-      },
-    };
-  });
-}
-
-function ActionButton({icon,label,active,onClick}:{icon:ReactNode;label:string;active?:boolean;onClick:()=>void}){
-  return <button type="button" className={`hk-clips-action${active?" is-active":""}`} onClick={onClick} aria-label={label}><span className="hk-clips-action-icon">{icon}</span><span className="hk-clips-action-label">{label}</span></button>;
-}
-
-export const ClipsView=()=>{
-  const {user}=useAuth(); const [,navigate]=useLocation();
-  const [mode,setMode]=useState<"following"|"for-you">("for-you"),[clips,setClips]=useState<ClipItem[]>([]),[loading,setLoading]=useState(true),[activeIndex,setActiveIndex]=useState(0),[playing,setPlaying]=useState(true),[sheet,setSheet]=useState<Sheet>(null),[searchOpen,setSearchOpen]=useState(false),[searchValue,setSearchValue]=useState(""),[liked,setLiked]=useState<Record<string,boolean>>({}),[likeCounts,setLikeCounts]=useState<Record<string,number>>({}),[saved,setSaved]=useState<Record<string,boolean>>({}),[followed,setFollowed]=useState<Record<string,boolean>>({}),[comments,setComments]=useState<Record<string,CommentRow[]>>({}),[commentCounts,setCommentCounts]=useState<Record<string,number|null>>({}),[saveCounts,setSaveCounts]=useState<Record<string,number|null>>({}),[shareCounts,setShareCounts]=useState<Record<string,number|null>>({}),[commentText,setCommentText]=useState(""),[heartBurst,setHeartBurst]=useState(false),[moreClip,setMoreClip]=useState<ClipItem|null>(null),[busy,setBusy]=useState<string|null>(null);
-  const feedRef=useRef<HTMLDivElement|null>(null),sectionRefs=useRef<Record<string,HTMLElement|null>>({}),videoRefs=useRef<Record<string,HTMLVideoElement|null>>({}),progress=useRef<Record<string,number>>({}),tap=useRef<{at:number;timer:number|null;x:number;y:number;moved:boolean}>({at:0,timer:null,x:0,y:0,moved:false});
-  const activeClip=clips[activeIndex]??null;
-
-  useEffect(()=>{document.body.classList.add("hktube-clips-document");let meta=document.head.querySelector<HTMLMetaElement>('meta[name="hktube-clips-build"]');if(!meta){meta=document.createElement("meta");meta.name="hktube-clips-build";document.head.appendChild(meta)}meta.content="clips-reference-v2-2026-09-28";console.info("[Clips] reference-v2 player loaded");return()=>{document.body.classList.remove("hktube-clips-document");meta?.remove()}},[]);
-
-  const loadFeed=useCallback(async()=>{setLoading(true);try{let ranked=await rankPublicVideos({shorts:true,limit:50,userId:user?.id??null});if(!ranked.length)ranked=(await listPublicSupabaseShorts(50)).map(v=>({...v,reason:"fresh" as const,score:0}));if(mode==="following"){if(!user?.id)ranked=[];else{const{data,error}=await supabase.from("subscriptions").select("channel_id").eq("subscriber_id",user.id);if(error)throw error;const ids=new Set((data??[]).map(r=>String(r.channel_id)));ranked=ranked.filter(v=>ids.has(v.channelId))}}setClips(await loadProfiles(ranked));setActiveIndex(0);setPlaying(true);requestAnimationFrame(()=>feedRef.current?.scrollTo({top:0,behavior:"auto"}))}catch(e){setClips([]);toast.error(e instanceof Error?e.message:"Could not load Clips.")}finally{setLoading(false)}},[mode,user?.id]);
-  useEffect(()=>{void loadFeed()},[loadFeed]);
-
-  const loadCounts=useCallback(async(v:ClipItem)=>{const[c,s,h]=await Promise.all([
-    supabase.from("comments").select("id",{count:"exact",head:true}).eq("video_id",v.id).eq("moderation_status","approved"),
-    supabase.from("saves").select("video_id",{count:"exact",head:true}).eq("video_id",v.id),
-    supabase.from("content_events").select("id",{count:"exact",head:true}).eq("object_id",v.id).eq("object_type","short").eq("event_type","share")
-  ]);setCommentCounts(x=>({...x,[v.id]:c.error?x[v.id]??null:c.count??0}));setSaveCounts(x=>({...x,[v.id]:s.error?x[v.id]??null:s.count??0}));setShareCounts(x=>({...x,[v.id]:h.error?x[v.id]??null:h.count??0}))},[]);
-  useEffect(()=>{if(!activeClip)return;let live=true;void getVideoEngagement(activeClip.id,activeClip.channelId).then(s=>{if(!live)return;setLiked(x=>({...x,[activeClip.id]:s.liked}));setLikeCounts(x=>({...x,[activeClip.id]:s.likeCount}));setSaved(x=>({...x,[activeClip.id]:s.saved}));setFollowed(x=>({...x,[activeClip.channelId]:s.subscribed}))}).catch(()=>undefined);void loadCounts(activeClip);return()=>{live=false}},[activeClip?.id,activeClip?.channelId,loadCounts]);
-
-  useEffect(()=>{const root=feedRef.current;if(!root||!clips.length)return;const observer=new IntersectionObserver(entries=>{const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];if(!visible)return;const id=visible.target.getAttribute("data-clip-id");const i=clips.findIndex(v=>v.id===id);if(i>=0)setActiveIndex(i)}, {root,threshold:[.7,.85,.95]});Object.values(sectionRefs.current).forEach(s=>s&&observer.observe(s));return()=>observer.disconnect()},[clips]);
-
-  useEffect(()=>{Object.entries(videoRefs.current).forEach(([id,v])=>{if(!v)return;if(id===activeClip?.id){v.currentTime=0;v.muted=true;void v.play().then(()=>setPlaying(true)).catch(()=>setPlaying(false))}else v.pause()})},[activeClip?.id]);
-
-  const togglePlayback=useCallback(()=>{if(!activeClip)return;const v=videoRefs.current[activeClip.id];if(!v)return;if(v.paused)void v.play().then(()=>setPlaying(true)).catch(()=>undefined);else{v.pause();setPlaying(false)}},[activeClip]);
-  const likeClip=useCallback(async(v:ClipItem)=>{if(!user){startLogin();return}if(busy)return;setBusy(`like:${v.id}`);try{const r=await toggleVideoLike(v.id);setLiked(x=>({...x,[v.id]:r.liked}));setLikeCounts(x=>({...x,[v.id]:Number(r.count)}));void recordDiscoveryEvent({eventType:r.liked?"like":"unlike",objectType:"short",objectId:v.id}).catch(()=>undefined)}catch(e){toast.error(e instanceof Error?e.message:"Could not update the like.")}finally{setBusy(null)}},[busy,user]);
-  const saveClip=useCallback(async(v:ClipItem)=>{if(!user){startLogin();return}if(busy)return;setBusy(`save:${v.id}`);try{const n=await toggleVideoSave(v.id);setSaved(x=>({...x,[v.id]:n}));setSaveCounts(x=>({...x,[v.id]:(x[v.id]==null?x[v.id]:Math.max(0,Number(x[v.id])+(n?1:-1)))}));void recordDiscoveryEvent({eventType:n?"save":"unsave",objectType:"short",objectId:v.id}).catch(()=>undefined)}catch(e){toast.error(e instanceof Error?e.message:"Could not save this Clip.")}finally{setBusy(null)}},[busy,user]);
-  const follow=useCallback(async(v:ClipItem)=>{if(!user){startLogin();return}if(busy)return;setBusy(`follow:${v.channelId}`);try{const r=await toggleChannelSubscription(v.channelId);setFollowed(x=>({...x,[v.channelId]:r.subscribed}));void recordDiscoveryEvent({eventType:r.subscribed?"follow":"unfollow",objectType:"channel",objectId:v.channelId}).catch(()=>undefined)}catch(e){toast.error(e instanceof Error?e.message:"Could not update follow.")}finally{setBusy(null)}},[busy,user]);
-  const share=useCallback(async(v:ClipItem)=>{const url=`${window.location.origin}/clips?clip=${encodeURIComponent(v.id)}`;try{if(navigator.share)await navigator.share({title:v.title,text:v.description||v.title,url});else if(navigator.clipboard){await navigator.clipboard.writeText(url);toast.success("Clip link copied.")}else{toast.error("Sharing is unavailable in this browser.");return}void recordDiscoveryEvent({eventType:"share",objectType:"short",objectId:v.id}).catch(()=>undefined);setSheet(null)}catch{}},[]);
-  const openComments=useCallback(async(v:ClipItem)=>{setSheet("comments");if(comments[v.id])return;try{const rows=await listVideoComments(v.id) as CommentRow[];setComments(x=>({...x,[v.id]:rows}));setCommentCounts(x=>({...x,[v.id]:rows.length}))}catch(e){toast.error(e instanceof Error?e.message:"Could not load comments.")}},[comments]);
-  const postComment=useCallback(async(v:ClipItem)=>{if(!user){startLogin();return}const text=commentText.trim();if(!text||busy)return;setBusy(`comment:${v.id}`);try{await addVideoComment(v.id,text);const rows=await listVideoComments(v.id) as CommentRow[];setComments(x=>({...x,[v.id]:rows}));setCommentCounts(x=>({...x,[v.id]:rows.length}));setCommentText("");void recordDiscoveryEvent({eventType:"comment",objectType:"short",objectId:v.id}).catch(()=>undefined)}catch(e){toast.error(e instanceof Error?e.message:"Could not post the comment.")}finally{setBusy(null)}},[busy,commentText,user]);
-  const copyLink=useCallback(async(v:ClipItem)=>{try{await navigator.clipboard.writeText(`${window.location.origin}/clips?clip=${encodeURIComponent(v.id)}`);toast.success("Link copied.");setSheet(null)}catch{toast.error("Could not copy the link.")}},[]);
-  const report=useCallback(async(reason:string)=>{if(!moreClip)return;if(!user){startLogin();return}setBusy(`report:${moreClip.id}`);try{await reportVideo(moreClip.id,reason,"Reported from HkTube Clips.");toast.success("Report sent to moderation.");setSheet(null);setMoreClip(null)}catch(e){toast.error(e instanceof Error?e.message:"Could not report this Clip.")}finally{setBusy(null)}},[moreClip,user]);
-  const notInterested=useCallback(async()=>{if(!moreClip)return;if(!user){startLogin();return}try{await setRecommendationFeedback(moreClip.id,"not_interested",moreClip.category||moreClip.tags[0]||null);setClips(x=>x.filter(v=>v.id!==moreClip.id));setMoreClip(null);setSheet(null)}catch(e){toast.error(e instanceof Error?e.message:"Could not update your feed.")}},[moreClip,user]);
-
-  const handleTapStart=useCallback((v:ClipItem,x:number,y:number)=>{if(tap.current.timer!==null)window.clearTimeout(tap.current.timer);tap.current={at:Date.now(),timer:null,x,y,moved:false}},[]);
-  const handleTapMove=useCallback((x:number,y:number)=>{if(Math.abs(x-tap.current.x)>12||Math.abs(y-tap.current.y)>12)tap.current.moved=true},[]);
-  const handleTapEnd=useCallback((v:ClipItem)=>{if(tap.current.moved){tap.current.at=0;tap.current.timer=null;return}const now=Date.now();const previous=tap.current.at;if(previous&&now-previous<=320){tap.current.at=0;if(tap.current.timer!==null)window.clearTimeout(tap.current.timer);tap.current.timer=null;setHeartBurst(true);window.setTimeout(()=>setHeartBurst(false),720);if(!liked[v.id])void likeClip(v);return}tap.current.at=now;if(tap.current.timer!==null)window.clearTimeout(tap.current.timer);tap.current.timer=window.setTimeout(()=>{tap.current={at:0,timer:null,x:0,y:0,moved:false};if(activeClip?.id===v.id)togglePlayback()},320)},[activeClip?.id,likeClip,liked,togglePlayback]);
-  useEffect(()=>()=>{if(tap.current.timer!==null)window.clearTimeout(tap.current.timer)},[]);
-  const searchSubmit=()=>{const q=searchValue.trim().slice(0,100);if(q){navigate(`/search?q=${encodeURIComponent(q)}`);setSearchOpen(false)}};
-  const tabs=useMemo(()=>[{key:"following" as const,label:"Following"},{key:"for-you" as const,label:"For You"}],[]);
-  const activeComments=activeClip?comments[activeClip.id]??[]:[];
-
-  if(loading)return <main className="hk-clips-root"><div className="hk-clips-empty"><Loader2 className="size-7 animate-spin"/><span>Loading Clips</span></div></main>;
-  if(!clips.length)return <main className="hk-clips-root"><div className="hk-clips-empty"><div className="grid size-14 place-items-center rounded-full bg-white/10"><Play className="size-6"/></div><h1>No Clips yet</h1><p>{mode==="following"?"You are not following any creators with public Clips yet.":"Publish a vertical Clip and it will appear here."}</p><div className="flex gap-2"><button type="button" onClick={()=>setMode("for-you")} className="hk-clips-light-button">For You</button><button type="button" onClick={()=>navigate("/clips/create")} className="hk-clips-dark-button">Create Clip</button></div></div></main>;
-
-  return <main className="hk-clips-root" aria-label="HkTube Clips">
-    <div ref={feedRef} className="hk-clips-feed" aria-label="Vertical Clips feed">
-      {clips.map((v,index)=>{const active=index===activeIndex,isLiked=Boolean(liked[v.id]),isSaved=Boolean(saved[v.id]),isFollowed=Boolean(followed[v.channelId]),likes=likeCounts[v.id]??v.likesCount,cc=commentCounts[v.id],sc=saveCounts[v.id],sh=shareCounts[v.id];return <section key={v.id} ref={el=>{sectionRefs.current[v.id]=el}} data-clip-id={v.id} className="hk-clips-item">
-        <div className="hk-clips-player">
-          {v.videoUrl?<video ref={el=>{videoRefs.current[v.id]=el}} src={v.videoUrl} poster={v.thumbnailUrl||undefined} playsInline muted loop preload={active?"auto":"metadata"} className="hk-clips-video" onLoadedData={e=>{if(active)void e.currentTarget.play().catch(()=>setPlaying(false))}} onPlay={()=>{if(active){setPlaying(true);void recordDiscoveryEvent({eventType:"play_start",objectType:"short",objectId:v.id}).catch(()=>undefined)}}} onPause={()=>{if(active)setPlaying(false)}} onTimeUpdate={e=>{if(!active)return;const sec=Math.floor(e.currentTarget.currentTime),prev=progress.current[v.id]??-30;if(sec>0&&sec-prev>=15){progress.current[v.id]=sec;void recordVideoView(v.id,sec).catch(()=>undefined);void recordDiscoveryEvent({eventType:sec/Math.max(v.durationSeconds,1)>=.9?"watch_90_percent":"watch_progress",objectType:"short",objectId:v.id,watchSeconds:sec,positionSeconds:sec}).catch(()=>undefined)}}} onEnded={()=>{if(active)void recordDiscoveryEvent({eventType:"complete",objectType:"short",objectId:v.id}).catch(()=>undefined)}}/>:v.thumbnailUrl?<img src={v.thumbnailUrl} alt={v.title} className="hk-clips-video" draggable={false}/>:<div className="hk-clips-video hk-clips-media-fallback"><Play className="size-12"/><span>Clip media unavailable</span></div>}
-          <div className="hk-clips-top-shade"/><div className="hk-clips-bottom-shade"/>
-          <div className="hk-clips-topbar"><div className="hk-clips-tabs">{tabs.map(t=><button key={t.key} type="button" className={mode===t.key?"is-selected":""} onClick={()=>setMode(t.key)}>{t.label}</button>)}</div><button type="button" className="hk-clips-search" onClick={()=>{setSearchOpen(true);window.setTimeout(()=>document.getElementById("clips-search-input")?.focus(),40)}} aria-label="Search HkTube"><Search className="size-8"/></button></div>
-          <div className="hk-clips-actions">
-            <ActionButton label={formatCount(likes)} active={isLiked} onClick={()=>void likeClip(v)} icon={<Heart className={isLiked?"fill-current":""} size={34} strokeWidth={2.1}/>}/>
-            <ActionButton label={cc==null?"…":formatCount(cc)} onClick={()=>void openComments(v)} icon={<MessageCircle size={34} strokeWidth={2.1}/>}/>
-            <ActionButton label={sc==null?"…":formatCount(sc)} active={isSaved} onClick={()=>void saveClip(v)} icon={<Star className={isSaved?"fill-current":""} size={34} strokeWidth={2.1}/>}/>
-            <ActionButton label={sh==null?"…":formatCount(sh)} onClick={()=>setSheet("share")} icon={<Send size={34} strokeWidth={1.8} fill="currentColor"/>}/>
-            <button type="button" className="hk-clips-more" onClick={()=>{setMoreClip(v);setSheet("more")}} aria-label="More Clip options"><MoreHorizontal size={36}/></button><button type="button" className="hk-clips-vinyl" onClick={()=>toast.info("Original sound")} aria-label="Original sound"><Music2 size={24}/></button>
-          </div>
-          <button type="button" className="hk-clips-media-tap" onPointerDown={e=>{if(e.pointerType==="mouse"&&e.button!==0)return;handleTapStart(v,e.clientX,e.clientY)}} onPointerMove={e=>handleTapMove(e.clientX,e.clientY)} onPointerCancel={()=>{tap.current.at=0;tap.current.moved=true;if(tap.current.timer!==null)window.clearTimeout(tap.current.timer)}} onPointerUp={e=>{if(e.pointerType==="mouse"&&e.button!==0)return;handleTapEnd(v)}} aria-label="Tap to pause or play; double tap to like"/>
-          {active&&!playing?<motion.button type="button" className="hk-clips-play" initial={{opacity:0,scale:.8}} animate={{opacity:1,scale:1}} onClick={togglePlayback} aria-label="Play Clip"><Play className="ml-1 size-7 fill-current"/></motion.button>:null}
-          <AnimatePresence>{active&&heartBurst?<motion.div className="hk-clips-heart-burst" initial={{opacity:0,scale:.2}} animate={{opacity:[0,1,1,0],scale:[.2,1.15,1,.85]}} transition={{duration:.72,ease:"easeOut"}} aria-hidden="true"><Heart className="size-28 fill-white text-white drop-shadow-2xl"/></motion.div>:null}</AnimatePresence>
-          <button type="button" className="hk-clips-creator-avatar" onClick={()=>navigate(`/channel/${encodeURIComponent(v.profile.handle)}`)} aria-label={`Open ${v.profile.displayName}`}>{v.thumbnailUrl?<img src={v.thumbnailUrl} alt=""/>:v.profile.avatarUrl?<img src={v.profile.avatarUrl} alt=""/>:<span>HK</span>}</button>
-          <div className="hk-clips-info">
-            <div className="hk-clips-author-row"><button type="button" className="hk-clips-author" onClick={()=>navigate(`/channel/${encodeURIComponent(v.profile.handle)}`)}>{v.profile.avatarUrl?<img src={v.profile.avatarUrl} alt=""/>:<span className="hk-clips-hk-avatar">HK</span>}<span className="hk-clips-author-name">{v.profile.displayName}{v.profile.verified?<BadgeCheck className="size-5 fill-sky-500 text-white"/>:null}</span></button><button type="button" className={`hk-clips-follow${isFollowed?" is-following":""}`} onClick={()=>void follow(v)}>{isFollowed?<Check className="size-4"/>:null}{isFollowed?"Following":"Follow"}</button></div>
-            <button type="button" className="hk-clips-caption" onClick={()=>navigate(`/watch/${encodeURIComponent(v.id)}`)}>{v.description||v.title}</button>
-            {v.tags.length?<div className="hk-clips-tags">{v.tags.slice(0,4).map(t=><span key={t}>#{String(t).replace(/^#/,"")}</span>)}</div>:null}
-            <div className="hk-clips-sound-row"><button type="button" className="hk-clips-sound" onClick={()=>toast.info("This Clip uses its own original sound.")}><Music2 className="size-5 shrink-0"/><span>{formatMusic(v)}</span></button><button type="button" className="hk-clips-use-sound" onClick={()=>navigate(`/clips/create?sourceClip=${encodeURIComponent(v.id)}`)}><Music2 className="size-4"/>Use sound</button></div>
-          </div>
-        </div>
-      </section>})}
-    </div>
-    <AnimatePresence>{searchOpen?<motion.div className="hk-clips-search-layer" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><form className="hk-clips-search-box" onSubmit={e=>{e.preventDefault();searchSubmit()}}><Search className="size-5 text-white/70"/><input id="clips-search-input" value={searchValue} maxLength={100} onChange={e=>setSearchValue(e.target.value)} placeholder="Search HkTube" autoComplete="off"/><button type="button" onClick={()=>setSearchOpen(false)} aria-label="Close search"><X className="size-5"/></button></form></motion.div>:null}</AnimatePresence>
-    <AnimatePresence>
-      {sheet?<button type="button" className="hk-clips-sheet-backdrop" onClick={()=>{setSheet(null);setMoreClip(null)}} aria-label="Close overlay"/>:null}
-      {sheet==="comments"&&activeClip?<motion.section className="hk-clips-sheet" initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}}><div className="hk-clips-sheet-header"><strong>Comments</strong><button type="button" onClick={()=>setSheet(null)} aria-label="Close comments"><X className="size-5"/></button></div><div className="hk-clips-comment-list">{activeComments.length?activeComments.map(c=><article key={c.id} className="hk-clips-comment"><div className="hk-clips-comment-avatar">{c.profiles?.avatar_url?<img src={c.profiles.avatar_url} alt=""/>:"HK"}</div><div><div className="hk-clips-comment-user">@{c.profiles?.username||"user"}</div><div className="hk-clips-comment-body">{c.body}</div></div></article>):<div className="hk-clips-no-comments"><MessageCircle className="size-8"/><p>No comments yet.</p></div>}</div><form className="hk-clips-comment-form" onSubmit={e=>{e.preventDefault();void postComment(activeClip)}}><input value={commentText} maxLength={2000} onChange={e=>setCommentText(e.target.value)} placeholder="Add a comment..."/><button type="submit" disabled={!commentText.trim()||Boolean(busy)}><Send className="size-4 fill-current"/></button></form></motion.section>:null}
-      {sheet==="share"&&activeClip?<motion.section className="hk-clips-share-sheet" initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}}><div className="hk-clips-sheet-header"><strong>Share Clip</strong><button type="button" onClick={()=>setSheet(null)} aria-label="Close share sheet"><X className="size-5"/></button></div><div className="hk-clips-share-grid"><button type="button" onClick={()=>void share(activeClip)}><Share2 className="size-5"/>Share</button><button type="button" onClick={()=>void copyLink(activeClip)}><Copy className="size-5"/>Copy link</button></div></motion.section>:null}
-      {sheet==="more"&&moreClip?<motion.section className="hk-clips-share-sheet" initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}}><div className="hk-clips-sheet-header"><strong>Clip options</strong><button type="button" onClick={()=>{setSheet(null);setMoreClip(null)}} aria-label="Close options"><X className="size-5"/></button></div><div className="hk-clips-more-list"><button type="button" onClick={()=>void notInterested()}><Bookmark className="size-5"/>Not interested</button><button type="button" onClick={()=>void report("policy_violation")}><Flag className="size-5"/>Report Clip</button><button type="button" onClick={()=>{setSheet(null);setMoreClip(null)}}>Cancel</button></div></motion.section>:null}
-    </AnimatePresence>
-  </main>
+export type Clip = {
+  id: string;
+  url: string;
+  avatar: string | null;
+  username: string;
+  verified?: boolean;
+  caption: string;
+  hashtags?: string[];
+  soundTitle: string;
+  likes: number;
+  comments: number;
+  favorites: number;
+  shares: number;
 };
+
+type TikTokFeedProps = {
+  videos: Clip[];
+};
+
+function Count({ value }: { value: number }) {
+  if (value >= 1_000_000) return <>{(value / 1_000_000).toFixed(1)}M</>;
+  if (value >= 1_000) return <>{(value / 1_000).toFixed(1)}K</>;
+  return <>{value}</>;
+}
+
+function Action({
+  children,
+  count,
+  label,
+  active = false,
+  onClick,
+}: {
+  children: React.ReactNode;
+  count?: number;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="flex min-w-[48px] flex-col items-center justify-center text-white transition-transform active:scale-90"
+    >
+      <span className="flex h-11 w-11 items-center justify-center">
+        {children}
+      </span>
+
+      {count !== undefined && (
+        <span className="mt-0.5 text-[12px] font-semibold leading-none drop-shadow-lg">
+          <Count value={value} />
+        </span>
+      )}
+    </button>
+  );
+}
+
+export default function ClipsView({ videos = [] }: TikTokFeedProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [following, setFollowing] = useState(false);
+  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [playing, setPlaying] = useState(true);
+
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (!visible) return;
+
+        const index = Number(visible.target.getAttribute("data-index"));
+        if (Number.isFinite(index)) {
+          setActiveIndex(index);
+        }
+      },
+      { root, threshold: [0.65, 0.8, 0.95] }
+    );
+
+    root.querySelectorAll<HTMLElement>("[data-index]").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [videos.length]);
+
+  useEffect(() => {
+    Object.entries(videoRefs.current).forEach(([id, video]) => {
+      if (!video) return;
+
+      const index = videos.findIndex((item) => item.id === id);
+
+      if (index === activeIndex) {
+        video.currentTime = 0;
+        video.muted = true;
+        void video.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      } else {
+        video.pause();
+      }
+    });
+  }, [activeIndex, videos]);
+
+  if (!videos || videos.length === 0) {
+    return (
+      <div className="flex h-[100dvh] w-full items-center justify-center bg-black text-white">
+        No Clips Available
+      </div>
+    );
+  }
+
+  return (
+    <main className="relative h-[100dvh] w-full overflow-hidden bg-black select-none">
+      <div
+        ref={containerRef}
+        className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory bg-black [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {videos.map((video, index) => {
+          const isActive = index === activeIndex;
+          const isLiked = Boolean(liked[video.id]);
+          const isSaved = Boolean(saved[video.id]);
+
+          return (
+            <section
+              key={video.id}
+              data-index={index}
+              className="relative flex h-[100dvh] w-full snap-start snap-always items-center justify-center overflow-hidden bg-black"
+            >
+              <video
+                ref={(element) => {
+                  videoRefs.current[video.id] = element;
+                }}
+                src={video.url}
+                playsInline
+                muted
+                loop
+                preload={isActive ? "auto" : "metadata"}
+                className="h-full w-full object-cover"
+                onClick={() => {
+                  const element = videoRefs.current[video.id];
+                  if (!element) return;
+                  if (element.paused) {
+                    void element.play();
+                    setPlaying(true);
+                  } else {
+                    element.pause();
+                    setPlaying(false);
+                  }
+                }}
+              />
+
+              {/* Gradients */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-black/50 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-64 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+              {/* Header Navigation */}
+              <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-4 text-white">
+                <div className="w-10" />
+                <div className="flex items-center gap-5 text-[17px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setFollowing(true)}
+                    className={following ? "border-b-2 border-white pb-1" : "text-white/65"}
+                  >
+                    Following
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFollowing(false)}
+                    className={!following ? "border-b-2 border-white pb-1" : "text-white/65"}
+                  >
+                    For You
+                  </button>
+                </div>
+                <button type="button" aria-label="Search" className="flex h-10 w-10 items-center justify-center">
+                  <Search className="h-7 w-7" strokeWidth={2} />
+                </button>
+              </header>
+
+              {/* Right Sidebar Icons */}
+              <aside className="absolute bottom-20 right-3 z-30 flex flex-col items-center gap-4 text-white">
+                <Action
+                  active={isLiked}
+                  count={video.likes}
+                  label="Like"
+                  onClick={() => setLiked((c) => ({ ...c, [video.id]: !c[video.id] }))}
+                >
+                  <Heart className={isLiked ? "h-8 w-8 fill-red-500 text-red-500" : "h-8 w-8"} strokeWidth={2} />
+                </Action>
+
+                <Action count={video.comments} label="Comments">
+                  <MessageCircle className="h-8 w-8" strokeWidth={2} />
+                </Action>
+
+                <Action
+                  active={isSaved}
+                  count={video.favorites}
+                  label="Favorite"
+                  onClick={() => setSaved((c) => ({ ...c, [video.id]: !c[video.id] }))}
+                >
+                  <Star className={isSaved ? "h-8 w-8 fill-yellow-400 text-yellow-400" : "h-8 w-8"} strokeWidth={2} />
+                </Action>
+
+                <Action count={video.shares} label="Share">
+                  <Send className="h-8 w-8" fill="currentColor" strokeWidth={1.8} />
+                </Action>
+
+                <button type="button" aria-label="More options" className="flex h-11 w-11 items-center justify-center text-white">
+                  <MoreHorizontal className="h-8 w-8" />
+                </button>
+
+                <button type="button" aria-label="Original sound" className="mt-1 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/80 bg-black/60 shadow-xl">
+                  <Music2 className="h-5 w-5 animate-spin" />
+                </button>
+              </aside>
+
+              {/* Bottom Video Details */}
+              <div className="absolute bottom-6 left-4 right-20 z-30 flex flex-col gap-2 text-white">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={video.avatar || "/hktube-icon.svg"}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full border border-white/40 object-cover"
+                  />
+                  <span className="max-w-[45vw] truncate text-sm font-bold drop-shadow-lg">{video.username}</span>
+                  {video.verified && <BadgeCheck className="h-5 w-5 shrink-0 fill-sky-500 text-white" />}
+                  <button type="button" className="ml-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-black">
+                    Follow
+                  </button>
+                </div>
+
+                <p className="max-w-[90%] text-sm leading-5 drop-shadow-lg">{video.caption}</p>
+
+                {video.hashtags && video.hashtags.length > 0 && (
+                  <div className="flex flex-wrap gap-x-2 text-sm font-semibold">
+                    {video.hashtags.map((tag) => (
+                      <span key={tag}>#{tag.replace(/^#/, "")}</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-1.5 text-xs">
+                    <Music2 className="h-4 w-4 shrink-0" />
+                    <span className="truncate drop-shadow-lg">{video.soundTitle}</span>
+                  </div>
+                  <button type="button" className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold backdrop-blur-md">
+                    Use sound
+                  </button>
+                </div>
+              </div>
+
+              {!playing && isActive && (
+                <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                  <div className="rounded-full bg-black/45 p-4 backdrop-blur-sm">
+                    <span className="block text-2xl text-white">▶</span>
+                  </div>
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </main>
+  );
+      }
