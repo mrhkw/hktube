@@ -30,3 +30,6 @@ jobs:
 
       - name: Production build
         run: pnpm build
+
+      - name: Automated tests
+        run: pnpm test
