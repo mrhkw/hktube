@@ -124,7 +124,7 @@ function CreatorAvatar({ creator }: { creator: Creator | null }) {
   );
 }
 
-export default function ClipsView({ videos = [] }: { videos?: Clip[] }) {
+export default function ClipsView({ videos = [] }: { videos?: Clip[]; [key: string]: unknown }) {
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
