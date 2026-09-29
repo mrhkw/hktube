@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { ClipsView } from "@/components/ClipsView";
+import ClipsView from "@/components/ClipsView";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import { rankPublicVideos, type RankedVideo } from "@/lib/supabaseDiscovery";
 import {
