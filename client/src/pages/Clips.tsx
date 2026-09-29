@@ -1,3 +1,3 @@
-import { ClipsView } from "@/components/ClipsView";
+import ClipsView from "@/components/ClipsView";
 
 export default ClipsView;
