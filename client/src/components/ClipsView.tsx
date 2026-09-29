@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Link } from "wouter";
+import { Link, type RouteComponentProps } from "wouter";
 import {
   BadgeCheck,
   Bookmark,
@@ -124,7 +124,7 @@ function CreatorAvatar({ creator }: { creator: Creator | null }) {
   );
 }
 
-export default function ClipsView({ videos = [] }: { videos?: Clip[]; [key: string]: unknown }) {
+type ClipsViewProps = Partial<RouteComponentProps<Record<string, string | undefined>>> & { videos?: Clip[] };\n\nexport default function ClipsView({ videos = [] }: ClipsViewProps) {
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
