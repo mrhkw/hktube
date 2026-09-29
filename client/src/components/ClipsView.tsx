@@ -124,7 +124,9 @@ function CreatorAvatar({ creator }: { creator: Creator | null }) {
   );
 }
 
-type ClipsViewProps = Partial<RouteComponentProps<Record<string, string | undefined>>> & { videos?: Clip[] };\n\nexport default function ClipsView({ videos = [] }: ClipsViewProps) {
+type ClipsViewProps = Partial<RouteComponentProps<Record<string, string | undefined>>> & { videos?: Clip[] };
+
+export default function ClipsView({ videos = [] }: ClipsViewProps) {
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
