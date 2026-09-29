@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import ClipsView from "@/components/ClipsView";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -591,6 +592,7 @@ export default function SupabaseHome() {
   const { user } = useAuth();
   const userId = user?.id;
   const [videos, setVideos] = useState<RankedVideo[]>([]);
+  const [shorts, setShorts] = useState<RankedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -601,6 +603,7 @@ export default function SupabaseHome() {
       const { loadSupabaseHomeData } = await import("@/lib/supabaseHomeData");
       const result = await loadSupabaseHomeData(userId);
       setVideos(result.videos);
+      setShorts(result.shorts);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load HkTube feed.");
     } finally {
@@ -657,6 +660,24 @@ export default function SupabaseHome() {
           </div>
         ) : videos.length ? (
           <div className="space-y-0">
+            {shorts.length > 0 && (
+              <section className="mb-8" aria-labelledby="home-clips-heading">
+                <div className="flex items-center justify-between bg-white px-4 py-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[.18em] text-violet-600">Short videos</p>
+                    <h2 id="home-clips-heading" className="mt-1 text-2xl font-black tracking-tight text-slate-950">Clips</h2>
+                  </div>
+                  <Link
+                    href="/clips"
+                    className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    View all
+                  </Link>
+                </div>
+                <ClipsView videos={shorts} />
+              </section>
+            )}
+
             {recommended.map(video => (
               <HomeVideoPost key={`home-post-${video.id}`} video={video} />
             ))}
