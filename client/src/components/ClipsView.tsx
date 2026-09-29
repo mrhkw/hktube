@@ -10,7 +10,6 @@ import {
   Loader2,
   MessageCircle,
   MoreVertical,
-  Music2,
   Pause,
   Play,
   RefreshCw,
@@ -523,11 +522,7 @@ export default function ClipsView({ videos = [] }: { videos?: Clip[] }) {
     try {
       if (navigator.share) {
         await navigator.share({ title: getClipTitle(video), url });
-        setShareFeedback(video.id);
-        window.setTimeout(
-          () => setShareFeedback(current => (current === video.id ? null : current)),
-          1800,
-        );
+        toast.success("Share sheet opened.");
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
         setShareFeedback(video.id);
@@ -809,12 +804,6 @@ export default function ClipsView({ videos = [] }: { videos?: Clip[] }) {
                       </div>
                     )}
 
-                    <div className="mt-2 flex items-center gap-2 text-xs font-semibold">
-                      <Music2 className="size-4 shrink-0" aria-hidden="true" />
-                      <span className="truncate">
-                        {video.category ? video.category : "Original video"}
-                      </span>
-                    </div>
                   </div>
 
                   <aside className="flex shrink-0 flex-col items-center gap-3 pb-1">
