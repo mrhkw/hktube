@@ -10,6 +10,8 @@ import {
   Loader2,
   MessageCircle,
   MoreVertical,
+  Music2,
+  Search,
   Pause,
   Play,
   RefreshCw,
@@ -36,6 +38,7 @@ import {
   setRecommendationFeedback,
 } from "@/lib/supabaseDiscovery";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
+import { listPublicSupabaseShorts } from "@/lib/supabaseVideos";
 
 export type Clip = RankedVideo;
 
@@ -126,8 +129,19 @@ function CreatorAvatar({ creator }: { creator: Creator | null }) {
 
 type ClipsViewProps = Partial<RouteComponentProps<Record<string, string | undefined>>> & { videos?: Clip[] };
 
-export default function ClipsView({ videos = [] }: ClipsViewProps) {
+export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
   const { user } = useAuth();
+  const standalone = suppliedVideos === undefined;
+  const [loadedVideos, setLoadedVideos] = useState<Clip[]>([]);
+  const [feedLoading, setFeedLoading] = useState(standalone);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [feedRetry, setFeedRetry] = useState(0);
+  const [feedTab, setFeedTab] = useState<"for-you" | "following">("for-you");
+  const [followingChannelIds, setFollowingChannelIds] = useState<string[]>([]);
+  const allVideos = suppliedVideos ?? loadedVideos;
+  const videos = standalone && feedTab === "following"
+    ? allVideos.filter(video => followingChannelIds.includes(video.channelId))
+    : allVideos;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const mutedRef = useRef(true);
@@ -135,6 +149,52 @@ export default function ClipsView({ videos = [] }: ClipsViewProps) {
   const tapRef = useRef<{ id: string; time: number } | null>(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!standalone) {
+      setFeedLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFeedLoading(true);
+    setFeedError(null);
+    void listPublicSupabaseShorts(50)
+      .then(items => {
+        if (cancelled) return;
+        setLoadedVideos(items.map(video => ({ ...video, reason: "fresh", score: 0 } as Clip)));
+      })
+      .catch(error => {
+        if (cancelled) return;
+        setFeedError(error instanceof Error ? error.message : "Clips could not be loaded.");
+        setLoadedVideos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFeedLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [standalone, feedRetry]);
+
+  useEffect(() => {
+    if (!standalone || !user || feedTab !== "following") return;
+    let cancelled = false;
+    void supabase
+      .from("subscriptions")
+      .select("channel_id")
+      .eq("subscriber_id", user.id)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          toast.error("Followed creators could not be loaded.");
+          return;
+        }
+        setFollowingChannelIds((data ?? []).map(row => String(row.channel_id)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [standalone, user, feedTab]);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
@@ -610,9 +670,29 @@ export default function ClipsView({ videos = [] }: ClipsViewProps) {
 
   const empty = useMemo(() => videos.length === 0, [videos.length]);
 
+  if (standalone && feedLoading) {
+    return (
+      <section className="fixed inset-0 z-40 grid place-items-center bg-black text-white" aria-label="Loading Clips">
+        <Loader2 className="size-8 animate-spin" aria-label="Loading Clips" />
+      </section>
+    );
+  }
+
+  if (standalone && feedError) {
+    return (
+      <section className="fixed inset-0 z-40 grid place-items-center bg-black px-6 text-center text-white" aria-label="Clips error">
+        <div>
+          <p className="font-bold">Clips couldn’t load</p>
+          <p className="mt-2 max-w-sm text-sm text-white/65">{feedError}</p>
+          <button type="button" onClick={() => setFeedRetry(value => value + 1)} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black">Retry</button>
+        </div>
+      </section>
+    );
+  }
+
   if (empty) {
     return (
-      <section className="grid min-h-[280px] place-items-center bg-black px-6 text-center text-white" aria-label="Clips">
+      <section className={`${standalone ? "fixed inset-0 z-40" : ""} grid min-h-[280px] place-items-center bg-black px-6 text-center text-white`} aria-label="Clips">
         <div>
           <Play className="mx-auto size-9 text-white/60" aria-hidden="true" />
           <h2 className="mt-3 text-lg font-bold">No Clips available</h2>
@@ -624,12 +704,21 @@ export default function ClipsView({ videos = [] }: ClipsViewProps) {
 
   return (
     <section
-      className="relative w-full bg-black text-white"
+      className={`${standalone ? "fixed inset-0 z-40" : "relative w-full"} bg-black text-white`}
       aria-label="HkTube Clips"
     >
+      {standalone && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-between px-5 pt-[max(18px,env(safe-area-inset-top))] text-white">
+          <div className="pointer-events-auto flex flex-1 items-center justify-center gap-6">
+            <button type="button" onClick={() => setFeedTab("following")} aria-pressed={feedTab === "following"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "following" ? "border-white text-white" : "border-transparent text-white/65"}`}>Following</button>
+            <button type="button" onClick={() => setFeedTab("for-you")} aria-pressed={feedTab === "for-you"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "for-you" ? "border-white text-white" : "border-transparent text-white/65"}`}>For You</button>
+          </div>
+          <button type="button" aria-label="Search clips" onClick={() => window.location.assign("/search?type=clips")} className="pointer-events-auto grid size-10 place-items-center"><Search className="size-7" /></button>
+        </div>
+      )}
       <div
         ref={containerRef}
-        className="mx-auto h-[100dvh] w-full max-w-[520px] overflow-y-auto overscroll-contain bg-black snap-y snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:h-[min(100dvh,925px)]"
+        className={`${standalone ? "mx-auto" : "mx-auto"} h-[100dvh] w-full max-w-[520px] overflow-y-auto overscroll-contain bg-black snap-y snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:h-[100dvh]`}
       >
         {videos.map((video, index) => {
           const creator = creatorState[video.id] ?? null;
@@ -650,7 +739,7 @@ export default function ClipsView({ videos = [] }: ClipsViewProps) {
             <article
               key={video.id}
               data-clip-index={index}
-              className="relative h-[100dvh] w-full snap-start snap-always overflow-hidden bg-black md:h-[min(100dvh,925px)]"
+              className="relative h-[100dvh] w-full snap-start snap-always overflow-hidden bg-black"
             >
               {video.videoUrl ? (
                 <video
@@ -806,6 +895,18 @@ export default function ClipsView({ videos = [] }: ClipsViewProps) {
                       </div>
                     )}
 
+                    <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-white/80">
+                      <Music2 className="size-4 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate">Original sound · {creator?.name || "HkTube Creator"}</span>
+                      <button
+                        type="button"
+                        onClick={() => toast.info("Sound reuse needs an audio-remix workflow and is not enabled yet.")}
+                        className="shrink-0 rounded-full bg-white/15 px-3 py-2 font-bold text-white"
+                        aria-label="Use this clip's sound"
+                      >
+                        ♫ Use sound
+                      </button>
+                    </div>
                   </div>
 
                   <aside className="flex shrink-0 flex-col items-center gap-3 pb-1">
