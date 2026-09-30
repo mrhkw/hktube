@@ -727,7 +727,6 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
           </div>
           <button type="button" aria-label="Search clips" onClick={() => window.location.assign("/search?type=clips")} className="pointer-events-auto grid size-10 place-items-center"><Search className="size-7" /></button>
         </div>
-      </div>
       <div
         ref={containerRef}
         className={`${standalone ? "mx-auto" : "mx-auto"} h-[100dvh] w-full max-w-[520px] overflow-y-auto overscroll-contain bg-black snap-y snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:h-[100dvh]`}
