@@ -699,12 +699,11 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
     return (
       <section className={`${standalone ? "fixed inset-0 z-40" : ""} relative grid min-h-[280px] place-items-center bg-black px-6 text-center text-white`} aria-label="Clips">
         <div className="absolute inset-x-0 top-0 z-40 flex items-center justify-between px-5 pt-[max(18px,env(safe-area-inset-top))]">
-            <div className="flex flex-1 items-center justify-center gap-6">
-              <button type="button" onClick={() => { if (!user) { startLogin(); return; } setFeedTab("following"); }} aria-pressed={feedTab === "following"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "following" ? "border-white text-white" : "border-transparent text-white/65"}`}>Following</button>
-              <button type="button" onClick={() => setFeedTab("for-you")} aria-pressed={feedTab === "for-you"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "for-you" ? "border-white text-white" : "border-transparent text-white/65"}`}>For You</button>
-            </div>
-            <button type="button" aria-label="Search clips" onClick={() => window.location.assign("/search?type=clips")} className="grid size-10 place-items-center"><Search className="size-7" /></button>
+          <div className="flex flex-1 items-center justify-center gap-6">
+            <button type="button" onClick={() => { if (!user) { startLogin(); return; } setFeedTab("following"); }} aria-pressed={feedTab === "following"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "following" ? "border-white text-white" : "border-transparent text-white/65"}`}>Following</button>
+            <button type="button" onClick={() => setFeedTab("for-you")} aria-pressed={feedTab === "for-you"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "for-you" ? "border-white text-white" : "border-transparent text-white/65"}`}>For You</button>
           </div>
+          <button type="button" aria-label="Search clips" onClick={() => window.location.assign("/search?type=clips")} className="grid size-10 place-items-center"><Search className="size-7" /></button>
         </div>
         <div className="pt-12">
           <Play className="mx-auto size-9 text-white/60" aria-hidden="true" />
