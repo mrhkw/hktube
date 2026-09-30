@@ -896,10 +896,15 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                       </div>
                     </div>
 
-                    <p className="mt-3 line-clamp-3 text-sm font-medium leading-5 drop-shadow-lg">
+                    <h1 className="mt-3 line-clamp-2 text-base font-extrabold leading-5 drop-shadow-lg">
                       {getClipTitle(video)}
-                      {video.description ? ` · ${video.description}` : ""}
-                    </p>
+                    </h1>
+
+                    {video.description && (
+                      <p className="mt-1 line-clamp-3 text-sm font-medium leading-5 text-white/90 drop-shadow-lg">
+                        {video.description}
+                      </p>
+                    )}
 
                     {hashtags.length > 0 && (
                       <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-sm font-bold">
