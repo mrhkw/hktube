@@ -916,15 +916,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
 
                     <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-white/80">
                       <Music2 className="size-4 shrink-0" />
-                      <span className="min-w-0 flex-1 truncate">Clip audio · {creator?.name || "HkTube Creator"}</span>
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Sound reuse needs an audio-remix workflow and is not enabled yet.")}
-                        className="shrink-0 rounded-full bg-white/15 px-3 py-2 font-bold text-white"
-                        aria-label="Use this clip's sound"
-                      >
-                        ♫ Use sound
-                      </button>
+                      <span className="min-w-0 truncate">Original sound</span>
                     </div>
                   </div>
 
@@ -967,7 +959,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                       aria-label={menuOpen ? "Close clip options" : "Open clip options"}
                       aria-expanded={menuOpen}
                       onClick={() => setMenus(current => ({ ...current, [video.id]: !current[video.id] }))}
-                      className="grid size-11 place-items-center rounded-full bg-black/20 text-white backdrop-blur-[2px]"
+                      className="grid size-11 place-items-center rounded-full bg-black/70 text-white backdrop-blur-[2px]"
                     >
                       <MoreVertical className="size-7" />
                     </button>
@@ -977,10 +969,19 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                       aria-label={muted ? "Unmute clips" : "Mute clips"}
                       aria-pressed={!muted}
                       onClick={() => setMuted(value => !value)}
-                      className="grid size-11 place-items-center rounded-full bg-black/20 text-white backdrop-blur-[2px]"
+                      className="grid size-11 place-items-center rounded-full bg-black/70 text-white backdrop-blur-[2px]"
                     >
                       {muted ? <VolumeX className="size-6" /> : <Volume2 className="size-6" />}
                     </button>
+                    <div className="mt-1">
+                      {creatorHref ? (
+                        <Link href={creatorHref} aria-label="Open creator profile">
+                          <CreatorAvatar creator={creator} />
+                        </Link>
+                      ) : (
+                        <CreatorAvatar creator={creator} />
+                      )}
+                    </div>
                   </aside>
                 </div>
 
