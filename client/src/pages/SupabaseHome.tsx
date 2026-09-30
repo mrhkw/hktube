@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import ClipsView from "@/components/ClipsView";
+import { listPublicSupabaseShorts } from "@/lib/supabaseVideos";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -601,9 +602,12 @@ export default function SupabaseHome() {
     setError(null);
     try {
       const { loadSupabaseHomeData } = await import("@/lib/supabaseHomeData");
-      const result = await loadSupabaseHomeData(userId);
+      const [result, directShorts] = await Promise.all([
+        loadSupabaseHomeData(userId),
+        listPublicSupabaseShorts(12),
+      ]);
       setVideos(result.videos);
-      setShorts(result.shorts);
+      setShorts(directShorts.map(video => ({ ...video, reason: "fresh", score: 0 } as RankedVideo)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load HkTube feed.");
     } finally {
@@ -658,7 +662,7 @@ export default function SupabaseHome() {
               Retry
             </Button>
           </div>
-        ) : videos.length ? (
+        ) : videos.length || shorts.length ? (
           <div className="space-y-0">
             {shorts.length > 0 && (
               <section className="mb-8" aria-labelledby="home-clips-heading">
