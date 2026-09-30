@@ -93,9 +93,9 @@ function ActionButton({
       aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
-      className="flex min-w-12 flex-col items-center justify-center gap-1 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.7)] transition-transform active:scale-90 disabled:opacity-60"
+      className="flex min-w-12 flex-col items-center justify-center gap-1 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.85)] transition-transform active:scale-90 disabled:opacity-60"
     >
-      <span className="grid size-11 place-items-center rounded-full bg-black/20 backdrop-blur-[2px]">
+      <span className="grid size-12 place-items-center rounded-full bg-black/75 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm">
         {children}
       </span>
       {count !== undefined && (
@@ -113,13 +113,13 @@ function CreatorAvatar({ creator }: { creator: Creator | null }) {
         alt=""
         loading="lazy"
         decoding="async"
-        className="size-11 rounded-full border border-white/70 object-cover"
+        className="size-12 rounded-full border-2 border-white/90 object-cover shadow-lg"
       />
     );
   }
   return (
     <span
-      className="grid size-11 place-items-center rounded-full border border-white/50 bg-black/50"
+      className="grid size-12 place-items-center rounded-full border-2 border-white/80 bg-black/85 shadow-lg"
       aria-hidden="true"
     >
       <UserRound className="size-6 text-white" />
@@ -889,7 +889,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                           onClick={() => void follow(video)}
                           disabled={busy[video.id]}
                           aria-pressed={isFollowed}
-                          className="mt-1 rounded-full border border-white/50 bg-black/35 px-3 py-1 text-xs font-bold backdrop-blur disabled:opacity-60"
+                          className="mt-1 rounded-full border border-white/70 bg-white px-4 py-1.5 text-xs font-extrabold text-black shadow-lg disabled:opacity-60"
                         >
                           {isFollowed ? "Following" : "Follow"}
                         </button>
@@ -986,7 +986,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                 </div>
 
                 {shareFeedback === video.id && (
-                  <div className="pointer-events-none mx-4 mb-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-black shadow-lg">
+                  <div className="pointer-events-none mx-4 mb-2 inline-flex items-center gap-2 rounded-full bg-black/80 px-3 py-2 text-xs font-bold text-white shadow-lg ring-1 ring-white/10">
                     <Link2 className="size-4" />
                     Link copied
                   </div>
