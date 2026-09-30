@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { Link, type RouteComponentProps } from "wouter";
 import {
   BadgeCheck,
-  Bookmark,
   EyeOff,
   Flag,
   Heart,
@@ -150,6 +149,11 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
   const tapRef = useRef<{ id: string; time: number } | null>(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    if (containerRef.current) containerRef.current.scrollTo({ top: 0, behavior: "auto" });
+  }, [feedTab]);
 
   useEffect(() => {
     if (!standalone) {
@@ -693,11 +697,20 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
 
   if (empty) {
     return (
-      <section className={`${standalone ? "fixed inset-0 z-40" : ""} grid min-h-[280px] place-items-center bg-black px-6 text-center text-white`} aria-label="Clips">
-        <div>
+      <section className={`${standalone ? "fixed inset-0 z-40" : ""} relative grid min-h-[280px] place-items-center bg-black px-6 text-center text-white`} aria-label="Clips">
+        {standalone && (
+          <div className="absolute inset-x-0 top-0 z-40 flex items-center justify-between px-5 pt-[max(18px,env(safe-area-inset-top))]">
+            <div className="flex flex-1 items-center justify-center gap-6">
+              <button type="button" onClick={() => { if (!user) { startLogin(); return; } setFeedTab("following"); }} aria-pressed={feedTab === "following"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "following" ? "border-white text-white" : "border-transparent text-white/65"}`}>Following</button>
+              <button type="button" onClick={() => setFeedTab("for-you")} aria-pressed={feedTab === "for-you"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "for-you" ? "border-white text-white" : "border-transparent text-white/65"}`}>For You</button>
+            </div>
+            <button type="button" aria-label="Search clips" onClick={() => window.location.assign("/search?type=clips")} className="grid size-10 place-items-center"><Search className="size-7" /></button>
+          </div>
+        )}
+        <div className="pt-12">
           <Play className="mx-auto size-9 text-white/60" aria-hidden="true" />
-          <h2 className="mt-3 text-lg font-bold">No Clips available</h2>
-          <p className="mt-1 text-sm text-white/60">Published vertical videos will appear here.</p>
+          <h2 className="mt-3 text-lg font-bold">{standalone && feedTab === "following" ? "No clips from followed creators yet" : "No Clips available"}</h2>
+          <p className="mt-1 text-sm text-white/60">{standalone && feedTab === "following" ? "Follow creators and their published Clips will appear here." : "Published vertical videos will appear here."}</p>
         </div>
       </section>
     );
@@ -711,7 +724,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
       {standalone && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-between px-5 pt-[max(18px,env(safe-area-inset-top))] text-white">
           <div className="pointer-events-auto flex flex-1 items-center justify-center gap-6">
-            <button type="button" onClick={() => setFeedTab("following")} aria-pressed={feedTab === "following"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "following" ? "border-white text-white" : "border-transparent text-white/65"}`}>Following</button>
+            <button type="button" onClick={() => { if (!user) { startLogin(); return; } setFeedTab("following"); }} aria-pressed={feedTab === "following"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "following" ? "border-white text-white" : "border-transparent text-white/65"}`}>Following</button>
             <button type="button" onClick={() => setFeedTab("for-you")} aria-pressed={feedTab === "for-you"} className={`border-b-2 pb-2 text-base font-bold ${feedTab === "for-you" ? "border-white text-white" : "border-transparent text-white/65"}`}>For You</button>
           </div>
           <button type="button" aria-label="Search clips" onClick={() => window.location.assign("/search?type=clips")} className="pointer-events-auto grid size-10 place-items-center"><Search className="size-7" /></button>
