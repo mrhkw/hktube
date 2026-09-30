@@ -16,6 +16,7 @@ import {
   Play,
   RefreshCw,
   Share2,
+  Star,
   UserRound,
   UserRoundX,
   Volume2,
@@ -897,7 +898,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
 
                     <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-white/80">
                       <Music2 className="size-4 shrink-0" />
-                      <span className="min-w-0 flex-1 truncate">Original sound · {creator?.name || "HkTube Creator"}</span>
+                      <span className="min-w-0 flex-1 truncate">Clip audio · {creator?.name || "HkTube Creator"}</span>
                       <button
                         type="button"
                         onClick={() => toast.info("Sound reuse needs an audio-remix workflow and is not enabled yet.")}
@@ -931,12 +932,12 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                     </ActionButton>
 
                     <ActionButton
-                      label={isSaved ? "Remove from saved" : "Save clip"}
+                      label={isSaved ? "Remove from favorites" : "Add to favorites"}
                       active={isSaved}
                       disabled={busy[video.id]}
                       onClick={() => void save(video)}
                     >
-                      <Bookmark className={isSaved ? "size-7 fill-current" : "size-7"} />
+                      <Star className={isSaved ? "size-7 fill-current text-yellow-300" : "size-7"} />
                     </ActionButton>
 
                     <ActionButton label="Share clip" onClick={() => void share(video)}>
@@ -979,8 +980,8 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                       onClick={() => void save(video)}
                       className="flex items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-white/10"
                     >
-                      <Bookmark className="size-4" />
-                      {isSaved ? "Unsave" : "Save"}
+                      <Star className="size-4" />
+                      {isSaved ? "Remove favorite" : "Add favorite"}
                     </button>
                     <button
                       type="button"
