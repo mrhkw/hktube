@@ -65,6 +65,8 @@ type HomeProfile = {
 
 function HomeVideoPost({ video }: { video: RankedVideo }) {
   const media = useRef<HTMLVideoElement>(null);
+  const article = useRef<HTMLElement>(null);
+  const engagementRequest = useRef<Promise<void> | null>(null);
   const viewRecorded = useRef(false);
   const lastSavedSecond = useRef(0);
   const { user } = useAuth();
@@ -83,6 +85,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
   const [menu, setMenu] = useState(false);
   const [busy, setBusy] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [nearViewport, setNearViewport] = useState(false);
   const creator =
     channel?.name ||
     profile?.display_name ||
@@ -95,6 +98,26 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
   const creatorHref = channel?.handle ? `/channel/${channel.handle}` : null;
   const description = video.description || "";
   useEffect(() => {
+    const node = article.current;
+    if (!node) return;
+    if (!("IntersectionObserver" in window)) {
+      setNearViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          setNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "520px 0px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!nearViewport) return;
     let active = true;
     void Promise.all([
       supabase
@@ -109,10 +132,8 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
         .select("username,display_name,avatar_url,is_verified")
         .eq("id", video.creatorId)
         .maybeSingle(),
-      getVideoEngagement(video.id, video.channelId),
-      listVideoComments(video.id),
     ])
-      .then(([channelResult, profileResult, engagement, comments]) => {
+      .then(([channelResult, profileResult]) => {
         if (!active) return;
         if (channelResult.data) {
           const row = channelResult.data as HomeChannel;
@@ -120,23 +141,33 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           setSubscriberCount(Number(row.subscriber_count || 0));
         }
         if (profileResult.data) setProfile(profileResult.data as HomeProfile);
-        setLiked(engagement.liked);
-        setSaved(engagement.saved);
-        setFollowed(engagement.subscribed);
-        setLikeCount(engagement.likeCount);
-        setSubscriberCount(engagement.subscriberCount);
-        setCommentCount(comments.length);
       })
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [video.id, video.channelId]);
+  }, [nearViewport, video.id, video.channelId]);
+
+  const hydrateEngagement = async () => {
+    engagementRequest.current ??= Promise.all([
+      getVideoEngagement(video.id, video.channelId),
+      listVideoComments(video.id),
+    ]).then(([engagement, comments]) => {
+      setLiked(engagement.liked);
+      setSaved(engagement.saved);
+      setFollowed(engagement.subscribed);
+      setLikeCount(engagement.likeCount);
+      setSubscriberCount(engagement.subscriberCount);
+      setCommentCount(comments.length);
+    });
+    return engagementRequest.current;
+  };
 
   const like = async () => {
     if (!user) return startLogin();
     setBusy(true);
     try {
+      await hydrateEngagement();
       const result = await toggleVideoLike(video.id);
       setLiked(result.liked);
       setLikeCount(Number(result.count));
@@ -157,6 +188,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
     if (!user) return startLogin();
     setBusy(true);
     try {
+      await hydrateEngagement();
       const result = await toggleChannelSubscription(video.channelId);
       setFollowed(result.subscribed);
       setSubscriberCount(Number(result.count));
@@ -181,6 +213,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
     if (!user) return startLogin();
     setBusy(true);
     try {
+      await hydrateEngagement();
       const nextSaved = await toggleVideoSave(video.id);
       setSaved(nextSaved);
       void recordDiscoveryEvent({
@@ -270,7 +303,10 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
   };
   if (hidden) return null;
   return (
-    <article className="hktube-home-post bg-white">
+    <article
+      ref={article}
+      className="hktube-home-post hktube-mobile-card bg-white"
+    >
       <div className="flex items-center gap-3 px-3 py-3 sm:px-4">
         {creatorHref ? (
           <Link
@@ -281,6 +317,8 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
               <img
                 src={creatorAvatar}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="size-full object-cover"
               />
             ) : (
@@ -293,6 +331,8 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
               <img
                 src={creatorAvatar}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="size-full object-cover"
               />
             ) : (
@@ -345,10 +385,10 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
         <video
           ref={media}
           src={video.videoUrl}
-          poster={video.thumbnailUrl || undefined}
+          poster={nearViewport ? video.thumbnailUrl || undefined : undefined}
           muted={muted}
           playsInline
-          preload="metadata"
+          preload={nearViewport ? "metadata" : "none"}
           className="size-full object-cover"
           onLoadedMetadata={event =>
             setDuration(

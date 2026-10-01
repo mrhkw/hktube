@@ -503,7 +503,7 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
     height: 58px !important;
     padding-inline: 12px !important;
   }
-  body [class*="min-h-[100dvh}"] {
+  body [class*="min-h-[100dvh]"] {
   }
   body [class*="min-h-[100dvh]"] main {
     padding-left: 12px !important;
@@ -556,6 +556,9 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
   body [class*="min-h-[100dvh]"] main article {
     min-width: 0;
+  }
+  body [class*="min-h-[100dvh]"] main article:hover {
+    transform: none !important;
   }
   body [class*="min-h-[100dvh]"] main nav:not(.fixed) {
     margin-bottom: 18px !important;
