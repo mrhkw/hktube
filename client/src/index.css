@@ -883,7 +883,7 @@ body:has(.hktube-clips-page) main:has(.hktube-clips-page) {
   object-fit: cover;
   background: #000;
 }
-.hktube-clips-page > :not(.hktube-clips-stage) { position: relative; z-index: 20; }
+.hktube-clips-page > :not(.hktube-clips-stage) { z-index: 20; }
 .hktube-clips-page .hktube-clips-stage { isolation: isolate; }
 .hktube-clips-page .clips-action-rail { right: 0.25rem !important; }
 @media (max-width: 767px) {
