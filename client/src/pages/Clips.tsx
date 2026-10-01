@@ -389,7 +389,7 @@ export default function ClipsPage() {
   return (
     <HkTubeShell immersive minimalHeader>
       <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
-        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
+        <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSearchOpen(v => !v)}
@@ -400,7 +400,7 @@ export default function ClipsPage() {
             </button>
           </div>
         </div>
-        <div className="absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-6 text-white">
+        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-6 text-white">
           <button
             type="button"
             aria-pressed={tab === "following"}

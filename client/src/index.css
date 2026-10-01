@@ -990,6 +990,35 @@ body:has(.hktube-clips-page) .hktube-clips-page .hktube-clips-viewport > img {
 body:has(.hktube-clips-page) .clips-action-rail {
   right: 0.1rem !important;
 }
+body:has(.hktube-clips-page) .hktube-clips-page .clips-top-bar {
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.72) 0%,
+    rgb(0 0 0 / 0.28) 62%,
+    transparent 100%
+  ) !important;
+  color: #fff !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page .clips-top-bar button,
+body:has(.hktube-clips-page) .hktube-clips-page .clips-top-bar svg {
+  color: #fff !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page .clips-top-tabs {
+  left: 50% !important;
+  right: auto !important;
+  z-index: 40 !important;
+  transform: translateX(-50%) !important;
+  background: transparent !important;
+  color: #fff !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page .clips-top-tabs button {
+  color: rgb(255 255 255 / 0.78) !important;
+}
+body:has(.hktube-clips-page)
+  .hktube-clips-page
+  .clips-top-tabs button[aria-pressed="true"] {
+  color: #fff !important;
+}
 body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
   display: none !important;
   visibility: hidden !important;
