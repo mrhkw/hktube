@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { ClipsView } from "@/components/ClipsView";
+import ClipsView, { type Clip } from "@/components/ClipsView";
 import { SupabaseVideoCard } from "@/components/SupabaseVideoCard";
 import { rankPublicVideos, type RankedVideo } from "@/lib/supabaseDiscovery";
 import {
@@ -65,7 +65,20 @@ export function SupabaseCollections({ kind }: { kind: "shorts" | "trending" }) {
   }, [kind, mode, user?.id]);
 
   if (kind === "shorts") {
-    return <ClipsView />;
+    const clips: Clip[] = items.map(video => ({
+      id: video.id,
+      url: video.videoUrl,
+      avatar: video.thumbnailUrl,
+      username: "HkTube Creator",
+      caption: video.description || video.title,
+      hashtags: video.tags,
+      soundTitle: "Original Sound",
+      likes: video.likesCount,
+      comments: 0,
+      favorites: 0,
+      shares: 0,
+    }));
+    return <ClipsView videos={clips} />;
   }
 
   return (

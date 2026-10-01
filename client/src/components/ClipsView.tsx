@@ -61,7 +61,7 @@ function Action({
 
       {count !== undefined && (
         <span className="mt-0.5 text-[12px] font-semibold leading-none drop-shadow-lg">
-          <Count value={value} />
+          <Count value={count} />
         </span>
       )}
     </button>
