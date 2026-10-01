@@ -3,6 +3,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supabase";
+import { isAllowlistedAdminEmail } from "@/lib/adminAccess";
 import { getAiAdminData, logExistingAgentAction, markAdminAiNotificationRead, setExistingAgentEnabled, type AdminNotification, type AiAction, type AiAgent } from "@/lib/supabaseAiAdmin";
 import { Bot, CheckCircle2, Clock3, ExternalLink, Loader2, RefreshCw, ShieldAlert, Sparkles, WandSparkles, Bell, Check, Globe2, Activity, Zap } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -27,6 +28,7 @@ export default function AdminAICenter() {
   const [busy, setBusy] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const canAccess = isAllowlistedAdminEmail(user?.email);
 
   const load = useCallback(async () => {
     setPageLoading(true);
@@ -37,10 +39,10 @@ export default function AdminAICenter() {
     finally { setPageLoading(false); }
   }, []);
 
-  useEffect(() => { if (user?.role === "admin") void load(); else if (!loading) setPageLoading(false); }, [user?.role, loading, load]);
+  useEffect(() => { if (canAccess) void load(); else if (!loading) setPageLoading(false); }, [canAccess, loading, load]);
 
   useEffect(() => {
-    if (!user || user.role !== "admin") return;
+    if (!canAccess) return;
     let supabaseUserId = "";
     let channel: ReturnType<typeof supabase.channel> | null = null;
     void supabase.auth.getUser().then(({ data }) => {
@@ -54,7 +56,7 @@ export default function AdminAICenter() {
       }).subscribe();
     });
     return () => { if (channel) void supabase.removeChannel(channel); };
-  }, [user?.role]);
+  }, [canAccess, user?.email]);
 
   async function toggle(agent: AiAgent) {
     try { setBusy(agent.id); await setExistingAgentEnabled(agent.id, !agent.enabled); setAgents(current => current.map(item => item.id === agent.id ? { ...item, enabled: !item.enabled } : item)); toast.success(`${agent.displayName} ${agent.enabled ? "disabled" : "enabled"}.`); }
@@ -97,7 +99,7 @@ export default function AdminAICenter() {
   const lastAction = actions[0];
 
   if (loading || pageLoading) return <HkTubeShell title="AI Admin Center"><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-7 animate-spin text-fuchsia-300" /></div></HkTubeShell>;
-  if (!user || user.role !== "admin") return <HkTubeShell title="AI Admin Center"><div className="mx-auto max-w-xl rounded-3xl border border-red-300/15 bg-red-400/[.05] p-8 text-center"><ShieldAlert className="mx-auto size-9 text-red-200" /><h1 className="mt-4 text-2xl font-black text-white">Admin access only</h1><p className="mt-2 text-sm text-slate-400">Only the protected HkTube admin account can open this center.</p></div></HkTubeShell>;
+  if (!canAccess) return <HkTubeShell title=""><main className="mx-auto max-w-xl px-5 py-24 text-center"><p className="text-xs font-bold uppercase tracking-[.2em] text-slate-500">404</p><h1 className="mt-3 text-3xl font-black text-white">Page not found</h1><p className="mt-3 text-sm text-slate-500">The page you requested is unavailable.</p></main></HkTubeShell>;
 
   return <HkTubeShell title="AI Admin Center" subtitle="Advanced orchestration for the four existing Supabase AI agents. No new agents are created.">
     <main className="mx-auto max-w-7xl space-y-6 pb-12">

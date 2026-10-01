@@ -4,6 +4,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
+import { registerAdminAgentRoute } from "./adminAgent";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
@@ -13,6 +14,7 @@ const RATE_WINDOW_MS = 60_000;
 const GENERAL_LIMIT = 120;
 const AUTH_LIMIT = 12;
 const UPLOAD_LIMIT = 12;
+const ADMIN_AGENT_LIMIT = 12;
 const MAX_RATE_BUCKETS = 5000;
 
 function clientIp(req: express.Request) {
@@ -81,8 +83,8 @@ function securityGate(req: express.Request, res: express.Response) {
 
 function rateLimit(req: express.Request, res: express.Response) {
   const path = req.path;
-  const bucket = path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
-  const limit = bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
+  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
+  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
   const key = `${bucket}:${clientIp(req)}`;
   const now = Date.now();
   const existing = rateBuckets.get(key);
@@ -121,6 +123,7 @@ export function createApiApp(): Express {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerMediaUploadRoute(app);
+  registerAdminAgentRoute(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const parserError = error as { type?: string; status?: number };
