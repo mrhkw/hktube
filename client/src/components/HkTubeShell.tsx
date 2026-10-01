@@ -22,6 +22,7 @@ import {
   LogOut,
   MessageCircle,
   MonitorPlay,
+  Newspaper,
   Plus,
   Search,
   Settings,
@@ -681,11 +682,11 @@ export function HkTubeShell({
       >
         {[
           { label: "Home", href: "/", icon: Home },
-          { label: "Shorts", href: "/clips", icon: MonitorPlay },
+          { label: "Clips", href: "/clips", icon: MonitorPlay },
           { label: "Create", href: "#create", icon: Plus },
-          { label: "Following", href: "/subscriptions", icon: UserRound },
+          { label: "Feed", href: "/posts", icon: Newspaper },
           {
-            label: "You",
+            label: "Profile",
             href: isAuthenticated ? "/profile" : "/auth",
             icon: ProfileGlyph,
           },

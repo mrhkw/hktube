@@ -12,16 +12,6 @@ export function MobileDockPolish() {
       profile.setAttribute("data-profile-dock", "true");
       const label = profile.querySelector("span:last-child");
       if (label) label.textContent = "Profile";
-      if (profile instanceof HTMLAnchorElement) {
-        profile.setAttribute("href", "/profile");
-        profile.onclick = null;
-      } else {
-        profile.onclick = event => {
-          event.preventDefault();
-          event.stopPropagation();
-          window.location.assign("/profile");
-        };
-      }
     };
     sync();
     const observer = new MutationObserver(sync);
@@ -55,14 +45,14 @@ export function MobileDockPolish() {
     }
     nav.fixed[aria-label="Mobile navigation"]>a svg,
     nav.fixed[aria-label="Mobile navigation"]>button svg{
-      width:23px!important;
-      height:23px!important;
-      flex:0 0 23px!important;
+      width:20px!important;
+      height:20px!important;
+      flex:0 0 20px!important;
     }
     nav.fixed[aria-label="Mobile navigation"]>a:first-child svg{
-      width:27px!important;
-      height:27px!important;
-      flex-basis:27px!important;
+      width:24px!important;
+      height:24px!important;
+      flex-basis:24px!important;
       margin-top:1px!important;
     }
     nav.fixed[aria-label="Mobile navigation"]>a>span:last-child,
