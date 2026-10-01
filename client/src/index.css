@@ -835,6 +835,15 @@ body:has(.hktube-clips-page) header.hktube-reference-header,
 body:has(.hktube-clips-page) > div > aside {
   display: none !important;
 }
+body:has(.hktube-clips-page) main:has(.hktube-clips-page) {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 .hktube-clips-page {
   position: relative;
   width: 100vw;
