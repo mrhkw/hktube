@@ -958,6 +958,43 @@ body:has(.hktube-clips-page) .hktube-clips-page header > div {
   box-shadow: none !important;
 }
 
+/* Keep the Shorts player edge-to-edge on phones, with overlays sitting on
+   the media instead of leaving an empty strip around the feed. */
+body:has(.hktube-clips-page) {
+  padding-bottom: 0 !important;
+  background: #000 !important;
+}
+body:has(.hktube-clips-page) #root,
+body:has(.hktube-clips-page) main,
+body:has(.hktube-clips-page) .hktube-clips-page {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100svh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-stage,
+body:has(.hktube-clips-page) .hktube-clips-viewport {
+  height: 100% !important;
+  min-height: 0 !important;
+  background: #000 !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page video,
+body:has(.hktube-clips-page) .hktube-clips-page .hktube-clips-viewport > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+body:has(.hktube-clips-page) .clips-action-rail {
+  right: 0.1rem !important;
+}
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 /* Android Home reference layout: one social post per row, full-width media. */
 .hktube-home-feed {
   background: #f8f9fb;

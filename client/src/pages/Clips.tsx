@@ -5,12 +5,15 @@ import {
   Flag,
   Heart,
   MessageCircle,
+  Music2,
   MoreVertical,
   Pause,
   Play,
   Search,
   Send,
   Star,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -133,6 +136,7 @@ export default function ClipsPage() {
   const [tab, setTab] = useState<"for-you" | "following">("for-you");
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(true);
+  const [soundOn, setSoundOn] = useState(false);
   const [liked, setLiked] = useState(new Set<string>());
   const [saved, setSaved] = useState(new Set<string>());
   const [followed, setFollowed] = useState(new Set<string>());
@@ -234,7 +238,7 @@ export default function ClipsPage() {
     if (!v || !current) return;
     setMediaError(false);
     setMediaReady(false);
-    v.muted = true;
+    v.muted = !soundOn;
     v.load();
     if (playing) void v.play().catch(() => setPlaying(false));
     else v.pause();
@@ -242,6 +246,10 @@ export default function ClipsPage() {
     void recordVideoView(current.id, 0).catch(() => undefined);
     return () => v.pause();
   }, [current?.id, playing]);
+  useEffect(() => {
+    const v = media.current;
+    if (v) v.muted = !soundOn;
+  }, [soundOn]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (
@@ -381,46 +389,46 @@ export default function ClipsPage() {
   return (
     <HkTubeShell immersive minimalHeader>
       <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
-        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/75 to-transparent">
+        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSearchOpen(v => !v)}
-              className="grid size-10 place-items-center rounded-full bg-black/35 backdrop-blur"
+              className="grid size-11 place-items-center rounded-full text-white"
               aria-label="Search Clips"
             >
-              <Search className="size-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setMore(v => !v)}
-              className="grid size-10 place-items-center rounded-full bg-black/35 backdrop-blur"
-              aria-label="More Shorts options"
-            >
-              <MoreVertical className="size-5" />
+              <Search className="size-7" />
             </button>
           </div>
         </div>
-        <div className="absolute left-1/2 top-2 z-40 flex -translate-x-1/2 items-center gap-7 rounded-full bg-black/35 px-3 py-1 backdrop-blur">
+        <div className="absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-6 text-white">
           <button
+            type="button"
+            aria-pressed={tab === "following"}
             onClick={() => {
               setTab("following");
               setActive(0);
             }}
             className={
-              "relative px-1 py-2 text-[15px] font-black " +
-              (tab === "following" ? "text-white after:absolute after:inset-x-1 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-white" : "text-white/65")
+              "rounded-full px-1 py-2 text-[17px] transition-colors " +
+              (tab === "following"
+                ? "font-black text-white"
+                : "font-semibold text-white/75 hover:text-white")
             }
           >
             Following
           </button>
           <button
+            type="button"
+            aria-pressed={tab === "for-you"}
             onClick={() => {
               setTab("for-you");
               setActive(0);
             }}
             className={
-              "relative px-1 py-2 text-[15px] font-black " +
-              (tab === "for-you" ? "text-white after:absolute after:inset-x-1 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-white" : "text-white/65")
+              "rounded-full px-1 py-2 text-[17px] transition-colors " +
+              (tab === "for-you"
+                ? "font-black text-white"
+                : "font-semibold text-white/75 hover:text-white")
             }
           >
             For You
@@ -496,7 +504,7 @@ export default function ClipsPage() {
                 <img
                   src={current.thumbnailUrl}
                   alt=""
-                  className="absolute inset-0 size-full object-contain bg-black"
+                  className="absolute inset-0 size-full object-cover bg-black"
                   decoding="async"
                 />
               )}
@@ -511,7 +519,7 @@ export default function ClipsPage() {
                 preload="auto"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
                 }
                 onPlay={() => {
                   setMediaError(false);
@@ -591,7 +599,7 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-20 sm:left-6">
+              <div className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-20 sm:left-6">
                 <div className="flex items-center gap-2.5">
                   <Link
                     href={
@@ -626,9 +634,6 @@ export default function ClipsPage() {
                     {followed.has(current.channelId) ? "Following" : "Follow"}
                   </button>
                 </div>
-                <span className="mt-2 inline-flex rounded-full bg-black/45 px-2 py-1 text-[10px] font-black text-white/75 backdrop-blur">
-                  {active + 1} / {visible.length}
-                </span>
                 <h1 className="mt-2 line-clamp-2 text-base font-black sm:text-lg">
                   {current.title}
                 </h1>
@@ -645,9 +650,9 @@ export default function ClipsPage() {
                   ))}
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-white/90">
-                  <span className="grid size-6 place-items-center rounded-full bg-white/15">♫</span>
-                  <span className="truncate">Original Sound · {channel?.name || "HkTube Creator"}</span>
-                  <button type="button" onClick={() => void share()} className="shrink-0 rounded-full border border-white/30 bg-white px-3 py-1.5 text-black">Use sound</button>
+                  <span className="truncate">
+                    Original Sound · {channel?.name || "HkTube Creator"}
+                  </span>
                 </div>
               </div>
               <div className="clips-action-rail absolute bottom-[calc(8rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-center gap-3 sm:bottom-24 sm:right-5">
@@ -680,6 +685,35 @@ export default function ClipsPage() {
                   label="More"
                   onClick={() => setMore(v => !v)}
                 />
+                <button
+                  type="button"
+                  aria-label={soundOn ? "Mute clip sound" : "Turn clip sound on"}
+                  aria-pressed={soundOn}
+                  title={soundOn ? "Mute clip sound" : "Turn clip sound on"}
+                  onClick={() => {
+                    const next = !soundOn;
+                    setSoundOn(next);
+                    if (media.current) media.current.muted = !next;
+                  }}
+                  className="relative mt-1 grid size-12 place-items-center overflow-hidden rounded-full border-2 border-white/80 bg-black/70 shadow-xl transition-transform active:scale-90"
+                >
+                  {current.thumbnailUrl ? (
+                    <img
+                      src={current.thumbnailUrl}
+                      alt=""
+                      className={`size-full object-cover ${playing ? "animate-[spin_8s_linear_infinite]" : ""}`}
+                    />
+                  ) : (
+                    <Music2 className="size-5 text-white" />
+                  )}
+                  <span className="absolute bottom-0 right-0 grid size-5 place-items-center rounded-full bg-black/80">
+                    {soundOn ? (
+                      <Volume2 className="size-3 text-white" />
+                    ) : (
+                      <VolumeX className="size-3 text-white" />
+                    )}
+                  </span>
+                </button>
               </div>
               <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
                 <div
