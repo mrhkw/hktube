@@ -845,7 +845,8 @@ body:has(.hktube-clips-page) main:has(.hktube-clips-page) {
   padding: 0 !important;
 }
 .hktube-clips-page {
-  position: relative;
+  position: fixed !important;
+  inset: 0 !important;
   width: 100vw;
   height: 100dvh;
   min-height: 100svh;
