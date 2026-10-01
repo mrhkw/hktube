@@ -15,6 +15,8 @@ import {
   Save,
   Share2,
   UploadCloud,
+  ArrowRight,
+  Clock3,
   Volume2,
   VolumeX,
   Maximize2,
@@ -62,6 +64,82 @@ type HomeProfile = {
   avatar_url: string | null;
   is_verified: boolean;
 };
+
+function HomeClipsRail({ clips }: { clips: RankedVideo[] }) {
+  if (!clips.length) return null;
+
+  return (
+    <section
+      className="border-y border-slate-200 bg-white py-5 sm:rounded-2xl sm:border"
+      aria-labelledby="home-clips-heading"
+    >
+      <div className="flex items-end justify-between gap-3 px-4 pb-4 sm:px-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[.18em] text-violet-600">
+            Short videos
+          </p>
+          <h2
+            id="home-clips-heading"
+            className="mt-1 text-[22px] font-black tracking-tight text-slate-950"
+          >
+            Clips
+          </h2>
+        </div>
+        <Link
+          href="/clips"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-xs font-bold text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+        >
+          View all
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
+
+      <div
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5"
+        aria-label="Clips"
+      >
+        {clips.map((clip) => (
+          <Link
+            key={clip.id}
+            href={`/clips?clip=${encodeURIComponent(clip.id)}`}
+            className="group w-[156px] shrink-0 snap-start sm:w-[176px]"
+          >
+            <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-violet-200 group-hover:shadow-lg">
+              <div className="relative aspect-[9/14] overflow-hidden bg-slate-100">
+                {clip.thumbnailUrl ? (
+                  <img
+                    src={clip.thumbnailUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="size-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <div className="grid size-full place-items-center bg-slate-900 text-xs font-bold text-white/70">
+                    No preview
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 to-transparent" />
+                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-1 text-[10px] font-bold text-white backdrop-blur">
+                  <Clock3 className="size-3" aria-hidden="true" />
+                  {Math.max(1, Math.floor(clip.durationSeconds))}s
+                </span>
+              </div>
+              <div className="p-3">
+                <h3 className="line-clamp-2 min-h-10 text-sm font-extrabold leading-5 text-slate-950">
+                  {clip.title}
+                </h3>
+                <p className="mt-1.5 truncate text-[11px] font-medium text-slate-500">
+                  {clip.viewCount.toLocaleString()} views
+                </p>
+              </div>
+            </article>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function HomeVideoPost({ video }: { video: RankedVideo }) {
   const media = useRef<HTMLVideoElement>(null);
@@ -591,6 +669,7 @@ export default function SupabaseHome() {
   const { user } = useAuth();
   const userId = user?.id;
   const [videos, setVideos] = useState<RankedVideo[]>([]);
+  const [clips, setClips] = useState<RankedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -601,6 +680,7 @@ export default function SupabaseHome() {
       const { loadSupabaseHomeData } = await import("@/lib/supabaseHomeData");
       const result = await loadSupabaseHomeData(userId);
       setVideos(result.videos);
+      setClips(result.shorts);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load HkTube feed.");
     } finally {
@@ -656,10 +736,34 @@ export default function SupabaseHome() {
             </Button>
           </div>
         ) : videos.length ? (
-          <div className="space-y-0">
-            {recommended.map(video => (
-              <HomeVideoPost key={`home-post-${video.id}`} video={video} />
-            ))}
+          <div className="space-y-4 sm:space-y-5">
+            {recommended[0] && (
+              <HomeVideoPost
+                key={`home-post-${recommended[0].id}`}
+                video={recommended[0]}
+              />
+            )}
+
+            <HomeClipsRail clips={clips.slice(0, 12)} />
+
+            <div className="space-y-0">
+              {recommended.slice(1).map(video => (
+                <HomeVideoPost key={`home-post-${video.id}`} video={video} />
+              ))}
+            </div>
+          </div>
+        ) : clips.length ? (
+          <div className="space-y-5">
+            <HomeClipsRail clips={clips.slice(0, 12)} />
+            <div className="mx-auto max-w-2xl rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center sm:p-14">
+              <UploadCloud className="mx-auto size-10 text-violet-500" />
+              <h2 className="mt-4 text-2xl font-bold text-slate-950">
+                No long videos yet
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Your published Clips are available above. Long videos will appear here when published.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="mx-auto max-w-2xl rounded-3xl border border-dashed border-white/10 bg-white/[.02] p-10 text-center sm:p-14">
