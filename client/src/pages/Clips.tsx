@@ -380,7 +380,7 @@ export default function ClipsPage() {
   }
   return (
     <HkTubeShell immersive minimalHeader>
-      <div className="hktube-clips-page relative h-[100dvh] overflow-hidden bg-black text-white">
+      <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
         <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/75 to-transparent">
           <div className="flex items-center gap-2">
             <button
@@ -390,32 +390,40 @@ export default function ClipsPage() {
             >
               <Search className="size-5" />
             </button>
+            <button
+              type="button"
+              onClick={() => setMore(v => !v)}
+              className="grid size-10 place-items-center rounded-full bg-black/35 backdrop-blur"
+              aria-label="More Shorts options"
+            >
+              <MoreVertical className="size-5" />
+            </button>
           </div>
         </div>
-        <div className="absolute left-1/2 top-[max(14px,env(safe-area-inset-top))] z-40 flex -translate-x-1/2 flex-row-reverse rounded-full bg-black/35 p-1 backdrop-blur">
-          <button
-            onClick={() => {
-              setTab("for-you");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-4 py-2 text-xs font-black " +
-              (tab === "for-you" ? "bg-white text-black" : "text-white")
-            }
-          >
-            For You
-          </button>
+        <div className="absolute left-1/2 top-[max(14px,env(safe-area-inset-top))] z-40 flex -translate-x-1/2 items-center gap-7 rounded-full bg-black/35 px-3 py-1 backdrop-blur">
           <button
             onClick={() => {
               setTab("following");
               setActive(0);
             }}
             className={
-              "rounded-full px-4 py-2 text-xs font-black " +
-              (tab === "following" ? "bg-white text-black" : "text-white")
+              "relative px-1 py-2 text-[15px] font-black " +
+              (tab === "following" ? "text-white after:absolute after:inset-x-1 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-white" : "text-white/65")
             }
           >
             Following
+          </button>
+          <button
+            onClick={() => {
+              setTab("for-you");
+              setActive(0);
+            }}
+            className={
+              "relative px-1 py-2 text-[15px] font-black " +
+              (tab === "for-you" ? "text-white after:absolute after:inset-x-1 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-white" : "text-white/65")
+            }
+          >
+            For You
           </button>
         </div>
         {searchOpen && (
@@ -488,7 +496,7 @@ export default function ClipsPage() {
                 <img
                   src={current.thumbnailUrl}
                   alt=""
-                  className="absolute inset-0 size-full object-cover"
+                  className="absolute inset-0 size-full object-contain bg-black"
                   decoding="async"
                 />
               )}
@@ -503,7 +511,7 @@ export default function ClipsPage() {
                 preload="auto"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300 sm:rounded-3xl"
                 }
                 onPlay={() => {
                   setMediaError(false);
@@ -583,18 +591,15 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] left-4 right-20 z-20 sm:bottom-24 sm:left-6">
-                <span className="mb-2 inline-flex rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black text-white/80 backdrop-blur">
-                  {active + 1} / {visible.length}
-                </span>
-                <div className="flex items-center gap-3">
+              <div className="absolute bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-24 sm:left-6">
+                <div className="flex items-center gap-2.5">
                   <Link
                     href={
                       channel
                         ? "/channel/" + channel.handle
                         : "/watch/" + current.id
                     }
-                    className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white bg-violet-500 font-black"
+                    className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white bg-violet-500 font-black"
                   >
                     {channel?.avatar_url ? (
                       <img
@@ -606,26 +611,25 @@ export default function ClipsPage() {
                       "HK"
                     )}
                   </Link>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate font-black">
-                        {channel ? "@" + channel.handle : "HkTube Creator"}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => void follow()}
-                      className={
-                        "mt-1 rounded-full border px-3 py-1 text-[11px] font-black " +
-                        (followed.has(current.channelId)
-                          ? "border-white/25 bg-white/10"
-                          : "border-red-500/70 bg-red-600 text-white shadow-sm shadow-red-950/40")
-                      }
-                    >
-                      {followed.has(current.channelId) ? "Following" : "Follow"}
-                    </button>
-                  </div>
+                  <span className="min-w-0 truncate font-black text-sm">
+                    {channel ? "@" + channel.handle : "HkTube Creator"}
+                  </span>
+                  <button
+                    onClick={() => void follow()}
+                    className={
+                      "shrink-0 rounded-full border px-3 py-1 text-[11px] font-black " +
+                      (followed.has(current.channelId)
+                        ? "border-white/25 bg-white/10"
+                        : "border-red-500/70 bg-red-600 text-white shadow-sm shadow-red-950/40")
+                    }
+                  >
+                    {followed.has(current.channelId) ? "Following" : "Follow"}
+                  </button>
                 </div>
-                <h1 className="mt-3 line-clamp-2 text-base font-black sm:text-lg">
+                <span className="mt-2 inline-flex rounded-full bg-black/45 px-2 py-1 text-[10px] font-black text-white/75 backdrop-blur">
+                  {active + 1} / {visible.length}
+                </span>
+                <h1 className="mt-2 line-clamp-2 text-base font-black sm:text-lg">
                   {current.title}
                 </h1>
                 {current.description && (
@@ -640,16 +644,13 @@ export default function ClipsPage() {
                     </span>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-slate-300">
-                  {compact(current.viewCount)} views · {ago(current.createdAt)}
-                </p>
                 <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-white/90">
                   <span className="grid size-6 place-items-center rounded-full bg-white/15">♫</span>
                   <span className="truncate">Original Sound · {channel?.name || "HkTube Creator"}</span>
-                  <button type="button" onClick={() => void share()} className="shrink-0 rounded-full bg-white/15 px-3 py-1.5">Use sound</button>
+                  <button type="button" onClick={() => void share()} className="shrink-0 rounded-full border border-white/30 bg-white px-3 py-1.5 text-black">Use sound</button>
                 </div>
               </div>
-              <div className="absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))] right-3 z-30 flex flex-col items-center gap-3 sm:right-5">
+              <div className="absolute bottom-[calc(8rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-center gap-3 sm:bottom-24 sm:right-5">
                 <Action
                   icon={Heart}
                   label={compact(
@@ -710,6 +711,9 @@ export default function ClipsPage() {
               </div>
               {more && (
                 <div className="absolute bottom-44 right-16 z-40 w-56 rounded-2xl border border-white/10 bg-[#10131b]/95 p-2 text-sm shadow-2xl backdrop-blur-xl">
+                  <div className="px-3 py-2 text-xs font-semibold text-white/60">
+                    {compact(current.viewCount)} views · {ago(current.createdAt)}
+                  </div>
                   <button
                     onClick={notInterested}
                     className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"

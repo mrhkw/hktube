@@ -670,7 +670,7 @@ export function HkTubeShell({
 
       <nav
         className={cn(
-          "fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/8 bg-[#10141e]/98 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl md:hidden",
+          "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 text-white backdrop-blur-xl md:hidden",
           location === "/" && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
@@ -681,13 +681,13 @@ export function HkTubeShell({
       >
         {[
           { label: "Home", href: "/", icon: Home },
-          { label: "Clips", href: "/clips", icon: MonitorPlay },
+          { label: "Shorts", href: "/clips", icon: MonitorPlay },
           { label: "Create", href: "#create", icon: Plus },
-          { label: "Library", href: "/library", icon: Library },
+          { label: "Subscriptions", href: "/subscriptions", icon: UserRound },
           {
-            label: "Profile",
+            label: "You",
             href: isAuthenticated ? "/profile" : "/auth",
-            icon: UserRound,
+            icon: ProfileGlyph,
           },
         ].map(item => {
           const active =

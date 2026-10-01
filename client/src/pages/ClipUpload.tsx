@@ -19,8 +19,8 @@ import {
 import { createSupabaseVideo } from "@/lib/supabaseVideos";
 import { toast } from "sonner";
 
-function durationOf(file: File) {
-  return new Promise<number>((resolve, reject) => {
+function mediaInfoOf(file: File) {
+  return new Promise<{ duration: number; width: number; height: number }>((resolve, reject) => {
     const v = document.createElement("video"),
       u = URL.createObjectURL(file);
     const t = window.setTimeout(() => {
@@ -31,8 +31,10 @@ function durationOf(file: File) {
     v.onloadedmetadata = () => {
       window.clearTimeout(t);
       const d = Number.isFinite(v.duration) ? v.duration : 0;
+      const width = v.videoWidth || 0;
+      const height = v.videoHeight || 0;
       URL.revokeObjectURL(u);
-      resolve(d);
+      resolve({ duration: d, width, height });
     };
     v.onerror = () => {
       window.clearTimeout(t);
@@ -123,6 +125,7 @@ export default function ClipUploadPage() {
   const [coverUrl, setCoverUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [duration, setDuration] = useState(0);
+  const [isLandscape, setIsLandscape] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -152,12 +155,13 @@ export default function ClipUploadPage() {
     if (!file) {
       setVideoUrl("");
       setDuration(0);
+      setIsLandscape(false);
       return;
     }
     const u = URL.createObjectURL(file);
     setVideoUrl(u);
-    void durationOf(file)
-      .then(setDuration)
+    void mediaInfoOf(file)
+      .then(info => setDuration(info.duration))
       .catch(e => toast.error(e.message));
     return () => URL.revokeObjectURL(u);
   }, [file]);
@@ -188,10 +192,12 @@ export default function ClipUploadPage() {
     if (!f.type.startsWith("video/"))
       return toast.error("Choose a video file.");
     try {
-      const d = await durationOf(f);
-      if (d > 180) return toast.error("Clips are limited to 3 minutes.");
+      const info = await mediaInfoOf(f);
+      if (info.height >= info.width && info.duration > 180)
+        return toast.error("Clips are limited to 3 minutes.");
       await canDecode(f);
       setFile(f);
+      setIsLandscape(info.width > info.height);
       if (!cover) {
         const t = await thumb(f);
         if (t) setCover(t);
@@ -212,9 +218,9 @@ export default function ClipUploadPage() {
         description: description.trim(),
         file,
         thumbnail: cover,
-        isShort: true,
+        isShort: !isLandscape,
         durationSeconds: Math.floor(duration),
-        category: "clips",
+        category: isLandscape ? "regular" : "clips",
         language: "auto",
         visibility,
         allowComments: comments,
@@ -223,8 +229,8 @@ export default function ClipUploadPage() {
         tags: tagList,
         onProgress: setProgress,
       });
-      toast.success("Clip published");
-      navigate("/clips");
+      toast.success(isLandscape ? "Landscape video published as a long video" : "Clip published");
+      navigate(isLandscape ? "/" : "/clips");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Clip upload failed");
     } finally {
@@ -234,7 +240,7 @@ export default function ClipUploadPage() {
   return (
     <HkTubeShell
       title="Create Clip"
-      subtitle="Original HkTube short-video composer."
+      subtitle="Upload any aspect ratio. Portrait stays in Clips; landscape becomes a long video."
     >
       <main className="mx-auto max-w-6xl px-4 py-5 pb-28 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
@@ -256,7 +262,7 @@ export default function ClipUploadPage() {
               Publish a Clip
             </p>
             <h1 className="mt-2 text-2xl font-black text-white">
-              Make it vertical. Make it yours.
+              Make it yours in the right format.
             </h1>
             <p className="mt-2 text-sm text-slate-400">
               HkTube's own short-video composer with real publishing.
@@ -268,7 +274,7 @@ export default function ClipUploadPage() {
                   Choose Clip
                 </span>
                 <span className="mt-1 text-xs text-slate-500">
-                  MP4/WebM · vertical · max 180s
+                  MP4/WebM · portrait Clips · landscape Long Video
                 </span>
                 <input
                   type="file"
@@ -303,6 +309,9 @@ export default function ClipUploadPage() {
                 <p className="mt-1 text-xs text-slate-500">
                   Duration {Math.floor(duration)}s ·{" "}
                   {Math.round((file.size / 1024 / 1024) * 10) / 10} MB
+                </p>
+                <p className="mt-1 text-xs font-bold text-violet-200">
+                  Detected format: {isLandscape ? "Landscape → Long Video" : "Portrait/Square → Clip"}
                 </p>
               </div>
             )}
