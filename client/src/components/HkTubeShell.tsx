@@ -683,7 +683,7 @@ export function HkTubeShell({
           { label: "Home", href: "/", icon: Home },
           { label: "Shorts", href: "/clips", icon: MonitorPlay },
           { label: "Create", href: "#create", icon: Plus },
-          { label: "Subscriptions", href: "/subscriptions", icon: UserRound },
+          { label: "Following", href: "/subscriptions", icon: UserRound },
           {
             label: "You",
             href: isAuthenticated ? "/profile" : "/auth",

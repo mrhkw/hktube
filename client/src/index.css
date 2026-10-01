@@ -855,7 +855,7 @@ select {
 .hktube-clips-viewport {
   height: 100% !important;
   width: 100%;
-  max-width: 620px;
+  max-width: none;
   overflow: hidden;
   scroll-snap-align: start;
   scroll-snap-stop: always;
@@ -866,7 +866,7 @@ select {
   width: 100%;
   height: 100%;
   max-height: none !important;
-  object-fit: contain;
+  object-fit: cover;
   background: #000;
 }
 .hktube-clips-page > :not(.hktube-clips-stage) { position: relative; z-index: 20; }
@@ -926,7 +926,7 @@ body:has(.hktube-clips-page) .hktube-clips-page video {
   height: 100dvh !important;
   max-width: none !important;
   max-height: none !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
   background: #000 !important;
 }
 body:has(.hktube-clips-page) .hktube-clips-page .clips-action > span:first-child,
