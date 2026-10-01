@@ -391,6 +391,19 @@ body:has(.hktube-clips-page) nav.fixed {
 .hktube-clips-page .clips-action-active {
   animation: clips-action-pop 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
+.hktube-clips-page .clips-action > span:first-child,
+.hktube-clips-page .clips-action span:first-child {
+  width: 48px !important;
+  height: 48px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.hktube-clips-page .clips-action-active > span:first-child,
+.hktube-clips-page .clips-action-active span:first-child {
+  background: transparent !important;
+}
 @keyframes clips-action-pop {
   0% {
     transform: scale(0.82);
@@ -813,6 +826,13 @@ select {
   body:has(.hktube-clips-page) main { overflow: hidden !important; }
   body:has(.hktube-clips-page) main { padding: 0 !important; }
   body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] { display: none !important; }
+  body:has(.hktube-clips-page) main,
+  body:has(.hktube-clips-page) .hktube-clips-page,
+  .hktube-clips-page > div {
+    width: 100vw !important;
+    max-width: none !important;
+    min-width: 100vw !important;
+  }
   .hktube-clips-page .hktube-clips-viewport { max-width: none; }
   .hktube-clips-page .clips-action { min-width: 56px; min-height: 56px; }
   .hktube-clips-page .clips-action > span:first-child { width: 48px; height: 48px; }

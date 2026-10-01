@@ -618,7 +618,7 @@ export default function ClipsPage() {
                         "mt-1 rounded-full border px-3 py-1 text-[11px] font-black " +
                         (followed.has(current.channelId)
                           ? "border-white/25 bg-white/10"
-                          : "border-fuchsia-300/50 bg-fuchsia-500/80")
+                          : "border-red-500/70 bg-red-600 text-white shadow-sm shadow-red-950/40")
                       }
                     >
                       {followed.has(current.channelId) ? "Following" : "Follow"}

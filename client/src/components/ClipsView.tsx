@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  BadgeCheck,
   Heart,
   MessageCircle,
   MoreHorizontal,
@@ -119,14 +118,14 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
 
   if (!videos || videos.length === 0) {
     return (
-      <div className="flex h-[100dvh] w-full items-center justify-center bg-black text-white">
+      <div className="hktube-clips-page flex h-[100dvh] w-full items-center justify-center bg-black text-white">
         No Clips Available
       </div>
     );
   }
 
   return (
-    <main className="relative h-[100dvh] w-full overflow-hidden bg-black select-none">
+    <main className="hktube-clips-page relative h-[100dvh] w-screen max-w-none overflow-hidden bg-black select-none">
       <div
         ref={containerRef}
         className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory bg-black [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -137,7 +136,7 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
           const isSaved = Boolean(saved[video.id]);
 
           return (
-            <section
+              <section
               key={video.id}
               data-index={index}
               className="relative flex h-[100dvh] w-full snap-start snap-always items-center justify-center overflow-hidden bg-black"
@@ -170,9 +169,9 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-64 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
               {/* Header Navigation */}
-              <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-4 text-white">
-                <div className="w-10" />
-                <div className="flex items-center gap-5 text-[17px] font-semibold">
+              <header className="absolute inset-x-0 top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center px-4 pt-[max(14px,env(safe-area-inset-top))] text-white">
+                <div />
+                <div className="flex items-center justify-center gap-5 text-[17px] font-semibold">
                   <button
                     type="button"
                     onClick={() => setFollowing(true)}
@@ -188,7 +187,7 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
                     For You
                   </button>
                 </div>
-                <button type="button" aria-label="Search" className="flex h-10 w-10 items-center justify-center">
+                <button type="button" aria-label="Search" className="ml-auto flex h-10 w-10 items-center justify-center">
                   <Search className="h-7 w-7" strokeWidth={2} />
                 </button>
               </header>
@@ -239,8 +238,7 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
                     className="h-10 w-10 shrink-0 rounded-full border border-white/40 object-cover"
                   />
                   <span className="max-w-[45vw] truncate text-sm font-bold drop-shadow-lg">{video.username}</span>
-                  {video.verified && <BadgeCheck className="h-5 w-5 shrink-0 fill-sky-500 text-white" />}
-                  <button type="button" className="ml-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-black">
+                  <button type="button" className="ml-1 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white shadow-sm shadow-red-950/40">
                     Follow
                   </button>
                 </div>
@@ -260,7 +258,7 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
                     <Music2 className="h-4 w-4 shrink-0" />
                     <span className="truncate drop-shadow-lg">{video.soundTitle}</span>
                   </div>
-                  <button type="button" className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold backdrop-blur-md">
+                  <button type="button" className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-[10px] font-semibold">
                     Use sound
                   </button>
                 </div>
