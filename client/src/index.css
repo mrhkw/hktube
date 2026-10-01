@@ -831,6 +831,10 @@ select {
 
 /* Clips viewport contract: the feed itself owns the full screen; header and
    action rail float above the media instead of creating document-flow gaps. */
+body:has(.hktube-clips-page) header.hktube-reference-header,
+body:has(.hktube-clips-page) > div > aside {
+  display: none !important;
+}
 .hktube-clips-page {
   position: relative;
   width: 100vw;
@@ -871,6 +875,7 @@ select {
 }
 .hktube-clips-page > :not(.hktube-clips-stage) { position: relative; z-index: 20; }
 .hktube-clips-page .hktube-clips-stage { isolation: isolate; }
+.hktube-clips-page .clips-action-rail { right: 0.25rem !important; }
 @media (max-width: 767px) {
   body:has(.hktube-clips-page),
   body:has(.hktube-clips-page) #root,

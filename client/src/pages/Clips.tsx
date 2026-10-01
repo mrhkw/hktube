@@ -591,7 +591,7 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-24 sm:left-6">
+              <div className="absolute bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-20 sm:left-6">
                 <div className="flex items-center gap-2.5">
                   <Link
                     href={
@@ -650,7 +650,7 @@ export default function ClipsPage() {
                   <button type="button" onClick={() => void share()} className="shrink-0 rounded-full border border-white/30 bg-white px-3 py-1.5 text-black">Use sound</button>
                 </div>
               </div>
-              <div className="absolute bottom-[calc(8rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-center gap-3 sm:bottom-24 sm:right-5">
+              <div className="clips-action-rail absolute bottom-[calc(8rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-center gap-3 sm:bottom-24 sm:right-5">
                 <Action
                   icon={Heart}
                   label={compact(
