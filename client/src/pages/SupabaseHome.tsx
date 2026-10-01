@@ -101,7 +101,7 @@ function HomeClipsRail({ clips }: { clips: RankedVideo[] }) {
         {clips.map((clip) => (
           <Link
             key={clip.id}
-            href={`/clips?clip=${encodeURIComponent(clip.id)}`}
+            href="/clips"
             className="group w-[156px] shrink-0 snap-start sm:w-[176px]"
           >
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-violet-200 group-hover:shadow-lg">
