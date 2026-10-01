@@ -39,10 +39,15 @@ export async function loadSupabaseHomeData(userId?: number | string) {
   let rankingError: unknown = null;
 
   try {
-    [ranked, rankedShorts] = await Promise.all([
-      rankPublicVideos({ limit: 60, userId: userId == null ? undefined : String(userId) }),
-      rankPublicVideos({ shorts: true, limit: 12, userId: userId == null ? undefined : String(userId) }),
+    const [rankedVideos, shorts] = await Promise.all([
+      rankPublicVideos({
+        limit: 60,
+        userId: userId == null ? undefined : String(userId),
+      }),
+      listPublicSupabaseShorts(12),
     ]);
+    ranked = rankedVideos;
+    rankedShorts = shorts.map(video => asRanked(video));
   } catch (error) {
     rankingError = error;
   }
@@ -57,14 +62,6 @@ export async function loadSupabaseHomeData(userId?: number | string) {
       throw error;
     }
   }
-  if (!rankedShorts.length) {
-    try {
-      rankedShorts = (await listPublicSupabaseShorts(12)).map(video => asRanked(video));
-    } catch {
-      rankedShorts = [];
-    }
-  }
-
   let following: RankedVideo[] = [];
   let continueWatching: RankedVideo[] = [];
   let historyVideos: RankedVideo[] = [];
