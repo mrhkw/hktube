@@ -90,7 +90,7 @@ export function HkTubeShell({
   const [location, navigate] = useLocation();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const notificationsQuery = trpc.notifications.mine.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !immersive,
     staleTime: 30000,
   });
   const [search, setSearch] = useState("");
@@ -232,7 +232,7 @@ export function HkTubeShell({
               href="/settings"
               className={cn(
                 "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
-                (referenceHeader || minimalHeader) && "hidden sm:grid"
+                minimalHeader && "hidden sm:grid"
               )}
               aria-label="Open Settings"
             >
@@ -244,7 +244,7 @@ export function HkTubeShell({
                 onClick={openCreate}
                 className={cn(
                   "grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95",
-                  referenceHeader && "hidden sm:grid"
+                  "hidden sm:grid"
                 )}
                 aria-label="Create content"
               >
