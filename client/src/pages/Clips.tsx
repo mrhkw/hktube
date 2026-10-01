@@ -400,7 +400,7 @@ export default function ClipsPage() {
             </button>
           </div>
         </div>
-        <div className="absolute left-1/2 top-[max(14px,env(safe-area-inset-top))] z-40 flex -translate-x-1/2 items-center gap-7 rounded-full bg-black/35 px-3 py-1 backdrop-blur">
+        <div className="absolute left-1/2 top-2 z-40 flex -translate-x-1/2 items-center gap-7 rounded-full bg-black/35 px-3 py-1 backdrop-blur">
           <button
             onClick={() => {
               setTab("following");
