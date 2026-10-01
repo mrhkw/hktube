@@ -5,7 +5,6 @@ import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BadgeCheck,
-  ChevronDown,
   Heart,
   Loader2,
   MessageCircle,
@@ -37,23 +36,11 @@ import {
   setRecommendationFeedback,
 } from "@/lib/supabaseDiscovery";
 
-function ago(value: string | null) {
-  if (!value) return "Recently";
-  const hours = Math.max(
-    1,
-    Math.floor((Date.now() - new Date(value).getTime()) / 36e5)
-  );
-  return hours < 24
-    ? `${hours} hours ago`
-    : `${Math.floor(hours / 24)} days ago`;
-}
-
 type HomeChannel = {
   id: string;
   handle: string;
   name: string;
   avatar_url: string | null;
-  subscriber_count: number;
   verification_status?: string;
 };
 type HomeProfile = {
@@ -75,7 +62,6 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
   const [saved, setSaved] = useState(false);
   const [followed, setFollowed] = useState(false);
   const [likeCount, setLikeCount] = useState(video.likesCount);
-  const [subscriberCount, setSubscriberCount] = useState(0);
   const [channel, setChannel] = useState<HomeChannel | null>(null);
   const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [muted, setMuted] = useState(true);
@@ -122,9 +108,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
     void Promise.all([
       supabase
         .from("channels")
-        .select(
-          "id,handle,name,avatar_url,subscriber_count,verification_status"
-        )
+        .select("id,handle,name,avatar_url,verification_status")
         .eq("id", video.channelId)
         .maybeSingle(),
       supabase
@@ -138,7 +122,6 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
         if (channelResult.data) {
           const row = channelResult.data as HomeChannel;
           setChannel(row);
-          setSubscriberCount(Number(row.subscriber_count || 0));
         }
         if (profileResult.data) setProfile(profileResult.data as HomeProfile);
       })
@@ -157,7 +140,6 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
       setSaved(engagement.saved);
       setFollowed(engagement.subscribed);
       setLikeCount(engagement.likeCount);
-      setSubscriberCount(engagement.subscriberCount);
       setCommentCount(comments.length);
     });
     return engagementRequest.current;
@@ -191,7 +173,6 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
       await hydrateEngagement();
       const result = await toggleChannelSubscription(video.channelId);
       setFollowed(result.subscribed);
-      setSubscriberCount(Number(result.count));
       if (result.subscribed)
         void recordDiscoveryEvent({
           eventType: "follow",
@@ -379,7 +360,6 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
         <h2 className="line-clamp-2 text-[19px] font-bold leading-6 text-slate-950">
           {video.title}
         </h2>
-        <ChevronDown className="ml-auto mt-1 size-5 text-slate-500" />
       </Link>
       <div className="relative w-full bg-black aspect-video overflow-hidden">
         <video
@@ -591,38 +571,11 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           </Link>
         </div>
       )}
-      <div className="flex gap-3 px-3 py-3 sm:px-4">
-        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-xs font-black text-white">
-          {creatorAvatar ? (
-            <img
-              src={creatorAvatar}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            "HK"
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="font-bold text-slate-950">
-            {creator}
-            {creatorVerified && (
-              <BadgeCheck className="ml-1 inline size-4 fill-sky-500 text-white" />
-            )}
-            {channel && (
-              <span className="ml-2 text-xs font-normal text-slate-500">
-                {subscriberCount.toLocaleString()} followers
-              </span>
-            )}
-          </p>
-          <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
-            {description}
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            {video.viewCount.toLocaleString()} views · {ago(video.publishedAt)}
-          </p>
-        </div>
-      </div>
+      {description && (
+        <p className="border-t border-slate-100 px-3 py-3 text-sm leading-5 text-slate-600 sm:px-4">
+          {description}
+        </p>
+      )}
     </article>
   );
 }

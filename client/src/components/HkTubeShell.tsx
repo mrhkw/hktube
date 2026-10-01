@@ -62,19 +62,6 @@ const topicFilters = [
   { label: "Education", href: "/search?q=education" },
   { label: "Trending", href: "/trending" },
 ];
-function HkTubeMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        "grid place-items-center rounded-[5px] bg-red-600 text-[9px] font-black text-white shadow-[0_3px_10px_rgba(220,38,38,.22)]",
-        className
-      )}
-      aria-hidden="true"
-    >
-      ▶
-    </span>
-  );
-}
 function ProfileGlyph({ className }: { className?: string }) {
   return <UserRound className={className} aria-hidden="true" />;
 }
@@ -194,9 +181,8 @@ export function HkTubeShell({
             <Link
               href="/"
               className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
-              aria-label="HkTube home"
+              aria-label="Go to HkTube homepage"
             >
-              <HkTubeMark className="hidden size-8 md:grid md:size-9" />
               <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] md:text-red-600">
                 <span className="text-neutral-950 md:text-red-600">Hk</span>
                 <span className="text-red-600">Tube</span>
@@ -253,7 +239,10 @@ export function HkTubeShell({
             )}
             <Link
               href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              className={cn(
+                "hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white",
+                referenceHeader && "hidden md:grid"
+              )}
               aria-label="Notifications"
             >
               <Bell className="size-5" />
@@ -267,7 +256,10 @@ export function HkTubeShell({
             {referenceHeader && (
               <Link
                 href="/search"
-                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                className={cn(
+                  "hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white",
+                  "hidden md:grid"
+                )}
                 aria-label="Open search"
               >
                 <Search className="size-5" />
@@ -334,6 +326,7 @@ export function HkTubeShell({
           <nav className="grid gap-1" aria-label="Mobile menu">
             {[
               ["Home", "/"],
+              ["Search", "/search"],
               ["Explore", "/explore"],
               ["Clips", "/clips"],
               ["Following", "/subscriptions"],
