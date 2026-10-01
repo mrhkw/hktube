@@ -744,6 +744,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
           const count = likeCounts[video.id] ?? video.likesCount;
           const creatorHref = creator?.handle ? `/channel/${creator.handle}` : null;
           const menuOpen = Boolean(menus[video.id]);
+          const shouldLoadMedia = Math.abs(index - activeIndex) <= 1;
 
           return (
             <article
@@ -757,7 +758,7 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
                     videoRefs.current[video.id] = element;
                     if (element) element.muted = mutedRef.current;
                   }}
-                  src={video.videoUrl}
+                  src={shouldLoadMedia ? video.videoUrl : undefined}
                   poster={video.thumbnailUrl ?? undefined}
                   playsInline
                   muted={muted}
@@ -912,7 +913,15 @@ export default function ClipsView({ videos: suppliedVideos }: ClipsViewProps) {
 
                     <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-white/80">
                       <Music2 className="size-4 shrink-0" />
-                      <span className="min-w-0 truncate">Original sound</span>
+                      <span className="min-w-0 flex-1 truncate">Original sound</span>
+                      <button
+                        type="button"
+                        disabled
+                        title="Sound reuse is not enabled yet."
+                        className="shrink-0 rounded-full bg-white/15 px-3 py-1.5 font-bold text-white/70 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        Use sound
+                      </button>
                     </div>
                   </div>
 
