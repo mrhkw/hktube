@@ -12,8 +12,6 @@ import {
   Search,
   Send,
   Star,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -386,6 +384,17 @@ export default function ClipsPage() {
     v.load();
     void v.play().catch(() => setPlaying(false));
   }
+  function useOriginalSound() {
+    const v = media.current;
+    if (!v) return;
+    v.muted = false;
+    setSoundOn(true);
+    if (v.paused) {
+      void v.play()
+        .then(() => setPlaying(true))
+        .catch(() => toast.error("Sound could not start. Tap the Clip to retry."));
+    }
+  }
   return (
     <HkTubeShell immersive minimalHeader>
       <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
@@ -396,11 +405,11 @@ export default function ClipsPage() {
               className="grid size-11 place-items-center rounded-full text-white"
               aria-label="Search Clips"
             >
-              <Search className="size-7" />
+              <Search className="size-5" />
             </button>
           </div>
         </div>
-        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-6 text-white">
+        <div className="clips-top-tabs absolute top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex items-center gap-6 text-white">
           <button
             type="button"
             aria-pressed={tab === "following"}
@@ -687,32 +696,16 @@ export default function ClipsPage() {
                 />
                 <button
                   type="button"
-                  aria-label={soundOn ? "Mute clip sound" : "Turn clip sound on"}
+                  aria-label={soundOn ? "Original sound is on" : "Use original sound"}
                   aria-pressed={soundOn}
-                  title={soundOn ? "Mute clip sound" : "Turn clip sound on"}
-                  onClick={() => {
-                    const next = !soundOn;
-                    setSoundOn(next);
-                    if (media.current) media.current.muted = !next;
-                  }}
-                  className="relative mt-1 grid size-12 place-items-center overflow-hidden rounded-full border-2 border-white/80 bg-black/70 shadow-xl transition-transform active:scale-90"
+                  title={soundOn ? "Original sound is on" : "Use original sound"}
+                  onClick={useOriginalSound}
+                  className="clips-action mt-1 flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-4 text-white transition-transform active:scale-90"
                 >
-                  {current.thumbnailUrl ? (
-                    <img
-                      src={current.thumbnailUrl}
-                      alt=""
-                      className={`size-full object-cover ${playing ? "animate-[spin_8s_linear_infinite]" : ""}`}
-                    />
-                  ) : (
-                    <Music2 className="size-5 text-white" />
-                  )}
-                  <span className="absolute bottom-0 right-0 grid size-5 place-items-center rounded-full bg-black/80">
-                    {soundOn ? (
-                      <Volume2 className="size-3 text-white" />
-                    ) : (
-                      <VolumeX className="size-3 text-white" />
-                    )}
+                  <span className="grid size-10 place-items-center rounded-full bg-transparent">
+                    <Music2 className="size-5 stroke-[2.2] text-white" />
                   </span>
+                  <span>{soundOn ? "Sound on" : "Use sound"}</span>
                 </button>
               </div>
               <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
@@ -857,18 +850,18 @@ function Action({
   return (
     <button
       onClick={onClick}
-      className="clips-action flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-4 text-white drop-shadow-md"
+      className="clips-action flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-4 text-white"
       aria-label={label}
     >
       <span
         className={
-          "grid size-12 place-items-center rounded-full backdrop-blur-md " +
+          "grid size-10 place-items-center rounded-full " +
           (active ? "clips-action-active bg-fuchsia-500/80" : "bg-black/35")
         }
       >
         <Icon
           className={
-            "size-6 stroke-[1.8] " + (active && Icon === Heart ? "fill-current" : "")
+            "size-5 stroke-[2.2] " + (active && Icon === Heart ? "fill-current" : "")
           }
         />
       </span>
