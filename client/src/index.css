@@ -852,6 +852,41 @@ select {
   background: rgb(236 72 153 / 0.78) !important;
 }
 
+/* Final live-device override: Clips owns the entire mobile viewport. */
+body:has(.hktube-clips-page) .hktube-clips-page,
+body:has(.hktube-clips-page) .hktube-clips-page > main {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  min-height: 100svh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: #000 !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page video {
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page .clips-action > span:first-child,
+body:has(.hktube-clips-page) .hktube-clips-page .clips-action span:first-child,
+body:has(.hktube-clips-page) .hktube-clips-page .clips-action-active span:first-child {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+body:has(.hktube-clips-page) .hktube-clips-page header > div {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
 /* Android Home reference layout: one social post per row, full-width media. */
 .hktube-home-feed {
   background: #f8f9fb;
