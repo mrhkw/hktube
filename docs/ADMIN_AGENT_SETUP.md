@@ -2,12 +2,12 @@
 
 ## Access controls
 
-The hidden `/admin-agent` page and `POST /api/admin-agent/chat` endpoint are restricted to these exact, verified Google-authenticated Supabase accounts:
+The hidden `/admin-agent` page and `POST /api/admin-agent/chat` endpoint are restricted to these exact, verified Supabase accounts:
 
 - `hanifnazamdin30@gmail.com`
 - `hanifnazamdin6@gmail.com`
 
-The backend independently verifies the Supabase access token against Supabase Auth and checks the verified email and Google provider. Hiding the route in the client is only a UI measure; the server check is authoritative. The page is intentionally not linked from public navigation.
+The backend independently verifies the Supabase access token against Supabase Auth and checks the exact verified email allowlist. Hiding the route in the client is only a UI measure; the server check is authoritative. The page is intentionally not linked from public navigation.
 
 Google sign-in must already be enabled for the Supabase project. The browser should use the project's existing public Supabase URL and anon/publishable key. The API reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` (or the existing `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` build variables) to verify sessions.
 

@@ -21,10 +21,11 @@ type SupabaseUser = {
 
 export function isAllowedAdminIdentity(user: SupabaseUser): boolean {
   const email = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
-  const providers = user.app_metadata?.providers;
-  const isGoogle = user.app_metadata?.provider === "google" || (Array.isArray(providers) && providers.includes("google"));
   const isEmailVerified = Boolean(user.email_confirmed_at || user.confirmed_at);
-  return ALLOWED_ADMIN_EMAILS.has(email) && isGoogle && isEmailVerified;
+  // Keep the security boundary on the exact verified email allowlist. Supabase
+  // can omit provider metadata on refreshed sessions even when the user signed
+  // in with Google, which previously caused a misleading 404 in production.
+  return ALLOWED_ADMIN_EMAILS.has(email) && isEmailVerified;
 }
 
 export function parseAdminChatMessages(value: unknown): AdminChatMessage[] | null {
@@ -88,7 +89,7 @@ export function registerAdminAgentRoute(app: Express) {
   app.post("/api/admin-agent/chat", async (req: Request, res: Response) => {
     try {
       if (!(await verifiedAdminFromRequest(req))) {
-        res.status(404).json({ error: { message: "Not found." } });
+        res.status(403).json({ error: { message: "This signed-in email is not authorized for the admin AI agent." } });
         return;
       }
     } catch {

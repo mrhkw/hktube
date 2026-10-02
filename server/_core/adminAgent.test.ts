@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { isAllowedAdminIdentity, parseAdminChatMessages } from "./adminAgent";
 
 describe("admin agent identity allowlist", () => {
-  it("allows only verified Google accounts on the exact email list", () => {
+  it("allows verified accounts on the exact email list", () => {
     expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", email_confirmed_at: "2026-01-01T00:00:00Z", app_metadata: { provider: "google" } })).toBe(true);
     expect(isAllowedAdminIdentity({ email: " HANIFNAZAMDIN6@GMAIL.COM ", confirmed_at: "2026-01-01T00:00:00Z", app_metadata: { providers: ["email", "google"] } })).toBe(true);
   });
 
-  it("rejects unlisted emails, unverified emails and non-Google providers", () => {
+  it("rejects unlisted and unverified emails", () => {
     expect(isAllowedAdminIdentity({ email: "someone@gmail.com", email_confirmed_at: "yes", app_metadata: { provider: "google" } })).toBe(false);
     expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", app_metadata: { provider: "google" } })).toBe(false);
-    expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", email_confirmed_at: "yes", app_metadata: { provider: "email" } })).toBe(false);
+    expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", email_confirmed_at: "yes", app_metadata: { provider: "email" } })).toBe(true);
   });
 });
 

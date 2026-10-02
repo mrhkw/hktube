@@ -95333,10 +95333,8 @@ var GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 var GEMINI_TIMEOUT_MS = 18e3;
 function isAllowedAdminIdentity(user) {
   const email3 = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
-  const providers = user.app_metadata?.providers;
-  const isGoogle = user.app_metadata?.provider === "google" || Array.isArray(providers) && providers.includes("google");
   const isEmailVerified = Boolean(user.email_confirmed_at || user.confirmed_at);
-  return ALLOWED_ADMIN_EMAILS.has(email3) && isGoogle && isEmailVerified;
+  return ALLOWED_ADMIN_EMAILS.has(email3) && isEmailVerified;
 }
 function parseAdminChatMessages(value) {
   if (!Array.isArray(value) || value.length < 1 || value.length > MAX_MESSAGES) return null;
@@ -95394,7 +95392,7 @@ function registerAdminAgentRoute(app2) {
   app2.post("/api/admin-agent/chat", async (req, res) => {
     try {
       if (!await verifiedAdminFromRequest(req)) {
-        res.status(404).json({ error: { message: "Not found." } });
+        res.status(403).json({ error: { message: "This signed-in email is not authorized for the admin AI agent." } });
         return;
       }
     } catch {
