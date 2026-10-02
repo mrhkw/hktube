@@ -9,7 +9,7 @@ async function supabaseRequest(path: string, token: string, method = "GET", body
 }
 export async function getAIUserId(req: any) {
   const token = tokenFrom(req); if (!token) return null;
-  try { const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` } }); if (!response.ok) return null; const data = await response.json() as { id?: string }; return data.id ?? null; } catch { return null; }
+  try { const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8_000) }); if (!response.ok) return null; const data = await response.json() as { id?: string }; return data.id ?? null; } catch { return null; }
 }
 export async function loadAIMemory(req: any): Promise<AIMemory[]> {
   const token = tokenFrom(req); if (!token) return [];

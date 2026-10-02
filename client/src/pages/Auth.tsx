@@ -52,7 +52,7 @@ export default function Auth() {
     setGooglePending(true);
     try {
       const redirectTo = `${window.location.origin}/`;
-      const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo, queryParams: { prompt: "select_account" } } }), "Google login is taking too long. Please try again.");
+      const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } }), "Google login is taking too long. Please try again.");
       if (error) throw error;
     } catch (error) {
       toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));

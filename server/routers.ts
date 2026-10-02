@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS, UNAUTHED_ERR_MSG } from "@shared/const";
 import { sdk } from "./_core/sdk";
 import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -8,7 +8,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { getPublicChannel, updateOwnedChannel } from "./channel";
 import { listAdminChannels, setChannelVerification } from "./adminChannels";
 import { invokeLLM } from "./_core/llm";
-import { loadAIMemory, saveAIMemories, saveAIConversation, searchWeb, shouldSearchWeb } from "./_core/aiKnowledge";
+import { getAIUserId, loadAIMemory, saveAIMemories, saveAIConversation, searchWeb, shouldSearchWeb } from "./_core/aiKnowledge";
 import { adminProcedure, protectedProcedure, publicProcedure, router, sessionProcedure } from "./_core/trpc";
 import { sanitizeInput } from "@shared/security";
 import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listFollowingVideos, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markAllNotificationsRead, markNotificationRead, recordWatchHistory, removeOwnedVideo, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
@@ -67,7 +67,11 @@ export const appRouter = router({
     setChannelVerification: adminProcedure.input(z.object({ channelId: z.number().int().positive(), status: z.enum(["unverified", "pending", "verified", "rejected"]) })).mutation(({ ctx, input }) => setChannelVerification(input.channelId, input.status, ctx.user.id)),
   }),
   ai: router({
-    chat: protectedProcedure.input(z.object({ messages: z.array(z.object({ role: z.enum(["user","assistant"]), content: z.string().trim().min(1).max(6000) })).min(1).max(20) })).mutation(async ({ ctx, input }) => {
+    chat: publicProcedure.input(z.object({ messages: z.array(z.object({ role: z.enum(["user","assistant"]), content: z.string().trim().min(1).max(6000) })).min(1).max(20) })).mutation(async ({ ctx, input }) => {
+      // Validate the Supabase bearer token directly. The browser session is the auth source for this page;
+      // requiring a separate MySQL user-row sync caused valid Supabase sessions to receive error 10001.
+      const authenticatedSupabaseUserId = await getAIUserId(ctx.req);
+      if (!authenticatedSupabaseUserId) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
       const totalChars=input.messages.reduce((n,m)=>n+m.content.length,0); if(totalChars>24000) throw new TRPCError({code:"BAD_REQUEST",message:"Chat is too long. Start a new chat."});
       try {
         const latest=input.messages.filter(m=>m.role==="user").at(-1)?.content ?? "";
