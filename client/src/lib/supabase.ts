@@ -29,11 +29,11 @@ export const signOut = async () => {
  * misleading "Please login (10001)" error. Only an Authorization header is
  * returned; the Gmail address is never sent to the AI endpoint or displayed.
  */
-export async function getAISessionHeaders(): Promise<Record<string, string>> {
+export async function getAISessionHeaders(forceRefresh = false): Promise<Record<string, string>> {
   let { data, error } = await supabase.auth.getSession();
   if (error) throw new Error("Your HkTube login is unavailable. Please sign in again.");
   const expiresAt = data.session?.expires_at ?? 0;
-  if (!data.session || (expiresAt > 0 && expiresAt * 1000 < Date.now() + 60_000)) {
+  if (forceRefresh || !data.session || (expiresAt > 0 && expiresAt * 1000 < Date.now() + 60_000)) {
     const refreshed = await supabase.auth.refreshSession();
     data = refreshed.data;
     error = refreshed.error;
@@ -48,14 +48,15 @@ export type AIChatResponse = { content: string; sources: Array<{ title: string; 
 
 /** Send AI through one explicit, private request so Android/WebView auth cannot be lost in a tRPC batch. */
 export async function requestAIChat(messages: AIChatRequestMessage[]): Promise<AIChatResponse> {
-  const headers = await getAISessionHeaders();
-  const response = await fetch("/api/trpc/ai.chat", {
-    method: "POST",
-    headers: { ...headers, "content-type": "application/json" },
-    credentials: "omit",
-    body: JSON.stringify({ json: { messages } }),
-    signal: AbortSignal.timeout(45_000),
-  });
+  const body = JSON.stringify({ json: { messages } });
+  let headers = await getAISessionHeaders();
+  let response = await fetch("/api/trpc/ai.chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
+  // A Supabase access token can be revoked or become stale before its local
+  // expiry. Refresh once on auth failure, then retry the same request.
+  if (response.status === 401 || response.status === 403) {
+    headers = await getAISessionHeaders(true);
+    response = await fetch("/api/trpc/ai.chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
+  }
   const payload = await response.json().catch(() => null) as any;
   if (!response.ok) {
     const message = payload?.error?.json?.message || payload?.error?.message;
