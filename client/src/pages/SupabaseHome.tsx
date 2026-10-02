@@ -474,7 +474,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1 text-[15px] font-bold text-slate-950">
+          <div className="hktube-channel-name flex min-w-0 items-center gap-1 text-[15px] font-bold text-[#8f1d1d]">
             {creatorHref ? (
               <Link href={creatorHref} className="truncate">
                 {creator}
@@ -495,7 +495,9 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           type="button"
           onClick={() => void follow()}
           disabled={busy}
-          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-60 ${followed ? "bg-slate-200 text-slate-700" : "bg-slate-950 text-white"}`}
+          aria-pressed={followed}
+          data-hktube-follow={followed ? "following" : "available"}
+          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${followed ? "bg-red-50 ring-1 ring-red-200 hover:bg-red-100" : "bg-red-600 hover:bg-red-700"}`}
         >
           {followed ? "Following" : "Follow"}
         </button>
@@ -669,7 +671,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           type="button"
           onClick={() => void like()}
           disabled={busy}
-          className={`home-action ${liked ? "text-violet-700" : ""}`}
+          className={`home-action ${liked ? "text-red-700" : ""}`}
         >
           <Heart className={`size-5 ${liked ? "fill-current" : ""}`} />
           <span>{likeCount.toLocaleString()}</span>
@@ -692,7 +694,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           type="button"
           onClick={() => void save()}
           disabled={busy}
-          className={`home-action ${saved ? "text-violet-700" : ""}`}
+          className={`home-action ${saved ? "text-red-700" : ""}`}
         >
           <Save className={`size-5 ${saved ? "fill-current" : ""}`} />
           <span>{saved ? "Saved" : "Save"}</span>
@@ -760,7 +762,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
             )}
           </div>
           <div className="min-w-0">
-            <p className="flex items-center gap-1 text-sm font-semibold text-slate-950">
+            <p className="hktube-channel-name flex items-center gap-1 text-sm font-semibold text-[#8f1d1d]">
               <span className="truncate">{creator}</span>
               {creatorVerified && (
                 <BadgeCheck className="size-4 shrink-0 fill-sky-500 text-white" />

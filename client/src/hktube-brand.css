@@ -1,47 +1,52 @@
-/* Final HkTube brand layer: consistent wordmark instead of the legacy placeholder mark. */
-a[aria-label="HkTube home"] {
-  width: 122px;
-  display: inline-flex;
-  align-items: center;
+/* HkTube wordmark: black Hk + red Tube on the white Android home header. */
+.hktube-reference-header .hktube-reference-logo > span {
+  color: #111827 !important;
 }
 
-a[aria-label="HkTube home"] > span[aria-hidden="true"] {
-  position: relative;
-  width: auto !important;
-  min-width: 104px;
-  height: 36px !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: flex-start;
-  border-radius: 0 !important;
-  background: transparent !important;
-  font-size: 0 !important;
-  letter-spacing: 0 !important;
+.hktube-reference-header .hktube-reference-logo > span > span:first-child {
+  color: #111827 !important;
 }
 
-a[aria-label="HkTube home"] > span[aria-hidden="true"]::before {
-  content: "Hk";
-  font-size: 22px;
-  line-height: 1;
-  font-weight: 950;
-  letter-spacing: -0.065em;
-  color: #111827;
+.hktube-reference-header .hktube-reference-logo > span > span:last-child {
+  color: #dc2626 !important;
 }
 
-a[aria-label="HkTube home"] > span[aria-hidden="true"]::after {
-  content: "▶";
-  content: "Tube";
-  margin-left: 0;
-  font-size: 22px;
-  line-height: 1;
-  font-weight: 950;
-  letter-spacing: -0.065em;
-  color: #dc2626;
+/* The global light theme neutralizes utility colors; reapply brand colors only to these controls. */
+.hktube-home-post .hktube-channel-name {
+  color: #8f1d1d !important;
 }
 
-@media (max-width: 640px) {
-  a[aria-label="HkTube home"] { width: 94px; }
-  a[aria-label="HkTube home"] > span[aria-hidden="true"] { min-width: 88px; }
-  a[aria-label="HkTube home"] > span[aria-hidden="true"]::before { font-size: 19px; }
-  a[aria-label="HkTube home"] > span[aria-hidden="true"]::after { font-size: 19px; }
+.hktube-home-post button[data-hktube-follow="available"] {
+  background-color: #dc2626 !important;
+  border: 1px solid #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.hktube-home-post button[data-hktube-follow="available"]:hover {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+.hktube-home-post button[data-hktube-follow="following"] {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #991b1b !important;
+}
+
+.hktube-reference-header nav a.bg-violet-500 {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] a[aria-current="page"],
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] a[aria-current="page"] svg {
+  color: #b91c1c !important;
+}
+
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button > span {
+  background-color: #fef2f2 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  color: #b91c1c !important;
 }

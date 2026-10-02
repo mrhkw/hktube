@@ -183,8 +183,8 @@ export function HkTubeShell({
               className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
               aria-label="Go to HkTube homepage"
             >
-              <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] md:text-red-600">
-                <span className="text-neutral-950 md:text-red-600">Hk</span>
+              <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">
+                <span className="text-neutral-950">Hk</span>
                 <span className="text-red-600">Tube</span>
               </span>
             </Link>
@@ -691,9 +691,9 @@ export function HkTubeShell({
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-xl bg-violet-500 text-white shadow-[0_5px_18px_rgba(139,92,246,.35)]",
+                  "grid size-9 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
                   location === "/" &&
-                    "rounded-full bg-[#f1edff] text-blue-600 shadow-none"
+                    "rounded-full bg-red-50 text-red-700 shadow-none"
                 )}
               >
                 <Plus className="size-5" />
@@ -707,22 +707,14 @@ export function HkTubeShell({
               className={cn(
                 "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
                 active
-                  ? location === "/"
-                    ? "text-blue-600"
-                    : "text-violet-300"
+                  ? "text-red-700"
                   : location === "/"
                     ? "text-neutral-700"
                     : "text-slate-500"
               )}
             >
               <item.icon
-                className={cn(
-                  "size-6",
-                  active &&
-                    (location === "/"
-                      ? "fill-blue-600/10"
-                      : "fill-violet-300/15")
-                )}
+                className={cn("size-6", active && "fill-red-600/10")}
               />
               {item.label}
             </Link>

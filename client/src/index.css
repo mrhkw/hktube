@@ -485,14 +485,14 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
   nav.fixed[aria-label="Mobile navigation"] > a svg,
   nav.fixed[aria-label="Mobile navigation"] > button svg {
-    width: 24px !important;
-    height: 24px !important;
-    flex: 0 0 24px !important;
+    width: 20px !important;
+    height: 20px !important;
+    flex: 0 0 20px !important;
   }
   nav.fixed[aria-label="Mobile navigation"] > a:first-child svg {
-    width: 26px !important;
-    height: 26px !important;
-    flex-basis: 26px !important;
+    width: 22px !important;
+    height: 22px !important;
+    flex-basis: 22px !important;
   }
   nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
   nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
@@ -1148,8 +1148,8 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     color: #4b5563;
   }
   .hktube-reference-header nav a.bg-violet-500 {
-    border-color: #111827;
-    background: #111827;
+    border-color: #dc2626;
+    background: #dc2626;
     color: #fff;
   }
   .hktube-reference-header nav {
@@ -1165,22 +1165,27 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
   }
-  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] {
-    height: 58px;
-    padding-top: 0;
-    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] {
+    height: 76px !important;
+    padding-top: 10px !important;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom)) !important;
   }
-  body:has(.hktube-home-feed) > div > main {
+  body:has(.hktube-home-feed) main {
     padding-bottom: 62px !important;
   }
-  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] a,
-  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button {
-    min-height: 52px;
-    gap: 0.1rem;
-    font-size: 0.62rem;
+  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] a,
+  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button {
+    height: 56px !important;
+    min-height: 56px !important;
+    gap: 0.125rem !important;
+    font-size: 0.62rem !important;
   }
-  body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button span {
-    width: 2.5rem;
-    height: 2.5rem;
+  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button span {
+    width: 2.125rem !important;
+    height: 2.125rem !important;
+  }
+  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button span svg {
+    width: 18px !important;
+    height: 18px !important;
   }
 }
