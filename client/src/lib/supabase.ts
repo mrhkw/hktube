@@ -23,6 +23,26 @@ export const signOut = async () => {
   await supabase.auth.signOut();
 };
 
+/**
+ * AI uses the same private Supabase session as the rest of HkTube, but keeps
+ * its session check explicit so an expired browser token never becomes the
+ * misleading "Please login (10001)" error. Only an Authorization header is
+ * returned; the Gmail address is never sent to the AI endpoint or displayed.
+ */
+export async function getAISessionHeaders(): Promise<Record<string, string>> {
+  let { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error("Your HkTube login is unavailable. Please sign in again.");
+  const expiresAt = data.session?.expires_at ?? 0;
+  if (!data.session || (expiresAt > 0 && expiresAt * 1000 < Date.now() + 60_000)) {
+    const refreshed = await supabase.auth.refreshSession();
+    data = refreshed.data;
+    error = refreshed.error;
+  }
+  const token = data.session?.access_token;
+  if (error || !token) throw new Error("Please sign in with Google before using HkTube AI.");
+  return { Authorization: `Bearer ${token}` };
+}
+
 export interface SupabaseProfile {
   id: string;
   username: string;

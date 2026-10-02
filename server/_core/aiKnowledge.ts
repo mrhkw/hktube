@@ -2,12 +2,22 @@ import { ENV } from "./env";
 export type AIWebSource = { title: string; url: string; snippet: string };
 export type AIMemory = { memory_type: string; memory_key: string; value: unknown };
 const clean = (value: string, max: number) => value.replace(/\s+/g, " ").trim().slice(0, max);
-const tokenFrom = (req: any) => { const value = req?.headers?.authorization; return typeof value === "string" && value.startsWith("Bearer ") ? value.slice(7) : ""; };
+const tokenFrom = (req: any) => {
+  const value = req?.headers?.authorization;
+  if (typeof value !== "string") return "";
+  const match = /^Bearer\s+(.+)$/i.exec(value.trim());
+  return match?.[1]?.trim() ?? "";
+};
 async function supabaseRequest(path: string, token: string, method = "GET", body?: unknown) {
   if (!token) return null;
   return fetch(`${ENV.supabaseUrl}/rest/v1/${path}`, { method, headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}`, "content-type": "application/json", Prefer: "return=representation" }, body: body === undefined ? undefined : JSON.stringify(body) });
 }
-export async function getAIUserId(req: any) {
+export async function getAIUserId(req: any, authenticatedUser?: { openId?: string | null } | null) {
+  // createContext has already verified this Supabase token. Reusing the
+  // verified subject avoids a second network call and prevents a valid Gmail
+  // session from being rejected as error 10001 when identity sync is slow.
+  const contextOpenId = authenticatedUser?.openId ?? "";
+  if (contextOpenId.startsWith("supabase:")) return contextOpenId.slice("supabase:".length) || null;
   const token = tokenFrom(req); if (!token) return null;
   try { const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8_000) }); if (!response.ok) return null; const data = await response.json() as { id?: string }; return data.id ?? null; } catch { return null; }
 }

@@ -24,6 +24,13 @@ describe("AI chat Supabase session verification", () => {
     expect(options.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it("reuses the verified Supabase subject from request context", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await expect(getAIUserId({ headers: {} }, { openId: "supabase:gmail-user-id" })).resolves.toBe("gmail-user-id");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("rejects revoked or expired tokens", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
     await expect(getAIUserId({ headers: { authorization: "Bearer expired-token" } })).resolves.toBeNull();

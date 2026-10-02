@@ -70,7 +70,7 @@ export const appRouter = router({
     chat: publicProcedure.input(z.object({ messages: z.array(z.object({ role: z.enum(["user","assistant"]), content: z.string().trim().min(1).max(6000) })).min(1).max(20) })).mutation(async ({ ctx, input }) => {
       // Validate the Supabase bearer token directly. The browser session is the auth source for this page;
       // requiring a separate MySQL user-row sync caused valid Supabase sessions to receive error 10001.
-      const authenticatedSupabaseUserId = await getAIUserId(ctx.req);
+      const authenticatedSupabaseUserId = await getAIUserId(ctx.req, ctx.user);
       if (!authenticatedSupabaseUserId) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
       const totalChars=input.messages.reduce((n,m)=>n+m.content.length,0); if(totalChars>24000) throw new TRPCError({code:"BAD_REQUEST",message:"Chat is too long. Start a new chat."});
       try {
