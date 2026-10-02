@@ -43,6 +43,29 @@ export async function getAISessionHeaders(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${token}` };
 }
 
+export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
+export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };
+
+/** Send AI through one explicit, private request so Android/WebView auth cannot be lost in a tRPC batch. */
+export async function requestAIChat(messages: AIChatRequestMessage[]): Promise<AIChatResponse> {
+  const headers = await getAISessionHeaders();
+  const response = await fetch("/api/trpc/ai.chat", {
+    method: "POST",
+    headers: { ...headers, "content-type": "application/json" },
+    credentials: "omit",
+    body: JSON.stringify({ json: { messages } }),
+    signal: AbortSignal.timeout(45_000),
+  });
+  const payload = await response.json().catch(() => null) as any;
+  if (!response.ok) {
+    const message = payload?.error?.json?.message || payload?.error?.message;
+    throw new Error(typeof message === "string" ? message : "HkTube AI could not complete this request. Please try again.");
+  }
+  const result = payload?.result?.data?.json ?? payload?.result?.data;
+  if (!result?.content || typeof result.content !== "string") throw new Error("HkTube AI returned an empty response. Please try again.");
+  return result as AIChatResponse;
+}
+
 export interface SupabaseProfile {
   id: string;
   username: string;

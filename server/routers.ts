@@ -87,7 +87,17 @@ export const appRouter = router({
         if(!parsed.answer?.trim()) throw new Error("AI returned an empty answer.");
         await Promise.allSettled([saveAIMemories(ctx.req,parsed.memories??[]),saveAIConversation(ctx.req,{title:latest||"HkTube AI chat",module:"general-chat",messages:[...input.messages,{role:"assistant",content:parsed.answer}]})]);
         return {content:parsed.answer.trim(),sources,usedWeb:sources.length>0,model:result.model};
-      } catch(error){throw new TRPCError({code:"INTERNAL_SERVER_ERROR",message:error instanceof Error?error.message:"AI service is temporarily unavailable."});}
+      } catch(error){
+        const raw = error instanceof Error ? error.message : "";
+        const message = /OPENAI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw)
+          ? "HkTube AI provider is not configured on the server. Add an OpenAI or Manus Forge provider key in production."
+          : /429|rate limit|quota/i.test(raw)
+            ? "HkTube AI is temporarily busy. Please try again in a moment."
+            : /timeout|aborted|timed out/i.test(raw)
+              ? "HkTube AI took too long to respond. Please try again with a shorter message."
+              : "HkTube AI is temporarily unavailable. Please try again.";
+        throw new TRPCError({code:"INTERNAL_SERVER_ERROR",message});
+      }
     }),
   }),
   creator_studio: router({
