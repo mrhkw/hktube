@@ -8,6 +8,8 @@ describe("LLM provider configuration", () => {
     vi.stubEnv("OPENAI_MODEL", "");
     vi.stubEnv("BUILT_IN_FORGE_API_KEY", "");
     vi.stubEnv("BUILT_IN_FORGE_API_URL", "");
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("GEMINI_MODEL", "");
   });
 
   afterEach(() => {
@@ -66,5 +68,27 @@ describe("LLM provider configuration", () => {
       "Bearer test-forge-key"
     );
     expect(JSON.parse(String(request.body))).not.toHaveProperty("model");
+  });
+
+  it("uses Gemini's OpenAI-compatible endpoint when a Gemini key is configured", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { invokeLLM } = await import("./llm");
+    await invokeLLM({ messages: [{ role: "user", content: "hello" }] });
+
+    const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
+    expect((request.headers as Record<string, string>).authorization).toBe("Bearer test-gemini-key");
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      model: "gemini-2.5-flash",
+      messages: [{ role: "user", content: "hello" }],
+    });
   });
 });

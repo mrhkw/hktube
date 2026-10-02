@@ -213,22 +213,31 @@ const normalizeToolChoice = (
 };
 
 const usesOpenAiApi = () => Boolean(ENV.openAiApiKey.trim());
+const usesGeminiApi = () => !usesOpenAiApi() && Boolean(ENV.geminiApiKey.trim());
 
 const resolveApiUrl = () => {
   if (usesOpenAiApi()) {
     return `${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`;
+  }
+  if (usesGeminiApi()) {
+    // Gemini's OpenAI-compatible endpoint preserves the shared adapter's
+    // existing tool, schema, and message normalization behavior.
+    return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
   }
   return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
 };
 
-const resolveApiKey = () =>
-  usesOpenAiApi() ? ENV.openAiApiKey.trim() : ENV.forgeApiKey;
+const resolveApiKey = () => {
+  if (usesOpenAiApi()) return ENV.openAiApiKey.trim();
+  if (usesGeminiApi()) return ENV.geminiApiKey.trim();
+  return ENV.forgeApiKey;
+};
 
 const assertApiKey = () => {
   if (!resolveApiKey()) {
-    throw new Error("OPENAI_API_KEY or BUILT_IN_FORGE_API_KEY is not configured");
+    throw new Error("OPENAI_API_KEY, GEMINI_API_KEY, or BUILT_IN_FORGE_API_KEY is not configured");
   }
 };
 
@@ -375,6 +384,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.model = model;
   } else if (usesOpenAiApi()) {
     payload.model = ENV.openAiModel;
+  } else if (usesGeminiApi()) {
+    payload.model = ENV.geminiModel;
   }
 
   if (tools && tools.length > 0) {
@@ -448,6 +459,8 @@ export async function listLLMModels(): Promise<ModelsResponse> {
 
   const url = usesOpenAiApi()
     ? `${ENV.openAiBaseUrl.replace(/\/$/, "")}/models`
+    : usesGeminiApi()
+      ? "https://generativelanguage.googleapis.com/v1beta/openai/models"
     : ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
       ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
       : "https://forge.manus.im/v1/models";
