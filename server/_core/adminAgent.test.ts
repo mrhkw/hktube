@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedAdminIdentity, parseAdminChatMessages } from "./adminAgent";
+import { extractBearerToken, isAllowedAdminIdentity, parseAdminChatMessages } from "./adminAgent";
+
+describe("admin agent bearer authorization", () => {
+  it("extracts a standard bearer token from the raw authorization header", () => {
+    expect(extractBearerToken("Bearer current.supabase.access-token")).toBe("current.supabase.access-token");
+    expect(extractBearerToken(" bearer  current.supabase.access-token ")).toBe("current.supabase.access-token");
+  });
+
+  it("rejects missing, malformed, and ambiguous authorization values", () => {
+    expect(extractBearerToken(undefined)).toBeNull();
+    expect(extractBearerToken("Basic token")).toBeNull();
+    expect(extractBearerToken("Bearer one two")).toBeNull();
+    expect(extractBearerToken("Bearer one, Bearer two")).toBeNull();
+  });
+});
 
 describe("admin agent identity allowlist", () => {
   it("allows verified accounts on the exact email list", () => {

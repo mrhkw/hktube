@@ -34,6 +34,12 @@ export function isAllowedAdminIdentity(user: unknown): boolean {
   return ALLOWED_ADMIN_EMAILS.has(email) && isEmailVerified;
 }
 
+export function extractBearerToken(authorization: unknown): string | null {
+  if (typeof authorization !== "string") return null;
+  const match = /^Bearer\s+([^\s]+)$/i.exec(authorization.trim());
+  return match?.[1] ?? null;
+}
+
 export function parseAdminChatMessages(value: unknown): AdminChatMessage[] | null {
   if (!Array.isArray(value) || value.length < 1 || value.length > MAX_MESSAGES) return null;
   let totalLength = 0;
@@ -69,14 +75,13 @@ function serverSupabaseConfig() {
 }
 
 async function verifiedAdminFromRequest(req: Request): Promise<boolean> {
-  const authorization = req.get("authorization") || "";
-  const match = /^Bearer\s+([^\s]+)$/i.exec(authorization);
+  const token = extractBearerToken(req.headers.authorization);
   const config = serverSupabaseConfig();
-  if (!match || !config) return false;
+  if (!token || !config) return false;
 
   const response = await fetch(`${config.url}/auth/v1/user`, {
     method: "GET",
-    headers: { apikey: config.anonKey, Authorization: `Bearer ${match[1]}` },
+    headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(8_000),
   });
   if (!response.ok) return false;
@@ -97,6 +102,10 @@ const SYSTEM_INSTRUCTION = [
 export function registerAdminAgentRoute(app: Express) {
   app.post("/api/admin-agent/chat", async (req: Request, res: Response) => {
     try {
+      if (!extractBearerToken(req.headers.authorization)) {
+        res.status(401).json({ error: { message: "A Supabase bearer session is required for the admin AI agent." } });
+        return;
+      }
       if (!(await verifiedAdminFromRequest(req))) {
         res.status(403).json({ error: { message: "This signed-in email is not authorized for the admin AI agent." } });
         return;

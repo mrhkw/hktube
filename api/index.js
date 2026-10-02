@@ -95342,6 +95342,11 @@ function isAllowedAdminIdentity(user) {
   const isEmailVerified = isVerifiedTimestamp(candidate.email_confirmed_at) || isVerifiedTimestamp(candidate.confirmed_at);
   return ALLOWED_ADMIN_EMAILS.has(email3) && isEmailVerified;
 }
+function extractBearerToken(authorization) {
+  if (typeof authorization !== "string") return null;
+  const match = /^Bearer\s+([^\s]+)$/i.exec(authorization.trim());
+  return match?.[1] ?? null;
+}
 function parseAdminChatMessages(value) {
   if (!Array.isArray(value) || value.length < 1 || value.length > MAX_MESSAGES) return null;
   let totalLength = 0;
@@ -95372,13 +95377,12 @@ function serverSupabaseConfig() {
   }
 }
 async function verifiedAdminFromRequest(req) {
-  const authorization = req.get("authorization") || "";
-  const match = /^Bearer\s+([^\s]+)$/i.exec(authorization);
+  const token = extractBearerToken(req.headers.authorization);
   const config2 = serverSupabaseConfig();
-  if (!match || !config2) return false;
+  if (!token || !config2) return false;
   const response = await fetch(`${config2.url}/auth/v1/user`, {
     method: "GET",
-    headers: { apikey: config2.anonKey, Authorization: `Bearer ${match[1]}` },
+    headers: { apikey: config2.anonKey, Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(8e3)
   });
   if (!response.ok) return false;
@@ -95397,6 +95401,10 @@ var SYSTEM_INSTRUCTION = [
 function registerAdminAgentRoute(app2) {
   app2.post("/api/admin-agent/chat", async (req, res) => {
     try {
+      if (!extractBearerToken(req.headers.authorization)) {
+        res.status(401).json({ error: { message: "A Supabase bearer session is required for the admin AI agent." } });
+        return;
+      }
       if (!await verifiedAdminFromRequest(req)) {
         res.status(403).json({ error: { message: "This signed-in email is not authorized for the admin AI agent." } });
         return;

@@ -63,6 +63,7 @@ export default function AdminAgent() {
         credentials: "omit",
         headers: { ...headers, "Content-Type": "application/json" },
         body,
+        signal: AbortSignal.timeout(45_000),
       });
       // The page may have rendered from an old auth snapshot. Refresh the
       // Supabase session once before surfacing an auth failure to the admin.
@@ -73,6 +74,7 @@ export default function AdminAgent() {
           credentials: "omit",
           headers: { ...headers, "Content-Type": "application/json" },
           body,
+          signal: AbortSignal.timeout(45_000),
         });
       }
       const data = await response.json() as { content?: string; error?: { message?: string } };
