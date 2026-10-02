@@ -65,6 +65,7 @@ const topicFilters = [
 function ProfileGlyph({ className }: { className?: string }) {
   return <UserRound className={className} aria-hidden="true" />;
 }
+const SHELL_ICON_CLASS = "size-5 shrink-0";
 
 export function HkTubeShell({
   children,
@@ -210,7 +211,7 @@ export function HkTubeShell({
               className="hktube-header-action hktube-search-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
               aria-label="Open search"
             >
-              <Search className="size-5" />
+              <Search className={SHELL_ICON_CLASS} />
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -222,7 +223,7 @@ export function HkTubeShell({
               )}
               aria-label="Open Settings"
             >
-              <Settings className="size-5" />
+              <Settings className={SHELL_ICON_CLASS} />
             </Link>
             {!minimalHeader && (
               <button
@@ -242,7 +243,7 @@ export function HkTubeShell({
               className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
-              <Bell className="size-5" />
+              <Bell className={SHELL_ICON_CLASS} />
               {unread > 0 && (
                 <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
                   {Math.min(unread, 9)}
@@ -256,7 +257,7 @@ export function HkTubeShell({
                 className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
                 aria-label="Open search"
               >
-                <Search className="size-5" />
+                <Search className={SHELL_ICON_CLASS} />
               </Link>
             )}
             <Link
@@ -276,7 +277,7 @@ export function HkTubeShell({
                   className="size-full object-cover"
                 />
               ) : (
-                <ProfileGlyph className="size-5" />
+                <ProfileGlyph className={SHELL_ICON_CLASS} />
               )}
             </Link>
           </div>
@@ -696,7 +697,7 @@ export function HkTubeShell({
                     "rounded-full bg-red-50 text-red-700 shadow-none"
                 )}
               >
-                <Plus className="size-5" />
+                <Plus className={SHELL_ICON_CLASS} />
               </span>
             </button>
           ) : (
@@ -714,7 +715,7 @@ export function HkTubeShell({
               )}
             >
               <item.icon
-                className={cn("size-6", active && "fill-red-600/10")}
+                className={cn(SHELL_ICON_CLASS, active && "fill-red-600/10")}
               />
               {item.label}
             </Link>

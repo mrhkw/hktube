@@ -53,18 +53,6 @@ export function MobileDockPolish() {
       align-items:center!important;
       gap:3px!important;
     }
-    nav.fixed[aria-label="Mobile navigation"]>a svg,
-    nav.fixed[aria-label="Mobile navigation"]>button svg{
-      width:23px!important;
-      height:23px!important;
-      flex:0 0 23px!important;
-    }
-    nav.fixed[aria-label="Mobile navigation"]>a:first-child svg{
-      width:27px!important;
-      height:27px!important;
-      flex-basis:27px!important;
-      margin-top:1px!important;
-    }
     nav.fixed[aria-label="Mobile navigation"]>a>span:last-child,
     nav.fixed[aria-label="Mobile navigation"]>button>span:last-child{
       font-size:10px!important;
