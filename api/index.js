@@ -95322,6 +95322,7 @@ function registerMediaUploadRoute(app2) {
 }
 
 // server/_core/adminAgent.ts
+init_env();
 var ALLOWED_ADMIN_EMAILS = /* @__PURE__ */ new Set([
   "hanifnazamdin30@gmail.com",
   "hanifnazamdin6@gmail.com"
@@ -95331,9 +95332,14 @@ var MAX_MESSAGE_LENGTH = 6e3;
 var MAX_TOTAL_LENGTH = 24e3;
 var GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 var GEMINI_TIMEOUT_MS = 18e3;
+function isVerifiedTimestamp(value) {
+  return typeof value === "string" ? value.trim().length > 0 : value === true;
+}
 function isAllowedAdminIdentity(user) {
-  const email3 = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
-  const isEmailVerified = Boolean(user.email_confirmed_at || user.confirmed_at);
+  if (!user || typeof user !== "object") return false;
+  const candidate = user;
+  const email3 = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
+  const isEmailVerified = isVerifiedTimestamp(candidate.email_confirmed_at) || isVerifiedTimestamp(candidate.confirmed_at);
   return ALLOWED_ADMIN_EMAILS.has(email3) && isEmailVerified;
 }
 function parseAdminChatMessages(value) {
@@ -95354,8 +95360,8 @@ function parseAdminChatMessages(value) {
   return messages;
 }
 function serverSupabaseConfig() {
-  const url3 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const url3 = ENV.supabaseUrl;
+  const anonKey = ENV.supabaseAnonKey;
   if (!url3 || !anonKey) return null;
   try {
     const parsed = new URL(url3);

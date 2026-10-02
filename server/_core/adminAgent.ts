@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import { ENV } from "./env";
 
 const ALLOWED_ADMIN_EMAILS = new Set([
   "hanifnazamdin30@gmail.com",
@@ -16,15 +17,20 @@ type SupabaseUser = {
   email?: unknown;
   email_confirmed_at?: unknown;
   confirmed_at?: unknown;
-  app_metadata?: { provider?: unknown; providers?: unknown };
+  app_metadata?: unknown;
 };
 
-export function isAllowedAdminIdentity(user: SupabaseUser): boolean {
-  const email = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
-  const isEmailVerified = Boolean(user.email_confirmed_at || user.confirmed_at);
-  // Keep the security boundary on the exact verified email allowlist. Supabase
-  // can omit provider metadata on refreshed sessions even when the user signed
-  // in with Google, which previously caused a misleading 404 in production.
+function isVerifiedTimestamp(value: unknown): boolean {
+  return typeof value === "string" ? value.trim().length > 0 : value === true;
+}
+
+export function isAllowedAdminIdentity(user: unknown): boolean {
+  if (!user || typeof user !== "object") return false;
+  const candidate = user as SupabaseUser;
+  const email = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
+  const isEmailVerified = isVerifiedTimestamp(candidate.email_confirmed_at) || isVerifiedTimestamp(candidate.confirmed_at);
+  // The canonical Auth email and verification timestamp are authoritative.
+  // Metadata is intentionally not trusted as an email fallback.
   return ALLOWED_ADMIN_EMAILS.has(email) && isEmailVerified;
 }
 
@@ -47,8 +53,11 @@ export function parseAdminChatMessages(value: unknown): AdminChatMessage[] | nul
 }
 
 function serverSupabaseConfig() {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  // Keep this route aligned with the shared server auth verifier. Vercel may
+  // expose only the public VITE_* build values, and the project has a safe
+  // publishable-key fallback for validating bearer sessions.
+  const url = ENV.supabaseUrl;
+  const anonKey = ENV.supabaseAnonKey;
   if (!url || !anonKey) return null;
   try {
     const parsed = new URL(url);

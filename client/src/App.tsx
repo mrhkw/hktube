@@ -11,10 +11,24 @@ const lazyWithRetry = <T extends ComponentType<any>>(factory: () => Promise<{ de
   }
 });
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch } from "wouter";
+import { Route as WouterRoute, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AdConsentBanner } from "./components/AdConsentBanner";
+
+// Keep a lazy route failure local to that route. A broken chunk or malformed
+// parameter must not unmount the application shell or turn the next route into
+// a false global 404.
+function Route(props: any) {
+  const { component: Component, children, ...routeProps } = props;
+  if (Component) {
+    return <WouterRoute {...routeProps} component={(params: any) => <ErrorBoundary><Component {...params} /></ErrorBoundary>} />;
+  }
+  if (children !== undefined) {
+    return <WouterRoute {...routeProps}>{(params: any) => <ErrorBoundary>{typeof children === "function" ? children(params) : children}</ErrorBoundary>}</WouterRoute>;
+  }
+  return <WouterRoute {...props} />;
+}
 import { GlobalAdPlacement } from "./components/GlobalAdPlacement";
 import { UgcTermsGate } from "./components/UgcTermsGate";
 import { AppStabilityGuard } from "./components/AppStabilityGuard";

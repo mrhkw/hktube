@@ -4,8 +4,8 @@ import type { Session } from "@supabase/supabase-js";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/lib/supabase";
-import { ALLOWED_ADMIN_EMAILS } from "@/lib/adminAccess";
+import { getAISessionHeaders, supabase } from "@/lib/supabase";
+import { isAllowlistedAdminUser } from "@/lib/adminAccess";
 import { ArrowLeft, Bot, Code2, Loader2, LockKeyhole, Send, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,11 +17,7 @@ const suggestions = [
 ];
 
 function isApprovedGoogleAdmin(session: Session | null) {
-  const user = session?.user;
-  if (!user?.email || !ALLOWED_ADMIN_EMAILS.has(user.email.trim().toLowerCase())) return false;
-  const providers = user.app_metadata?.providers;
-  const isGoogle = user.app_metadata?.provider === "google" || (Array.isArray(providers) && providers.includes("google"));
-  return Boolean(isGoogle && user.email_confirmed_at);
+  return isAllowlistedAdminUser(session?.user);
 }
 
 function NotFound() {
@@ -54,18 +50,31 @@ export default function AdminAgent() {
 
   async function sendMessage(text = input) {
     const content = text.trim();
-    if (!content || pending || !session?.access_token || !authorized) return;
+    if (!content || pending || !authorized) return;
     const next = [...messages, { role: "user" as const, content }].slice(-16);
     setMessages(next);
     setInput("");
     setPending(true);
     try {
-      const response = await fetch("/api/admin-agent/chat", {
+      const body = JSON.stringify({ messages: next });
+      let headers = await getAISessionHeaders();
+      let response = await fetch("/api/admin-agent/chat", {
         method: "POST",
         credentials: "omit",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ messages: next }),
+        headers: { ...headers, "Content-Type": "application/json" },
+        body,
       });
+      // The page may have rendered from an old auth snapshot. Refresh the
+      // Supabase session once before surfacing an auth failure to the admin.
+      if (response.status === 401 || response.status === 403) {
+        headers = await getAISessionHeaders(true);
+        response = await fetch("/api/admin-agent/chat", {
+          method: "POST",
+          credentials: "omit",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body,
+        });
+      }
       const data = await response.json() as { content?: string; error?: { message?: string } };
       if (!response.ok) throw new Error(data.error?.message || "The AI request could not be completed.");
       if (typeof data.content !== "string" || !data.content.trim()) throw new Error("The AI service returned an empty response.");

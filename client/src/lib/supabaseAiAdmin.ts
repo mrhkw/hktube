@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { getAISessionHeaders, supabase } from "./supabase";
 
 export type AiAgent = {
   id: string;
@@ -33,9 +33,15 @@ export type AdminNotification = {
 
 const EXPECTED_AGENTS = ["content-moderator", "analytics-reporter", "title-writer", "support-chatbot"];
 
-async function requireAdmin() {
+async function requireAdmin(forceRefresh = false) {
+  // Touch the current access token explicitly. This refreshes sessions that
+  // are still present in the browser but stale at the Supabase API boundary.
+  await getAISessionHeaders(forceRefresh);
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("Your session expired. Please sign in again.");
+  if (error || !data.user) {
+    if (!forceRefresh) return requireAdmin(true);
+    throw new Error("Your session expired. Please sign in again.");
+  }
   const { data: profile, error: profileError } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
   if (profileError || !profile || !["admin", "owner"].includes(String(profile.role))) throw new Error("Admin access only.");
   return data.user;
