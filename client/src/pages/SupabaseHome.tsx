@@ -5,6 +5,7 @@ import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BadgeCheck,
+  ChevronDown,
   Heart,
   Loader2,
   MessageCircle,
@@ -36,6 +37,23 @@ import {
   setRecommendationFeedback,
 } from "@/lib/supabaseDiscovery";
 
+function formatUploadedAge(value: string | null) {
+  if (!value) return "Recently";
+  const publishedAt = Date.parse(value);
+  if (!Number.isFinite(publishedAt) || publishedAt > Date.now()) {
+    return "Recently";
+  }
+  const minutes = Math.max(1, Math.floor((Date.now() - publishedAt) / 60000));
+  if (minutes < 60)
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
+}
+
+let activeHomeVideo: HTMLVideoElement | null = null;
+
 type HomeChannel = {
   id: string;
   handle: string;
@@ -56,8 +74,11 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
   const engagementRequest = useRef<Promise<void> | null>(null);
   const viewRecorded = useRef(false);
   const lastSavedSecond = useRef(0);
+  const controlsHideTimer = useRef<number | null>(null);
   const { user } = useAuth();
   const [paused, setPaused] = useState(true);
+  const [playbackActive, setPlaybackActive] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(false);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [followed, setFollowed] = useState(false);
@@ -65,6 +86,8 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
   const [channel, setChannel] = useState<HomeChannel | null>(null);
   const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [muted, setMuted] = useState(true);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(video.durationSeconds);
   const [commentCount, setCommentCount] = useState(0);
@@ -83,6 +106,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
     profile?.is_verified === true;
   const creatorHref = channel?.handle ? `/channel/${channel.handle}` : null;
   const description = video.description || "";
+  const showPlayerOverlay = playbackActive && (controlsVisible || paused);
   useEffect(() => {
     const node = article.current;
     if (!node) return;
@@ -102,6 +126,104 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    const element = media.current;
+    if (!element) return;
+    if (!("IntersectionObserver" in window)) {
+      setPlaybackActive(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      entries =>
+        setPlaybackActive(
+          entries.some(
+            entry => entry.isIntersecting && entry.intersectionRatio >= 0.62
+          )
+        ),
+      { threshold: [0, 0.62, 1] }
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const element = media.current;
+    if (!element) return;
+    if (!playbackActive) {
+      element.pause();
+      if (activeHomeVideo === element) activeHomeVideo = null;
+      if (controlsHideTimer.current !== null) {
+        window.clearTimeout(controlsHideTimer.current);
+        controlsHideTimer.current = null;
+      }
+      setControlsVisible(false);
+      return;
+    }
+    let cancelled = false;
+    let retryCount = 0;
+    let retryTimer: number | null = null;
+    const startPlayback = () => {
+      if (cancelled || !playbackActive) return;
+      if (activeHomeVideo && activeHomeVideo !== element) {
+        activeHomeVideo.pause();
+      }
+      activeHomeVideo = element;
+      element.defaultMuted = mutedRef.current;
+      element.muted = mutedRef.current;
+      if (mutedRef.current) element.setAttribute("muted", "");
+      else element.removeAttribute("muted");
+      void element.play().then(
+        () => {
+          if (cancelled || activeHomeVideo !== element) {
+            element.pause();
+            return;
+          }
+          setPaused(false);
+          setControlsVisible(false);
+        },
+        () => {
+          if (cancelled || activeHomeVideo !== element) return;
+          if (retryCount < 2) {
+            retryCount += 1;
+            retryTimer = window.setTimeout(startPlayback, 250 * retryCount);
+            return;
+          }
+          activeHomeVideo = null;
+          setPaused(true);
+          setControlsVisible(true);
+        }
+      );
+    };
+    if (element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      startPlayback();
+    } else {
+      element.addEventListener("canplay", startPlayback);
+    }
+    return () => {
+      cancelled = true;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      element.removeEventListener("canplay", startPlayback);
+    };
+  }, [playbackActive]);
+  useEffect(() => {
+    if (media.current) {
+      media.current.defaultMuted = muted;
+      media.current.muted = muted;
+      if (muted) media.current.setAttribute("muted", "");
+      else media.current.removeAttribute("muted");
+    }
+  }, [muted]);
+  useEffect(
+    () => () => {
+      if (controlsHideTimer.current !== null) {
+        window.clearTimeout(controlsHideTimer.current);
+      }
+      if (activeHomeVideo === media.current) {
+        media.current?.pause();
+        activeHomeVideo = null;
+      }
+    },
+    []
+  );
   useEffect(() => {
     if (!nearViewport) return;
     let active = true;
@@ -269,18 +391,48 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
       /* share cancelled */
     }
   };
+  const showPlayerControls = () => {
+    setControlsVisible(true);
+    if (controlsHideTimer.current !== null) {
+      window.clearTimeout(controlsHideTimer.current);
+      controlsHideTimer.current = null;
+    }
+    const element = media.current;
+    if (element && !element.paused) {
+      controlsHideTimer.current = window.setTimeout(() => {
+        setControlsVisible(false);
+        controlsHideTimer.current = null;
+      }, 2800);
+    }
+  };
   const play = () => {
     const element = media.current;
     if (!element) return;
-    if (element.paused) {
-      void element
-        .play()
-        .then(() => setPaused(false))
-        .catch(() => setPaused(true));
-    } else {
+    if (!element.paused) {
       element.pause();
       setPaused(true);
+      setControlsVisible(true);
+      if (controlsHideTimer.current !== null) {
+        window.clearTimeout(controlsHideTimer.current);
+        controlsHideTimer.current = null;
+      }
+      if (activeHomeVideo === element) activeHomeVideo = null;
+      return;
     }
+    if (activeHomeVideo && activeHomeVideo !== element) {
+      activeHomeVideo.pause();
+    }
+    activeHomeVideo = element;
+    void element.play().then(
+      () => {
+        setPaused(false);
+        showPlayerControls();
+      },
+      () => {
+        setPaused(true);
+        setControlsVisible(true);
+      }
+    );
   };
   if (hidden) return null;
   return (
@@ -321,29 +473,29 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
             )}
           </span>
         )}
-        {creatorHref ? (
-          <Link
-            href={creatorHref}
-            className="min-w-0 flex-1 text-[15px] font-bold text-slate-950"
-          >
-            <span className="truncate">{creator}</span>
-            {creatorVerified && (
-              <BadgeCheck className="ml-1 inline size-4 fill-sky-500 text-white" />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1 text-[15px] font-bold text-slate-950">
+            {creatorHref ? (
+              <Link href={creatorHref} className="truncate">
+                {creator}
+              </Link>
+            ) : (
+              <span className="truncate">{creator}</span>
             )}
-          </Link>
-        ) : (
-          <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-slate-950">
-            {creator}
             {creatorVerified && (
-              <BadgeCheck className="ml-1 inline size-4 fill-sky-500 text-white" />
+              <BadgeCheck className="size-4 shrink-0 fill-sky-500 text-white" />
             )}
-          </span>
-        )}
+          </div>
+          <p className="truncate text-[11px] leading-4 text-slate-500">
+            {video.viewCount.toLocaleString()} views ·{" "}
+            {formatUploadedAge(video.publishedAt)}
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => void follow()}
           disabled={busy}
-          className={`rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-60 ${followed ? "bg-slate-200 text-slate-700" : "bg-slate-950 text-white"}`}
+          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-60 ${followed ? "bg-slate-200 text-slate-700" : "bg-slate-950 text-white"}`}
         >
           {followed ? "Following" : "Follow"}
         </button>
@@ -356,20 +508,29 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           <MoreVertical className="size-5" />
         </button>
       </div>
-      <Link href={`/watch/${video.id}`} className="block px-3 pb-3 sm:px-4">
-        <h2 className="line-clamp-2 text-[19px] font-bold leading-6 text-slate-950">
+      <Link
+        href={`/watch/${video.id}`}
+        className="flex items-start gap-2 px-3 pb-3 sm:px-4"
+      >
+        <h2 className="min-w-0 flex-1 line-clamp-2 text-[18px] font-bold leading-6 text-slate-950">
           {video.title}
         </h2>
+        <ChevronDown
+          className="mt-1 size-4 shrink-0 text-slate-500"
+          aria-hidden="true"
+        />
       </Link>
       <div className="relative w-full bg-black aspect-video overflow-hidden">
         <video
           ref={media}
           src={video.videoUrl}
           poster={nearViewport ? video.thumbnailUrl || undefined : undefined}
+          autoPlay={playbackActive}
           muted={muted}
           playsInline
           preload={nearViewport ? "metadata" : "none"}
           className="size-full object-cover"
+          onClick={showPlayerControls}
           onLoadedMetadata={event =>
             setDuration(
               Number.isFinite(event.currentTarget.duration)
@@ -379,6 +540,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
           }
           onPlay={() => {
             setPaused(false);
+            activeHomeVideo = media.current;
             if (!viewRecorded.current) {
               viewRecorded.current = true;
               void recordVideoView(video.id, 0).catch(() => undefined);
@@ -389,7 +551,10 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
               objectId: video.id,
             }).catch(() => undefined);
           }}
-          onPause={() => setPaused(true)}
+          onPause={event => {
+            setPaused(true);
+            if (activeHomeVideo === event.currentTarget) activeHomeVideo = null;
+          }}
           onEnded={() => {
             setPaused(true);
             void recordDiscoveryEvent({
@@ -429,67 +594,75 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
             }
           }}
         />
-        <button
-          type="button"
-          onClick={play}
-          className="home-play-button absolute inset-0 m-auto grid size-20 place-items-center rounded-full text-white backdrop-blur-sm"
-          aria-label={paused ? "Play video" : "Pause video"}
-        >
-          {paused ? (
-            <Play className="ml-1 size-8 fill-current" />
-          ) : (
-            <span className="text-3xl font-black">Ⅱ</span>
-          )}
-        </button>
-        <div className="absolute inset-x-3 bottom-3 flex items-center gap-2 text-xs font-semibold text-white">
-          <span className="min-w-9">
-            {Math.floor(currentTime / 60)}:
-            {String(Math.floor(currentTime % 60)).padStart(2, "0")}
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={duration || 1}
-            step={0.1}
-            value={Math.min(currentTime, duration || 1)}
-            aria-label="Video progress"
-            className="h-1 min-w-0 flex-1 cursor-pointer accent-red-500"
-            onChange={event => {
-              const time = Number(event.currentTarget.value);
-              setCurrentTime(time);
-              if (media.current) media.current.currentTime = time;
-            }}
-          />
-          <span>
-            {Math.floor(duration / 60)}:
-            {String(Math.floor(duration % 60)).padStart(2, "0")}
-          </span>
+        {showPlayerOverlay && (
           <button
             type="button"
-            onClick={() => {
-              setMuted(value => !value);
-              if (media.current) media.current.muted = !media.current.muted;
-            }}
-            aria-label={muted ? "Unmute video" : "Mute video"}
+            onClick={play}
+            className="home-play-button absolute inset-0 m-auto grid size-14 place-items-center rounded-full text-white backdrop-blur-sm"
+            aria-label={paused ? "Play video" : "Pause video"}
           >
-            {muted ? (
-              <VolumeX className="size-5" />
+            {paused ? (
+              <Play className="ml-1 size-7 fill-current" />
             ) : (
-              <Volume2 className="size-5" />
+              <span className="text-2xl font-black">Ⅱ</span>
             )}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              const player = media.current;
-              if (player?.requestFullscreen) void player.requestFullscreen();
-              else toast.info("Fullscreen is not supported by this browser.");
-            }}
-            aria-label="Fullscreen"
+        )}
+        {showPlayerOverlay && (
+          <div
+            onPointerDown={showPlayerControls}
+            className="absolute inset-x-3 bottom-3 flex items-center gap-2 text-xs font-semibold text-white"
           >
-            <Maximize2 className="size-5" />
-          </button>
-        </div>
+            <span className="min-w-9">
+              {Math.floor(currentTime / 60)}:
+              {String(Math.floor(currentTime % 60)).padStart(2, "0")}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={duration || 1}
+              step={0.1}
+              value={Math.min(currentTime, duration || 1)}
+              aria-label="Video progress"
+              className="h-1 min-w-0 flex-1 cursor-pointer accent-red-500"
+              onChange={event => {
+                const time = Number(event.currentTarget.value);
+                setCurrentTime(time);
+                if (media.current) media.current.currentTime = time;
+              }}
+            />
+            <span>
+              {Math.floor(duration / 60)}:
+              {String(Math.floor(duration % 60)).padStart(2, "0")}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setMuted(value => !value);
+                showPlayerControls();
+              }}
+              aria-label={muted ? "Unmute video" : "Mute video"}
+            >
+              {muted ? (
+                <VolumeX className="size-5" />
+              ) : (
+                <Volume2 className="size-5" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                showPlayerControls();
+                const player = media.current;
+                if (player?.requestFullscreen) void player.requestFullscreen();
+                else toast.info("Fullscreen is not supported by this browser.");
+              }}
+              aria-label="Fullscreen"
+            >
+              <Maximize2 className="size-5" />
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
         <button
@@ -572,9 +745,32 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
         </div>
       )}
       {description && (
-        <p className="border-t border-slate-100 px-3 py-3 text-sm leading-5 text-slate-600 sm:px-4">
-          {description}
-        </p>
+        <div className="flex gap-3 border-t border-slate-100 px-3 py-3 sm:px-4">
+          <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-900 text-xs font-black text-white">
+            {creatorAvatar ? (
+              <img
+                src={creatorAvatar}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="size-full object-cover"
+              />
+            ) : (
+              "HK"
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="flex items-center gap-1 text-sm font-semibold text-slate-950">
+              <span className="truncate">{creator}</span>
+              {creatorVerified && (
+                <BadgeCheck className="size-4 shrink-0 fill-sky-500 text-white" />
+              )}
+            </p>
+            <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
+              {description}
+            </p>
+          </div>
+        </div>
       )}
     </article>
   );

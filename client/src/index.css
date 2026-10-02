@@ -485,14 +485,14 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
   nav.fixed[aria-label="Mobile navigation"] > a svg,
   nav.fixed[aria-label="Mobile navigation"] > button svg {
-    width: 30px !important;
-    height: 30px !important;
-    flex: 0 0 30px !important;
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
   }
   nav.fixed[aria-label="Mobile navigation"] > a:first-child svg {
-    width: 34px !important;
-    height: 34px !important;
-    flex-basis: 34px !important;
+    width: 26px !important;
+    height: 26px !important;
+    flex-basis: 26px !important;
   }
   nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
   nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
@@ -1127,7 +1127,7 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     letter-spacing: -0.05em;
   }
   .hktube-reference-header .ml-auto {
-    margin-left: 0;
+    margin-left: auto;
   }
   .hktube-reference-header .hktube-header-action.ml-auto {
     margin-left: auto;
@@ -1180,7 +1180,7 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     font-size: 0.62rem;
   }
   body:has(.hktube-home-feed) > div > nav[aria-label="Mobile navigation"] button span {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 }

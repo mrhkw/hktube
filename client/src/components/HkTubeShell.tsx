@@ -239,10 +239,7 @@ export function HkTubeShell({
             )}
             <Link
               href="/notifications"
-              className={cn(
-                "hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white",
-                referenceHeader && "hidden md:grid"
-              )}
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-5" />
@@ -256,10 +253,7 @@ export function HkTubeShell({
             {referenceHeader && (
               <Link
                 href="/search"
-                className={cn(
-                  "hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white",
-                  "hidden md:grid"
-                )}
+                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
                 aria-label="Open search"
               >
                 <Search className="size-5" />
@@ -674,11 +668,11 @@ export function HkTubeShell({
       >
         {[
           { label: "Home", href: "/", icon: Home },
-          { label: "Shorts", href: "/clips", icon: MonitorPlay },
+          { label: "Clips", href: "/clips", icon: MonitorPlay },
           { label: "Create", href: "#create", icon: Plus },
-          { label: "Following", href: "/subscriptions", icon: UserRound },
+          { label: "Library", href: "/library", icon: Library },
           {
-            label: "You",
+            label: "Profile",
             href: isAuthenticated ? "/profile" : "/auth",
             icon: ProfileGlyph,
           },
@@ -692,6 +686,7 @@ export function HkTubeShell({
               key={item.label}
               type="button"
               onClick={openCreate}
+              aria-label="Create content"
               className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300"
             >
               <span
