@@ -1189,3 +1189,44 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     height: 18px !important;
   }
 }
+
+/* Compact primary navigation for Home, Create/Upload, Library, and Profile.
+   Clips keeps its immersive player dock dimensions. */
+@media (max-width: 767px) {
+  body:has(nav[data-hktube-navigation-layout="primary"]) {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] {
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    min-height: calc(60px + env(safe-area-inset-bottom)) !important;
+    align-items: center !important;
+    padding: 0 8px env(safe-area-inset-bottom) !important;
+  }
+
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > a,
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > button {
+    height: 56px !important;
+    min-height: 56px !important;
+    gap: 2px !important;
+    padding: 3px 2px !important;
+  }
+
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > a svg,
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > button svg {
+    width: 18px !important;
+    height: 18px !important;
+    flex-basis: 18px !important;
+  }
+
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > button[aria-label="Create content"] > span {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}

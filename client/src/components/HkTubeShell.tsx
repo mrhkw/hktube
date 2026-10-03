@@ -145,7 +145,16 @@ export function HkTubeShell({
     : primaryNav;
   const unread =
     notificationsQuery.data?.filter(item => !item.readAt).length ?? 0;
-  const referenceHeader = location === "/";
+  const usesPrimaryNavigation = [
+    "/",
+    "/home",
+    "/index.html",
+    "/app",
+    "/upload",
+    "/library",
+    "/profile",
+  ].includes(location);
+  const referenceHeader = usesPrimaryNavigation;
 
   return (
     <div
@@ -171,7 +180,7 @@ export function HkTubeShell({
               className="grid size-10 shrink-0 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:hidden"
               aria-label="Open menu"
             >
-              <Menu className="size-6" />
+              <Menu className="size-5" />
             </button>
           )}
           {minimalHeader && title ? (
@@ -659,13 +668,14 @@ export function HkTubeShell({
       <nav
         className={cn(
           "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 text-white backdrop-blur-xl md:hidden",
-          location === "/" && "border-black/10 bg-white text-neutral-950",
+          usesPrimaryNavigation && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
             !location.startsWith("/shorts") &&
             "max-lg:hidden"
         )}
         aria-label="Mobile navigation"
+        data-hktube-navigation-layout={usesPrimaryNavigation ? "primary" : undefined}
       >
         {[
           { label: "Home", href: "/", icon: Home },
@@ -693,7 +703,7 @@ export function HkTubeShell({
               <span
                 className={cn(
                   "grid size-9 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
-                  location === "/" &&
+                  usesPrimaryNavigation &&
                     "rounded-full bg-red-50 text-red-700 shadow-none"
                 )}
               >
@@ -709,7 +719,7 @@ export function HkTubeShell({
                 "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
                 active
                   ? "text-red-700"
-                  : location === "/"
+                  : usesPrimaryNavigation
                     ? "text-neutral-700"
                     : "text-slate-500"
               )}
