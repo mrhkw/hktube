@@ -5,6 +5,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
 import { registerAdminAgentRoute } from "./adminAgent";
+import { registerAIAdminRoute } from "./aiAdminRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
@@ -124,6 +125,7 @@ export function createApiApp(): Express {
   registerOAuthRoutes(app);
   registerMediaUploadRoute(app);
   registerAdminAgentRoute(app);
+  registerAIAdminRoute(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const parserError = error as { type?: string; status?: number };
