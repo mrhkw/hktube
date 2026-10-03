@@ -46,16 +46,16 @@ export async function getAISessionHeaders(forceRefresh = false): Promise<Record<
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
 export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };
 
-/** Send AI through one explicit, private request so Android/WebView auth cannot be lost in a tRPC batch. */
+/** Send AI through the verified direct endpoint so the legacy tRPC auth path cannot emit 10001. */
 export async function requestAIChat(messages: AIChatRequestMessage[]): Promise<AIChatResponse> {
-  const body = JSON.stringify({ json: { messages } });
+  const body = JSON.stringify({ messages });
   let headers = await getAISessionHeaders();
-  let response = await fetch("/api/trpc/ai.chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
+  let response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
   // A Supabase access token can be revoked or become stale before its local
   // expiry. Refresh once on auth failure, then retry the same request.
   if (response.status === 401 || response.status === 403) {
     headers = await getAISessionHeaders(true);
-    response = await fetch("/api/trpc/ai.chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
+    response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
   }
   const payload = await response.json().catch(() => null) as any;
   if (!response.ok) {
