@@ -24,7 +24,6 @@ import {
   MonitorPlay,
   Plus,
   Search,
-  Settings,
   Settings2,
   Sparkles,
   UserRound,
@@ -164,16 +163,17 @@ export function HkTubeShell({
         )}
       >
         <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
-          {referenceHeader && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="grid size-10 shrink-0 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:hidden"
-              aria-label="Open menu"
-            >
-              <Menu className="size-6" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className={cn(
+              "grid size-10 shrink-0 place-items-center rounded-full hover:bg-black/5 md:hidden",
+              referenceHeader ? "text-neutral-900" : "text-slate-200"
+            )}
+            aria-label="Open menu"
+          >
+            <Menu className="size-6" />
+          </button>
           {minimalHeader && title ? (
             <div className="min-w-0 max-w-[45vw] flex-1 truncate text-[18px] font-black tracking-[-.02em] text-white sm:max-w-none">
               {title}
@@ -215,16 +215,6 @@ export function HkTubeShell({
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Link
-              href="/settings"
-              className={cn(
-                "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
-                (referenceHeader || minimalHeader) && "hidden sm:grid"
-              )}
-              aria-label="Open Settings"
-            >
-              <Settings className={SHELL_ICON_CLASS} />
-            </Link>
             {!minimalHeader && (
               <button
                 type="button"
@@ -530,7 +520,7 @@ export function HkTubeShell({
             href="/settings"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/[.045] hover:text-white"
           >
-            <Settings2 className="size-6" />
+            <Settings2 className="size-5" />
             Settings
           </Link>
           <Link
@@ -658,7 +648,7 @@ export function HkTubeShell({
 
       <nav
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 text-white backdrop-blur-xl md:hidden",
+          "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-0.5 text-white backdrop-blur-xl md:hidden",
           location === "/" && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
@@ -688,16 +678,16 @@ export function HkTubeShell({
               type="button"
               onClick={openCreate}
               aria-label="Create content"
-              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300"
+              className="flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[9px] font-semibold text-slate-300"
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
+                  "grid size-8 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
                   location === "/" &&
                     "rounded-full bg-red-50 text-red-700 shadow-none"
                 )}
               >
-                <Plus className={SHELL_ICON_CLASS} />
+                <Plus className="size-[18px]" />
               </span>
             </button>
           ) : (
@@ -706,7 +696,7 @@ export function HkTubeShell({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
+                "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[9px] font-semibold",
                 active
                   ? "text-red-700"
                   : location === "/"
@@ -715,7 +705,7 @@ export function HkTubeShell({
               )}
             >
               <item.icon
-                className={cn(SHELL_ICON_CLASS, active && "fill-red-600/10")}
+                className={cn("size-[18px]", active && "fill-red-600/10")}
               />
               {item.label}
             </Link>
