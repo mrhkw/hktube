@@ -108093,7 +108093,7 @@ var assertApiKey = () => {
   }
 };
 var hasGeminiFallback = () => usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
-var isFallbackStatus = (status) => status === 408 || status === 425 || status >= 500 && status <= 599;
+var isFallbackStatus = (status) => status === 408 || status === 425 || status === 429 || status >= 500 && status <= 599;
 var isProviderTransportFailure = (error47) => error47 instanceof Error && ["AbortError", "TimeoutError", "TypeError"].includes(error47.name);
 var normalizeResponseFormat = ({
   responseFormat,
