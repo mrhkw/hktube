@@ -7,7 +7,17 @@ const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable__1sh69umIE7vUSobZfp1Tw__D5ud-2
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const browserStorage = typeof window !== "undefined" ? window.localStorage : undefined;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    ...(browserStorage ? { storage: browserStorage } : {}),
+    storageKey: "hktube-auth-session",
+  },
+});
 
 export const signInWithGoogle = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
