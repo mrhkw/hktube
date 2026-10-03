@@ -21,6 +21,7 @@ import {
   Loader2,
   Play,
   Settings2,
+  Settings,
   Share2,
   X,
   ListVideo,
