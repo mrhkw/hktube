@@ -250,7 +250,10 @@ const assertApiKey = () => {
 };
 
 const hasGeminiFallback = () => usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
-const isFallbackStatus = (status: number) => status === 408 || status === 425 || (status >= 500 && status <= 599);
+// A provider-side 429 can mean temporary throttling or exhausted quota for
+// this key/model. If another provider is configured, try it rather than
+// immediately telling the user to wait and retry the same failing provider.
+const isFallbackStatus = (status: number) => status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
 const isProviderTransportFailure = (error: unknown) =>
   error instanceof Error && ["AbortError", "TimeoutError", "TypeError"].includes(error.name);
 

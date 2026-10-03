@@ -19,6 +19,29 @@ describe("LLM provider response guardrails", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("fails over to OpenAI when Gemini is rate-limited", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-3.8-flash");
+    vi.stubEnv("OPENAI_MODEL", "gpt-4o-mini");
+    const fallbackResponse = {
+      id: "fallback-after-rate-limit",
+      model: "gpt-4o-mini",
+      choices: [{ index: 0, message: { role: "assistant", content: "Fallback answer" }, finish_reason: "stop" }],
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: "rate limit exceeded" } }), { status: 429, statusText: "Too Many Requests" }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(fallbackResponse), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { invokeLLM } = await import("./llm");
+    const result = await invokeLLM({ messages: [{ role: "user", content: "hi" }] });
+
+    expect(result.choices[0]?.message.content).toBe("Fallback answer");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("generativelanguage.googleapis.com");
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("api.openai.com/v1/chat/completions");
+  });
+
   it("rejects non-JSON and invalid-envelope success responses", async () => {
     const { invokeLLM } = await import("./llm");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not-json", { status: 200 })));
