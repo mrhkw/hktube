@@ -271,6 +271,14 @@ export default function Profile() {
                   <Edit3 className="mr-1.5 size-4" />
                   Edit
                 </Button>
+                <Link
+                  href="/settings"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 text-sm font-bold text-white transition hover:bg-white/[.08]"
+                  aria-label="Open Settings"
+                >
+                  <Settings className="size-4" />
+                  Settings
+                </Link>
                 <Button
                   type="button"
                   onClick={() => void shareChannel()}
