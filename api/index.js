@@ -49544,9 +49544,9 @@ var init_env = __esm({
     firstNonEmpty = (...values) => values.find((value) => Boolean(value?.trim()))?.trim() ?? "";
     ENV = {
       // OAuth client identifiers and service base URL are public configuration.
-      // Keep explicit Vercel variables as the preferred source; the public
-      // Supabase key fallback also lets the server validate an existing browser
-      // Supabase session when the Vercel secret is not configured.
+      // Keep the server auth project aligned with the browser client. A stale
+      // SUPABASE_URL from an older deployment can make a valid live Gmail token
+      // look unauthorized even though the navbar session is active.
       appId: firstNonEmpty(process.env.VITE_APP_ID, "oW2FhxeMWaMQ3fzfsPSX4q"),
       cookieSecret: process.env.JWT_SECRET ?? "",
       databaseUrl: process.env.DATABASE_URL ?? "",
@@ -49560,8 +49560,8 @@ var init_env = __esm({
       openAiModel: firstNonEmpty(process.env.OPENAI_MODEL, "gpt-4o-mini"),
       geminiApiKey: process.env.GEMINI_API_KEY ?? "",
       geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-2.5-flash"),
-      supabaseUrl: firstNonEmpty(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
-      supabaseAnonKey: firstNonEmpty(process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
+      supabaseUrl: firstNonEmpty(process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
+      supabaseAnonKey: firstNonEmpty(process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
       resendApiKey: process.env.RESEND_API_KEY ?? "",
       resendFromEmail: process.env.RESEND_FROM_EMAIL ?? ""
     };
@@ -108341,7 +108341,7 @@ var chatSchema = external_exports.object({
 });
 async function verifiedAdmin(req) {
   const token = extractBearerToken(req.headers.authorization);
-  if (!token) return null;
+  if (!token) return { ok: false, reason: "missing-token" };
   const response = await fetch(`${ENV.supabaseUrl.replace(/\/$/, "")}/auth/v1/user`, {
     method: "GET",
     headers: {
@@ -108350,18 +108350,18 @@ async function verifiedAdmin(req) {
     },
     signal: AbortSignal.timeout(8e3)
   });
-  if (!response.ok) return null;
+  if (!response.ok) return { ok: false, reason: "supabase-rejected" };
   const user = await response.json();
-  return isAllowedAdminIdentity(user) ? user : null;
+  return isAllowedAdminIdentity(user) ? { ok: true, user } : { ok: false, reason: "email-not-allowlisted" };
 }
 function registerAIAdminRoute(app2) {
   app2.post("/api/ai/chat", async (req, res) => {
     try {
-      const user = await verifiedAdmin(req);
-      if (!user) {
+      const verification = await verifiedAdmin(req);
+      if (!verification.ok) {
         res.status(401).json({
           error: {
-            message: "Sign in with an authorized HkTube admin Google account before using HkTube AI."
+            message: verification.reason === "missing-token" ? "Your HkTube session token did not reach the AI endpoint. Sign in once and try again." : verification.reason === "supabase-rejected" ? "Supabase rejected this session. Sign out and sign in once with the HkTube Gmail account." : "This signed-in email is not one of the two HkTube admin emails."
           }
         });
         return;

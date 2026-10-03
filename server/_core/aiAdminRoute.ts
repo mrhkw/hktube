@@ -35,9 +35,13 @@ type VerifiedUser = {
   confirmed_at?: unknown;
 };
 
-async function verifiedAdmin(req: Request): Promise<VerifiedUser | null> {
+type AdminVerification =
+  | { ok: true; user: VerifiedUser }
+  | { ok: false; reason: "missing-token" | "supabase-rejected" | "email-not-allowlisted" };
+
+async function verifiedAdmin(req: Request): Promise<AdminVerification> {
   const token = extractBearerToken(req.headers.authorization);
-  if (!token) return null;
+  if (!token) return { ok: false, reason: "missing-token" };
 
   const response = await fetch(`${ENV.supabaseUrl.replace(/\/$/, "")}/auth/v1/user`, {
     method: "GET",
@@ -48,19 +52,23 @@ async function verifiedAdmin(req: Request): Promise<VerifiedUser | null> {
     signal: AbortSignal.timeout(8_000),
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) return { ok: false, reason: "supabase-rejected" };
   const user = await response.json() as VerifiedUser;
-  return isAllowedAdminIdentity(user) ? user : null;
+  return isAllowedAdminIdentity(user) ? { ok: true, user } : { ok: false, reason: "email-not-allowlisted" };
 }
 
 export function registerAIAdminRoute(app: Express) {
   app.post("/api/ai/chat", async (req: Request, res: Response) => {
     try {
-      const user = await verifiedAdmin(req);
-      if (!user) {
+      const verification = await verifiedAdmin(req);
+      if (!verification.ok) {
         res.status(401).json({
           error: {
-            message: "Sign in with an authorized HkTube admin Google account before using HkTube AI.",
+            message: verification.reason === "missing-token"
+              ? "Your HkTube session token did not reach the AI endpoint. Sign in once and try again."
+              : verification.reason === "supabase-rejected"
+                ? "Supabase rejected this session. Sign out and sign in once with the HkTube Gmail account."
+                : "This signed-in email is not one of the two HkTube admin emails.",
           },
         });
         return;

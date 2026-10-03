@@ -8,9 +8,9 @@ export function isOwnerEmail(email: string | null | undefined): boolean {
 
 export const ENV = {
   // OAuth client identifiers and service base URL are public configuration.
-  // Keep explicit Vercel variables as the preferred source; the public
-  // Supabase key fallback also lets the server validate an existing browser
-  // Supabase session when the Vercel secret is not configured.
+  // Keep the server auth project aligned with the browser client. A stale
+  // SUPABASE_URL from an older deployment can make a valid live Gmail token
+  // look unauthorized even though the navbar session is active.
   appId: firstNonEmpty(process.env.VITE_APP_ID, "oW2FhxeMWaMQ3fzfsPSX4q"),
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
@@ -24,8 +24,8 @@ export const ENV = {
   openAiModel: firstNonEmpty(process.env.OPENAI_MODEL, "gpt-4o-mini"),
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-2.5-flash"),
-  supabaseUrl: firstNonEmpty(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
-  supabaseAnonKey: firstNonEmpty(process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
+  supabaseUrl: firstNonEmpty(process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
+  supabaseAnonKey: firstNonEmpty(process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "",
 };
