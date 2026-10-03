@@ -20,8 +20,9 @@ function isApprovedGoogleAdmin(session: Session | null) {
   return isAllowlistedAdminUser(session?.user);
 }
 
-function NotFound() {
-  return <HkTubeShell title="Page not found"><main className="mx-auto max-w-xl px-5 py-24 text-center"><p className="text-xs font-bold uppercase tracking-[.2em] text-slate-500">404</p><h1 className="mt-3 text-3xl font-black text-white">Page not found</h1><p className="mt-3 text-sm text-slate-500">The page you requested is unavailable.</p><Link href="/" className="mt-7 inline-flex rounded-full border border-white/10 px-5 py-2.5 text-sm font-bold text-slate-200 hover:bg-white/[.06]">Go home</Link></main></HkTubeShell>;
+function AdminAccessGate({ session }: { session: Session | null }) {
+  const signedIn = Boolean(session?.user);
+  return <HkTubeShell title="Admin Agent"><main className="mx-auto max-w-xl px-5 py-24 text-center"><span className="mx-auto grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200"><ShieldCheck className="size-6" /></span><h1 className="mt-5 text-3xl font-black text-white">Admin access</h1><p className="mt-3 text-sm leading-6 text-slate-400">{signedIn ? "This signed-in email is not on the HkTube admin allowlist." : "Sign in once with an authorized Google account. HkTube will remember the active session automatically."}</p>{signedIn ? <p className="mt-3 text-xs text-slate-500">Signed in as {session?.user.email ?? "unknown account"}</p> : <Button asChild className="mt-7 bg-violet-500 text-white hover:bg-violet-400"><Link href="/auth">Sign in with Google</Link></Button>}<div className="mt-5"><Link href="/" className="text-xs font-bold text-slate-500 hover:text-slate-300">Go home</Link></div></main></HkTubeShell>;
 }
 
 export default function AdminAgent() {
@@ -34,9 +35,17 @@ export default function AdminAgent() {
 
   useEffect(() => {
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) { setSession(data.session); setAuthReady(true); }
-    }).catch(() => { if (active) setAuthReady(true); });
+    void (async () => {
+      try {
+        const current = await supabase.auth.getSession();
+        let nextSession = current.data.session;
+        const expiresAt = nextSession?.expires_at ?? 0;
+        if (nextSession && expiresAt > 0 && expiresAt * 1000 < Date.now() + 60_000) {
+          nextSession = (await supabase.auth.refreshSession()).data.session ?? null;
+        }
+        if (active) { setSession(nextSession); setAuthReady(true); }
+      } catch { if (active) { setSession(null); setAuthReady(true); } }
+    })();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (active) setSession(nextSession);
     });
@@ -58,7 +67,7 @@ export default function AdminAgent() {
     try {
       const body = JSON.stringify({ messages: next });
       let headers = await getAISessionHeaders();
-      let response = await fetch("/api/admin-agent/chat", {
+      let response = await fetch("/api/ai/chat", {
         method: "POST",
         credentials: "omit",
         headers: { ...headers, "Content-Type": "application/json" },
@@ -69,7 +78,7 @@ export default function AdminAgent() {
       // Supabase session once before surfacing an auth failure to the admin.
       if (response.status === 401 || response.status === 403) {
         headers = await getAISessionHeaders(true);
-        response = await fetch("/api/admin-agent/chat", {
+        response = await fetch("/api/ai/chat", {
           method: "POST",
           credentials: "omit",
           headers: { ...headers, "Content-Type": "application/json" },
@@ -88,14 +97,14 @@ export default function AdminAgent() {
   }
 
   if (!authReady) return <HkTubeShell title=""><div className="grid min-h-[60vh] place-items-center"><Loader2 className="size-6 animate-spin text-violet-300" /></div></HkTubeShell>;
-  if (!authorized) return <NotFound />;
+  if (!authorized) return <AdminAccessGate session={session} />;
 
   function clearChat() { setMessages([]); setInput(""); }
 
-  return <HkTubeShell title="Admin Agent" subtitle="Private engineering copilot">
+  return <HkTubeShell title="Admin Agent" subtitle="Private HkTube AI workspace">
     <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-5xl flex-col px-4 pb-5 sm:px-6">
       <header className="flex flex-col gap-4 border-b border-white/10 py-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200"><Bot className="size-5" /></span><div><div className="flex items-center gap-2"><h1 className="text-xl font-black text-white">Admin AI Agent</h1><span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-400/[.08] px-2 py-1 text-[10px] font-bold text-emerald-200"><ShieldCheck className="size-3" /> Authorized</span></div><p className="mt-1 text-xs text-slate-500">Signed in as {session?.user.email}</p></div></div>
+        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200"><Bot className="size-5" /></span><div><div className="flex flex-wrap items-center gap-2"><h1 className="text-xl font-black text-white">Admin AI Agent</h1><span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-400/[.08] px-2 py-1 text-[10px] font-bold text-emerald-200"><ShieldCheck className="size-3" /> Session active</span><span className="rounded-full border border-cyan-300/20 bg-cyan-400/[.06] px-2 py-1 text-[10px] font-bold text-cyan-200">Memory + web context</span></div><p className="mt-1 text-xs text-slate-500">Signed in as {session?.user.email} · one login, automatic token refresh</p></div></div>
         <div className="flex gap-2"><Button asChild variant="outline" className="border-white/10 bg-transparent text-slate-300"><Link href="/admin/ai"><ArrowLeft className="mr-2 size-4" />AI Center</Link></Button><Button type="button" variant="outline" onClick={clearChat} disabled={!messages.length} className="border-white/10 bg-transparent text-slate-300"><Trash2 className="mr-2 size-4" />Clear chat</Button></div>
       </header>
 
