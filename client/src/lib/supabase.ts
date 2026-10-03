@@ -46,25 +46,56 @@ export async function getAISessionHeaders(forceRefresh = false): Promise<Record<
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
 export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };
 
+function aiTransportError(message: string, status?: number, code?: string) {
+  const error = new Error(message) as Error & { status?: number; code?: string; retryable?: boolean };
+  error.status = status;
+  error.code = code;
+  error.retryable = status === undefined || (status >= 500 && ["network", "upstream", "empty_response"].includes(code ?? ""));
+  return error;
+}
+
 /** Send AI through the verified direct endpoint so the legacy tRPC auth path cannot emit 10001. */
-export async function requestAIChat(messages: AIChatRequestMessage[]): Promise<AIChatResponse> {
+export async function requestAIChat(messages: AIChatRequestMessage[], callerSignal?: AbortSignal): Promise<AIChatResponse> {
   const body = JSON.stringify({ messages });
   let headers = await getAISessionHeaders();
-  let response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
-  // A Supabase access token can be revoked or become stale before its local
-  // expiry. Refresh once on auth failure, then retry the same request.
-  if (response.status === 401 || response.status === 403) {
-    headers = await getAISessionHeaders(true);
-    response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
+  let authRefreshed = false;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let response: Response;
+    try {
+      const deadline = AbortSignal.timeout(27_000);
+      const signal = callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline;
+      response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal });
+    } catch (error) {
+      if (callerSignal?.aborted) throw error;
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      if (attempt === 0 && !timedOut) { await new Promise(resolve => setTimeout(resolve, 500)); continue; }
+      throw aiTransportError(timedOut ? "HkTube AI ko jawab dene mein zyada waqt laga. Chhota sawal bhej kar dobara try karein." : "Network connection ka masla hai. Internet check karke dobara try karein.", timedOut ? 504 : 503, timedOut ? "timeout" : "network");
+    }
+
+    // Supabase tokens can be revoked before their local expiry; refresh only once.
+    if ((response.status === 401 || response.status === 403) && !authRefreshed) {
+      headers = await getAISessionHeaders(true);
+      authRefreshed = true;
+      continue;
+    }
+    const payload = await response.json().catch(() => null) as any;
+    if (!response.ok) {
+      const message = payload?.error?.json?.message || payload?.error?.message;
+      const code = payload?.error?.code;
+      const error = aiTransportError(typeof message === "string" ? message : "HkTube AI temporarily unavailable hai. Dobara try karein.", response.status, typeof code === "string" ? code : undefined);
+      if (attempt === 0 && error.retryable) { await new Promise(resolve => setTimeout(resolve, 500)); continue; }
+      throw error;
+    }
+    const result = payload?.result?.data?.json ?? payload?.result?.data ?? payload;
+    if (!result || typeof result.content !== "string" || !result.content.trim()) {
+      const error = aiTransportError("AI ne koi response nahi diya, dobara try karein.", 502, "empty_response");
+      if (attempt === 0) { await new Promise(resolve => setTimeout(resolve, 500)); continue; }
+      throw error;
+    }
+    const sources = Array.isArray(result.sources) ? result.sources.filter((source: any) => source && typeof source.title === "string" && typeof source.url === "string" && typeof source.snippet === "string") : [];
+    return { content: result.content.trim(), sources, usedWeb: result.usedWeb === true, model: typeof result.model === "string" ? result.model : "" };
   }
-  const payload = await response.json().catch(() => null) as any;
-  if (!response.ok) {
-    const message = payload?.error?.json?.message || payload?.error?.message;
-    throw new Error(typeof message === "string" ? message : "HkTube AI could not complete this request. Please try again.");
-  }
-  const result = payload?.result?.data?.json ?? payload?.result?.data;
-  if (!result?.content || typeof result.content !== "string") throw new Error("HkTube AI returned an empty response. Please try again.");
-  return result as AIChatResponse;
+  throw aiTransportError("HkTube AI temporarily unavailable hai. Dobara try karein.", 503, "upstream");
 }
 
 export interface SupabaseProfile {

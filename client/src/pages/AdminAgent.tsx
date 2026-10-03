@@ -4,7 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getAISessionHeaders, supabase } from "@/lib/supabase";
+import { requestAIChat, supabase } from "@/lib/supabase";
 import { isAllowlistedAdminUser } from "@/lib/adminAccess";
 import { ArrowLeft, Bot, Code2, Loader2, LockKeyhole, Send, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +31,11 @@ export default function AdminAgent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pendingRef = useRef(false);
+  const controllerRef = useRef<AbortController | null>(null);
+  const epochRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -59,47 +63,48 @@ export default function AdminAgent() {
 
   async function sendMessage(text = input) {
     const content = text.trim();
-    if (!content || pending || !authorized) return;
+    if (!content || pendingRef.current || !authorized) return;
     const next = [...messages, { role: "user" as const, content }].slice(-16);
+    const epoch = epochRef.current;
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    pendingRef.current = true;
     setMessages(next);
     setInput("");
     setPending(true);
+    setFailedPrompt(null);
     try {
-      const body = JSON.stringify({ messages: next });
-      let headers = await getAISessionHeaders();
-      let response = await fetch("/api/ai/chat", {
-        method: "POST",
-        credentials: "omit",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body,
-        signal: AbortSignal.timeout(45_000),
-      });
-      // The page may have rendered from an old auth snapshot. Refresh the
-      // Supabase session once before surfacing an auth failure to the admin.
-      if (response.status === 401 || response.status === 403) {
-        headers = await getAISessionHeaders(true);
-        response = await fetch("/api/ai/chat", {
-          method: "POST",
-          credentials: "omit",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body,
-          signal: AbortSignal.timeout(45_000),
-        });
-      }
-      const data = await response.json() as { content?: string; error?: { message?: string } };
-      if (!response.ok) throw new Error(data.error?.message || "The AI request could not be completed.");
-      if (typeof data.content !== "string" || !data.content.trim()) throw new Error("The AI service returned an empty response.");
-      setMessages(current => [...current, { role: "assistant" as const, content: data.content!.trim() }].slice(-16));
+      const data = await requestAIChat(next.map(({ role, content: text }) => ({ role, content: text })), controller.signal);
+      if (epoch !== epochRef.current || controller.signal.aborted) return;
+      setMessages(current => [...current, { role: "assistant" as const, content: data.content }].slice(-16));
     } catch (error) {
+      if (controller.signal.aborted || epoch !== epochRef.current) return;
       setMessages(current => current.slice(0, -1));
-      toast.error(error instanceof Error ? error.message : "The AI request could not be completed.");
-    } finally { setPending(false); }
+      const message = error instanceof Error ? error.message : "The AI request could not be completed. Please retry.";
+      setFailedPrompt(content);
+      toast.error(message);
+    } finally {
+      if (epoch === epochRef.current) {
+        pendingRef.current = false;
+        controllerRef.current = null;
+        setPending(false);
+      }
+    }
   }
 
   if (!authReady) return <HkTubeShell title=""><div className="grid min-h-[60vh] place-items-center"><Loader2 className="size-6 animate-spin text-violet-300" /></div></HkTubeShell>;
   if (!authorized) return <AdminAccessGate session={session} />;
 
-  function clearChat() { setMessages([]); setInput(""); }
+  function clearChat() {
+    epochRef.current += 1;
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    pendingRef.current = false;
+    setPending(false);
+    setMessages([]);
+    setInput("");
+    setFailedPrompt(null);
+  }
 
   return <HkTubeShell title="Admin Agent" subtitle="Private HkTube AI workspace">
     <main className="mx-auto flex min-h-[calc(100vh-150px)] max-w-5xl flex-col px-4 pb-5 sm:px-6">
@@ -111,8 +116,9 @@ export default function AdminAgent() {
       <section className="my-5 flex items-start gap-3 rounded-2xl border border-amber-300/15 bg-amber-400/[.045] p-4 text-xs leading-5 text-amber-100/80"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-amber-200" /><p><strong className="text-amber-100">Review before applying.</strong> This copilot can draft code and diffs, but it cannot access or write repository files, run commands, or deploy. Chat is kept only in this page session.</p></section>
 
       <section className="flex-1 overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0d16]/70 p-4 sm:p-6" aria-live="polite">
-        {messages.length === 0 ? <div className="mx-auto flex min-h-[45vh] max-w-2xl flex-col items-center justify-center text-center"><span className="grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/[.08] text-violet-200"><Code2 className="size-6" /></span><h2 className="mt-5 text-2xl font-black text-white">What should we work on?</h2><p className="mt-2 max-w-lg text-sm leading-6 text-slate-400">Ask for coding guidance, debugging help, architecture feedback, or a proposed patch. Do not include credentials or API keys.</p><div className="mt-6 grid w-full gap-2 sm:grid-cols-3">{suggestions.map(item => <button key={item} type="button" onClick={() => void sendMessage(item)} className="rounded-2xl border border-white/10 bg-white/[.025] p-3 text-left text-xs leading-5 text-slate-300 transition hover:bg-white/[.06]">{item}</button>)}</div></div> : <div className="mx-auto max-w-3xl space-y-6">{messages.map((message, index) => <article key={`${index}-${message.role}`} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{message.role === "user" ? "You" : "Copilot"}</p><div className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{message.content}</div></div></article>)}</div>}
+        {messages.length === 0 ? <div className="mx-auto flex min-h-[45vh] max-w-2xl flex-col items-center justify-center text-center"><span className="grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/[.08] text-violet-200"><Code2 className="size-6" /></span><h2 className="mt-5 text-2xl font-black text-white">What should we work on?</h2><p className="mt-2 max-w-lg text-sm leading-6 text-slate-400">Ask for coding guidance, debugging help, architecture feedback, or a proposed patch. Do not include credentials or API keys.</p><div className="mt-6 grid w-full gap-2 sm:grid-cols-3">{suggestions.map(item => <button key={item} type="button" disabled={pending} onClick={() => void sendMessage(item)} className="rounded-2xl border border-white/10 bg-white/[.025] p-3 text-left text-xs leading-5 text-slate-300 transition hover:bg-white/[.06] disabled:opacity-50">{item}</button>)}</div></div> : <div className="mx-auto max-w-3xl space-y-6">{messages.map((message, index) => <article key={`${index}-${message.role}`} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{message.role === "user" ? "You" : "Copilot"}</p><div className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{message.content}</div></div></article>)}</div>}
         {pending && <div className="mx-auto mt-6 flex max-w-3xl items-center gap-3 text-sm text-slate-500"><span className="grid size-8 place-items-center rounded-lg bg-violet-500 text-white"><Bot className="size-4" /></span><span className="flex items-center gap-2">Thinking<Loader2 className="size-3.5 animate-spin" /></span></div>}
+        {failedPrompt && !pending && <div className="mx-auto mt-6 flex max-w-3xl justify-end"><Button type="button" size="sm" variant="outline" onClick={() => void sendMessage(failedPrompt)} className="border-amber-200/30 bg-transparent text-amber-100">Retry last request</Button></div>}
         <div ref={bottomRef} />
       </section>
 

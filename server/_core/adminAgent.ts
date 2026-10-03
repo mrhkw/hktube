@@ -137,19 +137,31 @@ export function registerAdminAgentRoute(app: Express) {
       });
       if (!response.ok) {
         console.error(`[AdminAgent] Gemini request failed with status ${response.status}`);
-        res.status(502).json({ error: { message: "The AI service could not complete this request. Try again shortly." } });
+        const status = response.status === 429 ? 429 : 502;
+        const message = response.status === 429
+          ? "HkTube AI abhi busy hai. Kuch dair baad dobara try karein."
+          : response.status === 401 || response.status === 403
+            ? "HkTube AI provider credentials mein masla hai. Support team ko inform karein."
+            : response.status === 404
+              ? "Configured AI model available nahi hai. Hosting par model setting check karein."
+              : "HkTube AI temporarily unavailable hai. Dobara try karein.";
+        res.status(status).json({ error: { message, code: response.status === 429 ? "rate_limit" : response.status >= 400 && response.status < 500 ? "configuration" : "upstream" } });
         return;
       }
       const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: unknown }> }; finishReason?: string }> };
       const text = data.candidates?.[0]?.content?.parts?.map(part => typeof part.text === "string" ? part.text : "").join("").trim();
       if (!text) {
-        res.status(502).json({ error: { message: "The AI service returned no response. Please try again." } });
+        console.warn("[AdminAgent] Gemini returned an empty candidate response");
+        res.status(502).json({ error: { message: "AI ne koi response nahi diya, dobara try karein.", code: "empty_response" } });
         return;
       }
       res.status(200).json({ content: text, model: GEMINI_MODEL });
     } catch (error) {
       const timedOut = error instanceof Error && error.name === "TimeoutError";
-      res.status(timedOut ? 504 : 502).json({ error: { message: timedOut ? "The AI request timed out. Please try again." : "The AI service is temporarily unavailable." } });
+      const network = error instanceof TypeError;
+      const diagnostic = (error instanceof Error ? error.message : String(error)).replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]").replace(/(api[_ -]?key|token)\s*[:=]\s*[^\s,]+/gi, "$1=[REDACTED]").slice(0, 300);
+      console.error("[AdminAgent] Gemini request failed", { name: error instanceof Error ? error.name : "UnknownError", message: diagnostic });
+      res.status(timedOut ? 504 : network ? 503 : 502).json({ error: { message: timedOut ? "HkTube AI ko jawab dene mein zyada waqt laga. Chhota sawal bhej kar dobara try karein." : network ? "Network connection ka masla hai. Internet check karke dobara try karein." : "HkTube AI temporarily unavailable hai. Dobara try karein.", code: timedOut ? "timeout" : network ? "network" : "upstream" } });
     }
   });
 }

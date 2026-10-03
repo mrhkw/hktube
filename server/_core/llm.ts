@@ -69,6 +69,12 @@ export type InvokeParams = {
   model?: string;
   thinking?: Record<string, unknown>;
   reasoning?: Record<string, unknown>;
+  /** Optional caller-owned deadline (for example the Vercel request budget). */
+  signal?: AbortSignal;
+  /** Per-invocation ceiling; retries share this same time budget. */
+  timeoutMs?: number;
+  /** Override the default bounded retry count for latency-sensitive routes. */
+  maxRetries?: number;
 };
 
 export type ToolCall = {
@@ -243,6 +249,11 @@ const assertApiKey = () => {
   }
 };
 
+const hasGeminiFallback = () => usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
+const isFallbackStatus = (status: number) => status === 408 || status === 425 || (status >= 500 && status <= 599);
+const isProviderTransportFailure = (error: unknown) =>
+  error instanceof Error && ["AbortError", "TimeoutError", "TypeError"].includes(error.name);
+
 const normalizeResponseFormat = ({
   responseFormat,
   response_format,
@@ -291,11 +302,19 @@ const normalizeResponseFormat = ({
 const RETRY_MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 30_000;
+const INVOKE_TIMEOUT_MS = 20_000;
+const INVOKE_BUDGET_MS = 24_000;
 
 type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
 
-const sleep = (ms: number) =>
-  new Promise<void>(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason); return; }
+    const finish = () => { signal?.removeEventListener("abort", abort); resolve(); };
+    const timer = setTimeout(finish, ms);
+    const abort = () => { clearTimeout(timer); signal?.removeEventListener("abort", abort); reject(signal?.reason ?? new DOMException("LLM request aborted", "AbortError")); };
+    signal?.addEventListener("abort", abort, { once: true });
+  });
 
 const parseRetryAfter = (value: string | null): number | undefined => {
   if (!value) return undefined;
@@ -321,16 +340,28 @@ const computeBackoffDelay = (
 // returns the final Response so callers keep their existing error handling.
 const fetchWithBackoff = async (
   url: string,
-  init: FetchInit
+  init: FetchInit,
+  options: { timeoutMs?: number; maxRetries?: number; signal?: AbortSignal } = {}
 ): Promise<Response> => {
   let lastError: unknown;
+  const startedAt = Date.now();
+  const budgetMs = Math.max(1, options.timeoutMs ?? INVOKE_BUDGET_MS);
+  const maxRetries = Math.max(0, options.maxRetries ?? RETRY_MAX_RETRIES);
 
-  for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const remaining = budgetMs - (Date.now() - startedAt);
+    if (remaining <= 0 || options.signal?.aborted) {
+      throw options.signal?.reason ?? new DOMException("LLM request deadline exceeded", "TimeoutError");
+    }
+    const perAttempt = Math.min(INVOKE_TIMEOUT_MS, remaining);
+    const timeoutSignal = AbortSignal.timeout(perAttempt);
+    const signal = options.signal ? AbortSignal.any([options.signal, timeoutSignal]) : timeoutSignal;
     try {
-      const response = await fetch(url, init);
+      const response = await fetch(url, { ...init, signal });
       // A 429 is a provider quota/rate-limit decision; retrying immediately
       // only burns more requests and cannot repair the configured key.
-      if (response.ok || response.status === 404 || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
+      const permanentClientError = response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 425;
+      if (response.ok || permanentClientError || attempt === maxRetries) {
         return response;
       }
 
@@ -343,16 +374,18 @@ const fetchWithBackoff = async (
         // Body already settled; nothing to clean up.
       }
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after status ${response.status}`
+        `LLM request retry ${attempt + 1}/${maxRetries} after status ${response.status}`
       );
-      await sleep(computeBackoffDelay(attempt, retryAfterMs));
+      const delay = Math.min(computeBackoffDelay(attempt, retryAfterMs), Math.max(0, budgetMs - (Date.now() - startedAt)));
+      if (delay > 0) await sleep(delay, options.signal);
     } catch (error) {
       lastError = error;
-      if (attempt === RETRY_MAX_RETRIES) throw error;
+      if (options.signal?.aborted || attempt === maxRetries) throw error;
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`
+        `LLM request retry ${attempt + 1}/${maxRetries} after network error`
       );
-      await sleep(computeBackoffDelay(attempt));
+      const delay = Math.min(computeBackoffDelay(attempt), Math.max(0, budgetMs - (Date.now() - startedAt)));
+      if (delay > 0) await sleep(delay, options.signal);
     }
   }
 
@@ -378,6 +411,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     reasoning,
     maxTokens,
     max_tokens,
+    signal,
+    timeoutMs,
+    maxRetries,
   } = params;
 
   const payload: Record<string, unknown> = {
@@ -427,24 +463,68 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetchWithBackoff(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${resolveApiKey()}`,
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(20_000),
-  });
+  const invocationStartedAt = Date.now();
+  const invocationBudgetMs = Math.max(1, timeoutMs ?? INVOKE_BUDGET_MS);
+  const invocationTimeout = AbortSignal.timeout(invocationBudgetMs);
+  const invocationSignal = signal
+    ? AbortSignal.any([signal, invocationTimeout])
+    : invocationTimeout;
+  const remainingBudgetMs = () => Math.max(1, invocationBudgetMs - (Date.now() - invocationStartedAt));
+  const canFailOver = hasGeminiFallback();
+  const tryOpenAIFallback = () => {
+    const fallbackPayload: Record<string, unknown> = { ...payload, model: ENV.openAiModel };
+    delete fallbackPayload.thinking;
+    delete fallbackPayload.reasoning;
+    console.warn("[LLM] Gemini upstream unavailable; trying configured OpenAI fallback");
+    return fetchWithBackoff(`${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${ENV.openAiApiKey.trim()}`,
+      },
+      body: JSON.stringify(fallbackPayload),
+    }, { timeoutMs: remainingBudgetMs(), maxRetries: 0, signal: invocationSignal });
+  };
+
+  let response: Response;
+  try {
+    // Reserve part of the invocation budget for failover instead of spending
+    // the full timeout retrying a degraded primary provider.
+    const primaryBudgetMs = canFailOver
+      ? Math.min(10_000, Math.max(1, Math.floor(invocationBudgetMs / 2)))
+      : remainingBudgetMs();
+    response = await fetchWithBackoff(resolveApiUrl(), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${resolveApiKey()}`,
+      },
+      body: JSON.stringify(payload),
+    }, { timeoutMs: primaryBudgetMs, maxRetries: canFailOver ? 0 : maxRetries, signal: invocationSignal });
+  } catch (error) {
+    if (!canFailOver || invocationSignal.aborted || !isProviderTransportFailure(error)) throw error;
+    response = await tryOpenAIFallback();
+  }
+
+  if (canFailOver && !response.ok && isFallbackStatus(response.status) && !invocationSignal.aborted) {
+    try { await response.body?.cancel(); } catch { /* best-effort release of the failed provider response */ }
+    response = await tryOpenAIFallback();
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
+    const error = new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`) as Error & { status: number };
+    error.status = response.status;
+    throw error;
   }
 
-  return (await response.json()) as InvokeResult;
+  let data: unknown;
+  try { data = await response.json(); }
+  catch { throw new Error("LLM provider returned an invalid JSON response"); }
+  if (!data || typeof data !== "object" || !Array.isArray((data as { choices?: unknown }).choices)) {
+    throw new Error("LLM provider returned an invalid response envelope");
+  }
+  return data as InvokeResult;
 }
 
 export type ModelInfo = {

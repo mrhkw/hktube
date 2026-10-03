@@ -22,7 +22,7 @@ export default function CreatorAI() {
   const [duration, setDuration] = useState(10);
   const [style, setStyle] = useState<(typeof styles)[number]>("Cinematic");
   const [draft, setDraft] = useState<Draft | null>(null);
-  const suggest = trpc.creator_studio.suggestMetadata.useMutation();
+  const suggest = trpc.creator_studio.suggestMetadata.useMutation({ onError: error => toast.error(error.message || "HkTube AI temporarily unavailable hai. Dobara try karein.") });
   const selectedRatio = useMemo(() => ratios.find(item => item.value === ratio) ?? ratios[0], [ratio]);
 
   function prepareDraft(event: FormEvent<HTMLFormElement>) {
