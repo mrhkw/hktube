@@ -108063,8 +108063,8 @@ var normalizeToolChoice = (toolChoice, tools) => {
   }
   return toolChoice;
 };
-var usesOpenAiApi = () => Boolean(ENV.openAiApiKey.trim());
-var usesGeminiApi = () => !usesOpenAiApi() && Boolean(ENV.geminiApiKey.trim());
+var usesGeminiApi = () => Boolean(ENV.geminiApiKey.trim());
+var usesOpenAiApi = () => !usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
 var resolveApiUrl = () => {
   if (usesOpenAiApi()) {
     return `${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`;
@@ -108113,7 +108113,7 @@ var normalizeResponseFormat = ({
     }
   };
 };
-var RETRY_MAX_RETRIES = 4;
+var RETRY_MAX_RETRIES = 2;
 var RETRY_BASE_DELAY_MS = 500;
 var RETRY_MAX_DELAY_MS = 3e4;
 var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -108134,7 +108134,7 @@ var fetchWithBackoff = async (url3, init) => {
   for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
     try {
       const response = await fetch(url3, init);
-      if (response.ok || attempt === RETRY_MAX_RETRIES) {
+      if (response.ok || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
         return response;
       }
       const retryAfterMs = parseRetryAfter(
@@ -108456,7 +108456,7 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       });
     } catch (error47) {
       const raw = error47 instanceof Error ? error47.message : "";
-      const message2 = /OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw) ? "HkTube AI provider is not configured on the server." : /429|rate limit|quota/i.test(raw) ? "HkTube AI is temporarily busy. Please try again in a moment." : /timeout|aborted|timed out/i.test(raw) ? "HkTube AI took too long to respond. Please try again with a shorter message." : "HkTube AI is temporarily unavailable. Please try again.";
+      const message2 = /OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw) ? "HkTube AI provider is not configured on the server." : /429|rate limit|quota/i.test(raw) ? "Gemini API quota or rate limit reached. Check GEMINI_API_KEY, billing, and model quota in Google AI Studio, then try again." : /timeout|aborted|timed out/i.test(raw) ? "HkTube AI took too long to respond. Please try again with a shorter message." : "HkTube AI is temporarily unavailable. Please try again.";
       res.status(502).json({ error: { message: message2 } });
     }
   });

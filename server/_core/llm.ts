@@ -212,8 +212,10 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const usesOpenAiApi = () => Boolean(ENV.openAiApiKey.trim());
-const usesGeminiApi = () => !usesOpenAiApi() && Boolean(ENV.geminiApiKey.trim());
+// The project is configured around Gemini. If both provider variables exist
+// in Vercel, do not silently select an older exhausted OpenAI key first.
+const usesGeminiApi = () => Boolean(ENV.geminiApiKey.trim());
+const usesOpenAiApi = () => !usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
 
 const resolveApiUrl = () => {
   if (usesOpenAiApi()) {
@@ -286,7 +288,7 @@ const normalizeResponseFormat = ({
   };
 };
 
-const RETRY_MAX_RETRIES = 4;
+const RETRY_MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 30_000;
 
@@ -326,7 +328,9 @@ const fetchWithBackoff = async (
   for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
     try {
       const response = await fetch(url, init);
-      if (response.ok || attempt === RETRY_MAX_RETRIES) {
+      // A 429 is a provider quota/rate-limit decision; retrying immediately
+      // only burns more requests and cannot repair the configured key.
+      if (response.ok || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
         return response;
       }
 

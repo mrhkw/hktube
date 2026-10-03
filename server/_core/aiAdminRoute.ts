@@ -179,7 +179,7 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       const message = /OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw)
         ? "HkTube AI provider is not configured on the server."
         : /429|rate limit|quota/i.test(raw)
-          ? "HkTube AI is temporarily busy. Please try again in a moment."
+          ? "Gemini API quota or rate limit reached. Check GEMINI_API_KEY, billing, and model quota in Google AI Studio, then try again."
           : /timeout|aborted|timed out/i.test(raw)
             ? "HkTube AI took too long to respond. Please try again with a shorter message."
             : "HkTube AI is temporarily unavailable. Please try again.";
