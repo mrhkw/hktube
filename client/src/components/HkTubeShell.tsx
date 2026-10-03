@@ -217,15 +217,6 @@ export function HkTubeShell({
               />
             </div>
           </form>
-          {!referenceHeader && (
-            <Link
-              href="/search"
-              className="hktube-header-action hktube-search-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
-              aria-label="Open search"
-            >
-              <Search className="size-5" />
-            </Link>
-          )}
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <Link
               href="/settings"
@@ -263,20 +254,18 @@ export function HkTubeShell({
                 </span>
               )}
             </Link>
-            {referenceHeader && (
-              <Link
-                href="/search"
-                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-                aria-label="Open search"
-              >
-                <Search className="size-5" />
-              </Link>
-            )}
+            <Link
+              href="/search"
+              className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-slate-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              aria-label="Open search"
+            >
+              <Search className="size-5" />
+            </Link>
             <Link
               href={isAuthenticated ? "/profile" : "/auth"}
               className={cn(
                 "grid size-10 place-items-center overflow-hidden rounded-full border border-black/10 bg-white text-sm font-black text-slate-950 transition hover:border-violet-300/50 hover:bg-violet-500/20 md:size-11 md:border-white/10 md:bg-white/[.06] md:text-white",
-                referenceHeader && "hidden sm:grid"
+                "hidden md:grid"
               )}
               aria-label={
                 isAuthenticated ? "Open profile" : "Sign in or create account"
@@ -728,7 +717,7 @@ export function HkTubeShell({
             >
               <item.icon
                 className={cn(
-                  "size-5.5",
+                  "size-5",
                   active &&
                     (location === "/"
                       ? "fill-blue-600/10"
