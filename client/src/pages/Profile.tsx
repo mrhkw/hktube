@@ -219,11 +219,7 @@ export default function Profile() {
     );
 
   return (
-    <HkTubeShell
-      minimalHeader
-      title={channel?.displayName || user.name || "Profile"}
-      headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}
-    >
+    <HkTubeShell headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}>
       <div className="mx-auto max-w-6xl px-3 py-3 pb-28 sm:px-6 sm:py-7">
         <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[#111522] shadow-xl shadow-black/10">
           <div className="relative h-36 overflow-hidden bg-gradient-to-r from-violet-900 via-[#252b4b] to-fuchsia-900 sm:h-52">
