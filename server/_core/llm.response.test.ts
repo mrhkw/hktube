@@ -6,6 +6,8 @@ describe("LLM provider response guardrails", () => {
     vi.stubEnv("OPENAI_API_KEY", "test-provider-key");
     vi.stubEnv("OPENAI_BASE_URL", "");
     vi.stubEnv("OPENAI_MODEL", "");
+    vi.stubEnv("GROQ_API_KEY", "");
+    vi.stubEnv("GROQ_MODEL", "");
     vi.stubEnv("GEMINI_API_KEY", "");
     vi.stubEnv("BUILT_IN_FORGE_API_KEY", "");
   });
@@ -40,6 +42,36 @@ describe("LLM provider response guardrails", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("generativelanguage.googleapis.com");
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain("api.openai.com/v1/chat/completions");
+  });
+
+  it("fails over from free Groq to free Gemini when Groq is rate-limited", async () => {
+    vi.stubEnv("GROQ_API_KEY", "test-groq-key");
+    vi.stubEnv("GROQ_MODEL", "openai/gpt-oss-20b");
+    vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
+    vi.stubEnv("GEMINI_MODEL", "gemini-3.8-flash");
+    const fallbackResponse = {
+      id: "gemini-free-fallback",
+      model: "gemini-3.8-flash",
+      choices: [{ index: 0, message: { role: "assistant", content: "Free fallback answer" }, finish_reason: "stop" }],
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: "rate limit exceeded" } }), { status: 429, statusText: "Too Many Requests" }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(fallbackResponse), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { invokeLLM } = await import("./llm");
+    const result = await invokeLLM({ messages: [{ role: "user", content: "hi" }] });
+
+    expect(result.choices[0]?.message.content).toBe("Free fallback answer");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("https://api.groq.com/openai/v1/chat/completions");
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
+    const primaryInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const fallbackInit = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(primaryInit.headers).get("authorization")).toBe("Bearer test-groq-key");
+    expect(new Headers(fallbackInit.headers).get("authorization")).toBe("Bearer test-gemini-key");
+    expect(JSON.parse(String(primaryInit.body))).toMatchObject({ model: "openai/gpt-oss-20b" });
+    expect(JSON.parse(String(fallbackInit.body))).toMatchObject({ model: "gemini-3.8-flash" });
   });
 
   it("rejects non-JSON and invalid-envelope success responses", async () => {
