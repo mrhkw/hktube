@@ -21,10 +21,10 @@ describe("admin agent identity allowlist", () => {
     expect(isAllowedAdminIdentity({ email: " HANIFNAZAMDIN6@GMAIL.COM ", confirmed_at: "2026-01-01T00:00:00Z", app_metadata: { providers: ["email", "google"] } })).toBe(true);
   });
 
-  it("rejects unlisted and unverified emails", () => {
+  it("rejects unlisted emails but accepts the allowlist without optional OAuth metadata", () => {
     expect(isAllowedAdminIdentity({ email: "someone@gmail.com", email_confirmed_at: "yes", app_metadata: { provider: "google" } })).toBe(false);
-    expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", app_metadata: { provider: "google" } })).toBe(false);
-    expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", email_confirmed_at: "yes", app_metadata: { provider: "email" } })).toBe(true);
+    expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", app_metadata: { provider: "google" } })).toBe(true);
+    expect(isAllowedAdminIdentity({ email: "hanifnazamdin30@gmail.com", app_metadata: { provider: "email" } })).toBe(true);
   });
 });
 

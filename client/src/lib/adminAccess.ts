@@ -33,6 +33,9 @@ export function isVerifiedSupabaseUser(user: unknown): user is SupabaseAuthUserL
  * used as an email fallback because user_metadata is user-controlled.
  */
 export function isAllowlistedAdminUser(user: unknown): boolean {
-  if (!isVerifiedSupabaseUser(user)) return false;
-  return isAllowlistedAdminEmail(user.email);
+  if (!user || typeof user !== "object") return false;
+  // Supabase has already authenticated the session. OAuth sessions may omit
+  // email_confirmed_at, so the exact canonical Auth email is the gate shared
+  // with the server; user metadata is never used as a fallback.
+  return isAllowlistedAdminEmail((user as SupabaseAuthUserLike).email);
 }

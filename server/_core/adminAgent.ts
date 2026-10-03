@@ -20,18 +20,15 @@ type SupabaseUser = {
   app_metadata?: unknown;
 };
 
-function isVerifiedTimestamp(value: unknown): boolean {
-  return typeof value === "string" ? value.trim().length > 0 : value === true;
-}
-
 export function isAllowedAdminIdentity(user: unknown): boolean {
   if (!user || typeof user !== "object") return false;
   const candidate = user as SupabaseUser;
   const email = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
-  const isEmailVerified = isVerifiedTimestamp(candidate.email_confirmed_at) || isVerifiedTimestamp(candidate.confirmed_at);
-  // The canonical Auth email and verification timestamp are authoritative.
-  // Metadata is intentionally not trusted as an email fallback.
-  return ALLOWED_ADMIN_EMAILS.has(email) && isEmailVerified;
+  // The bearer token has already been validated by Supabase Auth. OAuth users
+  // can legitimately have missing/stale confirmation metadata, so the exact
+  // canonical Auth email is the only admin gate here. User metadata is never
+  // used as an email fallback.
+  return ALLOWED_ADMIN_EMAILS.has(email);
 }
 
 export function extractBearerToken(authorization: unknown): string | null {

@@ -95332,15 +95332,11 @@ var MAX_MESSAGE_LENGTH = 6e3;
 var MAX_TOTAL_LENGTH = 24e3;
 var GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 var GEMINI_TIMEOUT_MS = 18e3;
-function isVerifiedTimestamp(value) {
-  return typeof value === "string" ? value.trim().length > 0 : value === true;
-}
 function isAllowedAdminIdentity(user) {
   if (!user || typeof user !== "object") return false;
   const candidate = user;
   const email3 = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
-  const isEmailVerified = isVerifiedTimestamp(candidate.email_confirmed_at) || isVerifiedTimestamp(candidate.confirmed_at);
-  return ALLOWED_ADMIN_EMAILS.has(email3) && isEmailVerified;
+  return ALLOWED_ADMIN_EMAILS.has(email3);
 }
 function extractBearerToken(authorization) {
   if (typeof authorization !== "string") return null;
