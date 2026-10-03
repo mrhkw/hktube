@@ -170,8 +170,7 @@ export function HkTubeShell({
       <header
         className={cn(
           "hktube-reference-header sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
-          referenceHeader &&
-            "max-md:border-black/10 max-md:bg-white max-md:text-neutral-950",
+          "max-md:border-black/10 max-md:bg-white max-md:text-neutral-950",
           immersive && "max-lg:hidden"
         )}
       >
@@ -231,7 +230,7 @@ export function HkTubeShell({
             <Link
               href="/settings"
               className={cn(
-                "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
+                "grid size-11 place-items-center rounded-full text-slate-900 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white",
                 minimalHeader && "hidden sm:grid"
               )}
               aria-label="Open Settings"
@@ -253,7 +252,7 @@ export function HkTubeShell({
             )}
             <Link
               href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-900 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-5" />
@@ -276,7 +275,7 @@ export function HkTubeShell({
             <Link
               href={isAuthenticated ? "/profile" : "/auth"}
               className={cn(
-                "grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20",
+                "grid size-10 place-items-center overflow-hidden rounded-full border border-black/10 bg-white text-sm font-black text-slate-950 transition hover:border-violet-300/50 hover:bg-violet-500/20 md:size-11 md:border-white/10 md:bg-white/[.06] md:text-white",
                 referenceHeader && "hidden sm:grid"
               )}
               aria-label={
@@ -609,7 +608,7 @@ export function HkTubeShell({
 
       <main
         className={cn(
-          "relative pb-[94px] md:pb-14 md:pl-60",
+          "relative pb-[76px] md:pb-14 md:pl-60",
           immersive && "max-md:p-0 max-md:pb-0"
         )}
       >
@@ -670,7 +669,7 @@ export function HkTubeShell({
 
       <nav
         className={cn(
-          "fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/8 bg-[#10141e]/98 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl md:hidden",
+          "fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-5 border-t border-black/10 bg-white px-1 pb-0 pt-0 text-neutral-950 shadow-[0_-4px_18px_rgba(0,0,0,.06)] backdrop-blur-xl md:hidden",
           location === "/" && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
@@ -699,11 +698,11 @@ export function HkTubeShell({
               key={item.label}
               type="button"
               onClick={openCreate}
-              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300"
+              className="flex h-[72px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-semibold text-neutral-700"
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-xl bg-violet-500 text-white shadow-[0_5px_18px_rgba(139,92,246,.35)]",
+                  "grid size-9 place-items-center rounded-full bg-white text-neutral-950 shadow-none",
                   location === "/" &&
                     "rounded-full bg-[#f1edff] text-blue-600 shadow-none"
                 )}
@@ -717,7 +716,7 @@ export function HkTubeShell({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
+                "flex h-[72px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-semibold",
                 active
                   ? location === "/"
                     ? "text-blue-600"
@@ -729,7 +728,7 @@ export function HkTubeShell({
             >
               <item.icon
                 className={cn(
-                  "size-6",
+                  "size-5.5",
                   active &&
                     (location === "/"
                       ? "fill-blue-600/10"
