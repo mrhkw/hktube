@@ -48,23 +48,50 @@ export type AIChatResponse = { content: string; sources: Array<{ title: string; 
 
 /** Send AI through one explicit, private request so Android/WebView auth cannot be lost in a tRPC batch. */
 export async function requestAIChat(messages: AIChatRequestMessage[]): Promise<AIChatResponse> {
-  const body = JSON.stringify({ json: { messages } });
+  const body = JSON.stringify({ messages });
   let headers = await getAISessionHeaders();
-  let response = await fetch("/api/trpc/ai.chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
-  // A Supabase access token can be revoked or become stale before its local
-  // expiry. Refresh once on auth failure, then retry the same request.
+  let response = await fetch("/api/ai/chat", {
+    method: "POST",
+    headers: { ...headers, "content-type": "application/json" },
+    credentials: "omit",
+    body,
+    signal: AbortSignal.timeout(45_000),
+  });
+
   if (response.status === 401 || response.status === 403) {
     headers = await getAISessionHeaders(true);
-    response = await fetch("/api/trpc/ai.chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal: AbortSignal.timeout(45_000) });
+    response = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: { ...headers, "content-type": "application/json" },
+      credentials: "omit",
+      body,
+      signal: AbortSignal.timeout(45_000),
+    });
   }
-  const payload = await response.json().catch(() => null) as any;
+
+  const payload = await response.json().catch(() => null) as {
+    content?: unknown;
+    sources?: unknown;
+    usedWeb?: unknown;
+    model?: unknown;
+    error?: { message?: unknown };
+  };
+
   if (!response.ok) {
-    const message = payload?.error?.json?.message || payload?.error?.message;
-    throw new Error(typeof message === "string" ? message : "HkTube AI could not complete this request. Please try again.");
+    const message = payload?.error?.message;
+    throw new Error(typeof message === "string" ? message : "HkTube AI could not complete this request.");
   }
-  const result = payload?.result?.data?.json ?? payload?.result?.data;
-  if (!result?.content || typeof result.content !== "string") throw new Error("HkTube AI returned an empty response. Please try again.");
-  return result as AIChatResponse;
+
+  if (typeof payload.content !== "string" || !payload.content.trim()) {
+    throw new Error("HkTube AI returned an empty response. Please try again.");
+  }
+
+  return {
+    content: payload.content,
+    sources: Array.isArray(payload.sources) ? payload.sources as AIChatResponse["sources"] : [],
+    usedWeb: payload.usedWeb === true,
+    model: typeof payload.model === "string" ? payload.model : "unknown",
+  };
 }
 
 export interface SupabaseProfile {
