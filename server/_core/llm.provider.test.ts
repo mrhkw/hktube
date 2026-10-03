@@ -87,7 +87,7 @@ describe("LLM provider configuration", () => {
     expect(url).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
     expect((request.headers as Record<string, string>).authorization).toBe("Bearer test-gemini-key");
     expect(JSON.parse(String(request.body))).toMatchObject({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       messages: [{ role: "user", content: "hello" }],
     });
   });

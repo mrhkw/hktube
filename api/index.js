@@ -49559,7 +49559,9 @@ var init_env = __esm({
       openAiBaseUrl: firstNonEmpty(process.env.OPENAI_BASE_URL, "https://api.openai.com/v1"),
       openAiModel: firstNonEmpty(process.env.OPENAI_MODEL, "gpt-4o-mini"),
       geminiApiKey: process.env.GEMINI_API_KEY ?? "",
-      geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-2.5-flash"),
+      // Google’s current OpenAI-compatible Gemini example uses this model. An
+      // explicitly configured GEMINI_MODEL still takes precedence.
+      geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-3.8-flash"),
       supabaseUrl: firstNonEmpty(process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
       supabaseAnonKey: firstNonEmpty(process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
       resendApiKey: process.env.RESEND_API_KEY ?? "",
@@ -108134,7 +108136,7 @@ var fetchWithBackoff = async (url3, init) => {
   for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
     try {
       const response = await fetch(url3, init);
-      if (response.ok || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
+      if (response.ok || response.status === 404 || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
         return response;
       }
       const retryAfterMs = parseRetryAfter(
@@ -108221,7 +108223,8 @@ async function invokeLLM(params) {
       "content-type": "application/json",
       authorization: `Bearer ${resolveApiKey()}`
     },
-    body: JSON.stringify(payload2)
+    body: JSON.stringify(payload2),
+    signal: AbortSignal.timeout(2e4)
   });
   if (!response.ok) {
     const errorText = await response.text();
@@ -108456,7 +108459,7 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       });
     } catch (error47) {
       const raw = error47 instanceof Error ? error47.message : "";
-      const message2 = /OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw) ? "HkTube AI provider is not configured on the server." : /429|rate limit|quota/i.test(raw) ? "Gemini API quota or rate limit reached. Check GEMINI_API_KEY, billing, and model quota in Google AI Studio, then try again." : /timeout|aborted|timed out/i.test(raw) ? "HkTube AI took too long to respond. Please try again with a shorter message." : "HkTube AI is temporarily unavailable. Please try again.";
+      const message2 = /OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw) ? "HkTube AI provider is not configured on the server." : /404|not found|model/i.test(raw) ? "The configured Gemini model is not available for this API key. Set GEMINI_MODEL to a supported model such as gemini-3.8-flash." : /429|rate limit|quota/i.test(raw) ? "Gemini API quota or rate limit reached. Check GEMINI_API_KEY, billing, and model quota in Google AI Studio, then try again." : /timeout|aborted|timed out/i.test(raw) ? "HkTube AI took too long to respond. Please try again with a shorter message." : "HkTube AI is temporarily unavailable. Please try again.";
       res.status(502).json({ error: { message: message2 } });
     }
   });

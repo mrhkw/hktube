@@ -48,6 +48,7 @@ export default function AIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { if (isAuthenticated) setMessages(loadMessages()); }, [isAuthenticated]);
@@ -64,6 +65,7 @@ export default function AIChat() {
     setMessages(next);
     setInput("");
     setPending(true);
+    setFailedPrompt(null);
     try {
       const sources = await liveResearch(content);
       const research = sources.length
@@ -74,12 +76,14 @@ export default function AIChat() {
       setMessages(current => [...current, { id: crypto.randomUUID(), role: "assistant" as const, content: result.content, sources }].slice(-40));
     } catch (error) {
       setMessages(current => current.filter(message => message.id !== userMessage.id));
+      setFailedPrompt(content);
       toast.error(error instanceof Error ? error.message : "AI response nahi aa saki.");
     } finally { setPending(false); }
   }
 
   function clearChat() {
     setMessages([]);
+    setFailedPrompt(null);
     localStorage.removeItem(STORAGE_KEY);
   }
 
@@ -101,6 +105,7 @@ export default function AIChat() {
         {messages.length === 0 ? <div className="mx-auto flex min-h-[55vh] max-w-3xl flex-col items-center justify-center text-center"><span className="grid size-16 place-items-center rounded-2xl bg-white/[.06] text-violet-300"><Bot className="size-8" /></span><h2 className="mt-5 text-3xl font-black text-white">How can I help?</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">HkTube AI se general questions, content ideas, writing, summaries aur creator help pooch sakte ho.</p><div className="mt-7 grid w-full gap-2 sm:grid-cols-2">{suggestions.map(item => <button key={item} type="button" onClick={() => void sendMessage(item)} className="rounded-2xl border border-white/8 bg-white/[.025] p-4 text-left text-sm text-slate-300 transition hover:bg-white/[.06] hover:text-white">{item}</button>)}</div></div> :
           <div className="mx-auto max-w-3xl space-y-7">{messages.map(message => <article key={message.id} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-200">{message.content}</div>{message.role === "assistant" && <button type="button" onClick={() => void copy(message.content)} className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-white/[.05] hover:text-white"><Copy className="size-3.5" />Copy</button>}</div></article>)}</div>}
         {pending && <div className="mx-auto mt-6 flex max-w-3xl items-center gap-3 text-sm text-slate-500"><span className="grid size-8 place-items-center rounded-lg bg-violet-500 text-white"><Bot className="size-4" /></span><span className="flex items-center gap-1">HkTube AI is thinking<Loader2 className="ml-1 size-3.5 animate-spin" /></span></div>}
+        {failedPrompt && !pending && <div className="mx-auto mt-6 flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-amber-300/20 bg-amber-400/[.06] px-4 py-3 text-xs text-amber-100/80"><span>Request complete nahi ho saki. Dobara try karein.</span><Button type="button" size="sm" variant="outline" onClick={() => void sendMessage(failedPrompt)} className="shrink-0 border-amber-200/30 bg-transparent text-amber-100 hover:bg-amber-200/10">Retry</Button></div>}
         <div ref={bottomRef} />
       </div>
       <div className="mx-auto w-full max-w-3xl"><div className="rounded-3xl border border-white/10 bg-white/[.04] p-2 shadow-2xl"><Textarea value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Message HkTube AI..." maxLength={6000} disabled={pending} className="min-h-12 resize-none border-0 bg-transparent px-3 py-2 text-white shadow-none focus-visible:ring-0" /><div className="flex items-center justify-between px-2 pb-1"><span className="text-[11px] text-slate-600">Enter to send · Shift+Enter for new line</span><Button type="button" size="icon" onClick={() => void sendMessage()} disabled={!canSend} className="size-10 rounded-full bg-violet-500 text-white hover:bg-violet-400"><Send className="size-4" /></Button></div></div><p className="mt-2 text-center text-[10px] text-slate-600">AI responses can be inaccurate. Verify important information.</p></div>

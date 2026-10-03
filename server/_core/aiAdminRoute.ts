@@ -178,6 +178,8 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       const raw = error instanceof Error ? error.message : "";
       const message = /OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw)
         ? "HkTube AI provider is not configured on the server."
+        : /404|not found|model/i.test(raw)
+          ? "The configured Gemini model is not available for this API key. Set GEMINI_MODEL to a supported model such as gemini-3.8-flash."
         : /429|rate limit|quota/i.test(raw)
           ? "Gemini API quota or rate limit reached. Check GEMINI_API_KEY, billing, and model quota in Google AI Studio, then try again."
           : /timeout|aborted|timed out/i.test(raw)

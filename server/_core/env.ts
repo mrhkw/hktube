@@ -23,7 +23,9 @@ export const ENV = {
   openAiBaseUrl: firstNonEmpty(process.env.OPENAI_BASE_URL, "https://api.openai.com/v1"),
   openAiModel: firstNonEmpty(process.env.OPENAI_MODEL, "gpt-4o-mini"),
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
-  geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-2.5-flash"),
+  // Google’s current OpenAI-compatible Gemini example uses this model. An
+  // explicitly configured GEMINI_MODEL still takes precedence.
+  geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-3.8-flash"),
   supabaseUrl: firstNonEmpty(process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
   supabaseAnonKey: firstNonEmpty(process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
   resendApiKey: process.env.RESEND_API_KEY ?? "",

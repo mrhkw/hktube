@@ -330,7 +330,7 @@ const fetchWithBackoff = async (
       const response = await fetch(url, init);
       // A 429 is a provider quota/rate-limit decision; retrying immediately
       // only burns more requests and cannot repair the configured key.
-      if (response.ok || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
+      if (response.ok || response.status === 404 || response.status === 429 || attempt === RETRY_MAX_RETRIES) {
         return response;
       }
 
@@ -434,6 +434,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       authorization: `Bearer ${resolveApiKey()}`,
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20_000),
   });
 
   if (!response.ok) {
