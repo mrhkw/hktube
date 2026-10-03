@@ -183,7 +183,6 @@ export default function Profile() {
   if (loading)
     return (
       <HkTubeShell
-        minimalHeader
         title="Profile"
         headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}
       >
@@ -195,7 +194,6 @@ export default function Profile() {
   if (!user)
     return (
       <HkTubeShell
-        minimalHeader
         title="Profile"
         headerAvatarUrl={channel?.avatarUrl}
       >
@@ -219,7 +217,6 @@ export default function Profile() {
 
   return (
     <HkTubeShell
-      minimalHeader
       title={channel?.displayName || user.name || "Profile"}
       headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}
     >
