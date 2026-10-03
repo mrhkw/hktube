@@ -101,7 +101,9 @@ export function HkTubeShell({
   );
   const [postBody, setPostBody] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const utils = trpc.useUtils();
+  const channels = trpc.channels.mine.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60000 });
   const createPost = trpc.posts.create.useMutation({
     onSuccess: () => {
       setPostBody("");
@@ -125,6 +127,9 @@ export function HkTubeShell({
   useEffect(() => {
     setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled");
   }, []);
+  useEffect(() => {
+    setProfileMenuOpen(false);
+  }, [location]);
   useEffect(() => {
     const onOpenCreate = () => openCreate();
     window.addEventListener("hktube-open-create", onOpenCreate);
@@ -217,72 +222,67 @@ export function HkTubeShell({
               />
             </div>
           </form>
-          <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Link
-              href="/settings"
-              className={cn(
-                "grid size-11 place-items-center rounded-full text-slate-900 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white",
-                minimalHeader && "hidden sm:grid"
-              )}
-              aria-label="Open Settings"
-            >
-              <Settings className="size-5" />
-            </Link>
-            {!minimalHeader && (
-              <button
-                type="button"
-                onClick={openCreate}
-                className={cn(
-                  "grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95",
-                  "hidden sm:grid"
-                )}
-                aria-label="Create content"
-              >
-                <Plus className="size-5" />
-              </button>
-            )}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <Link
               href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-900 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              className="hktube-header-action hktube-notification-action relative grid size-10 place-items-center rounded-full text-slate-900 transition hover:bg-black/5 hover:text-black md:size-11 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-5" />
               {unread > 0 && (
                 <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
-                  {Math.min(unread, 9)}
-                  {unread > 9 ? "+" : ""}
+                  {Math.min(unread, 9)}{unread > 9 ? "+" : ""}
                 </span>
               )}
             </Link>
             <Link
               href="/search"
-              className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-slate-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              className="hktube-header-action hktube-search-action grid size-10 place-items-center rounded-full text-slate-900 hover:bg-black/5 md:size-11 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Open search"
             >
               <Search className="size-5" />
             </Link>
-            <Link
-              href={isAuthenticated ? "/profile" : "/auth"}
-              className={cn(
-                "grid size-10 place-items-center overflow-hidden rounded-full border border-black/10 bg-white text-sm font-black text-slate-950 transition hover:border-violet-300/50 hover:bg-violet-500/20 md:size-11 md:border-white/10 md:bg-white/[.06] md:text-white",
-                "hidden md:grid"
-              )}
-              aria-label={
-                isAuthenticated ? "Open profile" : "Sign in or create account"
-              }
-            >
-              {headerAvatarUrl || user?.avatarUrl ? (
-                <img
-                  src={headerAvatarUrl || user?.avatarUrl || ""}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : (
+            {isAuthenticated ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileMenuOpen(value => !value)}
+                  className="grid size-10 place-items-center overflow-hidden rounded-full border border-black/10 bg-white text-sm font-black text-slate-950 transition hover:border-violet-300/50 hover:bg-violet-500/20 md:size-11 md:border-white/10 md:bg-white/[.06] md:text-white"
+                  aria-label="Open account menu"
+                  aria-expanded={profileMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  {headerAvatarUrl || user?.avatarUrl ? (
+                    <img src={headerAvatarUrl || user?.avatarUrl || ""} alt="" className="size-full object-cover" />
+                  ) : (
+                    <ProfileGlyph className="size-5" />
+                  )}
+                </button>
+                {profileMenuOpen && (
+                  <div role="menu" aria-label="Account menu" className="absolute right-0 top-[calc(100%+8px)] z-[80] w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 text-zinc-950 shadow-2xl">
+                    <div className="border-b border-zinc-100 px-3 py-3">
+                      <p className="truncate text-sm font-black">{channels.data?.[0]?.displayName || user.name || "HkTube account"}</p>
+                      <p className="mt-0.5 truncate text-xs text-zinc-500">{channels.data?.[0]?.handle ? `@${channels.data[0].handle}` : user.email || "Authenticated account"}</p>
+                    </div>
+                    {channels.data?.[0] && (
+                      <Link href={`/profile?channel=${channels.data[0].id}`} role="menuitem" className="mt-1 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50">
+                        View channel <span className="text-xs text-zinc-400">Channel</span>
+                      </Link>
+                    )}
+                    <Link href="/profile" role="menuitem" className="flex rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50">Profile</Link>
+                    <Link href="/library" role="menuitem" className="flex rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50">Library</Link>
+                    <Link href="/settings" role="menuitem" className="flex rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50">Settings</Link>
+                    <Link href="/studio" role="menuitem" className="flex rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50">Creator Studio</Link>
+                    <button type="button" role="menuitem" onClick={() => void logout()} className="mt-1 flex w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50">Sign out</button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth" className="grid size-10 place-items-center rounded-full border border-black/10 bg-white text-slate-950 md:size-11" aria-label="Sign in or create account">
                 <ProfileGlyph className="size-5" />
-              )}
-            </Link>
-          </div>
-        </div>
+              </Link>
+            )}
+          </div>       </div>
         <nav
           className={cn(
             "flex gap-2 overflow-x-auto border-t border-white/6 px-3 py-2 [scrollbar-width:none] md:hidden",
@@ -597,7 +597,7 @@ export function HkTubeShell({
 
       <main
         className={cn(
-          "relative pb-[76px] md:pb-14 md:pl-60",
+          "relative pb-[64px] md:pb-14 md:pl-60",
           immersive && "max-md:p-0 max-md:pb-0"
         )}
       >
@@ -658,7 +658,7 @@ export function HkTubeShell({
 
       <nav
         className={cn(
-          "fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-5 border-t border-black/10 bg-white px-1 pb-0 pt-0 text-neutral-950 shadow-[0_-4px_18px_rgba(0,0,0,.06)] backdrop-blur-xl md:hidden",
+          "fixed inset-x-0 bottom-0 z-40 grid h-[60px] grid-cols-5 border-t border-black/10 bg-white px-1 pb-0 pt-0 text-neutral-950 shadow-[0_-4px_18px_rgba(0,0,0,.06)] backdrop-blur-xl md:hidden",
           location === "/" && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
@@ -687,16 +687,16 @@ export function HkTubeShell({
               key={item.label}
               type="button"
               onClick={openCreate}
-              className="flex h-[72px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-semibold text-neutral-700"
+              className="flex h-[60px] flex-col items-center justify-center gap-0 rounded-lg text-[9px] font-semibold text-neutral-700"
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-full bg-white text-neutral-950 shadow-none",
+                  "grid size-8 place-items-center rounded-full bg-white text-neutral-950 shadow-none",
                   location === "/" &&
                     "rounded-full bg-[#f1edff] text-blue-600 shadow-none"
                 )}
               >
-                <Plus className="size-5" />
+                <Plus className="size-[18px]" />
               </span>
             </button>
           ) : (
@@ -717,7 +717,7 @@ export function HkTubeShell({
             >
               <item.icon
                 className={cn(
-                  "size-5",
+                  "size-[18px]",
                   active &&
                     (location === "/"
                       ? "fill-blue-600/10"
