@@ -108266,11 +108266,15 @@ async function invokeLLM(params) {
   const invocationSignal = signal ? AbortSignal.any([signal, invocationTimeout]) : invocationTimeout;
   const remainingBudgetMs = () => Math.max(1, invocationBudgetMs - (Date.now() - invocationStartedAt));
   const canFailOver = hasGeminiFallback();
+  let primaryFailureDetails;
   const tryOpenAIFallback = () => {
     const fallbackPayload = { ...payload2, model: ENV.openAiModel };
     delete fallbackPayload.thinking;
     delete fallbackPayload.reasoning;
-    console.warn("[LLM] Gemini upstream unavailable; trying configured OpenAI fallback");
+    console.warn("[LLM] Gemini failed; trying configured OpenAI fallback", {
+      primaryStatus: primaryFailureDetails?.status ?? null,
+      primaryFailure: primaryFailureDetails?.kind ?? "unknown"
+    });
     return fetchWithBackoff(`${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
@@ -108290,12 +108294,14 @@ async function invokeLLM(params) {
         authorization: `Bearer ${resolveApiKey()}`
       },
       body: JSON.stringify(payload2)
-    }, { timeoutMs: primaryBudgetMs, maxRetries: canFailOver ? 0 : maxRetries, signal: invocationSignal });
+    }, { timeoutMs: primaryBudgetMs, maxRetries: canFailOver ? 1 : maxRetries, signal: invocationSignal });
   } catch (error47) {
     if (!canFailOver || invocationSignal.aborted || !isProviderTransportFailure(error47)) throw error47;
+    primaryFailureDetails = { kind: error47 instanceof Error ? error47.name : "UnknownError" };
     response = await tryOpenAIFallback();
   }
   if (canFailOver && !response.ok && isFallbackStatus(response.status) && !invocationSignal.aborted) {
+    primaryFailureDetails = { kind: "http", status: response.status };
     try {
       await response.body?.cancel();
     } catch {
@@ -108306,6 +108312,13 @@ async function invokeLLM(params) {
     const errorText = await response.text();
     const error47 = new Error(`LLM invoke failed: ${response.status} ${response.statusText} \u2013 ${errorText}`);
     error47.status = response.status;
+    if (primaryFailureDetails) {
+      error47.providerFailures = {
+        primary: { provider: "gemini", ...primaryFailureDetails },
+        fallback: { provider: "openai", status: response.status }
+      };
+      console.error("[LLM] Gemini and OpenAI providers both failed", error47.providerFailures);
+    }
     throw error47;
   }
   let data2;
@@ -108473,6 +108486,9 @@ function presentAIError(error47) {
   }
   if (status === 401 || status === 403 || /invalid api key|unauthorized|authentication failed/i.test(raw)) {
     return { category: "authentication", status: 503, message: "HkTube AI provider credentials mein masla hai. Support team ko inform karein." };
+  }
+  if (/credit_balance_exhausted|insufficient_quota|no credits remaining/i.test(raw)) {
+    return { category: "rate_limit", status: 429, message: "AI provider ke API credits khatam hain. Admin provider account ka quota ya credits check karein." };
   }
   if (status === 429 || /429|rate limit|quota/i.test(raw)) {
     return { category: "rate_limit", status: 429, message: "HkTube AI abhi busy hai. Kuch dair baad dobara try karein." };

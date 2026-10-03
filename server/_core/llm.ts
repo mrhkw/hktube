@@ -471,11 +471,15 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     : invocationTimeout;
   const remainingBudgetMs = () => Math.max(1, invocationBudgetMs - (Date.now() - invocationStartedAt));
   const canFailOver = hasGeminiFallback();
+  let primaryFailureDetails: { status?: number; kind: string } | undefined;
   const tryOpenAIFallback = () => {
     const fallbackPayload: Record<string, unknown> = { ...payload, model: ENV.openAiModel };
     delete fallbackPayload.thinking;
     delete fallbackPayload.reasoning;
-    console.warn("[LLM] Gemini upstream unavailable; trying configured OpenAI fallback");
+    console.warn("[LLM] Gemini failed; trying configured OpenAI fallback", {
+      primaryStatus: primaryFailureDetails?.status ?? null,
+      primaryFailure: primaryFailureDetails?.kind ?? "unknown",
+    });
     return fetchWithBackoff(`${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
@@ -500,21 +504,36 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         authorization: `Bearer ${resolveApiKey()}`,
       },
       body: JSON.stringify(payload),
-    }, { timeoutMs: primaryBudgetMs, maxRetries: canFailOver ? 0 : maxRetries, signal: invocationSignal });
+    }, { timeoutMs: primaryBudgetMs, maxRetries: canFailOver ? 1 : maxRetries, signal: invocationSignal });
   } catch (error) {
     if (!canFailOver || invocationSignal.aborted || !isProviderTransportFailure(error)) throw error;
+    primaryFailureDetails = { kind: error instanceof Error ? error.name : "UnknownError" };
     response = await tryOpenAIFallback();
   }
 
   if (canFailOver && !response.ok && isFallbackStatus(response.status) && !invocationSignal.aborted) {
+    primaryFailureDetails = { kind: "http", status: response.status };
     try { await response.body?.cancel(); } catch { /* best-effort release of the failed provider response */ }
     response = await tryOpenAIFallback();
   }
 
   if (!response.ok) {
     const errorText = await response.text();
-    const error = new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`) as Error & { status: number };
+    const error = new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`) as Error & {
+      status: number;
+      providerFailures?: {
+        primary: { provider: "gemini"; status?: number; kind: string };
+        fallback: { provider: "openai"; status: number };
+      };
+    };
     error.status = response.status;
+    if (primaryFailureDetails) {
+      error.providerFailures = {
+        primary: { provider: "gemini", ...primaryFailureDetails },
+        fallback: { provider: "openai", status: response.status },
+      };
+      console.error("[LLM] Gemini and OpenAI providers both failed", error.providerFailures);
+    }
     throw error;
   }
 

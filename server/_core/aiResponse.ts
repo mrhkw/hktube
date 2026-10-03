@@ -68,6 +68,9 @@ export function presentAIError(error: unknown): AIErrorPresentation {
   if (status === 401 || status === 403 || /invalid api key|unauthorized|authentication failed/i.test(raw)) {
     return { category: "authentication", status: 503, message: "HkTube AI provider credentials mein masla hai. Support team ko inform karein." };
   }
+  if (/credit_balance_exhausted|insufficient_quota|no credits remaining/i.test(raw)) {
+    return { category: "rate_limit", status: 429, message: "AI provider ke API credits khatam hain. Admin provider account ka quota ya credits check karein." };
+  }
   if (status === 429 || /429|rate limit|quota/i.test(raw)) {
     return { category: "rate_limit", status: 429, message: "HkTube AI abhi busy hai. Kuch dair baad dobara try karein." };
   }
