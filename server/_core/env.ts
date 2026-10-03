@@ -19,6 +19,8 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  groqApiKey: process.env.GROQ_API_KEY ?? "",
+  groqModel: firstNonEmpty(process.env.GROQ_MODEL, "openai/gpt-oss-20b"),
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   openAiBaseUrl: firstNonEmpty(process.env.OPENAI_BASE_URL, "https://api.openai.com/v1"),
   openAiModel: firstNonEmpty(process.env.OPENAI_MODEL, "gpt-4o-mini"),

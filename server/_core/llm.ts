@@ -218,38 +218,60 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-// The project is configured around Gemini. If both provider variables exist
-// in Vercel, do not silently select an older exhausted OpenAI key first.
-const usesGeminiApi = () => Boolean(ENV.geminiApiKey.trim());
-const usesOpenAiApi = () => !usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
+type LLMProvider = "groq" | "gemini" | "openai" | "forge";
 
-const resolveApiUrl = () => {
-  if (usesOpenAiApi()) {
-    return `${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`;
-  }
-  if (usesGeminiApi()) {
-    // Gemini's OpenAI-compatible endpoint preserves the shared adapter's
-    // existing tool, schema, and message normalization behavior.
-    return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-  }
-  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+// Groq's free GPT-OSS endpoint is preferred when its key is configured. Keep
+// Gemini as a free-provider fallback, then preserve the existing Gemini/OpenAI
+// selection for deployments that have not opted into Groq.
+const resolvePrimaryProvider = (): LLMProvider => {
+  if (ENV.groqApiKey.trim()) return "groq";
+  if (ENV.geminiApiKey.trim()) return "gemini";
+  if (ENV.openAiApiKey.trim()) return "openai";
+  return "forge";
 };
 
-const resolveApiKey = () => {
-  if (usesOpenAiApi()) return ENV.openAiApiKey.trim();
-  if (usesGeminiApi()) return ENV.geminiApiKey.trim();
-  return ENV.forgeApiKey;
+const resolveProviderConfig = (provider: LLMProvider) => {
+  if (provider === "groq") return {
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    modelsUrl: "https://api.groq.com/openai/v1/models",
+    key: ENV.groqApiKey.trim(),
+    model: ENV.groqModel,
+  };
+  if (provider === "gemini") return {
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    modelsUrl: "https://generativelanguage.googleapis.com/v1beta/openai/models",
+    key: ENV.geminiApiKey.trim(),
+    model: ENV.geminiModel,
+  };
+  if (provider === "openai") return {
+    url: `${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`,
+    modelsUrl: `${ENV.openAiBaseUrl.replace(/\/$/, "")}/models`,
+    key: ENV.openAiApiKey.trim(),
+    model: ENV.openAiModel,
+  };
+  const baseUrl = ENV.forgeApiUrl.trim() || "https://forge.manus.im";
+  return {
+    url: `${baseUrl.replace(/\/$/, "")}/v1/chat/completions`,
+    modelsUrl: `${baseUrl.replace(/\/$/, "")}/v1/models`,
+    key: ENV.forgeApiKey,
+    model: "",
+  };
+};
+
+const resolveApiKey = () => resolveProviderConfig(resolvePrimaryProvider()).key;
+const providerDisplayName = (provider: LLMProvider) => provider === "openai" ? "OpenAI" : provider === "groq" ? "Groq" : provider === "gemini" ? "Gemini" : "Forge";
+const resolveFallbackProvider = (primary: LLMProvider): LLMProvider | undefined => {
+  if (primary === "groq" && ENV.geminiApiKey.trim()) return "gemini";
+  if (primary === "gemini" && ENV.openAiApiKey.trim()) return "openai";
+  return undefined;
 };
 
 const assertApiKey = () => {
   if (!resolveApiKey()) {
-    throw new Error("OPENAI_API_KEY, GEMINI_API_KEY, or BUILT_IN_FORGE_API_KEY is not configured");
+    throw new Error("GROQ_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or BUILT_IN_FORGE_API_KEY is not configured");
   }
 };
 
-const hasGeminiFallback = () => usesGeminiApi() && Boolean(ENV.openAiApiKey.trim());
 // A provider-side 429 can mean temporary throttling or exhausted quota for
 // this key/model. If another provider is configured, try it rather than
 // immediately telling the user to wait and retry the same failing provider.
@@ -425,10 +447,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   if (model) {
     payload.model = model;
-  } else if (usesOpenAiApi()) {
-    payload.model = ENV.openAiModel;
-  } else if (usesGeminiApi()) {
-    payload.model = ENV.geminiModel;
+  } else {
+    const defaultModel = resolveProviderConfig(resolvePrimaryProvider()).model;
+    if (defaultModel) payload.model = defaultModel;
   }
 
   if (tools && tools.length > 0) {
@@ -473,21 +494,26 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     ? AbortSignal.any([signal, invocationTimeout])
     : invocationTimeout;
   const remainingBudgetMs = () => Math.max(1, invocationBudgetMs - (Date.now() - invocationStartedAt));
-  const canFailOver = hasGeminiFallback();
+  const primaryProvider = resolvePrimaryProvider();
+  const fallbackProvider = resolveFallbackProvider(primaryProvider);
+  const canFailOver = Boolean(fallbackProvider);
   let primaryFailureDetails: { status?: number; kind: string } | undefined;
-  const tryOpenAIFallback = () => {
-    const fallbackPayload: Record<string, unknown> = { ...payload, model: ENV.openAiModel };
+  const tryFallback = () => {
+    if (!fallbackProvider) throw new Error("No fallback LLM provider is configured");
+    const fallbackConfig = resolveProviderConfig(fallbackProvider);
+    const fallbackPayload: Record<string, unknown> = { ...payload };
+    if (fallbackConfig.model) fallbackPayload.model = fallbackConfig.model;
     delete fallbackPayload.thinking;
     delete fallbackPayload.reasoning;
-    console.warn("[LLM] Gemini failed; trying configured OpenAI fallback", {
+    console.warn(`[LLM] ${providerDisplayName(primaryProvider)} failed; trying configured ${providerDisplayName(fallbackProvider)} fallback`, {
       primaryStatus: primaryFailureDetails?.status ?? null,
       primaryFailure: primaryFailureDetails?.kind ?? "unknown",
     });
-    return fetchWithBackoff(`${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
+    return fetchWithBackoff(fallbackConfig.url, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${ENV.openAiApiKey.trim()}`,
+        authorization: `Bearer ${fallbackConfig.key}`,
       },
       body: JSON.stringify(fallbackPayload),
     }, { timeoutMs: remainingBudgetMs(), maxRetries: 0, signal: invocationSignal });
@@ -500,24 +526,25 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const primaryBudgetMs = canFailOver
       ? Math.min(10_000, Math.max(1, Math.floor(invocationBudgetMs / 2)))
       : remainingBudgetMs();
-    response = await fetchWithBackoff(resolveApiUrl(), {
+    const primaryConfig = resolveProviderConfig(primaryProvider);
+    response = await fetchWithBackoff(primaryConfig.url, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${resolveApiKey()}`,
+        authorization: `Bearer ${primaryConfig.key}`,
       },
       body: JSON.stringify(payload),
     }, { timeoutMs: primaryBudgetMs, maxRetries: canFailOver ? 1 : maxRetries, signal: invocationSignal });
   } catch (error) {
     if (!canFailOver || invocationSignal.aborted || !isProviderTransportFailure(error)) throw error;
     primaryFailureDetails = { kind: error instanceof Error ? error.name : "UnknownError" };
-    response = await tryOpenAIFallback();
+    response = await tryFallback();
   }
 
   if (canFailOver && !response.ok && isFallbackStatus(response.status) && !invocationSignal.aborted) {
     primaryFailureDetails = { kind: "http", status: response.status };
     try { await response.body?.cancel(); } catch { /* best-effort release of the failed provider response */ }
-    response = await tryOpenAIFallback();
+    response = await tryFallback();
   }
 
   if (!response.ok) {
@@ -525,17 +552,17 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const error = new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`) as Error & {
       status: number;
       providerFailures?: {
-        primary: { provider: "gemini"; status?: number; kind: string };
-        fallback: { provider: "openai"; status: number };
+        primary: { provider: LLMProvider; status?: number; kind: string };
+        fallback: { provider: LLMProvider; status: number };
       };
     };
     error.status = response.status;
     if (primaryFailureDetails) {
       error.providerFailures = {
-        primary: { provider: "gemini", ...primaryFailureDetails },
-        fallback: { provider: "openai", status: response.status },
+        primary: { provider: primaryProvider, ...primaryFailureDetails },
+        fallback: { provider: fallbackProvider!, status: response.status },
       };
-      console.error("[LLM] Gemini and OpenAI providers both failed", error.providerFailures);
+      console.error(`[LLM] ${providerDisplayName(primaryProvider)} and ${providerDisplayName(fallbackProvider!)} providers both failed`, error.providerFailures);
     }
     throw error;
   }
@@ -563,17 +590,10 @@ export type ModelsResponse = {
 
 export async function listLLMModels(): Promise<ModelsResponse> {
   assertApiKey();
+  const provider = resolveProviderConfig(resolvePrimaryProvider());
 
-  const url = usesOpenAiApi()
-    ? `${ENV.openAiBaseUrl.replace(/\/$/, "")}/models`
-    : usesGeminiApi()
-      ? "https://generativelanguage.googleapis.com/v1beta/openai/models"
-    : ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-      ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
-      : "https://forge.manus.im/v1/models";
-
-  const response = await fetchWithBackoff(url, {
-    headers: { authorization: `Bearer ${resolveApiKey()}` },
+  const response = await fetchWithBackoff(provider.modelsUrl, {
+    headers: { authorization: `Bearer ${provider.key}` },
   });
 
   if (!response.ok) {
