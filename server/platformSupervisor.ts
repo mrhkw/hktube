@@ -26,21 +26,25 @@ export function decideSupervisorAction(input: SupervisorInput): { decision: Supe
 
 function safeJson(value: unknown) { return JSON.stringify(value).slice(0, 200_000); }
 
-export async function emitPlatformEvent(input: { eventType: string; actorId?: number; entityType?: string; entityId?: number; payload: unknown; idempotencyKey: string; severity?: "info" | "warning" | "critical" }) {
+export async function emitPlatformEvent(input: { eventType: string; actorId?: number; entityType?: string; entityId?: number; payload: unknown; idempotencyKey: string; eventVersion?: number; severity?: "info" | "warning" | "critical" }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable; platform event was not recorded.");
   const existing = await db.select().from(platformEvents).where(eq(platformEvents.idempotencyKey, input.idempotencyKey)).limit(1);
   if (existing[0]) return existing[0];
-  const result = await db.insert(platformEvents).values({ eventType: input.eventType, actorId: input.actorId ?? null, entityType: input.entityType ?? null, entityId: input.entityId ?? null, payload: safeJson(input.payload), idempotencyKey: input.idempotencyKey, severity: input.severity ?? "info" });
+  const result = await db.insert(platformEvents).values({ eventType: input.eventType, actorId: input.actorId ?? null, entityType: input.entityType ?? null, entityId: input.entityId ?? null, payload: safeJson(input.payload), idempotencyKey: input.idempotencyKey, eventVersion: Math.max(1, Math.floor(input.eventVersion ?? 1)), severity: input.severity ?? "info" });
   const rows = await db.select().from(platformEvents).where(eq(platformEvents.id, Number(result[0].insertId))).limit(1);
   if (!rows[0]) throw new Error("Platform event was inserted but could not be read back.");
   return rows[0];
 }
 
-export async function enqueueAutomationJob(input: { eventId?: number; jobType: string; payload: unknown; maxAttempts?: number }) {
+export async function enqueueAutomationJob(input: { eventId?: number; jobType: string; payload: unknown; maxAttempts?: number; dedupeKey?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable; automation job was not recorded.");
-  const result = await db.insert(automationJobs).values({ eventId: input.eventId ?? null, jobType: input.jobType, payload: safeJson(input.payload), maxAttempts: Math.max(1, Math.min(input.maxAttempts ?? 3, 10)) });
+  if (input.dedupeKey) {
+    const existing = await db.select({ id: automationJobs.id }).from(automationJobs).where(eq(automationJobs.dedupeKey, input.dedupeKey.slice(0, 191))).limit(1);
+    if (existing[0]) return existing[0].id;
+  }
+  const result = await db.insert(automationJobs).values({ eventId: input.eventId ?? null, jobType: input.jobType, dedupeKey: input.dedupeKey?.slice(0, 191) ?? null, payload: safeJson(input.payload), maxAttempts: Math.max(1, Math.min(input.maxAttempts ?? 3, 10)) });
   return Number(result[0].insertId);
 }
 

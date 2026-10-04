@@ -62,12 +62,12 @@ export const auditLogs = mysqlTable("audit_logs", {
 }, table => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
 
 export const platformEvents = mysqlTable("platform_events", {
-  id: int("id").autoincrement().primaryKey(), eventType: varchar("eventType", { length: 120 }).notNull(), actorId: int("actorId"), entityType: varchar("entityType", { length: 80 }), entityId: int("entityId"), payload: text("payload").notNull(), idempotencyKey: varchar("idempotencyKey", { length: 191 }).notNull(), severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull()
+  id: int("id").autoincrement().primaryKey(), eventType: varchar("eventType", { length: 120 }).notNull(), actorId: int("actorId"), entityType: varchar("entityType", { length: 80 }), entityId: int("entityId"), payload: text("payload").notNull(), idempotencyKey: varchar("idempotencyKey", { length: 191 }).notNull(), eventVersion: int("eventVersion").default(1).notNull(), severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull()
 }, table => [uniqueIndex("platform_events_idempotency_unique").on(table.idempotencyKey), index("platform_events_type_created_idx").on(table.eventType, table.createdAt), index("platform_events_entity_idx").on(table.entityType, table.entityId)]);
 
 export const automationJobs = mysqlTable("automation_jobs", {
-  id: int("id").autoincrement().primaryKey(), eventId: int("eventId"), jobType: varchar("jobType", { length: 120 }).notNull(), status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "dead_letter", "blocked"]).default("queued").notNull(), attempts: int("attempts").default(0).notNull(), maxAttempts: int("maxAttempts").default(3).notNull(), payload: text("payload").notNull(), lastError: text("lastError"), availableAt: timestamp("availableAt").defaultNow().notNull(), lockedAt: timestamp("lockedAt"), completedAt: timestamp("completedAt"), createdAt: timestamp("createdAt").defaultNow().notNull()
-}, table => [index("automation_jobs_status_available_idx").on(table.status, table.availableAt), index("automation_jobs_event_idx").on(table.eventId), index("automation_jobs_type_created_idx").on(table.jobType, table.createdAt)]);
+  id: int("id").autoincrement().primaryKey(), eventId: int("eventId"), jobType: varchar("jobType", { length: 120 }).notNull(), dedupeKey: varchar("dedupeKey", { length: 191 }), status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "dead_letter", "blocked"]).default("queued").notNull(), attempts: int("attempts").default(0).notNull(), maxAttempts: int("maxAttempts").default(3).notNull(), payload: text("payload").notNull(), lastError: text("lastError"), availableAt: timestamp("availableAt").defaultNow().notNull(), lockedAt: timestamp("lockedAt"), completedAt: timestamp("completedAt"), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [uniqueIndex("automation_jobs_dedupe_unique").on(table.dedupeKey), index("automation_jobs_status_available_idx").on(table.status, table.availableAt), index("automation_jobs_event_idx").on(table.eventId), index("automation_jobs_type_created_idx").on(table.jobType, table.createdAt)]);
 
 export const policyDecisions = mysqlTable("policy_decisions", {
   id: int("id").autoincrement().primaryKey(), eventId: int("eventId"), jobId: int("jobId"), decision: mysqlEnum("decision", ["execute", "review", "block", "degraded"]).notNull(), confidence: int("confidence").notNull(), policyVersion: varchar("policyVersion", { length: 64 }).notNull(), reason: text("reason").notNull(), decidedBy: varchar("decidedBy", { length: 32 }).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull()
@@ -96,3 +96,24 @@ export type InsertPost = typeof posts.$inferInsert;
 export type Playlist = typeof playlists.$inferSelect;
 export type InsertPlaylist = typeof playlists.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
+
+
+export const automationContexts = mysqlTable("automation_contexts", {
+  id: int("id").autoincrement().primaryKey(), scope: varchar("scope", { length: 120 }).notNull(), contextVersion: int("contextVersion").default(1).notNull(), freshness: mysqlEnum("freshness", ["fresh", "stale", "blocked"]).default("fresh").notNull(), snapshot: text("snapshot").notNull(), capturedAt: timestamp("capturedAt").defaultNow().notNull(), expiresAt: timestamp("expiresAt").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [index("automation_contexts_scope_fresh_idx").on(table.scope, table.freshness, table.capturedAt)]);
+
+export const automationPlans = mysqlTable("automation_plans", {
+  id: int("id").autoincrement().primaryKey(), planKey: varchar("planKey", { length: 191 }).notNull(), eventId: int("eventId"), status: mysqlEnum("status", ["proposed", "validated", "executing", "succeeded", "failed", "blocked", "dry_run", "shadow"]).default("proposed").notNull(), steps: text("steps").notNull(), riskAssessment: text("riskAssessment").notNull(), blastRadius: text("blastRadius").notNull(), estimatedCost: varchar("estimatedCost", { length: 64 }), createdBy: varchar("createdBy", { length: 80 }).notNull(), validatedAt: timestamp("validatedAt"), executedAt: timestamp("executedAt"), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [uniqueIndex("automation_plans_key_unique").on(table.planKey), index("automation_plans_status_created_idx").on(table.status, table.createdAt)]);
+
+export const decisionLedger = mysqlTable("decision_ledger", {
+  id: int("id").autoincrement().primaryKey(), decisionKey: varchar("decisionKey", { length: 191 }).notNull(), agentKey: varchar("agentKey", { length: 120 }).notNull(), eventId: int("eventId"), inputReferences: text("inputReferences").notNull(), policyVersion: varchar("policyVersion", { length: 64 }).notNull(), risk: mysqlEnum("risk", ["low", "medium", "high", "critical"]).notNull(), confidence: int("confidence").notNull(), proposedAction: text("proposedAction").notNull(), approvedAction: text("approvedAction"), authorization: text("authorization").notNull(), executionResult: text("executionResult"), verificationResult: text("verificationResult"), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [uniqueIndex("decision_ledger_key_unique").on(table.decisionKey), index("decision_ledger_agent_created_idx").on(table.agentKey, table.createdAt), index("decision_ledger_event_idx").on(table.eventId)]);
+
+export const dependencyStates = mysqlTable("dependency_states", {
+  dependencyKey: varchar("dependencyKey", { length: 120 }).primaryKey(), state: mysqlEnum("state", ["normal", "degraded", "read_only", "review_required", "blocked"]).notNull(), reason: text("reason").notNull(), metadata: text("metadata"), lastCheckedAt: timestamp("lastCheckedAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+});
+
+export const circuitBreakers = mysqlTable("circuit_breakers", {
+  key: varchar("key", { length: 120 }).primaryKey(), state: mysqlEnum("state", ["closed", "open", "half_open"]).default("closed").notNull(), failureCount: int("failureCount").default(0).notNull(), openedAt: timestamp("openedAt"), nextProbeAt: timestamp("nextProbeAt"), lastError: text("lastError"), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+});
