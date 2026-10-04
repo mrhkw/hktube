@@ -101,9 +101,24 @@ export function ThemeManager() {
     const savedTheme = localStorage.getItem("hktube-theme") || "violet";
     const savedLanguage = localStorage.getItem("hktube-language-code") || localStorage.getItem("hktube-language")?.slice(0, 2).toLowerCase() || "en";
     applyHkTheme(savedTheme); applyHkLanguage(savedLanguage);
-    const observer = new MutationObserver(() => translatePage(localStorage.getItem("hktube-language-code") || "en"));
+    let timer: number | undefined;
+    let translating = false;
+    const observer = new MutationObserver(() => {
+      if (translating || timer !== undefined) return;
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        translating = true;
+        observer.disconnect();
+        translatePage(localStorage.getItem("hktube-language-code") || "en");
+        translating = false;
+        observer.observe(document.body, { childList: true, subtree: true });
+      }, 120);
+    });
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
   useEffect(() => {
     if (!user || channels.isLoading || channels.isError || channels.data?.length || provisioned.current || createChannel.isPending) return;

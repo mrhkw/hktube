@@ -1,31 +1,49 @@
-# HkTube Enterprise Security Audit
+# HkTube Security, Performance & Settings Review
 
-## Scope and architecture
+## Scope
 
-The repository is a Vite/Express TypeScript application with two data surfaces: a Drizzle/MySQL application API and a Supabase-backed media/profile/engagement surface. The originally supplied Next.js/Supabase Server snippet does not match this repository, so the implementation was applied to the actual request boundaries rather than introducing unused Next middleware.
+Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings lifecycle, build output, and deployment configuration. The goal was to make the existing site safer and faster without changing its product surface or removing existing settings.
 
-## Implemented controls
+## Completed in this pass
 
-| Area | Implementation |
+| Area | Change |
 |---|---|
-| Database hardening | Added `supabase/hktube_security_hardening.sql`. It enables RLS and installs explicit ownership policies for `profiles`, `videos`, `comments`, and whichever likes table exists (`likes` or `video_likes`). Policies use `auth.uid()` for insert/update/delete ownership checks and restrict video visibility to public published records or the owner. |
-| HTTP security headers | Express now emits `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, strict referrer and permissions policies, cross-origin isolation headers, HSTS in production, and a CSP with `frame-ancestors 'none'`, `object-src 'none'`, and no inline/eval scripts. Vercel edge headers were aligned with the same policy. |
-| Input sanitization | Added `shared/security.ts` and applied `sanitizeInput()` to tRPC video titles/descriptions, comments, posts, channel names/descriptions, Supabase video writes, Supabase comments/reports, channel profile updates, account registration names, and the profile bio update helper. |
-| API authorization | Upload/presign and all protected tRPC mutations require a valid session. Video deletion now permits only the authenticated owner or an authorized admin; channel/profile updates remain owner-scoped. |
-| Operational protections | Existing request-origin checks, rate limits, request size limits, safe media URL validation, and upload content-type/extension/size checks remain enabled. |
+| Settings access | The existing settings/policy destinations are now available from one header settings icon on every primary mobile/desktop shell page, not only `/profile`. The menu remains available while signed out because preferences and legal/help pages already support guest access. |
+| Settings menu UX | Added Escape-key dismissal and automatic close on route changes to prevent stale overlays and improve keyboard use. |
+| DOM performance | Debounced the global language translation observer and disconnects it while translating, preventing repeated full-document scans during every route mutation. |
+| CORS | Added an explicit origin allowlist (`ALLOWED_ORIGINS`, defaulting to `https://hktube.vercel.app` plus the current request origin), credential-safe response headers, and rejected unknown preflight origins. |
+| CSRF/origin checks | Preserved the existing fail-closed mutation origin gate and kept forwarded-origin behavior bounded by same-origin checks and the explicit CORS policy. |
+| Abuse protection | Added a dedicated 6-attempt / 15-minute local login/register bucket while retaining existing endpoint-specific limits for general, upload, AI, and admin-agent traffic. |
+| Transport policy | Added HSTS preload to the production Express and Vercel header policies. |
 
-## Verification
+## Existing controls confirmed
 
-The following checks passed after the final changes:
+- Supabase bearer sessions are preferred over stale legacy cookies when both are present.
+- Cookie-authenticated mutations require a trusted same-origin `Origin` or `Referer`.
+- `HttpOnly`, path-scoped session cookies are used; secure HTTPS requests use secure cookies.
+- Server-side input sanitization and URL validation are applied across the major video, comment, profile, channel, report, and account write paths.
+- Upload/presign and protected tRPC mutations require authentication and ownership checks.
+- Security headers include frame denial, MIME sniffing protection, strict referrer policy, permissions policy, cross-origin isolation controls, and CSP.
+- Client routes are lazy-loaded and utility UI is deferred; media cards generally use lazy loading and async decoding.
+- Supabase RLS hardening SQL exists for profile/video/comment/engagement ownership boundaries.
 
-- TypeScript: `pnpm check` — passed.
-- Tests: `pnpm test -- --reporter=verbose` — **7 test files, 22 tests passed**.
-- Production build: `pnpm build` — passed.
-- Local production health: `GET /api/health` returned **HTTP 200** with `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, strict CSP, and HSTS.
-- Git delivery: commits `b48beb5` and `3661c22` were pushed to `origin/main`; the working tree is clean.
+## Verification completed
 
-## Deployment note
+- `pnpm check` — passed.
+- `pnpm test -- --reporter=dot` — **15 test files, 61 tests passed**.
+- `pnpm build` — passed; Vite produced route chunks and the server/API bundles.
+- `vercel.json` JSON parse — passed.
+- `git diff --check` — passed.
+- Local production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`.
+- Local CORS preflight — allowed configured origin returned 204 with credentials-safe headers; unknown origin returned 403.
 
-The Supabase migration is committed but was not executed against the remote database because no Supabase database execution credential or migration connector was available in this session. It must be run in the Supabase SQL Editor or through the project migration pipeline before relying on the database-side controls in production.
+## Remaining production risks / follow-up
 
-The public `https://hktube.vercel.app/` endpoint returned HTTP 200 during verification, but its response still referenced the prior asset deployment and did not yet expose the new edge headers. The Vercel MCP connector required a separate login and the Vercel CLI was not installed, so production rollout status could not be forced or independently inspected from this session. After Vercel completes the push-triggered deployment, re-check `/api/health` and `/` for the strict headers above.
+1. The in-memory rate limiter is useful as a fallback but is not shared between Vercel instances. A production abuse-control store such as Upstash/Redis or another atomic shared counter should be added when available.
+2. Legacy stateless bearer/session tokens can remain valid until expiry if copied; short-lived access tokens with rotated/revocable refresh sessions would be stronger.
+3. Settings and privacy preferences are currently device-local `localStorage` values. Account-level sync and server-enforced privacy controls require a preferences table plus RLS and query/mutation enforcement.
+4. Supabase migration/RLS deployment state must be verified against the live project; committed SQL is not proof that production has executed it.
+5. The SPA updates SEO metadata client-side. Public channel/video pages should eventually be prerendered or server-rendered for crawler-visible route metadata.
+6. The response CSP should be validated against every intentionally enabled third-party feature in production (especially optional advertising and embedded media) before enabling those integrations broadly.
+
+These follow-ups require production credentials, a shared rate-limit provider, or a deployment/migration workflow that was not available in this sandbox.

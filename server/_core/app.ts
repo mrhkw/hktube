@@ -14,6 +14,8 @@ const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
 const GENERAL_LIMIT = 120;
 const AUTH_LIMIT = 12;
+const AUTH_ATTEMPT_LIMIT = 6;
+const AUTH_ATTEMPT_WINDOW_MS = 15 * 60_000;
 const UPLOAD_LIMIT = 12;
 const ADMIN_AGENT_LIMIT = 12;
 const AI_LIMIT = 12;
@@ -52,6 +54,21 @@ function isTrustedOrigin(req: express.Request, origin: string) {
   } catch { return false; }
 }
 
+function isAllowedCorsOrigin(req: express.Request, origin: string) {
+  try {
+    const parsed = new URL(origin);
+    const target = targetOrigin(req);
+    if (target && parsed.origin === target) return true;
+    const configured = (process.env.ALLOWED_ORIGINS || "https://hktube.vercel.app")
+      .split(",")
+      .map(value => value.trim().replace(/\/$/, ""))
+      .filter(Boolean);
+    return configured.includes(parsed.origin);
+  } catch {
+    return false;
+  }
+}
+
 function securityGate(req: express.Request, res: express.Response) {
   const rawPath = req.originalUrl || req.url;
   if (/\0|\.\.(?:\/|\\)|%2e%2e|%00/i.test(rawPath)) {
@@ -85,12 +102,13 @@ function securityGate(req: express.Request, res: express.Response) {
 
 function rateLimit(req: express.Request, res: express.Response) {
   const path = req.path;
-  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
-  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
+  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
+  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
+  const windowMs = bucket === "auth-attempt" ? AUTH_ATTEMPT_WINDOW_MS : RATE_WINDOW_MS;
   const key = `${bucket}:${clientIp(req)}`;
   const now = Date.now();
   const existing = rateBuckets.get(key);
-  const current = !existing || existing.resetAt <= now ? { count: 0, resetAt: now + RATE_WINDOW_MS } : existing;
+  const current = !existing || existing.resetAt <= now ? { count: 0, resetAt: now + windowMs } : existing;
   current.count += 1;
   rateBuckets.set(key, current);
   if (rateBuckets.size > MAX_RATE_BUCKETS) rateBuckets.forEach((entry, entryKey) => { if (entry.resetAt <= now) rateBuckets.delete(entryKey); });
@@ -114,8 +132,29 @@ export function createApiApp(): Express {
       ...SECURITY_HEADERS,
       "Content-Security-Policy": CONTENT_SECURITY_POLICY,
     });
+    const origin = req.get("origin")?.trim();
+    if (origin) {
+      if (!isAllowedCorsOrigin(req, origin)) {
+        if (req.method === "OPTIONS") {
+          res.status(403).json({ error: { message: "Cross-origin request blocked." } });
+          return;
+        }
+      } else {
+        res.set({
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, X-TRPC-Source",
+          Vary: "Origin",
+        });
+        if (req.method === "OPTIONS") {
+          res.status(204).end();
+          return;
+        }
+      }
+    }
     if (req.path.startsWith("/api/")) res.set("Cache-Control", "no-store");
-    if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+    if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
     if (securityGate(req, res)) next();
   });
   app.use((req, res, next) => rateLimit(req, res) ? next() : undefined);
