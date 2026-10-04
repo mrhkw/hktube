@@ -8,7 +8,7 @@ This directory contains the native Android shell for HkTube. It targets Android 
 2. Open this `android/` directory in Android Studio.
 3. Let Gradle sync and install the Android 36 SDK if prompted.
 4. Run the debug build on a real Android device and verify email sign-in/sign-up, video playback, upload/file chooser, Shorts, account deletion, advertising consent and deep links.
-5. Google sign-in is intentionally kept as a web-browser feature; the embedded Android WebView uses email authentication so the app does not depend on an embedded Google OAuth user-agent.
+5. Google OAuth must not run inside the embedded WebView. HkTube launches the exact first-party HTTPS login in Chrome; the native shell validates that intent and only accepts its own HTTPS App Link callback. Chrome and WebView storage are separate, so use Chrome after sign-in until the production App Link association has been verified.
 6. Create a release keystore that you control. Never commit the keystore or passwords.
 7. Configure Play App Signing in Google Play Console and build a signed Android App Bundle (AAB).
 
@@ -18,7 +18,7 @@ The production manifest requests only INTERNET. Notification permission is not r
 
 ## Production deep links
 
-The shell accepts `https://hktube.vercel.app/...` links. For Android App Links verification, publish the SHA-256 certificate fingerprint of the final release signing certificate in `https://hktube.vercel.app/.well-known/assetlinks.json` before production rollout. The certificate fingerprint cannot be invented before the final release signing key exists.
+The shell accepts only exact-host `https://hktube.vercel.app/...` links. For automatic Google OAuth return into the app, publish a correct `https://hktube.vercel.app/.well-known/assetlinks.json` containing the final release package and SHA-256 signing-certificate fingerprint, then verify Android App Links on a release-signed installation. Until then, Chrome and the embedded WebView do not share their Supabase browser session; continue using HkTube in Chrome. The certificate fingerprint cannot be invented before the release signing key exists.
 
 ## Google Play checklist
 

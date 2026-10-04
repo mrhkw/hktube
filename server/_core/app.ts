@@ -6,6 +6,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
 import { registerAdminAgentRoute } from "./adminAgent";
 import { registerAIAdminRoute } from "./aiAdminRoute";
+import { registerAgentRuntimeRoutes } from "./agentRuntimeRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
@@ -16,6 +17,7 @@ const GENERAL_LIMIT = 120;
 const AUTH_LIMIT = 12;
 const UPLOAD_LIMIT = 12;
 const ADMIN_AGENT_LIMIT = 12;
+const AGENT_RUNTIME_LIMIT = 20;
 const AI_LIMIT = 12;
 const MAX_RATE_BUCKETS = 5000;
 
@@ -85,8 +87,8 @@ function securityGate(req: express.Request, res: express.Response) {
 
 function rateLimit(req: express.Request, res: express.Response) {
   const path = req.path;
-  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
-  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
+  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/admin/agent-runtime/") || path === "/api/admin/agent-runtime" ? "agent-runtime" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
+  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "agent-runtime" ? AGENT_RUNTIME_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
   const key = `${bucket}:${clientIp(req)}`;
   const now = Date.now();
   const existing = rateBuckets.get(key);
@@ -127,6 +129,7 @@ export function createApiApp(): Express {
   registerMediaUploadRoute(app);
   registerAdminAgentRoute(app);
   registerAIAdminRoute(app);
+  registerAgentRuntimeRoutes(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const parserError = error as { type?: string; status?: number };

@@ -98,6 +98,47 @@ export async function requestAIChat(messages: AIChatRequestMessage[], callerSign
   throw aiTransportError("HkTube AI temporarily unavailable hai. Dobara try karein.", 503, "upstream");
 }
 
+/** Private coding copilot; the server re-verifies this token against its exact two-Gmail allowlist. */
+export async function requestAdminAgentChat(messages: AIChatRequestMessage[], callerSignal?: AbortSignal): Promise<{ content: string; model: string }> {
+  const body = JSON.stringify({ messages });
+  let headers = await getAISessionHeaders();
+  let authRefreshed = false;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let response: Response;
+    try {
+      const deadline = AbortSignal.timeout(22_000);
+      const signal = callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline;
+      response = await fetch("/api/admin-agent/chat", {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        credentials: "omit",
+        body,
+        signal,
+      });
+    } catch (error) {
+      if (callerSignal?.aborted) throw error;
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      throw aiTransportError(timedOut ? "HkTube AI ko jawab dene mein zyada waqt laga. Dobara try karein." : "Network connection ka masla hai. Internet check karke dobara try karein.", timedOut ? 504 : 503, timedOut ? "timeout" : "network");
+    }
+    if ((response.status === 401 || response.status === 403) && !authRefreshed) {
+      headers = await getAISessionHeaders(true);
+      authRefreshed = true;
+      continue;
+    }
+    const payload = await response.json().catch(() => null) as any;
+    if (!response.ok) {
+      const message = payload?.error?.message;
+      const code = payload?.error?.code;
+      throw aiTransportError(typeof message === "string" ? message : "Private HkTube Admin Agent is temporarily unavailable.", response.status, typeof code === "string" ? code : undefined);
+    }
+    if (!payload || typeof payload.content !== "string" || !payload.content.trim()) {
+      throw aiTransportError("AI ne koi response nahi diya, dobara try karein.", 502, "empty_response");
+    }
+    return { content: payload.content.trim(), model: typeof payload.model === "string" ? payload.model : "" };
+  }
+  throw aiTransportError("Your admin session expired. Sign in again.", 401, "auth");
+}
+
 export interface SupabaseProfile {
   id: string;
   username: string;

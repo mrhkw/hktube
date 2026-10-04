@@ -1,6 +1,7 @@
 package com.hktube.app;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,8 +14,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import java.net.URISyntaxException;
+
 public final class MainActivity extends Activity {
     private static final int FILE_CHOOSER = 4101;
+    private static final String TRUSTED_HOST = "hktube.vercel.app";
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
 
@@ -43,6 +47,8 @@ public final class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if ("intent".equalsIgnoreCase(uri.getScheme())) return openTrustedChromeIntent(uri);
                 return false;
             }
         });
@@ -62,11 +68,41 @@ public final class MainActivity extends Activity {
             }
         });
 
-        String deepLink = getIntent().getDataString();
-        String startUrl = deepLink != null && deepLink.startsWith("https://hktube.vercel.app")
-                ? deepLink
-                : "https://hktube.vercel.app/?app=android";
+        String deepLink = trustedHkTubeLink(getIntent().getData());
+        String startUrl = deepLink != null ? deepLink : "https://hktube.vercel.app/?app=android";
         webView.loadUrl(startUrl);
+    }
+
+    private static String trustedHkTubeLink(Uri uri) {
+        if (uri == null || !"https".equalsIgnoreCase(uri.getScheme())
+                || !TRUSTED_HOST.equalsIgnoreCase(uri.getHost())
+                || uri.getUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)) return null;
+        return uri.toString();
+    }
+
+    private boolean openTrustedChromeIntent(Uri intentUri) {
+        try {
+            Intent intent = Intent.parseUri(intentUri.toString(), Intent.URI_INTENT_SCHEME);
+            Uri destination = intent.getData();
+            if (!"com.android.chrome".equals(intent.getPackage()) || trustedHkTubeLink(destination) == null) return true;
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException noChrome) {
+                // A trusted URL may fall back to the device's browser; never forward an arbitrary intent.
+                startActivity(new Intent(Intent.ACTION_VIEW, destination));
+            }
+        } catch (URISyntaxException | ActivityNotFoundException ignored) {
+            // Consume malformed or unavailable intents instead of letting WebView navigate them.
+        }
+        return true;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String deepLink = trustedHkTubeLink(intent.getData());
+        if (deepLink != null && webView != null) webView.loadUrl(deepLink);
     }
 
     @Override
