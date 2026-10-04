@@ -57,7 +57,37 @@ export const videoTags = mysqlTable("video_tags", { id: int("id").autoincrement(
 export const savedVideos = mysqlTable("saved_videos", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), videoId: int("videoId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("saved_videos_user_video_unique").on(table.userId, table.videoId), index("saved_videos_user_created_idx").on(table.userId, table.createdAt)]);
 export const blockedUsers = mysqlTable("blocked_users", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), blockedUserId: int("blockedUserId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [uniqueIndex("blocked_users_unique").on(table.userId, table.blockedUserId)]);
 export const sessions = mysqlTable("sessions", { id: varchar("id", { length: 128 }).primaryKey(), userId: int("userId").notNull(), expiresAt: timestamp("expiresAt").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull() }, table => [index("sessions_user_idx").on(table.userId), index("sessions_expiry_idx").on(table.expiresAt)]);
-export const auditLogs = mysqlTable("audit_logs", { id: int("id").autoincrement().primaryKey(), actorId: int("actorId"), action: varchar("action", { length: 120 }).notNull(), entityType: varchar("entityType", { length: 80 }).notNull(), entityId: int("entityId"), metadata: text("metadata"), createdAt: timestamp("createdAt").defaultNow().notNull() }, table => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(), actorId: int("actorId"), action: varchar("action", { length: 120 }).notNull(), entityType: varchar("entityType", { length: 80 }).notNull(), entityId: int("entityId"), metadata: text("metadata"), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
+
+export const platformEvents = mysqlTable("platform_events", {
+  id: int("id").autoincrement().primaryKey(), eventType: varchar("eventType", { length: 120 }).notNull(), actorId: int("actorId"), entityType: varchar("entityType", { length: 80 }), entityId: int("entityId"), payload: text("payload").notNull(), idempotencyKey: varchar("idempotencyKey", { length: 191 }).notNull(), severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [uniqueIndex("platform_events_idempotency_unique").on(table.idempotencyKey), index("platform_events_type_created_idx").on(table.eventType, table.createdAt), index("platform_events_entity_idx").on(table.entityType, table.entityId)]);
+
+export const automationJobs = mysqlTable("automation_jobs", {
+  id: int("id").autoincrement().primaryKey(), eventId: int("eventId"), jobType: varchar("jobType", { length: 120 }).notNull(), status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "dead_letter", "blocked"]).default("queued").notNull(), attempts: int("attempts").default(0).notNull(), maxAttempts: int("maxAttempts").default(3).notNull(), payload: text("payload").notNull(), lastError: text("lastError"), availableAt: timestamp("availableAt").defaultNow().notNull(), lockedAt: timestamp("lockedAt"), completedAt: timestamp("completedAt"), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [index("automation_jobs_status_available_idx").on(table.status, table.availableAt), index("automation_jobs_event_idx").on(table.eventId), index("automation_jobs_type_created_idx").on(table.jobType, table.createdAt)]);
+
+export const policyDecisions = mysqlTable("policy_decisions", {
+  id: int("id").autoincrement().primaryKey(), eventId: int("eventId"), jobId: int("jobId"), decision: mysqlEnum("decision", ["execute", "review", "block", "degraded"]).notNull(), confidence: int("confidence").notNull(), policyVersion: varchar("policyVersion", { length: 64 }).notNull(), reason: text("reason").notNull(), decidedBy: varchar("decidedBy", { length: 32 }).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [index("policy_decisions_event_idx").on(table.eventId), index("policy_decisions_job_idx").on(table.jobId), index("policy_decisions_created_idx").on(table.createdAt)]);
+
+export const platformFeatureFlags = mysqlTable("platform_feature_flags", {
+  key: varchar("key", { length: 120 }).primaryKey(), enabled: int("enabled").default(0).notNull(), killSwitch: int("killSwitch").default(0).notNull(), updatedBy: int("updatedBy"), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+});
+
+export const agentHealth = mysqlTable("agent_health", {
+  agentKey: varchar("agentKey", { length: 120 }).primaryKey(), status: mysqlEnum("status", ["healthy", "degraded", "blocked", "offline"]).default("offline").notNull(), lastHeartbeatAt: timestamp("lastHeartbeatAt"), failureCount: int("failureCount").default(0).notNull(), lastError: text("lastError"), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+});
+
+export const appeals = mysqlTable("appeals", {
+  id: int("id").autoincrement().primaryKey(), appellantId: int("appellantId").notNull(), targetType: varchar("targetType", { length: 80 }).notNull(), targetId: int("targetId").notNull(), reason: text("reason").notNull(), evidence: text("evidence"), status: mysqlEnum("status", ["submitted", "reviewing", "accepted", "rejected"]).default("submitted").notNull(), reviewedBy: int("reviewedBy"), reviewedAt: timestamp("reviewedAt"), createdAt: timestamp("createdAt").defaultNow().notNull()
+}, table => [index("appeals_target_idx").on(table.targetType, table.targetId), index("appeals_status_created_idx").on(table.status, table.createdAt), index("appeals_appellant_idx").on(table.appellantId)]);
+
+export const enforcementActions = mysqlTable("enforcement_actions", {
+  id: int("id").autoincrement().primaryKey(), targetType: varchar("targetType", { length: 80 }).notNull(), targetId: int("targetId").notNull(), level: int("level").notNull(), action: varchar("action", { length: 80 }).notNull(), status: mysqlEnum("status", ["proposed", "applied", "reversed", "expired"]).default("proposed").notNull(), policyDecisionId: int("policyDecisionId"), actorId: int("actorId"), reason: text("reason").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), reversedAt: timestamp("reversedAt")
+}, table => [index("enforcement_target_idx").on(table.targetType, table.targetId), index("enforcement_status_created_idx").on(table.status, table.createdAt)]);
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = typeof comments.$inferInsert;

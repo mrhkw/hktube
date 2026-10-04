@@ -49449,7 +49449,7 @@ var init_mysql_core = __esm({
 });
 
 // drizzle/schema.ts
-var users, localAccounts, creatorVerificationValues, videoCategoryValues, channels, videos, videoLikes, subscriptions, comments, playlists, playlistItems, watchHistory, notifications, posts, postLikes, reports, verificationRequests, categories, tags, videoTags, savedVideos, blockedUsers, sessions, auditLogs;
+var users, localAccounts, creatorVerificationValues, videoCategoryValues, channels, videos, videoLikes, subscriptions, comments, playlists, playlistItems, watchHistory, notifications, posts, postLikes, reports, verificationRequests, categories, tags, videoTags, savedVideos, blockedUsers, sessions, auditLogs, platformEvents, automationJobs, policyDecisions, platformFeatureFlags, agentHealth, appeals, enforcementActions;
 var init_schema2 = __esm({
   "drizzle/schema.ts"() {
     "use strict";
@@ -49527,7 +49527,91 @@ var init_schema2 = __esm({
     savedVideos = mysqlTable("saved_videos", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), videoId: int("videoId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, (table) => [uniqueIndex("saved_videos_user_video_unique").on(table.userId, table.videoId), index("saved_videos_user_created_idx").on(table.userId, table.createdAt)]);
     blockedUsers = mysqlTable("blocked_users", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), blockedUserId: int("blockedUserId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull() }, (table) => [uniqueIndex("blocked_users_unique").on(table.userId, table.blockedUserId)]);
     sessions = mysqlTable("sessions", { id: varchar("id", { length: 128 }).primaryKey(), userId: int("userId").notNull(), expiresAt: timestamp("expiresAt").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull() }, (table) => [index("sessions_user_idx").on(table.userId), index("sessions_expiry_idx").on(table.expiresAt)]);
-    auditLogs = mysqlTable("audit_logs", { id: int("id").autoincrement().primaryKey(), actorId: int("actorId"), action: varchar("action", { length: 120 }).notNull(), entityType: varchar("entityType", { length: 80 }).notNull(), entityId: int("entityId"), metadata: text("metadata"), createdAt: timestamp("createdAt").defaultNow().notNull() }, (table) => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
+    auditLogs = mysqlTable("audit_logs", {
+      id: int("id").autoincrement().primaryKey(),
+      actorId: int("actorId"),
+      action: varchar("action", { length: 120 }).notNull(),
+      entityType: varchar("entityType", { length: 80 }).notNull(),
+      entityId: int("entityId"),
+      metadata: text("metadata"),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    }, (table) => [index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt), index("audit_logs_entity_idx").on(table.entityType, table.entityId)]);
+    platformEvents = mysqlTable("platform_events", {
+      id: int("id").autoincrement().primaryKey(),
+      eventType: varchar("eventType", { length: 120 }).notNull(),
+      actorId: int("actorId"),
+      entityType: varchar("entityType", { length: 80 }),
+      entityId: int("entityId"),
+      payload: text("payload").notNull(),
+      idempotencyKey: varchar("idempotencyKey", { length: 191 }).notNull(),
+      severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    }, (table) => [uniqueIndex("platform_events_idempotency_unique").on(table.idempotencyKey), index("platform_events_type_created_idx").on(table.eventType, table.createdAt), index("platform_events_entity_idx").on(table.entityType, table.entityId)]);
+    automationJobs = mysqlTable("automation_jobs", {
+      id: int("id").autoincrement().primaryKey(),
+      eventId: int("eventId"),
+      jobType: varchar("jobType", { length: 120 }).notNull(),
+      status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "dead_letter", "blocked"]).default("queued").notNull(),
+      attempts: int("attempts").default(0).notNull(),
+      maxAttempts: int("maxAttempts").default(3).notNull(),
+      payload: text("payload").notNull(),
+      lastError: text("lastError"),
+      availableAt: timestamp("availableAt").defaultNow().notNull(),
+      lockedAt: timestamp("lockedAt"),
+      completedAt: timestamp("completedAt"),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    }, (table) => [index("automation_jobs_status_available_idx").on(table.status, table.availableAt), index("automation_jobs_event_idx").on(table.eventId), index("automation_jobs_type_created_idx").on(table.jobType, table.createdAt)]);
+    policyDecisions = mysqlTable("policy_decisions", {
+      id: int("id").autoincrement().primaryKey(),
+      eventId: int("eventId"),
+      jobId: int("jobId"),
+      decision: mysqlEnum("decision", ["execute", "review", "block", "degraded"]).notNull(),
+      confidence: int("confidence").notNull(),
+      policyVersion: varchar("policyVersion", { length: 64 }).notNull(),
+      reason: text("reason").notNull(),
+      decidedBy: varchar("decidedBy", { length: 32 }).notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    }, (table) => [index("policy_decisions_event_idx").on(table.eventId), index("policy_decisions_job_idx").on(table.jobId), index("policy_decisions_created_idx").on(table.createdAt)]);
+    platformFeatureFlags = mysqlTable("platform_feature_flags", {
+      key: varchar("key", { length: 120 }).primaryKey(),
+      enabled: int("enabled").default(0).notNull(),
+      killSwitch: int("killSwitch").default(0).notNull(),
+      updatedBy: int("updatedBy"),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    agentHealth = mysqlTable("agent_health", {
+      agentKey: varchar("agentKey", { length: 120 }).primaryKey(),
+      status: mysqlEnum("status", ["healthy", "degraded", "blocked", "offline"]).default("offline").notNull(),
+      lastHeartbeatAt: timestamp("lastHeartbeatAt"),
+      failureCount: int("failureCount").default(0).notNull(),
+      lastError: text("lastError"),
+      updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull()
+    });
+    appeals = mysqlTable("appeals", {
+      id: int("id").autoincrement().primaryKey(),
+      appellantId: int("appellantId").notNull(),
+      targetType: varchar("targetType", { length: 80 }).notNull(),
+      targetId: int("targetId").notNull(),
+      reason: text("reason").notNull(),
+      evidence: text("evidence"),
+      status: mysqlEnum("status", ["submitted", "reviewing", "accepted", "rejected"]).default("submitted").notNull(),
+      reviewedBy: int("reviewedBy"),
+      reviewedAt: timestamp("reviewedAt"),
+      createdAt: timestamp("createdAt").defaultNow().notNull()
+    }, (table) => [index("appeals_target_idx").on(table.targetType, table.targetId), index("appeals_status_created_idx").on(table.status, table.createdAt), index("appeals_appellant_idx").on(table.appellantId)]);
+    enforcementActions = mysqlTable("enforcement_actions", {
+      id: int("id").autoincrement().primaryKey(),
+      targetType: varchar("targetType", { length: 80 }).notNull(),
+      targetId: int("targetId").notNull(),
+      level: int("level").notNull(),
+      action: varchar("action", { length: 80 }).notNull(),
+      status: mysqlEnum("status", ["proposed", "applied", "reversed", "expired"]).default("proposed").notNull(),
+      policyDecisionId: int("policyDecisionId"),
+      actorId: int("actorId"),
+      reason: text("reason").notNull(),
+      createdAt: timestamp("createdAt").defaultNow().notNull(),
+      reversedAt: timestamp("reversedAt")
+    }, (table) => [index("enforcement_target_idx").on(table.targetType, table.targetId), index("enforcement_status_created_idx").on(table.status, table.createdAt)]);
   }
 });
 
@@ -108869,6 +108953,69 @@ var SECURITY_HEADERS = {
 };
 var CONTENT_SECURITY_POLICY = "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.manus.im; object-src 'none'; worker-src 'self' blob:; manifest-src 'self'";
 
+// server/platformSupervisor.ts
+init_drizzle_orm();
+init_schema2();
+init_db2();
+var PLATFORM_POLICY_VERSION = "hktube-policy-2026-10-04";
+function decideSupervisorAction(input) {
+  const confidence = Math.max(0, Math.min(100, Math.round(input.confidence)));
+  if (input.killSwitchEnabled) return { decision: "block", reason: "Automation kill-switch is enabled." };
+  if (!input.providerReady) return { decision: "degraded", reason: "Required provider is unavailable; no success is claimed." };
+  if (input.destructive && confidence < 95) return { decision: "review", reason: "Destructive action requires high confidence and human review below the configured threshold." };
+  if (confidence < 70) return { decision: "review", reason: "Signal confidence is below the autonomous execution threshold." };
+  return { decision: "execute", reason: "Policy gate passed for a non-destructive or high-confidence action." };
+}
+function safeJson(value) {
+  return JSON.stringify(value).slice(0, 2e5);
+}
+async function emitPlatformEvent(input) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable; platform event was not recorded.");
+  const existing = await db.select().from(platformEvents).where(eq(platformEvents.idempotencyKey, input.idempotencyKey)).limit(1);
+  if (existing[0]) return existing[0];
+  const result = await db.insert(platformEvents).values({ eventType: input.eventType, actorId: input.actorId ?? null, entityType: input.entityType ?? null, entityId: input.entityId ?? null, payload: safeJson(input.payload), idempotencyKey: input.idempotencyKey, severity: input.severity ?? "info" });
+  const rows = await db.select().from(platformEvents).where(eq(platformEvents.id, Number(result[0].insertId))).limit(1);
+  if (!rows[0]) throw new Error("Platform event was inserted but could not be read back.");
+  return rows[0];
+}
+async function enqueueAutomationJob(input) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable; automation job was not recorded.");
+  const result = await db.insert(automationJobs).values({ eventId: input.eventId ?? null, jobType: input.jobType, payload: safeJson(input.payload), maxAttempts: Math.max(1, Math.min(input.maxAttempts ?? 3, 10)) });
+  return Number(result[0].insertId);
+}
+async function recordPolicyDecision(input) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable; policy decision was not recorded.");
+  const result = await db.insert(policyDecisions).values({ eventId: input.eventId ?? null, jobId: input.jobId ?? null, decision: input.decision, confidence: Math.max(0, Math.min(100, Math.round(input.confidence))), policyVersion: PLATFORM_POLICY_VERSION, reason: input.reason.slice(0, 1e4), decidedBy: input.decidedBy ?? "supervisor" });
+  return Number(result[0].insertId);
+}
+async function setAutomationKillSwitch(key, enabled, actorId) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable; kill-switch state was not recorded.");
+  await db.insert(platformFeatureFlags).values({ key, enabled: enabled ? 0 : 1, killSwitch: enabled ? 1 : 0, updatedBy: actorId }).onDuplicateKeyUpdate({ set: { killSwitch: enabled ? 1 : 0, updatedBy: actorId } });
+  await writeAuditLog({ actorId, action: enabled ? "platform.kill_switch.enabled" : "platform.kill_switch.disabled", entityType: "feature_flag", metadata: JSON.stringify({ key, enabled }) });
+  return { key, enabled };
+}
+async function getSupervisorSnapshot() {
+  const db = await getDb();
+  if (!db) return { available: false, jobs: [], decisions: [], flags: [], agents: [] };
+  const [jobs, decisions, flags, agents] = await Promise.all([
+    db.select().from(automationJobs).orderBy(desc(automationJobs.createdAt)).limit(100),
+    db.select().from(policyDecisions).orderBy(desc(policyDecisions.createdAt)).limit(100),
+    db.select().from(platformFeatureFlags).orderBy(asc(platformFeatureFlags.key)),
+    db.select().from(agentHealth).orderBy(asc(agentHealth.agentKey))
+  ]);
+  return { available: true, jobs, decisions, flags, agents };
+}
+async function submitAppeal(input) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable; appeal was not recorded.");
+  const result = await db.insert(appeals).values({ appellantId: input.appellantId, targetType: input.targetType.slice(0, 80), targetId: input.targetId, reason: input.reason.slice(0, 1e4), evidence: input.evidence?.slice(0, 2e4) ?? null });
+  return { id: Number(result[0].insertId), status: "submitted" };
+}
+
 // server/routers.ts
 init_db2();
 var videoCategory = external_exports.enum(["regular", "shorts"]);
@@ -108936,7 +109083,14 @@ var appRouter = router({
         const channel = await getChannelById(input.channelId);
         if (!channel || channel.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "You can only upload to your own channel." });
       }
-      return createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, channelId: input.channelId ?? null, uploadedById: ctx.user.id });
+      const video = await createVideo({ ...input, description: input.description || null, thumbnailUrl: input.thumbnailUrl ?? null, thumbnailStorageKey: input.thumbnailStorageKey ?? null, captionUrl: input.captionUrl ?? null, captionStorageKey: input.captionStorageKey ?? null, videoStorageKey: input.videoStorageKey ?? null, channelId: input.channelId ?? null, uploadedById: ctx.user.id });
+      if (!video) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Video was not created." });
+      if (!process.env.DATABASE_URL) return { ...video, automation: { status: "blocked", reason: "Automation control-plane database is not configured; processing was not reported as successful." } };
+      const event = await emitPlatformEvent({ eventType: "video.uploaded", actorId: ctx.user.id, entityType: "video", entityId: video.id, payload: { videoId: video.id, category: input.category }, idempotencyKey: `video.uploaded:${video.id}` });
+      const policy = decideSupervisorAction({ eventType: "video.uploaded", confidence: 0, providerReady: false });
+      const jobId = await enqueueAutomationJob({ eventId: event.id, jobType: "video.upload.pipeline", payload: { videoId: video.id, stages: ["metadata", "thumbnail", "transcription", "moderation", "copyright", "distribution"] } });
+      await recordPolicyDecision({ eventId: event.id, jobId, decision: policy.decision, confidence: 0, reason: policy.reason });
+      return { ...video, automation: { status: "pending_provider", jobId } };
     }),
     adminList: adminProcedure.query(() => listAdminVideos()),
     remove: sessionProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(async ({ ctx, input }) => {
@@ -108985,6 +109139,11 @@ var appRouter = router({
       await (await Promise.resolve().then(() => (init_db2(), db_exports))).writeAuditLog({ actorId: ctx.user.id, action: "algorithm.safe_checks_run", entityType: "algorithm", metadata: JSON.stringify({ videosChecked: videos2.length, reportsReviewed: reports2.length }) });
       return { videosChecked: videos2.length, reportsReviewed: reports2.length, mode: "review-only" };
     })
+  }),
+  automation: router({
+    snapshot: adminProcedure.query(() => getSupervisorSnapshot()),
+    killSwitch: adminProcedure.input(external_exports.object({ key: external_exports.string().trim().min(1).max(120), enabled: external_exports.boolean() })).mutation(({ ctx, input }) => setAutomationKillSwitch(input.key, input.enabled, ctx.user.id)),
+    appeal: protectedProcedure.input(external_exports.object({ targetType: external_exports.string().trim().min(1).max(80), targetId: external_exports.number().int().positive(), reason: requiredSafeText(1e4), evidence: safeText(2e4).optional() })).mutation(({ ctx, input }) => submitAppeal({ appellantId: ctx.user.id, ...input }))
   }),
   admin: router({
     channels: adminProcedure.query(() => listAdminChannels()),
