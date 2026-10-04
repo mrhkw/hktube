@@ -24,21 +24,21 @@
 
 ## Not configured or not verified
 
-- **No live Gemini key is configured in this workspace.** `YAHAN_APNI_GEMINI_KEY_LIKHEIN` was a placeholder, not a key. Do not paste a real key into chat or commit it.
-- **No `SUPABASE_SERVICE_ROLE_KEY` is configured**, and the new migration has not been applied to production Supabase. Therefore the persisted runtime remains **BLOCKED** until the owner configures the server-only credential and applies the reviewed migration through the authorized workflow.
-- No continuous 24/7 worker, cron endpoint, or scheduler is configured. “Process one task” is a bounded admin-triggered request only.
+- Vercel project metadata (checked with decryption disabled) lists `GEMINI_API_KEY` for Production and `SUPABASE_SERVICE_ROLE_KEY` for Production and Preview. The values were **not** read or validated, so this confirms entries only—not that the credentials are valid or usable. The local sandbox has neither variable. `YAHAN_APNI_GEMINI_KEY_LIKHEIN` was only a placeholder; do not paste a real key into chat or commit it.
+- The new migration has not been applied to production Supabase. Therefore the persisted runtime remains **BLOCKED** until the deployed server can verify its configured provider/database credentials and the reviewed migration is applied through the authorized workflow.
+- No continuous 24/7 worker, cron endpoint, or scheduler is configured. “Process one task” is a bounded admin-triggered request only. Device discovery found no attached persistent computer—only the hibernating sandbox—so an always-on worker needs an agreed persistent hosting/runtime path.
 - The other 29 teams' actions, arbitrary file/code editing, GitHub pushes, deployments, publishing, payments, moderation deletions and other external side effects are not implemented/enabled.
 - The Android project could not be compiled here: this workspace has no Gradle, JDK, or Android SDK. The Android App Links file and final release signing-certificate fingerprint are absent. Until the release owner publishes a correct `/.well-known/assetlinks.json`, Google login completes in Chrome and Chrome's Supabase session is **not** shared with the embedded WebView.
 - Phases 2–6 in the approved plan remain future work. External integrations, webhooks, persistent workers, approval actions, event sources and their credentials must be independently configured and verified before their teams can become active.
 
 ## Publication gate
 
-`https://github.com/mrhkw/hktube` is public. Commit `0a4d6f4` is pushed to `codex/31-category-agent-system-20261003` and is under review in [draft PR #19](https://github.com/mrhkw/hktube/pull/19). It is **not** merged to `main` or deployed. Production still lacks the required server-side keys and applied migration. Do not treat a successful local build or isolated SQL test as a production release.
+`https://github.com/mrhkw/hktube` is public. Commit `0a4d6f4` is pushed to `codex/31-category-agent-system-20261003` and is under review in [draft PR #19](https://github.com/mrhkw/hktube/pull/19). It is **not** merged to `main` or deployed. Vercel has entries for the required secret names, but their values have not been validated; the production migration is unapplied. Do not treat a successful local build or isolated SQL test as a production release.
 
 ## Next safe steps
 
-1. Configure the real `GEMINI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` through server-only hosting settings; never use a `VITE_` prefix for either.
+1. Verify the existing production `GEMINI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` from server-only runtime health probes without exposing values; add the Gemini secret to Preview too if preview runtime tests are required.
 2. Apply and verify the reviewed migration in the authorized Supabase environment.
 3. If in-app Google OAuth return is required, use the final Android release signing certificate to publish and verify Digital Asset Links; otherwise continue using Chrome after sign-in.
-4. Review the exact code diff and obtain the plan-required release approval before publishing to the public repository or production `main`.
+4. Review the exact code diff and obtain the plan-required release approval before merging the draft PR to production `main`.
 5. Continue with the next integration phase only after its data source, provider permission, approval rules and actual execution environment are available.
