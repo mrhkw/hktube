@@ -33,7 +33,7 @@
 
 ## Publication gate
 
-`https://github.com/mrhkw/hktube` is public. These changes are currently local on the feature branch and have **not** been pushed as a public branch, merged to `main`, or deployed. The approved phased plan requires explicit release approval before publication to production `main`; production also lacks the required service-role key/migration. Do not treat a successful local build or isolated SQL test as a production release.
+`https://github.com/mrhkw/hktube` is public. Commit `0a4d6f4` is pushed to `codex/31-category-agent-system-20261003` and is under review in [draft PR #19](https://github.com/mrhkw/hktube/pull/19). It is **not** merged to `main` or deployed. Production still lacks the required server-side keys and applied migration. Do not treat a successful local build or isolated SQL test as a production release.
 
 ## Next safe steps
 
