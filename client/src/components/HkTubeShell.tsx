@@ -32,6 +32,8 @@ import {
   HelpCircle,
   Camera,
   Menu,
+  ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -231,16 +233,75 @@ export function HkTubeShell({
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Link
-              href="/settings"
-              className={cn(
-                "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
-                (referenceHeader || minimalHeader) && "hidden sm:grid"
-              )}
-              aria-label="Open Settings"
-            >
-              <Settings className={SHELL_ICON_CLASS} />
-            </Link>
+            {referenceHeader && location === "/profile" ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileSettingsOpen(value => !value)}
+                  className="grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                  aria-label="Open account and settings"
+                  aria-expanded={profileSettingsOpen}
+                  aria-haspopup="menu"
+                >
+                  <Settings2 className={SHELL_ICON_CLASS} />
+                </button>
+                {profileSettingsOpen && (
+                  <div
+                    role="menu"
+                    aria-label="Account and settings"
+                    className="absolute left-0 top-[calc(100%+0.65rem)] z-50 w-[min(350px,calc(100vw-1.5rem))] overflow-hidden rounded-[26px] border border-slate-200 bg-[#f2efff] p-3 text-slate-950 shadow-[0_20px_60px_rgba(38,26,84,.25)] sm:left-auto sm:right-0"
+                  >
+                    <div className="flex items-center gap-3 px-2 pb-3 pt-1">
+                      <span className="grid size-10 place-items-center rounded-2xl bg-white text-slate-900 shadow-sm">
+                        <Settings2 className="size-5" />
+                      </span>
+                      <div>
+                        <p className="text-base font-black tracking-tight">Account &amp; settings</p>
+                        <p className="text-[11px] font-medium text-slate-500">Manage your HkTube experience</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        ["Notifications", "Alerts and creator updates", "/notifications", Bell],
+                        ["Settings", "Privacy, playback, language and accessibility", "/settings", Settings2],
+                        ["Account security", "Manage the current authenticated session", "/settings/security", ShieldCheck],
+                      ].map(([label, description, href, Icon]) => {
+                        const RowIcon = Icon as typeof Bell;
+                        return (
+                          <Link
+                            key={href as string}
+                            href={href as string}
+                            role="menuitem"
+                            onClick={() => setProfileSettingsOpen(false)}
+                            className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3.5 transition hover:-translate-y-0.5 hover:shadow-md"
+                          >
+                            <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-900">
+                              <RowIcon className="size-5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-black">{label as string}</span>
+                              <span className="mt-0.5 block text-[11px] leading-4 text-slate-500">{description as string}</span>
+                            </span>
+                            <ChevronRight className="size-5 shrink-0 text-slate-500" />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/settings"
+                className={cn(
+                  "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
+                  (referenceHeader || minimalHeader) && "hidden sm:grid"
+                )}
+                aria-label="Open Settings"
+              >
+                <Settings className={SHELL_ICON_CLASS} />
+              </Link>
+            )}
             {!minimalHeader && (
               <button
                 type="button"
@@ -267,52 +328,7 @@ export function HkTubeShell({
                 </span>
               )}
             </Link>
-            {referenceHeader && location === "/profile" ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileSettingsOpen(value => !value)}
-                  className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-                  aria-label="Open profile settings"
-                  aria-expanded={profileSettingsOpen}
-                  aria-haspopup="menu"
-                >
-                  <Settings2 className={SHELL_ICON_CLASS} />
-                </button>
-                {profileSettingsOpen && (
-                  <div
-                    role="menu"
-                    aria-label="Profile settings"
-                    className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
-                  >
-                    <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
-                      HkTube settings
-                    </p>
-                    {[
-                      ["Settings", "/settings"],
-                      ["Privacy Center", "/settings/privacy"],
-                      ["Security Center", "/settings/security"],
-                      ["Privacy Policy", "/privacy"],
-                      ["Terms of Use", "/terms"],
-                      ["Cookie Notice", "/cookies"],
-                      ["Community Guidelines", "/community"],
-                      ["Help & Contact", "/help"],
-                      ["About HkTube", "/about"],
-                    ].map(([label, href]) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        role="menuitem"
-                        onClick={() => setProfileSettingsOpen(false)}
-                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : referenceHeader ? (
+            {referenceHeader ? (
               <Link
                 href="/search"
                 className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
