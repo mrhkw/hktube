@@ -5,6 +5,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { buildAndroidChromeIntent, getSafePostLoginPath, rememberPostLoginPath } from "@/lib/authFlow";
 import { toast } from "sonner";
 
 function readableAuthError(message: string) {
@@ -31,7 +32,9 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
-  const isAndroidApp = new URLSearchParams(window.location.search).get("app") === "android";
+  const isAndroidApp = new URLSearchParams(window.location.search).get("app") === "android" || (/android/i.test(navigator.userAgent) && /;\s*wv\)|version\/4\.0/i.test(navigator.userAgent));
+  const postLoginPath = getSafePostLoginPath(window.location.search);
+  const forceGoogleAccountChoice = new URLSearchParams(window.location.search).get("reauth") === "1" || postLoginPath.startsWith("/admin");
 
   useEffect(() => {
     let active = true;
@@ -43,16 +46,27 @@ export default function Auth() {
       toast.error(readableAuthError(callbackError.replace(/\+/g, " ")));
       window.history.replaceState({}, document.title, "/auth");
     }
-    supabase.auth.getSession().then(({ data }) => { if (active && data.session) navigate("/menu"); });
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => { if (active && session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) navigate("/menu"); });
+    supabase.auth.getSession().then(({ data }) => { if (active && data.session && !forceGoogleAccountChoice) navigate(postLoginPath); });
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (active && session && (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && !forceGoogleAccountChoice))) navigate(postLoginPath);
+    });
     return () => { active = false; listener.subscription.unsubscribe(); };
-  }, [navigate]);
+  }, [forceGoogleAccountChoice, navigate, postLoginPath]);
 
   async function signInWithGoogle() {
     setGooglePending(true);
     try {
+      if (isAndroidApp) {
+        const browserLogin = new URL("/auth", window.location.origin);
+        browserLogin.searchParams.set("next", postLoginPath);
+        browserLogin.searchParams.set("reauth", "1");
+        window.location.href = buildAndroidChromeIntent(browserLogin);
+        return;
+      }
+      rememberPostLoginPath(postLoginPath);
       const redirectTo = `${window.location.origin}/`;
-      const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } }), "Google login is taking too long. Please try again.");
+      const options = { redirectTo, ...(forceGoogleAccountChoice ? { queryParams: { prompt: "select_account" } } : {}) };
+      const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options }), "Google login is taking too long. Please try again.");
       if (error) throw error;
     } catch (error) {
       toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));
@@ -68,14 +82,14 @@ export default function Auth() {
         const { error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim(), password }), "Login is taking too long. Please check your connection and try again.");
         if (error) throw error;
         toast.success("Welcome back to HkTube.");
-        navigate("/menu");
+        navigate(postLoginPath);
       } else {
         if (!validSignupPassword(password)) throw new Error("Password should be at least 8 characters and contain at least one letter and one number.");
         const { data, error } = await withTimeout(supabase.auth.signUp({ email: email.trim(), password, options: { data: { display_name: name.trim() }, emailRedirectTo: `${window.location.origin}/auth` } }), "Account creation is taking too long. Please try again.");
         if (error) throw error;
         if (data.session) {
           toast.success("Your HkTube account is ready.");
-          navigate("/menu");
+          navigate(postLoginPath);
         } else {
           toast.success("Account created. Email verification complete karke login karein.");
           setMode("login");
@@ -92,8 +106,8 @@ export default function Auth() {
         <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-zinc-300 bg-white text-zinc-950 shadow-sm"><LockKeyhole className="size-7" /></div>
         <h1 className="mt-5 text-center text-2xl font-black text-zinc-950">{mode === "login" ? "Log in to HkTube" : "Create your HkTube account"}</h1>
         <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{mode === "login" ? "Apne channel, library aur Creator Studio par continue karein." : "Aapka account Supabase Auth mein protected credentials ke sath save hoga."}</p>
-        {mode === "login" && !isAndroidApp && <><Button type="button" disabled={googlePending || pending} onClick={signInWithGoogle} variant="outline" className="mt-7 h-11 w-full rounded-full border-zinc-300 bg-white text-sm font-bold text-zinc-950 shadow-sm hover:bg-zinc-50"><span className="mr-2 grid size-5 place-items-center rounded-md border border-zinc-300 bg-white text-xs font-black text-zinc-950">G</span>{googlePending ? "Connecting to Google…" : "Continue with Google"}</Button><div className="my-5 flex items-center gap-3"><div className="h-px flex-1 bg-zinc-200" /><span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">or</span><div className="h-px flex-1 bg-zinc-200" /></div></>}
-        {mode === "login" && isAndroidApp && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-800">Android app sign-in uses secure email/password authentication inside the app. Google sign-in is available on the web version.</div>}
+        {mode === "login" && <><Button type="button" disabled={googlePending || pending} onClick={signInWithGoogle} variant="outline" className="mt-7 h-11 w-full rounded-full border-zinc-300 bg-white text-sm font-bold text-zinc-950 shadow-sm hover:bg-zinc-50"><span className="mr-2 grid size-5 place-items-center rounded-md border border-zinc-300 bg-white text-xs font-black text-zinc-950">G</span>{googlePending ? "Connecting to Google…" : isAndroidApp ? "Continue with Google in Chrome" : "Continue with Google"}</Button><div className="my-5 flex items-center gap-3"><div className="h-px flex-1 bg-zinc-200" /><span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">or</span><div className="h-px flex-1 bg-zinc-200" /></div></>}
+        {mode === "login" && isAndroidApp && <div className="mt-1 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-800">Google sign-in opens securely in Chrome because Google blocks embedded WebViews. After login, HkTube App Links can return you to the app; until the release certificate is verified, continue in Chrome because the app's embedded session is separate.</div>}
         <form onSubmit={submit} className="space-y-4">
           {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Display name</span><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required minLength={2} maxLength={120} value={name} onChange={e => setName(e.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="Your name" /></div></label>}
           <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Email</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="you@example.com" /></div></label>

@@ -4,7 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { requestAIChat, supabase } from "@/lib/supabase";
+import { requestAdminAgentChat, supabase } from "@/lib/supabase";
 import { isAllowlistedAdminUser } from "@/lib/adminAccess";
 import { ArrowLeft, Bot, Code2, Loader2, LockKeyhole, Send, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ function isApprovedGoogleAdmin(session: Session | null) {
 
 function AdminAccessGate({ session }: { session: Session | null }) {
   const signedIn = Boolean(session?.user);
-  return <HkTubeShell title="Admin Agent"><main className="mx-auto max-w-xl px-5 py-24 text-center"><span className="mx-auto grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200"><ShieldCheck className="size-6" /></span><h1 className="mt-5 text-3xl font-black text-white">Admin access</h1><p className="mt-3 text-sm leading-6 text-slate-400">{signedIn ? "This signed-in email is not on the HkTube admin allowlist." : "Sign in once with an authorized Google account. HkTube will remember the active session automatically."}</p>{signedIn ? <p className="mt-3 text-xs text-slate-500">Signed in as {session?.user.email ?? "unknown account"}</p> : <Button asChild className="mt-7 bg-violet-500 text-white hover:bg-violet-400"><Link href="/auth">Sign in with Google</Link></Button>}<div className="mt-5"><Link href="/" className="text-xs font-bold text-slate-500 hover:text-slate-300">Go home</Link></div></main></HkTubeShell>;
+  return <HkTubeShell title="Admin Agent"><main className="mx-auto max-w-xl px-5 py-24 text-center"><span className="mx-auto grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200"><ShieldCheck className="size-6" /></span><h1 className="mt-5 text-3xl font-black text-white">Admin access</h1><p className="mt-3 text-sm leading-6 text-slate-400">{signedIn ? "This signed-in email is not on the HkTube admin allowlist." : "Sign in once with an authorized Google account. HkTube will remember the active session automatically."}</p>{signedIn && <p className="mt-3 text-xs text-slate-500">Signed in as {session?.user.email ?? "unknown account"}</p>}<Button asChild className="mt-7 bg-violet-500 text-white hover:bg-violet-400"><Link href="/auth?next=%2Fadmin-agent&reauth=1">{signedIn ? "Choose an approved Google account" : "Sign in with Google"}</Link></Button><div className="mt-5"><Link href="/" className="text-xs font-bold text-slate-500 hover:text-slate-300">Go home</Link></div></main></HkTubeShell>;
 }
 
 export default function AdminAgent() {
@@ -31,6 +31,7 @@ export default function AdminAgent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const [reauthRequired, setReauthRequired] = useState(false);
   const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef(false);
@@ -51,7 +52,7 @@ export default function AdminAgent() {
       } catch { if (active) { setSession(null); setAuthReady(true); } }
     })();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (active) setSession(nextSession);
+      if (active) { setSession(nextSession); if (nextSession) setReauthRequired(false); }
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
@@ -59,7 +60,7 @@ export default function AdminAgent() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, pending]);
 
   const authorized = isApprovedGoogleAdmin(session);
-  const canSend = useMemo(() => input.trim().length > 0 && input.length <= 6_000 && !pending, [input, pending]);
+  const canSend = useMemo(() => input.trim().length > 0 && input.length <= 6_000 && !pending && !reauthRequired, [input, pending, reauthRequired]);
 
   async function sendMessage(text = input) {
     const content = text.trim();
@@ -74,13 +75,15 @@ export default function AdminAgent() {
     setPending(true);
     setFailedPrompt(null);
     try {
-      const data = await requestAIChat(next.map(({ role, content: text }) => ({ role, content: text })), controller.signal);
+      const data = await requestAdminAgentChat(next.map(({ role, content: text }) => ({ role, content: text })), controller.signal);
       if (epoch !== epochRef.current || controller.signal.aborted) return;
       setMessages(current => [...current, { role: "assistant" as const, content: data.content }].slice(-16));
     } catch (error) {
       if (controller.signal.aborted || epoch !== epochRef.current) return;
       setMessages(current => current.slice(0, -1));
       const message = error instanceof Error ? error.message : "The AI request could not be completed. Please retry.";
+      const status = (error as Error & { status?: number }).status;
+      if (status === 401 || status === 403 || /session.*expired|sign in again|login is unavailable/i.test(message)) setReauthRequired(true);
       setFailedPrompt(content);
       toast.error(message);
     } finally {
@@ -114,15 +117,16 @@ export default function AdminAgent() {
       </header>
 
       <section className="my-5 flex items-start gap-3 rounded-2xl border border-amber-300/15 bg-amber-400/[.045] p-4 text-xs leading-5 text-amber-100/80"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-amber-200" /><p><strong className="text-amber-100">Review before applying.</strong> This copilot can draft code and diffs, but it cannot access or write repository files, run commands, or deploy. Chat is kept only in this page session.</p></section>
+      {reauthRequired && <section role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/20 bg-amber-400/[.06] p-4 text-xs text-amber-100"><span>Gmail session needs reconnecting. Continue with the authorized account to resume.</span><Button asChild size="sm" className="bg-amber-200 text-amber-950 hover:bg-amber-100"><Link href="/auth?next=%2Fadmin-agent&reauth=1">Reconnect Gmail</Link></Button></section>}
 
       <section className="flex-1 overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0d16]/70 p-4 sm:p-6" aria-live="polite">
-        {messages.length === 0 ? <div className="mx-auto flex min-h-[45vh] max-w-2xl flex-col items-center justify-center text-center"><span className="grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/[.08] text-violet-200"><Code2 className="size-6" /></span><h2 className="mt-5 text-2xl font-black text-white">What should we work on?</h2><p className="mt-2 max-w-lg text-sm leading-6 text-slate-400">Ask for coding guidance, debugging help, architecture feedback, or a proposed patch. Do not include credentials or API keys.</p><div className="mt-6 grid w-full gap-2 sm:grid-cols-3">{suggestions.map(item => <button key={item} type="button" disabled={pending} onClick={() => void sendMessage(item)} className="rounded-2xl border border-white/10 bg-white/[.025] p-3 text-left text-xs leading-5 text-slate-300 transition hover:bg-white/[.06] disabled:opacity-50">{item}</button>)}</div></div> : <div className="mx-auto max-w-3xl space-y-6">{messages.map((message, index) => <article key={`${index}-${message.role}`} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{message.role === "user" ? "You" : "Copilot"}</p><div className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{message.content}</div></div></article>)}</div>}
+        {messages.length === 0 ? <div className="mx-auto flex min-h-[45vh] max-w-2xl flex-col items-center justify-center text-center"><span className="grid size-14 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/[.08] text-violet-200"><Code2 className="size-6" /></span><h2 className="mt-5 text-2xl font-black text-white">What should we work on?</h2><p className="mt-2 max-w-lg text-sm leading-6 text-slate-400">Ask for coding guidance, debugging help, architecture feedback, or a proposed patch. Do not include credentials or API keys.</p><div className="mt-6 grid w-full gap-2 sm:grid-cols-3">{suggestions.map(item => <button key={item} type="button" disabled={pending || reauthRequired} onClick={() => void sendMessage(item)} className="rounded-2xl border border-white/10 bg-white/[.025] p-3 text-left text-xs leading-5 text-slate-300 transition hover:bg-white/[.06] disabled:opacity-50">{item}</button>)}</div></div> : <div className="mx-auto max-w-3xl space-y-6">{messages.map((message, index) => <article key={`${index}-${message.role}`} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-lg ${message.role === "user" ? "bg-white/[.08] text-white" : "bg-violet-500 text-white"}`}>{message.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}</span><div className="min-w-0 flex-1"><p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{message.role === "user" ? "You" : "Copilot"}</p><div className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{message.content}</div></div></article>)}</div>}
         {pending && <div className="mx-auto mt-6 flex max-w-3xl items-center gap-3 text-sm text-slate-500"><span className="grid size-8 place-items-center rounded-lg bg-violet-500 text-white"><Bot className="size-4" /></span><span className="flex items-center gap-2">Thinking<Loader2 className="size-3.5 animate-spin" /></span></div>}
         {failedPrompt && !pending && <div className="mx-auto mt-6 flex max-w-3xl justify-end"><Button type="button" size="sm" variant="outline" onClick={() => void sendMessage(failedPrompt)} className="border-amber-200/30 bg-transparent text-amber-100">Retry last request</Button></div>}
         <div ref={bottomRef} />
       </section>
 
-      <div className="mx-auto mt-4 w-full max-w-3xl"><div className="rounded-3xl border border-white/10 bg-white/[.04] p-2"><Textarea value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Describe the code task…" maxLength={6_000} disabled={pending} className="min-h-12 resize-none border-0 bg-transparent px-3 py-2 text-white shadow-none focus-visible:ring-0" /><div className="flex items-center justify-between px-2 pb-1"><span className="text-[10px] text-slate-600">Enter to send · Shift+Enter for a new line · {input.length}/6,000</span><Button type="button" size="icon" onClick={() => void sendMessage()} disabled={!canSend} aria-label="Send message" className="size-10 rounded-full bg-violet-500 text-white hover:bg-violet-400"><Send className="size-4" /></Button></div></div><p className="mt-2 text-center text-[10px] text-slate-600">AI output can be incorrect. Review all suggested code before applying.</p></div>
+      <div className="mx-auto mt-4 w-full max-w-3xl"><div className="rounded-3xl border border-white/10 bg-white/[.04] p-2"><Textarea value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }} placeholder="Describe the code task…" maxLength={6_000} disabled={pending || reauthRequired} className="min-h-12 resize-none border-0 bg-transparent px-3 py-2 text-white shadow-none focus-visible:ring-0" /><div className="flex items-center justify-between px-2 pb-1"><span className="text-[10px] text-slate-600">Enter to send · Shift+Enter for a new line · {input.length}/6,000</span><Button type="button" size="icon" onClick={() => void sendMessage()} disabled={!canSend} aria-label="Send message" className="size-10 rounded-full bg-violet-500 text-white hover:bg-violet-400"><Send className="size-4" /></Button></div></div><p className="mt-2 text-center text-[10px] text-slate-600">AI output can be incorrect. Review all suggested code before applying.</p></div>
     </main>
   </HkTubeShell>;
 }

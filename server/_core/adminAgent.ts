@@ -13,7 +13,8 @@ const GEMINI_TIMEOUT_MS = 18_000;
 
 export type AdminChatMessage = { role: "user" | "assistant"; content: string };
 
-type SupabaseUser = {
+export type VerifiedSupabaseAdmin = {
+  id?: unknown;
   email?: unknown;
   email_confirmed_at?: unknown;
   confirmed_at?: unknown;
@@ -22,7 +23,7 @@ type SupabaseUser = {
 
 export function isAllowedAdminIdentity(user: unknown): boolean {
   if (!user || typeof user !== "object") return false;
-  const candidate = user as SupabaseUser;
+  const candidate = user as VerifiedSupabaseAdmin;
   const email = typeof candidate.email === "string" ? candidate.email.trim().toLowerCase() : "";
   // The bearer token has already been validated by Supabase Auth. OAuth users
   // can legitimately have missing/stale confirmation metadata, so the exact
@@ -71,19 +72,19 @@ function serverSupabaseConfig() {
   }
 }
 
-async function verifiedAdminFromRequest(req: Request): Promise<boolean> {
+export async function verifiedAdminFromRequest(req: Request): Promise<VerifiedSupabaseAdmin | null> {
   const token = extractBearerToken(req.headers.authorization);
   const config = serverSupabaseConfig();
-  if (!token || !config) return false;
+  if (!token || !config) return null;
 
   const response = await fetch(`${config.url}/auth/v1/user`, {
     method: "GET",
     headers: { apikey: config.anonKey, Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(8_000),
   });
-  if (!response.ok) return false;
-  const user = await response.json() as SupabaseUser;
-  return isAllowedAdminIdentity(user);
+  if (!response.ok) return null;
+  const user = await response.json() as VerifiedSupabaseAdmin;
+  return isAllowedAdminIdentity(user) ? user : null;
 }
 
 const SYSTEM_INSTRUCTION = [
