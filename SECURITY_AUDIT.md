@@ -8,8 +8,7 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 
 | Area | Change |
 |---|---|
-| Settings access | The existing settings/policy destinations are now available from one header settings icon on every primary mobile/desktop shell page, not only `/profile`. The menu remains available while signed out because preferences and legal/help pages already support guest access. |
-| Settings menu UX | Added Escape-key dismissal and automatic close on route changes to prevent stale overlays and improve keyboard use. |
+| Settings access | The existing Settings, Privacy, Security, policy, help, and About pages remain intact. The temporary global header menu added during this review was removed from the header as requested; no settings or policy page was deleted. |
 | DOM performance | Debounced the global language translation observer and disconnects it while translating, preventing repeated full-document scans during every route mutation. |
 | CORS | Added an explicit origin allowlist (`ALLOWED_ORIGINS`, defaulting to `https://hktube.vercel.app` plus the current request origin), credential-safe response headers, and rejected unknown preflight origins. |
 | CSRF/origin checks | Preserved the existing fail-closed mutation origin gate and kept forwarded-origin behavior bounded by same-origin checks and the explicit CORS policy. |

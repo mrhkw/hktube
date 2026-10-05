@@ -115,17 +115,6 @@ export function HkTubeShell({
     setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled");
   }, []);
   useEffect(() => {
-    setProfileSettingsOpen(false);
-  }, [location]);
-  useEffect(() => {
-    if (!profileSettingsOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setProfileSettingsOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [profileSettingsOpen]);
-  useEffect(() => {
     const onOpenCreate = () => openCreate();
     window.addEventListener("hktube-open-create", onOpenCreate);
     return () => window.removeEventListener("hktube-open-create", onOpenCreate);
@@ -242,13 +231,49 @@ export function HkTubeShell({
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            {referenceHeader ? (
+            <Link
+              href="/settings"
+              className={cn(
+                "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
+                (referenceHeader || minimalHeader) && "hidden sm:grid"
+              )}
+              aria-label="Open Settings"
+            >
+              <Settings className={SHELL_ICON_CLASS} />
+            </Link>
+            {!minimalHeader && (
+              <button
+                type="button"
+                onClick={openCreate}
+                className={cn(
+                  "grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95",
+                  referenceHeader && "hidden sm:grid"
+                )}
+                aria-label="Create content"
+              >
+                <Plus className="size-5" />
+              </button>
+            )}
+            <Link
+              href="/notifications"
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              aria-label="Notifications"
+            >
+              <Bell className={SHELL_ICON_CLASS} />
+              {unread > 0 && (
+                <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
+                  {Math.min(unread, 9)}
+                  {unread > 9 ? "+" : ""}
+                </span>
+              )}
+            </Link>
+            {referenceHeader && location === "/profile" ? (
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setProfileSettingsOpen(value => !value)}
-                  className="grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-                  aria-label="Open HkTube settings"
+                  className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                  aria-label="Open profile settings"
                   aria-expanded={profileSettingsOpen}
                   aria-haspopup="menu"
                 >
@@ -257,8 +282,8 @@ export function HkTubeShell({
                 {profileSettingsOpen && (
                   <div
                     role="menu"
-                    aria-label="HkTube settings"
-                    className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30 sm:left-auto sm:right-0"
+                    aria-label="Profile settings"
+                    className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
                   >
                     <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
                       HkTube settings
@@ -287,45 +312,7 @@ export function HkTubeShell({
                   </div>
                 )}
               </div>
-            ) : (
-              <Link
-                href="/settings"
-                className={cn(
-                  "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
-                  minimalHeader && "hidden sm:grid"
-                )}
-                aria-label="Open Settings"
-              >
-                <Settings className={SHELL_ICON_CLASS} />
-              </Link>
-            )}
-            {!minimalHeader && (
-              <button
-                type="button"
-                onClick={openCreate}
-                className={cn(
-                  "grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95",
-                  referenceHeader && "hidden sm:grid"
-                )}
-                aria-label="Create content"
-              >
-                <Plus className="size-5" />
-              </button>
-            )}
-            <Link
-              href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-              aria-label="Notifications"
-            >
-              <Bell className={SHELL_ICON_CLASS} />
-              {unread > 0 && (
-                <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
-                  {Math.min(unread, 9)}
-                  {unread > 9 ? "+" : ""}
-                </span>
-              )}
-            </Link>
-            {referenceHeader ? (
+            ) : referenceHeader ? (
               <Link
                 href="/search"
                 className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
