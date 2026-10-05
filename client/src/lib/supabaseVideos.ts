@@ -200,6 +200,19 @@ async function getAccessToken() {
   if (!session?.access_token) throw new Error("Your session expired. Please sign in again.");
   return session.access_token;
 }
+async function startMuxProcessing(videoId: string) {
+  try {
+    const token = await getAccessToken();
+    const response = await fetch("/api/providers/mux/assets", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ videoId }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 async function tusCreate(bucket: string, path: string, file: File, accessToken: string) {
   const key = `hktube-upload:${uploadFingerprint(file)}`;
@@ -422,11 +435,11 @@ export async function createSupabaseVideo(input: {
         tags: (input.tags ?? []).map(tag => sanitizeInput(tag).slice(0, 50)).filter(Boolean).slice(0, 30),
         category: input.category ? sanitizeInput(input.category).slice(0, 80) : null,
         language: input.language ? sanitizeInput(input.language).slice(0, 32) : null,
-        visibility: input.visibility || "public",
-        status: "published",
+        visibility: "private",
+        status: "processing",
         is_short: isShort,
-        moderation_status: "approved",
-        published_at: new Date().toISOString(),
+        moderation_status: "pending",
+        published_at: null,
         allow_comments: input.allowComments !== false,
         allow_download: Boolean(input.allowDownload),
         made_for_kids: Boolean(input.madeForKids),
@@ -435,6 +448,8 @@ export async function createSupabaseVideo(input: {
       .single();
 
     if (error) throw new Error(error.message);
+
+    await startMuxProcessing(String(data.id));
 
     await supabase
       .from("upload_jobs")
@@ -446,7 +461,7 @@ export async function createSupabaseVideo(input: {
         storage_path: videoPath,
         bytes_total: input.file.size,
         bytes_uploaded: input.file.size,
-        status: "completed",
+        status: "processing",
       })
       .then(() => undefined, () => undefined);
 

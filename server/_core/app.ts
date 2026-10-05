@@ -6,9 +6,11 @@ import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
 import { registerAdminAgentRoute } from "./adminAgent";
 import { registerAIAdminRoute } from "./aiAdminRoute";
+import { registerProviderRoutes } from "../providerRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
+import { captureSentryException, providerStatus, upstashFixedWindow } from "../providerIntegrations";
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -100,12 +102,25 @@ function securityGate(req: express.Request, res: express.Response) {
   return true;
 }
 
-function rateLimit(req: express.Request, res: express.Response) {
+async function rateLimit(req: express.Request, res: express.Response) {
   const path = req.path;
   const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
   const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
   const windowMs = bucket === "auth-attempt" ? AUTH_ATTEMPT_WINDOW_MS : RATE_WINDOW_MS;
   const key = `${bucket}:${clientIp(req)}`;
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    try {
+      const remote = await upstashFixedWindow(key, limit, Math.ceil(windowMs / 1000));
+      if (!remote.allowed) {
+        res.set("Retry-After", String(Math.ceil(windowMs / 1000)));
+        res.status(429).json({ error: { message: "Too many requests. Please slow down and try again shortly." } });
+        return false;
+      }
+      return true;
+    } catch (error) {
+      void captureSentryException(error, { provider: "upstash", operation: "rate_limit", bucket });
+    }
+  }
   const now = Date.now();
   const existing = rateBuckets.get(key);
   const current = !existing || existing.resetAt <= now ? { count: 0, resetAt: now + windowMs } : existing;
@@ -157,10 +172,11 @@ export function createApiApp(): Express {
     if (process.env.NODE_ENV === "production") res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
     if (securityGate(req, res)) next();
   });
-  app.use((req, res, next) => rateLimit(req, res) ? next() : undefined);
+  app.use((req, res, next) => { void rateLimit(req, res).then(allowed => { if (allowed) next(); }); });
+  registerProviderRoutes(app);
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ limit: "256kb", extended: false }));
-  app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "hktube", timestamp: new Date().toISOString() }));
+  app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "hktube", providers: providerStatus(), timestamp: new Date().toISOString() }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerMediaUploadRoute(app);
@@ -171,6 +187,7 @@ export function createApiApp(): Express {
     const parserError = error as { type?: string; status?: number };
     if (parserError.type === "entity.parse.failed" || parserError.status === 400) { if (!res.headersSent) res.status(400).json({ error: { message: "Invalid request data. Please try again." } }); return; }
     console.error("[API] Unhandled request error:", error);
+    void captureSentryException(error, { operation: "unhandled_api_error", path: _req.path });
     if (!res.headersSent) res.status(500).json({ error: { message: "The server could not complete this request. Please try again." } });
   });
   return app;

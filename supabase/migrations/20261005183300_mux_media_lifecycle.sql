@@ -1,0 +1,12 @@
+alter table public.videos add column if not exists mux_asset_id text;
+alter table public.videos add column if not exists mux_playback_id text;
+alter table public.videos add column if not exists media_processing_status text not null default 'uploaded' check (media_processing_status in ('uploaded','processing','ready','failed','quarantined'));
+alter table public.videos add column if not exists media_processing_error text;
+alter table public.videos add column if not exists media_processed_at timestamptz;
+create unique index if not exists videos_mux_asset_id_unique on public.videos(mux_asset_id) where mux_asset_id is not null;
+create table if not exists public.mux_webhook_events (event_id text primary key, event_type text not null, asset_id text, received_at timestamptz not null default now(), payload jsonb not null default '{}'::jsonb);
+alter table public.mux_webhook_events enable row level security;
+revoke all on public.mux_webhook_events from anon, authenticated;
+grant all on public.mux_webhook_events to service_role;
+drop policy if exists hktube_mux_webhook_service_only on public.mux_webhook_events;
+create policy hktube_mux_webhook_service_only on public.mux_webhook_events for all to service_role using (true) with check (true);
