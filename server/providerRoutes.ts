@@ -76,7 +76,8 @@ export function registerProviderRoutes(app: Express) {
   app.post("/api/admin/moderation/enforce", express.json({ limit: "16kb" }), async (req, res) => {
     const token = bearer(req);
     const admin = adminClient();
-    if (!token || !admin) return res.status(503).json({ message: "Moderation enforcement is not configured." });
+    if (!token) return res.status(401).json({ message: "Authentication required." });
+    if (!admin) return res.status(503).json({ message: "Moderation enforcement is not configured." });
     const { data: auth } = await authClient().auth.getUser(token);
     if (!auth.user) return res.status(401).json({ message: "Authentication required." });
     const { data: profile } = await admin.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
