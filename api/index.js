@@ -130023,6 +130023,22 @@ function registerProviderRoutes(app2) {
     const health = admin ? await admin.from("provider_health").select("provider_key,state,circuit_state,last_checked_at,last_success_at,last_latency_ms,success_count,failure_count").order("provider_key", { ascending: true }).limit(20) : { data: [] };
     res.status(200).json({ ok: true, providers: providerStatus(), health: health.data ?? [], timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   });
+  app2.post("/api/admin/moderation/enforce", import_express2.default.json({ limit: "16kb" }), async (req, res) => {
+    const token = bearer(req);
+    const admin = adminClient();
+    if (!token || !admin) return res.status(503).json({ message: "Moderation enforcement is not configured." });
+    const { data: auth } = await authClient().auth.getUser(token);
+    if (!auth.user) return res.status(401).json({ message: "Authentication required." });
+    const { data: profile } = await admin.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
+    if (profile?.role !== "admin") return res.status(403).json({ message: "Admin authorization required." });
+    const videoId = typeof req.body?.videoId === "string" ? req.body.videoId : "";
+    const command = typeof req.body?.command === "string" ? req.body.command : "";
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.slice(0, 1e3) : "Authorized deterministic moderation command";
+    if (!videoId || !command) return res.status(400).json({ message: "videoId and command are required." });
+    const { data: data2, error: error47 } = await admin.rpc("enforce_video_by_command", { p_video_id: videoId, p_command: command, p_reason: reason });
+    if (error47) return res.status(400).json({ message: "Moderation command was rejected." });
+    return res.status(200).json({ ok: true, result: data2 });
+  });
   app2.post("/api/providers/mux/assets", import_express2.default.json({ limit: "32kb" }), async (req, res) => {
     const token = bearer(req);
     const admin = adminClient();
@@ -130714,7 +130730,7 @@ function securityGate(req, res) {
 }
 async function rateLimit(req, res) {
   const path = req.path;
-  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/providers/") ? "provider-job" : path.startsWith("/api/webhooks/") ? "webhook" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : /comment|like|follow|share/i.test(path) ? "social" : /report/i.test(path) ? "report" : /search/i.test(path) ? "search" : "general";
+  const bucket = path.startsWith("/api/admin-agent/") || path.startsWith("/api/admin/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/providers/") ? "provider-job" : path.startsWith("/api/webhooks/") ? "webhook" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : /comment|like|follow|share/i.test(path) ? "social" : /report/i.test(path) ? "report" : /search/i.test(path) ? "search" : "general";
   const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : bucket === "webhook" ? WEBHOOK_LIMIT : bucket === "social" ? SOCIAL_LIMIT : bucket === "report" ? REPORT_LIMIT : bucket === "search" ? SEARCH_LIMIT : GENERAL_LIMIT;
   const windowMs = bucket === "auth-attempt" ? AUTH_ATTEMPT_WINDOW_MS : RATE_WINDOW_MS;
   const bearer2 = req.get("authorization") || "";

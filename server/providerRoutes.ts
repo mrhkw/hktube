@@ -73,6 +73,22 @@ export function registerProviderRoutes(app: Express) {
     const health = admin ? await admin.from("provider_health").select("provider_key,state,circuit_state,last_checked_at,last_success_at,last_latency_ms,success_count,failure_count").order("provider_key", { ascending: true }).limit(20) : { data: [] };
     res.status(200).json({ ok: true, providers: providerStatus(), health: health.data ?? [], timestamp: new Date().toISOString() });
   });
+  app.post("/api/admin/moderation/enforce", express.json({ limit: "16kb" }), async (req, res) => {
+    const token = bearer(req);
+    const admin = adminClient();
+    if (!token || !admin) return res.status(503).json({ message: "Moderation enforcement is not configured." });
+    const { data: auth } = await authClient().auth.getUser(token);
+    if (!auth.user) return res.status(401).json({ message: "Authentication required." });
+    const { data: profile } = await admin.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
+    if (profile?.role !== "admin") return res.status(403).json({ message: "Admin authorization required." });
+    const videoId = typeof req.body?.videoId === "string" ? req.body.videoId : "";
+    const command = typeof req.body?.command === "string" ? req.body.command : "";
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.slice(0, 1000) : "Authorized deterministic moderation command";
+    if (!videoId || !command) return res.status(400).json({ message: "videoId and command are required." });
+    const { data, error } = await admin.rpc("enforce_video_by_command", { p_video_id: videoId, p_command: command, p_reason: reason });
+    if (error) return res.status(400).json({ message: "Moderation command was rejected." });
+    return res.status(200).json({ ok: true, result: data });
+  });
 
   app.post("/api/providers/mux/assets", express.json({ limit: "32kb" }), async (req, res) => {
     const token = bearer(req);

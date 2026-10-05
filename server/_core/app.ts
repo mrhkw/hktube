@@ -108,7 +108,7 @@ function securityGate(req: express.Request, res: express.Response) {
 
 async function rateLimit(req: express.Request, res: express.Response) {
   const path = req.path;
-  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/providers/") ? "provider-job" : path.startsWith("/api/webhooks/") ? "webhook" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : /comment|like|follow|share/i.test(path) ? "social" : /report/i.test(path) ? "report" : /search/i.test(path) ? "search" : "general";
+  const bucket = path.startsWith("/api/admin-agent/") || path.startsWith("/api/admin/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/providers/") ? "provider-job" : path.startsWith("/api/webhooks/") ? "webhook" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : /comment|like|follow|share/i.test(path) ? "social" : /report/i.test(path) ? "report" : /search/i.test(path) ? "search" : "general";
   const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : bucket === "webhook" ? WEBHOOK_LIMIT : bucket === "social" ? SOCIAL_LIMIT : bucket === "report" ? REPORT_LIMIT : bucket === "search" ? SEARCH_LIMIT : GENERAL_LIMIT;
   const windowMs = bucket === "auth-attempt" ? AUTH_ATTEMPT_WINDOW_MS : RATE_WINDOW_MS;
   const bearer = req.get("authorization") || "";
