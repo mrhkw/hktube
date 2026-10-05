@@ -129989,6 +129989,7 @@ async function analyzeReadyVideo(admin, videoId) {
   if (results.some((result) => result.status === "rejected")) await captureSentryException(new Error("One or more safety providers failed"), { operation: "post_mux_analysis", video_id: videoId });
 }
 function registerProviderRoutes(app2) {
+  app2.get("/api/providers/health", (_req, res) => res.status(200).json({ ok: true, providers: providerStatus(), timestamp: (/* @__PURE__ */ new Date()).toISOString() }));
   app2.post("/api/providers/mux/assets", import_express2.default.json({ limit: "32kb" }), async (req, res) => {
     const token = bearer(req);
     const admin = adminClient();

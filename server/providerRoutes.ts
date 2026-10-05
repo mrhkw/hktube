@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
-import { createMuxAsset, moderateWithHive, transcribeWithDeepgram, verifyMuxWebhook, captureSentryException } from "./providerIntegrations";
+import { createMuxAsset, moderateWithHive, transcribeWithDeepgram, verifyMuxWebhook, captureSentryException, providerStatus } from "./providerIntegrations";
 
 function adminClient(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,6 +68,8 @@ async function analyzeReadyVideo(admin: SupabaseClient, videoId: string) {
 }
 
 export function registerProviderRoutes(app: Express) {
+  app.get("/api/providers/health", (_req, res) => res.status(200).json({ ok: true, providers: providerStatus(), timestamp: new Date().toISOString() }));
+
   app.post("/api/providers/mux/assets", express.json({ limit: "32kb" }), async (req, res) => {
     const token = bearer(req);
     const admin = adminClient();
