@@ -118,7 +118,6 @@ export function registerProviderRoutes(app: Express) {
   app.post("/api/webhooks/mux", express.raw({ type: "application/json", limit: "2mb" }), async (req, res) => {
     const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
     if (!verifyMuxWebhook(raw, req.get("mux-signature"))) {
-      void recordProviderOperation("mux", "/webhooks/mux", false, 0, new Error("invalid_webhook_signature"));
       return res.status(401).json({ message: "Invalid webhook signature." });
     }
     const admin = adminClient();
