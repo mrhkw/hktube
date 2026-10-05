@@ -129807,7 +129807,8 @@ function providerStatus() {
     hive: configured("hive"),
     upstash: configured("upstash"),
     sentry: configured("sentry"),
-    database_url: false
+    database_url: Boolean(process.env.DATABASE_URL),
+    supabase_admin: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
   };
 }
 async function jsonRequest(url3, init, provider) {
