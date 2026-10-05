@@ -29,7 +29,6 @@ import {
   Video,
   HelpCircle,
   Camera,
-  Menu,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -173,11 +172,14 @@ export function HkTubeShell({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
-                className="group relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-violet-300/60 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-red-500 text-white shadow-[0_5px_16px_rgba(124,92,255,.28)] transition hover:scale-105 hover:shadow-[0_7px_22px_rgba(124,92,255,.4)] active:scale-95"
+                className="group grid size-10 shrink-0 place-items-center rounded-full text-neutral-950 transition hover:bg-black/[.06] active:scale-95"
                 aria-label="Open HkTube menu"
               >
-                <span className="absolute inset-1 rounded-xl border border-white/30" />
-                <Menu className="relative size-5 transition group-hover:rotate-3" strokeWidth={2.5} />
+                <span className="grid w-6 gap-[4px]" aria-hidden="true">
+                  <span className="h-[2.5px] w-6 rounded-full bg-neutral-950 transition-transform group-hover:translate-x-[1px]" />
+                  <span className="h-[2.5px] w-6 rounded-full bg-neutral-950 transition-transform group-hover:-translate-x-[1px]" />
+                  <span className="h-[2.5px] w-6 rounded-full bg-neutral-950 transition-transform group-hover:translate-x-[1px]" />
+                </span>
               </button>
             )}
             <Link
