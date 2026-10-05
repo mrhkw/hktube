@@ -1,11 +1,12 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
 
 const MUX_API = "https://api.mux.com";
 const DEEPGRAM_API = "https://api.deepgram.com/v1/listen";
 const HIVE_API = "https://api.thehive.ai/api/v2/task/sync";
-
 type ProviderName = "mux" | "deepgram" | "hive" | "upstash" | "sentry";
+type ObservableProvider = Exclude<ProviderName, "sentry"> | "supabase" | "vercel";
 
 function configured(name: ProviderName): boolean {
   if (name === "mux") return Boolean(process.env.MUX_TOKEN_ID && process.env.MUX_TOKEN_SECRET);
@@ -22,21 +23,57 @@ export function providerStatus() {
     hive: configured("hive"),
     upstash: configured("upstash"),
     sentry: configured("sentry"),
-    database_url: Boolean(process.env.DATABASE_URL),
-    supabase_admin: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    supabase: Boolean(ENV.supabaseUrl && ENV.supabaseAnonKey),
+    vercel: Boolean(process.env.VERCEL || process.env.VERCEL_URL),
   } as const;
 }
 
-async function jsonRequest(url: string, init: RequestInit, provider: ProviderName) {
-  const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
-  const text = await response.text();
-  let body: unknown = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = { message: text.slice(0, 500) }; }
-  if (!response.ok) {
-    const message = body && typeof body === "object" && "error" in body ? String((body as { error?: unknown }).error) : `HTTP ${response.status}`;
-    throw new Error(`${provider} request failed: ${message.slice(0, 300)}`);
+function classifyProviderError(error: unknown) {
+  const message = String(error).toLowerCase();
+  if (/429|rate.?limit/.test(message)) return "rate_limited";
+  if (/401|403|credential|token|unauthori[sz]ed/.test(message)) return "auth";
+  if (/timeout|timed out|abort/.test(message)) return "timeout";
+  if (/400|validation|invalid|malformed/.test(message)) return "validation";
+  if (/network|fetch|socket|econn/.test(message)) return "network";
+  return "provider_error";
+}
+
+export async function recordProviderOperation(provider: ObservableProvider, operation: string, success: boolean, latencyMs: number, error?: unknown, correlationId = randomUUID()) {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) return;
+  try {
+    const admin = createClient(ENV.supabaseUrl, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    await admin.rpc("record_provider_operation", {
+      p_provider_key: provider,
+      p_operation: operation,
+      p_success: success,
+      p_latency_ms: Math.max(0, Math.round(latencyMs)),
+      p_error_class: error ? classifyProviderError(error) : null,
+      p_correlation_id: correlationId,
+      p_metadata: { environment: process.env.NODE_ENV || "production" },
+    });
+  } catch {
+    // Observability must never make a provider request fail.
   }
-  return body;
+}
+
+async function jsonRequest(url: string, init: RequestInit, provider: Exclude<ProviderName, "sentry">) {
+  const started = Date.now();
+  try {
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
+    const text = await response.text();
+    let body: unknown = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { message: text.slice(0, 500) }; }
+    if (!response.ok) {
+      const message = body && typeof body === "object" && "error" in body ? String((body as { error?: unknown }).error) : `HTTP ${response.status}`;
+      throw new Error(`${provider} request failed: ${message.slice(0, 300)}`);
+    }
+    void recordProviderOperation(provider, new URL(url).pathname, true, Date.now() - started);
+    return body;
+  } catch (error) {
+    void recordProviderOperation(provider, new URL(url).pathname, false, Date.now() - started, error);
+    throw error;
+  }
 }
 
 export async function createMuxAsset(input: { inputUrl: string; passthrough?: string }) {
@@ -55,7 +92,7 @@ export function verifyMuxWebhook(rawBody: string | Buffer, signature: string | u
   const parts = new Map(signature.split(",").map(part => part.split("=", 2) as [string, string]));
   const timestamp = parts.get("t");
   const received = parts.get("v1");
-  if (!timestamp || !received || Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  if (!timestamp || !received || !Number.isFinite(Number(timestamp)) || Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
   const expected = createHmac("sha256", secret).update(`${timestamp}.${rawBody.toString()}`).digest("hex");
   const a = Buffer.from(expected, "hex");
   const b = Buffer.from(received, "hex");
@@ -86,19 +123,23 @@ export async function upstashFixedWindow(key: string, limit: number, windowSecon
   const base = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!base || !token) return { allowed: true, source: "local" as const, remaining: limit };
-  const response = await fetch(`${base}/pipeline`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify([
-      ["INCR", key],
-      ["EXPIRE", key, String(windowSeconds), "NX"],
-    ]),
-    signal: AbortSignal.timeout(3_000),
-  });
-  if (!response.ok) throw new Error(`upstash request failed: HTTP ${response.status}`);
-  const result = await response.json() as Array<{ result?: number }>;
-  const count = Number(result?.[0]?.result || 0);
-  return { allowed: count <= limit, source: "upstash" as const, remaining: Math.max(0, limit - count) };
+  const started = Date.now();
+  try {
+    const response = await fetch(`${base}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify([["INCR", key], ["EXPIRE", key, String(windowSeconds), "NX"]]),
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!response.ok) throw new Error(`upstash request failed: HTTP ${response.status}`);
+    const result = await response.json() as Array<{ result?: number }>;
+    const count = Number(result?.[0]?.result || 0);
+    void recordProviderOperation("upstash", "/pipeline", true, Date.now() - started);
+    return { allowed: count <= limit, source: "upstash" as const, remaining: Math.max(0, limit - count) };
+  } catch (error) {
+    void recordProviderOperation("upstash", "/pipeline", false, Date.now() - started, error);
+    throw error;
+  }
 }
 
 function parseSentryDsn() {
@@ -119,18 +160,8 @@ export async function captureSentryException(error: unknown, context: Record<str
   const exception = error instanceof Error ? error : new Error(String(error));
   const response = await fetch(dsn.endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Sentry-Auth": `Sentry sentry_version=7, sentry_key=${dsn.publicKey}, sentry_client=hktube/1.0`,
-    },
-    body: JSON.stringify({
-      platform: "node",
-      level: "error",
-      message: exception.message.slice(0, 500),
-      exception: { values: [{ type: exception.name, value: exception.message.slice(0, 500) }] },
-      tags: Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined).map(([key, value]) => [key, String(value)])),
-      environment: process.env.NODE_ENV || "production",
-    }),
+    headers: { "Content-Type": "application/json", "X-Sentry-Auth": `Sentry sentry_version=7, sentry_key=${dsn.publicKey}, sentry_client=hktube/1.0` },
+    body: JSON.stringify({ platform: "node", level: "error", message: exception.message.slice(0, 500), exception: { values: [{ type: exception.name, value: exception.message.slice(0, 500) }] }, tags: Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined).map(([key, value]) => [key, String(value)])), environment: process.env.NODE_ENV || "production" }),
     signal: AbortSignal.timeout(5_000),
   });
   return response.ok;

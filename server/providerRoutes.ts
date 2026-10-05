@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
-import { createMuxAsset, moderateWithHive, transcribeWithDeepgram, verifyMuxWebhook, captureSentryException, providerStatus } from "./providerIntegrations";
+import { createMuxAsset, moderateWithHive, transcribeWithDeepgram, verifyMuxWebhook, captureSentryException, providerStatus, recordProviderOperation } from "./providerIntegrations";
 
 function adminClient(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,7 +68,11 @@ async function analyzeReadyVideo(admin: SupabaseClient, videoId: string) {
 }
 
 export function registerProviderRoutes(app: Express) {
-  app.get("/api/providers/health", (_req, res) => res.status(200).json({ ok: true, providers: providerStatus(), timestamp: new Date().toISOString() }));
+  app.get("/api/providers/health", async (_req, res) => {
+    const admin = adminClient();
+    const health = admin ? await admin.from("provider_health").select("provider_key,state,circuit_state,last_checked_at,last_success_at,last_latency_ms,success_count,failure_count").order("provider_key", { ascending: true }).limit(20) : { data: [] };
+    res.status(200).json({ ok: true, providers: providerStatus(), health: health.data ?? [], timestamp: new Date().toISOString() });
+  });
 
   app.post("/api/providers/mux/assets", express.json({ limit: "32kb" }), async (req, res) => {
     const token = bearer(req);
@@ -96,7 +100,10 @@ export function registerProviderRoutes(app: Express) {
 
   app.post("/api/webhooks/mux", express.raw({ type: "application/json", limit: "2mb" }), async (req, res) => {
     const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
-    if (!verifyMuxWebhook(raw, req.get("mux-signature"))) return res.status(401).json({ message: "Invalid webhook signature." });
+    if (!verifyMuxWebhook(raw, req.get("mux-signature"))) {
+      void recordProviderOperation("mux", "/webhooks/mux", false, 0, new Error("invalid_webhook_signature"));
+      return res.status(401).json({ message: "Invalid webhook signature." });
+    }
     const admin = adminClient();
     if (!admin) return res.status(503).json({ message: "Webhook persistence is not configured." });
     let event: any;
@@ -104,10 +111,21 @@ export function registerProviderRoutes(app: Express) {
     const eventId = String(event?.id || "");
     const eventType = String(event?.type || "");
     const assetId = String(event?.data?.id || "");
+    const providerTimestamp = event?.created_at ? new Date(Number(event.created_at) * 1000) : null;
     if (!eventId || !eventType) return res.status(400).json({ message: "Webhook event is incomplete." });
-    const { error: insertError } = await admin.from("mux_webhook_events").insert({ event_id: eventId, event_type: eventType, asset_id: assetId || null, payload: { id: eventId, type: eventType, data: { id: assetId } } });
+    const providerEvent = { provider_key: "mux", event_id: eventId, event_type: eventType, provider_timestamp: providerTimestamp?.toISOString() ?? null, payload: { id: eventId, type: eventType, data: { id: assetId } } };
+    const { data: latestEvent } = assetId ? await admin.from("provider_webhook_events").select("provider_timestamp").eq("provider_key", "mux").filter("payload->data->>id", "eq", assetId).order("provider_timestamp", { ascending: false }).limit(1).maybeSingle() : { data: null };
+    const stale = Boolean(providerTimestamp && latestEvent?.provider_timestamp && providerTimestamp < new Date(latestEvent.provider_timestamp));
+    const { error: orderedInsertError } = await admin.from("provider_webhook_events").insert({ ...providerEvent, stale });
+    if (orderedInsertError && !/duplicate|unique/i.test(orderedInsertError.message)) return res.status(500).json({ message: "Webhook ordering record failed." });
+    if (orderedInsertError) return res.status(200).json({ accepted: true, duplicate: true });
+    const { error: insertError } = await admin.from("mux_webhook_events").insert({ event_id: eventId, event_type: eventType, asset_id: assetId || null, received_at: new Date().toISOString(), payload: { id: eventId, type: eventType, data: { id: assetId } } });
     if (insertError && !/duplicate|unique/i.test(insertError.message)) return res.status(500).json({ message: "Webhook persistence failed." });
     if (insertError) return res.status(200).json({ accepted: true, duplicate: true });
+    if (stale) {
+      void recordProviderOperation("mux", "/webhooks/mux", true, 0);
+      return res.status(200).json({ accepted: true, stale: true });
+    }
     const videoId = String(event?.data?.passthrough || "");
     const query = videoId ? admin.from("videos").select("id,video_path").eq("id", videoId).maybeSingle() : admin.from("videos").select("id,video_path").eq("mux_asset_id", assetId).maybeSingle();
     const { data: video } = await query;
@@ -120,6 +138,7 @@ export function registerProviderRoutes(app: Express) {
         await admin.from("videos").update({ media_processing_status: "failed", media_processing_error: "mux_asset_processing_failed", moderation_status: "pending", visibility: "private", published_at: null }).eq("id", video.id);
       }
     }
+    void recordProviderOperation("mux", "/webhooks/mux", true, 0);
     return res.status(200).json({ accepted: true });
   });
 }

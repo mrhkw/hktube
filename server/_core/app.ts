@@ -1,5 +1,5 @@
 import express, { type Express } from "express";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -21,6 +21,10 @@ const AUTH_ATTEMPT_WINDOW_MS = 15 * 60_000;
 const UPLOAD_LIMIT = 12;
 const ADMIN_AGENT_LIMIT = 12;
 const AI_LIMIT = 12;
+const WEBHOOK_LIMIT = 60;
+const SOCIAL_LIMIT = 45;
+const SEARCH_LIMIT = 90;
+const REPORT_LIMIT = 10;
 const MAX_RATE_BUCKETS = 5000;
 
 function clientIp(req: express.Request) {
@@ -104,10 +108,12 @@ function securityGate(req: express.Request, res: express.Response) {
 
 async function rateLimit(req: express.Request, res: express.Response) {
   const path = req.path;
-  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
-  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
+  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/providers/") ? "provider-job" : path.startsWith("/api/webhooks/") ? "webhook" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : /comment|like|follow|share/i.test(path) ? "social" : /report/i.test(path) ? "report" : /search/i.test(path) ? "search" : "general";
+  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : bucket === "webhook" ? WEBHOOK_LIMIT : bucket === "social" ? SOCIAL_LIMIT : bucket === "report" ? REPORT_LIMIT : bucket === "search" ? SEARCH_LIMIT : GENERAL_LIMIT;
   const windowMs = bucket === "auth-attempt" ? AUTH_ATTEMPT_WINDOW_MS : RATE_WINDOW_MS;
-  const key = `${bucket}:${clientIp(req)}`;
+  const bearer = req.get("authorization") || "";
+  const identity = bearer.startsWith("Bearer ") ? createHash("sha256").update(bearer.slice(7)).digest("hex").slice(0, 16) : "anonymous";
+  const key = `${bucket}:${clientIp(req)}:${identity}`;
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     try {
       const remote = await upstashFixedWindow(key, limit, Math.ceil(windowMs / 1000));

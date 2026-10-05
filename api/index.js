@@ -56046,11 +56046,11 @@ var require_randomUUID = __commonJS({
 var require_dist_cjs16 = __commonJS({
   "node_modules/.pnpm/@smithy+uuid@1.1.0/node_modules/@smithy/uuid/dist-cjs/index.js"(exports2) {
     "use strict";
-    var randomUUID3 = require_randomUUID();
+    var randomUUID4 = require_randomUUID();
     var decimalToHex = Array.from({ length: 256 }, (_2, i3) => i3.toString(16).padStart(2, "0"));
     var v4 = () => {
-      if (randomUUID3.randomUUID) {
-        return randomUUID3.randomUUID();
+      if (randomUUID4.randomUUID) {
+        return randomUUID4.randomUUID();
       }
       const rnds = new Uint8Array(16);
       crypto.getRandomValues(rnds);
@@ -129790,6 +129790,7 @@ init_env();
 
 // server/providerIntegrations.ts
 var import_node_crypto2 = require("node:crypto");
+init_env();
 var MUX_API = "https://api.mux.com";
 var DEEPGRAM_API = "https://api.deepgram.com/v1/listen";
 var HIVE_API = "https://api.thehive.ai/api/v2/task/sync";
@@ -129807,24 +129808,57 @@ function providerStatus() {
     hive: configured("hive"),
     upstash: configured("upstash"),
     sentry: configured("sentry"),
-    database_url: Boolean(process.env.DATABASE_URL),
-    supabase_admin: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+    supabase: Boolean(ENV.supabaseUrl && ENV.supabaseAnonKey),
+    vercel: Boolean(process.env.VERCEL || process.env.VERCEL_URL)
   };
 }
-async function jsonRequest(url3, init, provider) {
-  const response = await fetch(url3, { ...init, signal: AbortSignal.timeout(15e3) });
-  const text2 = await response.text();
-  let body = null;
+function classifyProviderError(error47) {
+  const message2 = String(error47).toLowerCase();
+  if (/429|rate.?limit/.test(message2)) return "rate_limited";
+  if (/401|403|credential|token|unauthori[sz]ed/.test(message2)) return "auth";
+  if (/timeout|timed out|abort/.test(message2)) return "timeout";
+  if (/400|validation|invalid|malformed/.test(message2)) return "validation";
+  if (/network|fetch|socket|econn/.test(message2)) return "network";
+  return "provider_error";
+}
+async function recordProviderOperation(provider, operation, success2, latencyMs, error47, correlationId = (0, import_node_crypto2.randomUUID)()) {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) return;
   try {
-    body = text2 ? JSON.parse(text2) : null;
+    const admin = createClient(ENV.supabaseUrl, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    await admin.rpc("record_provider_operation", {
+      p_provider_key: provider,
+      p_operation: operation,
+      p_success: success2,
+      p_latency_ms: Math.max(0, Math.round(latencyMs)),
+      p_error_class: error47 ? classifyProviderError(error47) : null,
+      p_correlation_id: correlationId,
+      p_metadata: { environment: process.env.NODE_ENV || "production" }
+    });
   } catch {
-    body = { message: text2.slice(0, 500) };
   }
-  if (!response.ok) {
-    const message2 = body && typeof body === "object" && "error" in body ? String(body.error) : `HTTP ${response.status}`;
-    throw new Error(`${provider} request failed: ${message2.slice(0, 300)}`);
+}
+async function jsonRequest(url3, init, provider) {
+  const started = Date.now();
+  try {
+    const response = await fetch(url3, { ...init, signal: AbortSignal.timeout(15e3) });
+    const text2 = await response.text();
+    let body = null;
+    try {
+      body = text2 ? JSON.parse(text2) : null;
+    } catch {
+      body = { message: text2.slice(0, 500) };
+    }
+    if (!response.ok) {
+      const message2 = body && typeof body === "object" && "error" in body ? String(body.error) : `HTTP ${response.status}`;
+      throw new Error(`${provider} request failed: ${message2.slice(0, 300)}`);
+    }
+    void recordProviderOperation(provider, new URL(url3).pathname, true, Date.now() - started);
+    return body;
+  } catch (error47) {
+    void recordProviderOperation(provider, new URL(url3).pathname, false, Date.now() - started, error47);
+    throw error47;
   }
-  return body;
 }
 async function createMuxAsset(input) {
   if (!configured("mux")) throw new Error("MUX_NOT_CONFIGURED");
@@ -129841,7 +129875,7 @@ function verifyMuxWebhook(rawBody, signature, toleranceSeconds = 300) {
   const parts = new Map(signature.split(",").map((part) => part.split("=", 2)));
   const timestamp2 = parts.get("t");
   const received = parts.get("v1");
-  if (!timestamp2 || !received || Math.abs(Date.now() / 1e3 - Number(timestamp2)) > toleranceSeconds) return false;
+  if (!timestamp2 || !received || !Number.isFinite(Number(timestamp2)) || Math.abs(Date.now() / 1e3 - Number(timestamp2)) > toleranceSeconds) return false;
   const expected = (0, import_node_crypto2.createHmac)("sha256", secret).update(`${timestamp2}.${rawBody.toString()}`).digest("hex");
   const a3 = Buffer.from(expected, "hex");
   const b3 = Buffer.from(received, "hex");
@@ -129869,19 +129903,23 @@ async function upstashFixedWindow(key, limit, windowSeconds) {
   const base = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!base || !token) return { allowed: true, source: "local", remaining: limit };
-  const response = await fetch(`${base}/pipeline`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify([
-      ["INCR", key],
-      ["EXPIRE", key, String(windowSeconds), "NX"]
-    ]),
-    signal: AbortSignal.timeout(3e3)
-  });
-  if (!response.ok) throw new Error(`upstash request failed: HTTP ${response.status}`);
-  const result = await response.json();
-  const count = Number(result?.[0]?.result || 0);
-  return { allowed: count <= limit, source: "upstash", remaining: Math.max(0, limit - count) };
+  const started = Date.now();
+  try {
+    const response = await fetch(`${base}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify([["INCR", key], ["EXPIRE", key, String(windowSeconds), "NX"]]),
+      signal: AbortSignal.timeout(3e3)
+    });
+    if (!response.ok) throw new Error(`upstash request failed: HTTP ${response.status}`);
+    const result = await response.json();
+    const count = Number(result?.[0]?.result || 0);
+    void recordProviderOperation("upstash", "/pipeline", true, Date.now() - started);
+    return { allowed: count <= limit, source: "upstash", remaining: Math.max(0, limit - count) };
+  } catch (error47) {
+    void recordProviderOperation("upstash", "/pipeline", false, Date.now() - started, error47);
+    throw error47;
+  }
 }
 function parseSentryDsn() {
   const raw = process.env.SENTRY_DSN;
@@ -129902,18 +129940,8 @@ async function captureSentryException(error47, context = {}) {
   const exception = error47 instanceof Error ? error47 : new Error(String(error47));
   const response = await fetch(dsn.endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Sentry-Auth": `Sentry sentry_version=7, sentry_key=${dsn.publicKey}, sentry_client=hktube/1.0`
-    },
-    body: JSON.stringify({
-      platform: "node",
-      level: "error",
-      message: exception.message.slice(0, 500),
-      exception: { values: [{ type: exception.name, value: exception.message.slice(0, 500) }] },
-      tags: Object.fromEntries(Object.entries(context).filter(([, value]) => value !== void 0).map(([key, value]) => [key, String(value)])),
-      environment: process.env.NODE_ENV || "production"
-    }),
+    headers: { "Content-Type": "application/json", "X-Sentry-Auth": `Sentry sentry_version=7, sentry_key=${dsn.publicKey}, sentry_client=hktube/1.0` },
+    body: JSON.stringify({ platform: "node", level: "error", message: exception.message.slice(0, 500), exception: { values: [{ type: exception.name, value: exception.message.slice(0, 500) }] }, tags: Object.fromEntries(Object.entries(context).filter(([, value]) => value !== void 0).map(([key, value]) => [key, String(value)])), environment: process.env.NODE_ENV || "production" }),
     signal: AbortSignal.timeout(5e3)
   });
   return response.ok;
@@ -129990,7 +130018,11 @@ async function analyzeReadyVideo(admin, videoId) {
   if (results.some((result) => result.status === "rejected")) await captureSentryException(new Error("One or more safety providers failed"), { operation: "post_mux_analysis", video_id: videoId });
 }
 function registerProviderRoutes(app2) {
-  app2.get("/api/providers/health", (_req, res) => res.status(200).json({ ok: true, providers: providerStatus(), timestamp: (/* @__PURE__ */ new Date()).toISOString() }));
+  app2.get("/api/providers/health", async (_req, res) => {
+    const admin = adminClient();
+    const health = admin ? await admin.from("provider_health").select("provider_key,state,circuit_state,last_checked_at,last_success_at,last_latency_ms,success_count,failure_count").order("provider_key", { ascending: true }).limit(20) : { data: [] };
+    res.status(200).json({ ok: true, providers: providerStatus(), health: health.data ?? [], timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  });
   app2.post("/api/providers/mux/assets", import_express2.default.json({ limit: "32kb" }), async (req, res) => {
     const token = bearer(req);
     const admin = adminClient();
@@ -130016,7 +130048,10 @@ function registerProviderRoutes(app2) {
   });
   app2.post("/api/webhooks/mux", import_express2.default.raw({ type: "application/json", limit: "2mb" }), async (req, res) => {
     const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
-    if (!verifyMuxWebhook(raw, req.get("mux-signature"))) return res.status(401).json({ message: "Invalid webhook signature." });
+    if (!verifyMuxWebhook(raw, req.get("mux-signature"))) {
+      void recordProviderOperation("mux", "/webhooks/mux", false, 0, new Error("invalid_webhook_signature"));
+      return res.status(401).json({ message: "Invalid webhook signature." });
+    }
     const admin = adminClient();
     if (!admin) return res.status(503).json({ message: "Webhook persistence is not configured." });
     let event;
@@ -130028,10 +130063,21 @@ function registerProviderRoutes(app2) {
     const eventId = String(event?.id || "");
     const eventType = String(event?.type || "");
     const assetId = String(event?.data?.id || "");
+    const providerTimestamp = event?.created_at ? new Date(Number(event.created_at) * 1e3) : null;
     if (!eventId || !eventType) return res.status(400).json({ message: "Webhook event is incomplete." });
-    const { error: insertError } = await admin.from("mux_webhook_events").insert({ event_id: eventId, event_type: eventType, asset_id: assetId || null, payload: { id: eventId, type: eventType, data: { id: assetId } } });
+    const providerEvent = { provider_key: "mux", event_id: eventId, event_type: eventType, provider_timestamp: providerTimestamp?.toISOString() ?? null, payload: { id: eventId, type: eventType, data: { id: assetId } } };
+    const { data: latestEvent } = assetId ? await admin.from("provider_webhook_events").select("provider_timestamp").eq("provider_key", "mux").filter("payload->data->>id", "eq", assetId).order("provider_timestamp", { ascending: false }).limit(1).maybeSingle() : { data: null };
+    const stale = Boolean(providerTimestamp && latestEvent?.provider_timestamp && providerTimestamp < new Date(latestEvent.provider_timestamp));
+    const { error: orderedInsertError } = await admin.from("provider_webhook_events").insert({ ...providerEvent, stale });
+    if (orderedInsertError && !/duplicate|unique/i.test(orderedInsertError.message)) return res.status(500).json({ message: "Webhook ordering record failed." });
+    if (orderedInsertError) return res.status(200).json({ accepted: true, duplicate: true });
+    const { error: insertError } = await admin.from("mux_webhook_events").insert({ event_id: eventId, event_type: eventType, asset_id: assetId || null, received_at: (/* @__PURE__ */ new Date()).toISOString(), payload: { id: eventId, type: eventType, data: { id: assetId } } });
     if (insertError && !/duplicate|unique/i.test(insertError.message)) return res.status(500).json({ message: "Webhook persistence failed." });
     if (insertError) return res.status(200).json({ accepted: true, duplicate: true });
+    if (stale) {
+      void recordProviderOperation("mux", "/webhooks/mux", true, 0);
+      return res.status(200).json({ accepted: true, stale: true });
+    }
     const videoId = String(event?.data?.passthrough || "");
     const query = videoId ? admin.from("videos").select("id,video_path").eq("id", videoId).maybeSingle() : admin.from("videos").select("id,video_path").eq("mux_asset_id", assetId).maybeSingle();
     const { data: video } = await query;
@@ -130044,6 +130090,7 @@ function registerProviderRoutes(app2) {
         await admin.from("videos").update({ media_processing_status: "failed", media_processing_error: "mux_asset_processing_failed", moderation_status: "pending", visibility: "private", published_at: null }).eq("id", video.id);
       }
     }
+    void recordProviderOperation("mux", "/webhooks/mux", true, 0);
     return res.status(200).json({ accepted: true });
   });
 }
@@ -130590,6 +130637,10 @@ var AUTH_ATTEMPT_WINDOW_MS = 15 * 6e4;
 var UPLOAD_LIMIT = 12;
 var ADMIN_AGENT_LIMIT = 12;
 var AI_LIMIT = 12;
+var WEBHOOK_LIMIT = 60;
+var SOCIAL_LIMIT = 45;
+var SEARCH_LIMIT = 90;
+var REPORT_LIMIT = 10;
 var MAX_RATE_BUCKETS = 5e3;
 function clientIp(req) {
   return req.ip || req.socket.remoteAddress || "unknown";
@@ -130663,10 +130714,12 @@ function securityGate(req, res) {
 }
 async function rateLimit(req, res) {
   const path = req.path;
-  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : "general";
-  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : GENERAL_LIMIT;
+  const bucket = path.startsWith("/api/admin-agent/") ? "admin-agent" : path.startsWith("/api/ai/") ? "ai" : path.startsWith("/api/media-upload") ? "upload" : path.startsWith("/api/providers/") ? "provider-job" : path.startsWith("/api/webhooks/") ? "webhook" : /\/api\/trpc\/auth\.(login|register)(?:$|[?])/.test(path) ? "auth-attempt" : path.startsWith("/api/trpc/auth.") ? "auth" : /comment|like|follow|share/i.test(path) ? "social" : /report/i.test(path) ? "report" : /search/i.test(path) ? "search" : "general";
+  const limit = bucket === "admin-agent" ? ADMIN_AGENT_LIMIT : bucket === "ai" ? AI_LIMIT : bucket === "auth-attempt" ? AUTH_ATTEMPT_LIMIT : bucket === "auth" ? AUTH_LIMIT : bucket === "upload" ? UPLOAD_LIMIT : bucket === "webhook" ? WEBHOOK_LIMIT : bucket === "social" ? SOCIAL_LIMIT : bucket === "report" ? REPORT_LIMIT : bucket === "search" ? SEARCH_LIMIT : GENERAL_LIMIT;
   const windowMs = bucket === "auth-attempt" ? AUTH_ATTEMPT_WINDOW_MS : RATE_WINDOW_MS;
-  const key = `${bucket}:${clientIp(req)}`;
+  const bearer2 = req.get("authorization") || "";
+  const identity2 = bearer2.startsWith("Bearer ") ? (0, import_node_crypto4.createHash)("sha256").update(bearer2.slice(7)).digest("hex").slice(0, 16) : "anonymous";
+  const key = `${bucket}:${clientIp(req)}:${identity2}`;
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     try {
       const remote = await upstashFixedWindow(key, limit, Math.ceil(windowMs / 1e3));
