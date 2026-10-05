@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -24,14 +23,12 @@ import {
   MonitorPlay,
   Plus,
   Search,
-  Settings,
   Settings2,
   Sparkles,
   UserRound,
   Video,
   HelpCircle,
   Camera,
-  Menu,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -54,14 +51,6 @@ const primaryNav = [
   { label: "Trending", href: "/trending", icon: Flame },
   { label: "Following", href: "/subscriptions", icon: UserRound },
 ];
-const topicFilters = [
-  { label: "For you", href: "/" },
-  { label: "Explore", href: "/explore" },
-  { label: "Music", href: "/search?q=music" },
-  { label: "Gaming", href: "/search?q=gaming" },
-  { label: "Education", href: "/search?q=education" },
-  { label: "Trending", href: "/trending" },
-];
 function ProfileGlyph({ className }: { className?: string }) {
   return <UserRound className={className} aria-hidden="true" />;
 }
@@ -81,15 +70,12 @@ export function HkTubeShell({
     enabled: isAuthenticated,
     staleTime: 30000,
   });
-  const [search, setSearch] = useState("");
   const [familyMode, setFamilyMode] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<"menu" | "post" | "story">(
     "menu"
   );
   const [postBody, setPostBody] = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const utils = trpc.useUtils();
   const createPost = trpc.posts.create.useMutation({
     onSuccess: () => {
@@ -119,11 +105,6 @@ export function HkTubeShell({
     window.addEventListener("hktube-open-create", onOpenCreate);
     return () => window.removeEventListener("hktube-open-create", onOpenCreate);
   }, [isAuthenticated]);
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const query = search.trim();
-    if (query) navigate(`/search?q=${encodeURIComponent(query)}`);
-  }
   function openCreate() {
     if (!isAuthenticated) {
       startLogin();
@@ -163,97 +144,28 @@ export function HkTubeShell({
         immersive
           ? "h-[100dvh] overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
           : "min-h-[100dvh] bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
-      )}
-    >
-      <header
+        )}
+      >
+        <header
         className={cn(
           "hktube-reference-header sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
           referenceHeader &&
             "max-md:border-black/10 max-md:bg-white max-md:text-neutral-950",
           immersive && "max-lg:hidden"
         )}
-      >
-        <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
-          {referenceHeader && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="grid size-10 shrink-0 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:hidden"
-              aria-label="Open menu"
-            >
-              <Menu className="size-5" />
-            </button>
-          )}
-          {minimalHeader && title ? (
-            <div className="min-w-0 max-w-[45vw] flex-1 truncate text-[18px] font-black tracking-[-.02em] text-white sm:max-w-none">
-              {title}
-            </div>
-          ) : (
+        >
+          <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
             <Link
               href="/"
-              className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
+              className="hktube-reference-logo flex min-w-0 shrink-0 items-center"
               aria-label="Go to HkTube homepage"
             >
-              <img
-                src="/hktube-icon.svg"
-                alt=""
-                aria-hidden="true"
-                className="size-8 shrink-0 rounded-[9px] object-contain shadow-sm"
-              />
               <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">
                 <span className="text-neutral-950">Hk</span>
                 <span className="text-red-600">Tube</span>
               </span>
             </Link>
-          )}
-          <form
-            onSubmit={submitSearch}
-            className="hidden min-w-0 flex-1 lg:mx-auto lg:block lg:max-w-md"
-          >
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-              <Input
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="Search HkTube"
-                aria-label="Search HkTube"
-                className="h-9 rounded-full border border-white/10 bg-white/[.045] pl-9 pr-4 text-sm text-white placeholder:text-slate-500 shadow-none focus-visible:border-violet-400/60 focus-visible:ring-violet-400/15"
-              />
-            </div>
-          </form>
-          {!referenceHeader && (
-            <Link
-              href="/search"
-              className="hktube-header-action hktube-search-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
-              aria-label="Open search"
-            >
-              <Search className={SHELL_ICON_CLASS} />
-            </Link>
-          )}
-          <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Link
-              href="/settings"
-              className={cn(
-                "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
-                (referenceHeader || minimalHeader) && "hidden sm:grid"
-              )}
-              aria-label="Open Settings"
-            >
-              <Settings className={SHELL_ICON_CLASS} />
-            </Link>
-            {!minimalHeader && (
-              <button
-                type="button"
-                onClick={openCreate}
-                className={cn(
-                  "grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95",
-                  referenceHeader && "hidden sm:grid"
-                )}
-                aria-label="Create content"
-              >
-                <Plus className="size-5" />
-              </button>
-            )}
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <Link
               href="/notifications"
               className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
@@ -265,145 +177,18 @@ export function HkTubeShell({
                   {Math.min(unread, 9)}
                   {unread > 9 ? "+" : ""}
                 </span>
-              )}
-            </Link>
-            {referenceHeader && location === "/profile" ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileSettingsOpen(value => !value)}
-                  className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-                  aria-label="Open profile settings"
-                  aria-expanded={profileSettingsOpen}
-                  aria-haspopup="menu"
-                >
-                  <Settings2 className={SHELL_ICON_CLASS} />
-                </button>
-                {profileSettingsOpen && (
-                  <div
-                    role="menu"
-                    aria-label="Profile settings"
-                    className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
-                  >
-                    <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
-                      HkTube settings
-                    </p>
-                    {[
-                      ["Settings", "/settings"],
-                      ["Privacy Center", "/settings/privacy"],
-                      ["Security Center", "/settings/security"],
-                      ["Privacy Policy", "/privacy"],
-                      ["Terms of Use", "/terms"],
-                      ["Cookie Notice", "/cookies"],
-                      ["Community Guidelines", "/community"],
-                      ["Help & Contact", "/help"],
-                      ["About HkTube", "/about"],
-                    ].map(([label, href]) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        role="menuitem"
-                        onClick={() => setProfileSettingsOpen(false)}
-                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                  </div>
                 )}
-              </div>
-            ) : referenceHeader ? (
-              <Link
-                href="/search"
-                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-                aria-label="Open search"
-              >
-                <Search className={SHELL_ICON_CLASS} />
-              </Link>
-            ) : null}
+            </Link>
             <Link
-              href={isAuthenticated ? "/profile" : "/auth"}
-              className={cn(
-                "grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20",
-                referenceHeader && "hidden sm:grid"
-              )}
-              aria-label={
-                isAuthenticated ? "Open profile" : "Sign in or create account"
-              }
+              href="/search"
+              className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              aria-label="Open search"
             >
-              {headerAvatarUrl || user?.avatarUrl ? (
-                <img
-                  src={headerAvatarUrl || user?.avatarUrl || ""}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : (
-                <ProfileGlyph className={SHELL_ICON_CLASS} />
-              )}
+              <Search className={SHELL_ICON_CLASS} />
             </Link>
+            </div>
           </div>
-        </div>
-        <nav
-          className={cn(
-            "flex gap-2 overflow-x-auto border-t border-white/6 px-3 py-2 [scrollbar-width:none] md:hidden",
-            minimalHeader && "hidden",
-            location === "/" && "hidden",
-            location !== "/" && !location.startsWith("/explore") && "hidden"
-          )}
-          aria-label="Topics"
-        >
-          {topicFilters.map(filter => {
-            const active =
-              filter.href === "/" ? location === "/" : location === filter.href;
-            return (
-              <Link
-                key={filter.label}
-                href={filter.href}
-                className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-                  active
-                    ? "border-violet-400/70 bg-violet-500 text-white"
-                    : "border-white/8 bg-white/[.04] text-slate-300 hover:bg-white/[.08]"
-                )}
-              >
-                {filter.label}
-              </Link>
-            );
-          })}
-        </nav>
       </header>
-
-      <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <DialogContent className="max-w-sm border-slate-200 bg-white text-slate-900">
-          <DialogHeader>
-            <DialogTitle>HkTube navigation</DialogTitle>
-            <DialogDescription>Jump to any part of HkTube.</DialogDescription>
-          </DialogHeader>
-          <nav className="grid gap-1" aria-label="Mobile menu">
-            {[
-              ["Home", "/"],
-              ["Search", "/search"],
-              ["Explore", "/explore"],
-              ["Clips", "/clips"],
-              ["Following", "/subscriptions"],
-              ["Library", "/library"],
-              ["History", "/history"],
-              ["Notifications", "/notifications"],
-              ["Profile", isAuthenticated ? "/profile" : "/auth"],
-              ["Settings", "/settings"],
-            ].map(([label, href]) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-xl px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-violet-50"
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none">
