@@ -78,6 +78,7 @@ export function HkTubeShell({
   );
   const [postBody, setPostBody] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const utils = trpc.useUtils();
   const createPost = trpc.posts.create.useMutation({
     onSuccess: () => {
@@ -107,6 +108,17 @@ export function HkTubeShell({
     window.addEventListener("hktube-open-create", onOpenCreate);
     return () => window.removeEventListener("hktube-open-create", onOpenCreate);
   }, [isAuthenticated]);
+  useEffect(() => {
+    if (location !== "/profile") setProfileSettingsOpen(false);
+  }, [location]);
+  useEffect(() => {
+    if (!profileSettingsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileSettingsOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [profileSettingsOpen]);
   function openCreate() {
     if (!isAuthenticated) {
       startLogin();
@@ -193,14 +205,51 @@ export function HkTubeShell({
                 )}
             </Link>
             {location === "/profile" ? (
-              <Link
-                href="/settings"
-                className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-                aria-label="Open settings"
-                title="Settings"
-              >
-                <Settings2 className={SHELL_ICON_CLASS} />
-              </Link>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileSettingsOpen(value => !value)}
+                  className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                  aria-label="Open profile settings"
+                  aria-expanded={profileSettingsOpen}
+                  aria-haspopup="menu"
+                  title="Settings"
+                >
+                  <Settings2 className={SHELL_ICON_CLASS} />
+                </button>
+                {profileSettingsOpen && (
+                  <div
+                    role="menu"
+                    aria-label="HkTube settings"
+                    className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
+                  >
+                    <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
+                      HkTube settings
+                    </p>
+                    {[
+                      ["Settings", "/settings"],
+                      ["Privacy Center", "/settings/privacy"],
+                      ["Security Center", "/settings/security"],
+                      ["Privacy Policy", "/privacy"],
+                      ["Terms of Use", "/terms"],
+                      ["Cookie Notice", "/cookies"],
+                      ["Community Guidelines", "/community"],
+                      ["Help & Contact", "/help"],
+                      ["About HkTube", "/about"],
+                    ].map(([label, href]) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        role="menuitem"
+                        onClick={() => setProfileSettingsOpen(false)}
+                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <Link
                 href="/search"
