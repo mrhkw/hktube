@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
 import { createMuxAsset, moderateWithHive, transcribeWithDeepgram, verifyMuxWebhook, captureSentryException, providerStatus, recordProviderOperation } from "./providerIntegrations";
+import { HKTUBE_POLICY_VERSION } from "./policyRegistry";
 
 function adminClient(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -12,6 +13,12 @@ function authClient() {
 }
 function bearer(req: express.Request) { const value = req.get("authorization") || ""; return value.startsWith("Bearer ") ? value.slice(7) : ""; }
 function publicMediaUrl(admin: SupabaseClient, path: string) { return admin.storage.from("videos").getPublicUrl(path).data.publicUrl; }
+function assertTrustedMediaUrl(value: string) {
+  const url = new URL(value);
+  const supabaseHost = new URL(ENV.supabaseUrl).hostname;
+  if (url.protocol !== "https:" || url.hostname !== supabaseHost || url.username || url.password || url.port) throw new Error("UNTRUSTED_MEDIA_URL");
+  return url.toString();
+}
 
 function transcriptSignals(text: string) {
   const lower = text.toLowerCase();
@@ -45,7 +52,7 @@ function providerSignalSummary(value: unknown): Record<string, number> {
 async function analyzeReadyVideo(admin: SupabaseClient, videoId: string) {
   const { data: video } = await admin.from("videos").select("id,video_path").eq("id", videoId).maybeSingle();
   if (!video?.video_path) return;
-  const inputUrl = publicMediaUrl(admin, video.video_path);
+  const inputUrl = assertTrustedMediaUrl(publicMediaUrl(admin, video.video_path));
   const results = await Promise.allSettled([
     transcribeWithDeepgram(inputUrl),
     moderateWithHive(inputUrl),
@@ -63,7 +70,7 @@ async function analyzeReadyVideo(admin: SupabaseClient, videoId: string) {
   if (hive) signals.visual = providerSignalSummary(hive);
   else if (results[1].status === "rejected") signals.hive_error = "provider_request_failed";
   const hasSignal = Boolean(transcriptText || hive);
-  if (hasSignal) await admin.rpc("evaluate_video_safety", { p_video_id: videoId, p_signals: signals, p_engine_version: "hktube-safety/2.0" });
+  if (hasSignal) await admin.rpc("evaluate_video_safety", { p_video_id: videoId, p_signals: signals, p_engine_version: `${HKTUBE_POLICY_VERSION}/provider-analysis` });
   if (results.some(result => result.status === "rejected")) await captureSentryException(new Error("One or more safety providers failed"), { operation: "post_mux_analysis", video_id: videoId });
 }
 
@@ -102,7 +109,7 @@ export function registerProviderRoutes(app: Express) {
     if (!video) return res.status(404).json({ message: "Video not found." });
     if (video.mux_asset_id) return res.status(200).json({ accepted: true, assetId: video.mux_asset_id, duplicate: true });
     try {
-      const inputUrl = publicMediaUrl(admin, video.video_path);
+      const inputUrl = assertTrustedMediaUrl(publicMediaUrl(admin, video.video_path));
       const result = await createMuxAsset({ inputUrl, passthrough: videoId }) as any;
       const assetId = String(result?.data?.id || result?.id || "");
       if (!assetId) throw new Error("Mux returned no asset id");
