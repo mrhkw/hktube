@@ -29,6 +29,7 @@ import {
   Video,
   HelpCircle,
   Camera,
+  Menu,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -76,6 +77,7 @@ export function HkTubeShell({
     "menu"
   );
   const [postBody, setPostBody] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const utils = trpc.useUtils();
   const createPost = trpc.posts.create.useMutation({
     onSuccess: () => {
@@ -155,6 +157,17 @@ export function HkTubeShell({
         )}
         >
           <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
+            {location === "/" && (
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="group relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-violet-300/60 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-red-500 text-white shadow-[0_5px_16px_rgba(124,92,255,.28)] transition hover:scale-105 hover:shadow-[0_7px_22px_rgba(124,92,255,.4)] active:scale-95"
+                aria-label="Open HkTube menu"
+              >
+                <span className="absolute inset-1 rounded-xl border border-white/30" />
+                <Menu className="relative size-5 transition group-hover:rotate-3" strokeWidth={2.5} />
+              </button>
+            )}
             <Link
               href="/"
               className="hktube-reference-logo flex min-w-0 shrink-0 items-center"
@@ -179,16 +192,58 @@ export function HkTubeShell({
                 </span>
                 )}
             </Link>
-            <Link
-              href="/search"
-              className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
-              aria-label="Open search"
-            >
-              <Search className={SHELL_ICON_CLASS} />
-            </Link>
+            {location === "/profile" ? (
+              <Link
+                href="/settings"
+                className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                aria-label="Open settings"
+                title="Settings"
+              >
+                <Settings2 className={SHELL_ICON_CLASS} />
+              </Link>
+            ) : (
+              <Link
+                href="/search"
+                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                aria-label="Open search"
+              >
+                <Search className={SHELL_ICON_CLASS} />
+              </Link>
+            )}
             </div>
           </div>
       </header>
+
+      <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <DialogContent className="max-w-sm border-slate-200 bg-white text-slate-900">
+          <DialogHeader>
+            <DialogTitle>HkTube navigation</DialogTitle>
+            <DialogDescription>Jump to any part of HkTube.</DialogDescription>
+          </DialogHeader>
+          <nav className="grid gap-1" aria-label="Mobile menu">
+            {[
+              ["Home", "/"],
+              ["Search", "/search"],
+              ["Explore", "/explore"],
+              ["Clips", "/clips"],
+              ["Following", "/subscriptions"],
+              ["Library", "/library"],
+              ["History", "/history"],
+              ["Notifications", "/notifications"],
+              ["Profile", isAuthenticated ? "/profile" : "/auth"],
+            ].map(([label, href]) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-xl px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-violet-50"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none">
