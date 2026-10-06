@@ -132,7 +132,7 @@ export default function ClipsPage() {
   const [videos, setVideos] = useState<SupabaseVideo[]>([]);
   const [channels, setChannels] = useState<Record<string, Channel>>({});
   const [active, setActive] = useState(0);
-  const [tab, setTab] = useState<"for-you" | "following">("for-you");
+  const [tab, setTab] = useState<"all" | "for-you" | "following">("for-you");
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
@@ -214,9 +214,13 @@ export default function ClipsPage() {
       .filter(x => x.s > -1e8)
       .sort((a, b) => b.s - a.s)
       .map(x => x.v);
-    return tab === "following"
-      ? list.filter(v => followed.has(v.channelId))
-      : list;
+    if (tab === "following") return list.filter(v => followed.has(v.channelId));
+    if (tab === "all") {
+      return [...list].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+    return list;
   }, [videos, liked, saved, followed, hidden, tab]);
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -428,7 +432,23 @@ export default function ClipsPage() {
             </button>
           </div>
         </div>
-        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-6 text-white">
+        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-5 text-white sm:gap-6">
+          <button
+            type="button"
+            aria-pressed={tab === "all"}
+            onClick={() => {
+              setTab("all");
+              setActive(0);
+            }}
+            className={
+              "rounded-full px-1 py-2 text-[17px] transition-colors " +
+              (tab === "all"
+                ? "font-black text-white"
+                : "font-semibold text-white/75 hover:text-white")
+            }
+          >
+            All
+          </button>
           <button
             type="button"
             aria-pressed={tab === "following"}
