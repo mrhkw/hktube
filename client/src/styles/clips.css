@@ -5,12 +5,18 @@ body.hktube-clips-document {
 }
 
 body.hktube-clips-document .hktube-reference-header,
-body.hktube-clips-document nav[aria-label="Mobile navigation"],
 body.hktube-clips-document .clips-old-logo,
 body.hktube-clips-document .giant-logo,
 body.hktube-clips-document .p-arrow-overlay,
 body.hktube-clips-document [aria-label="HkTube loading"] {
   display: none !important;
+}
+
+/* The shared HkTube dock stays available on Clips, but should feel like a
+   light control rail rather than a second full-height panel. */
+body.hktube-clips-document nav[aria-label="Mobile navigation"] {
+  height: 58px !important;
+  min-height: 58px !important;
 }
 
 .hk-clips-root {

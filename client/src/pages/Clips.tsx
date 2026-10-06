@@ -160,7 +160,7 @@ export default function ClipsPage() {
       try {
         const data = await rankPublicVideos({
           shorts: true,
-          limit: 80,
+          limit: 32,
           userId: user?.id == null ? undefined : String(user.id),
         });
         if (!live) return;
