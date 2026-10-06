@@ -1230,3 +1230,64 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     height: 32px !important;
   }
 }
+
+/* Clips interaction polish: smaller lower action rail and a controlled swipe transition. */
+.hktube-clips-stage {
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+}
+.hktube-clips-page .clips-action {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+.hktube-clips-page .clips-action > span:first-child,
+.hktube-clips-page .clips-action span:first-child {
+  width: 42px !important;
+  height: 42px !important;
+}
+.hktube-clips-page .clips-action > span:first-child svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+.hktube-clips-viewport.clips-swipe-in {
+  animation: clips-swipe-in 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+@keyframes clips-swipe-in {
+  from { opacity: 0.72; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (max-width: 767px) {
+  .hktube-clips-page .clips-action-rail {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
+    gap: 0.35rem !important;
+  }
+}
+
+@media (min-width: 768px) {
+  body:has(.hktube-clips-page),
+  #root:has(.hktube-clips-page) {
+    background: #070910 !important;
+  }
+  .hktube-clips-page > .hktube-clips-stage {
+    position: relative !important;
+    inset: auto !important;
+    display: grid;
+    place-items: center;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .hktube-clips-page .hktube-clips-viewport {
+    width: min(620px, calc((100dvh - 2rem) * 0.5625), calc(100vw - 2rem)) !important;
+    height: auto !important;
+    aspect-ratio: 9 / 16;
+    max-width: none !important;
+    border-radius: 1.5rem;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 48%);
+  }
+  .hktube-clips-page .hktube-clips-viewport > video,
+  .hktube-clips-page .hktube-clips-viewport > img {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}

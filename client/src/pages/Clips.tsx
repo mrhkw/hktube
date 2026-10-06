@@ -13,7 +13,6 @@ import {
   Send,
   Star,
   Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -144,12 +143,13 @@ export default function ClipsPage() {
   const [more, setMore] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [touchY, setTouchY] = useState<number | null>(null);
   const [lastTap, setLastTap] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
   const media = useRef<HTMLVideoElement | null>(null);
+  const swipeStart = useRef<{ y: number; time: number } | null>(null);
+  const swipeLocked = useRef(false);
   const watched = useRef(new Set<string>());
   const [mediaError, setMediaError] = useState(false);
   const [mediaReady, setMediaReady] = useState(false);
@@ -386,6 +386,34 @@ export default function ClipsPage() {
     v.load();
     void v.play().catch(() => setPlaying(false));
   }
+  function stepClip(direction: 1 | -1) {
+    if (swipeLocked.current) return;
+    const next = Math.max(0, Math.min(active + direction, visible.length - 1));
+    if (next === active) return;
+    swipeLocked.current = true;
+    setActive(next);
+    // Prevent accidental double-skips while the next media element is mounting.
+    window.setTimeout(() => {
+      swipeLocked.current = false;
+    }, 360);
+  }
+  async function toggleSound() {
+    const v = media.current;
+    if (!v) return;
+    const next = !soundOn;
+    v.muted = !next;
+    setSoundOn(next);
+    if (next) {
+      try {
+        await v.play();
+        setPlaying(true);
+      } catch {
+        setSoundOn(false);
+        v.muted = true;
+        toast.error("Tap the video once to enable sound on this device.");
+      }
+    }
+  }
   return (
     <HkTubeShell immersive minimalHeader>
       <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
@@ -486,20 +514,32 @@ export default function ClipsPage() {
         ) : (
           <div
             className="hktube-clips-stage h-full"
-            onTouchStart={e => setTouchY(e.touches[0]?.clientY ?? null)}
+            onTouchStart={e => {
+              const target = e.target as HTMLElement;
+              if (target.closest("button, a, input, textarea")) return;
+              swipeStart.current = {
+                y: e.touches[0]?.clientY ?? 0,
+                time: performance.now(),
+              };
+            }}
             onTouchEnd={e => {
-              if (touchY == null) return;
-              const d = (e.changedTouches[0]?.clientY ?? touchY) - touchY;
-              if (Math.abs(d) > 55)
-                setActive(i =>
-                  d < 0
-                    ? Math.min(i + 1, visible.length - 1)
-                    : Math.max(i - 1, 0)
-                );
-              setTouchY(null);
+              const start = swipeStart.current;
+              swipeStart.current = null;
+              if (!start) return;
+              const d = (e.changedTouches[0]?.clientY ?? start.y) - start.y;
+              const elapsed = Math.max(1, performance.now() - start.time);
+              const velocity = Math.abs(d) / elapsed;
+              if (Math.abs(d) > 42 && (velocity > 0.2 || Math.abs(d) > 72)) {
+                stepClip(d < 0 ? 1 : -1);
+              }
+            }}
+            onWheel={e => {
+              if (Math.abs(e.deltaY) < 24) return;
+              e.preventDefault();
+              stepClip(e.deltaY > 0 ? 1 : -1);
             }}
           >
-            <div className="hktube-clips-viewport relative mx-auto h-full w-full max-w-[620px] bg-black">
+            <div key={current.id} className="hktube-clips-viewport clips-swipe-in relative mx-auto h-full w-full max-w-[620px] bg-black">
               {current.thumbnailUrl && (
                 <img
                   src={current.thumbnailUrl}
@@ -654,8 +694,17 @@ export default function ClipsPage() {
                     Original Sound · {channel?.name || "HkTube Creator"}
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void toggleSound()}
+                  className="mt-2 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur-md transition active:scale-95"
+                  aria-pressed={soundOn}
+                >
+                  {soundOn ? <Volume2 className="size-4" /> : <Music2 className="size-4" />}
+                  {soundOn ? "Sound on" : "Use sound"}
+                </button>
               </div>
-              <div className="clips-action-rail absolute bottom-[calc(8rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-center gap-3 sm:bottom-24 sm:right-5">
+              <div className="clips-action-rail absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-2 z-30 flex flex-col items-center gap-2 sm:bottom-16 sm:right-5">
                 <Action
                   icon={Heart}
                   label={compact(
@@ -685,35 +734,6 @@ export default function ClipsPage() {
                   label="More"
                   onClick={() => setMore(v => !v)}
                 />
-                <button
-                  type="button"
-                  aria-label={soundOn ? "Mute clip sound" : "Turn clip sound on"}
-                  aria-pressed={soundOn}
-                  title={soundOn ? "Mute clip sound" : "Turn clip sound on"}
-                  onClick={() => {
-                    const next = !soundOn;
-                    setSoundOn(next);
-                    if (media.current) media.current.muted = !next;
-                  }}
-                  className="relative mt-1 grid size-12 place-items-center overflow-hidden rounded-full border-2 border-white/80 bg-black/70 shadow-xl transition-transform active:scale-90"
-                >
-                  {current.thumbnailUrl ? (
-                    <img
-                      src={current.thumbnailUrl}
-                      alt=""
-                      className={`size-full object-cover ${playing ? "animate-[spin_8s_linear_infinite]" : ""}`}
-                    />
-                  ) : (
-                    <Music2 className="size-5 text-white" />
-                  )}
-                  <span className="absolute bottom-0 right-0 grid size-5 place-items-center rounded-full bg-black/80">
-                    {soundOn ? (
-                      <Volume2 className="size-3 text-white" />
-                    ) : (
-                      <VolumeX className="size-3 text-white" />
-                    )}
-                  </span>
-                </button>
               </div>
               <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
                 <div
