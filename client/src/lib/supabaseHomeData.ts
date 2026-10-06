@@ -24,7 +24,8 @@ function asRanked(
 }
 
 async function loadAnonymousHome() {
-  const videos = await listPublicSupabaseVideos(24);
+  // Keep first paint quick on mobile; Explore remains available for the full catalog.
+  const videos = await listPublicSupabaseVideos(12);
   return {
     videos: videos.map(video => asRanked(video)),
   };
@@ -50,7 +51,7 @@ export async function loadSupabaseHomeData(userId?: number | string) {
   let rankingError: unknown = null;
 
   try {
-    ranked = await rankPublicVideos({ limit: 60, userId: String(userId) });
+    ranked = await rankPublicVideos({ limit: 24, userId: String(userId) });
   } catch (error) {
     rankingError = error;
   }
@@ -59,7 +60,7 @@ export async function loadSupabaseHomeData(userId?: number | string) {
   // If ranking is unavailable, fall back to the same approved/public source of truth.
   if (!ranked.length) {
     try {
-      ranked = (await listPublicSupabaseVideos(60)).map(video =>
+      ranked = (await listPublicSupabaseVideos(24)).map(video =>
         asRanked(video)
       );
     } catch (error) {

@@ -108,7 +108,7 @@ export function HkTubeShell({
     return () => window.removeEventListener("hktube-open-create", onOpenCreate);
   }, [isAuthenticated]);
   useEffect(() => {
-    if (location !== "/profile") setProfileSettingsOpen(false);
+    if (!location.startsWith("/profile")) setProfileSettingsOpen(false);
   }, [location]);
   useEffect(() => {
     if (!profileSettingsOpen) return;
@@ -198,7 +198,7 @@ export function HkTubeShell({
               className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
-              <Bell className={SHELL_ICON_CLASS} />
+              <Bell className={SHELL_ICON_CLASS} strokeWidth={2.35} />
               {unread > 0 && (
                 <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
                   {Math.min(unread, 9)}
@@ -217,7 +217,7 @@ export function HkTubeShell({
                   aria-haspopup="menu"
                   title="Settings"
                 >
-                  <Settings2 className={SHELL_ICON_CLASS} />
+                  <Settings2 className={SHELL_ICON_CLASS} strokeWidth={2.35} />
                 </button>
                 {profileSettingsOpen && (
                   <div
@@ -263,7 +263,7 @@ export function HkTubeShell({
                 className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
                 aria-label="Open search"
               >
-                <Search className={SHELL_ICON_CLASS} />
+                <Search className={SHELL_ICON_CLASS} strokeWidth={2.35} />
               </Link>
             )}
             </div>

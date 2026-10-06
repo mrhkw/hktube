@@ -30,8 +30,24 @@ export function useAuth(options?: UseAuthOptions) {
 
   useEffect(() => {
     let active = true;
-    void getLiveSupabaseSession().then(value => { if (active) { setSession(value); setSessionReady(true); } });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => { if (active) { setSession(next); setSessionReady(true); void meQuery.refetch(); } });
+    let authEventSeen = false;
+    // Subscribe before reading the initial session so a fresh login event cannot
+    // be overwritten by a slower, stale getSession() result.
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (!active) return;
+      authEventSeen = true;
+      setSession(next);
+      setSessionReady(true);
+      window.setTimeout(() => {
+        if (active && next) void meQuery.refetch();
+      }, 0);
+    });
+    void getLiveSupabaseSession().then(value => {
+      if (active && !authEventSeen) {
+        setSession(value);
+        setSessionReady(true);
+      }
+    });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [meQuery.refetch]);
 
