@@ -105,10 +105,10 @@ export default function AIChat() {
   if (loading) return <HkTubeShell title="HkTube AI"><div className="grid min-h-[60vh] place-items-center"><Loader2 className="size-7 animate-spin text-violet-500" /></div></HkTubeShell>;
   if (!isAuthenticated) return <HkTubeShell title="HkTube AI"><div className="mx-auto max-w-lg px-5 py-16 text-center"><span className="mx-auto grid size-16 place-items-center rounded-2xl bg-black text-white"><Bot className="size-8" /></span><h1 className="mt-6 text-3xl font-black">HkTube AI</h1><p className="mt-3 text-sm leading-6 text-slate-500">ChatGPT-style conversational AI for HkTube. Sign in to start a private conversation.</p><Button onClick={startLogin} className="mt-6 rounded-full bg-black px-6 text-white hover:bg-zinc-800">Sign in</Button></div></HkTubeShell>;
 
-  return <HkTubeShell title="HkTube AI" subtitle="Ask questions, brainstorm, write and learn.">
+  return <HkTubeShell title="HkTube AI" subtitle="Agent mode: plan, research, verify and answer.">
     <div className="mx-auto flex min-h-[calc(100vh-150px)] max-w-6xl flex-col px-3 pb-4 sm:px-5">
       <header className="flex items-center justify-between border-b border-white/8 py-3">
-        <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-500 text-white"><Sparkles className="size-5" /></span><div><h1 className="font-black text-white">HkTube AI</h1><p className="text-[11px] text-slate-500">Conversational assistant</p></div></div>
+        <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-500 text-white"><Sparkles className="size-5" /></span><div><h1 className="font-black text-white">HkTube AI</h1><p className="text-[11px] text-slate-500">Agent mode · research + verification</p></div></div>
         <div className="flex gap-2"><Link href="/studio/ai" className="hidden rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/[.06] sm:inline-flex">Creator AI</Link><Button variant="outline" onClick={clearChat} className="border-white/10 bg-transparent text-slate-300 hover:bg-white/[.06]"><Trash2 className="mr-2 size-4" />New chat</Button></div>
       </header>
       <div className="flex-1 overflow-y-auto py-6">
