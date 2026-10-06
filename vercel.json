@@ -39,8 +39,8 @@
     ] }
   ],
   "functions": {
-    "api/index.js": { "maxDuration": 30, "memory": 1024 },
-    "api/storage.js": { "maxDuration": 60, "memory": 1024 }
+    "api/index.js": { "maxDuration": 30 },
+    "api/storage.js": { "maxDuration": 60 }
   },
   "routes": [
     { "handle": "filesystem" },

@@ -2,14 +2,14 @@
 
 **Overall status: PARTIALLY DONE**
 
-This report deliberately does **not** claim 100% completion. The repository was audited and the existing architecture was preserved. A real autonomous control-plane foundation was added, but provider-backed media processing, remote database execution, production deployment verification, and several specialized agents remain incomplete or unavailable in this sandbox.
+This report deliberately does **not** claim 100% completion. The repository was audited and the existing architecture was preserved. The connected GitHub, Supabase, and Vercel integrations were discovered and used. The autonomous control-plane foundation, live Supabase RLS/RPC hardening, protected moderation gateway, and a successful Vercel build/deployment were completed. Provider-backed media processing, scheduled worker execution, password-leak protection settings, and several specialized agents remain incomplete or unavailable.
 
 ## Audit evidence
 
 - Repository: `mrhkw/hktube`, branch `main`, audited from the cloned working copy.
 - Existing architecture: Vite + React client, Express/tRPC API, Drizzle/MySQL application surface, Supabase media/profile/engagement surface, Internet Archive S3-compatible media storage, Vercel configuration.
 - Existing controls found: authentication/session forwarding, owner/admin authorization, upload MIME/extension/size checks, request-origin checks, in-memory rate limits, security headers/CSP, audit logs, existing AI provider failover, public-content filtering in the Supabase surface, and existing recommendation/search/Shorts code.
-- Missing or unverified before this change: durable automation queue, idempotent platform event log, policy decision record, agent health/watchdog data model, feature kill-switch persistence, appeal persistence, enforcement record persistence, and a verified end-to-end worker/provider execution path.
+- Live service audit findings: Supabase initially reported 10 policy-less RLS tables and high-impact SECURITY DEFINER RPCs executable by browser roles. These were remediated with live migrations. The remaining Supabase warnings are limited to intentionally public comment/search RPCs and disabled leaked-password protection.
 
 ## Implemented in this change
 
@@ -30,9 +30,10 @@ This report deliberately does **not** claim 100% completion. The repository was 
 | Production build | PASS | `pnpm build` completed; Vite, server bundle, and Vercel API bundles emitted |
 | Local production health | PASS | `GET http://127.0.0.1:3100/api/health` returned HTTP 200 |
 | Security headers | PASS locally | Health response included DENY frame policy, `nosniff`, strict referrer policy, CSP, HSTS, and no-store API caching |
-| Drizzle migration execution | BLOCKED | `DATABASE_URL` is not configured in this sandbox; `drizzle-kit check/generate` could not connect/validate against the real database |
-| Supabase remote RLS verification | BLOCKED | No Supabase SQL execution credential/connector was available |
-| Vercel production verification | NOT VERIFIED | No authenticated Vercel deployment inspection was performed in this run |
+| Drizzle migration execution | BLOCKED | The Drizzle/MySQL migration still needs the target MySQL runtime; Vercel confirms `DATABASE_URL` is configured, but its value was not read or exposed |
+| Supabase remote RLS verification | PASS | Connected Supabase project `jpdvunotyykfqmmkhmml`; live policies verified on all 10 AI runtime tables |
+| Supabase RPC privilege hardening | PASS | High-impact moderation/ban/publication RPC overloads verified service-role-only; protected Edge Function deployed |
+| Vercel deployment verification | PASS | Commit `6346b02` deployed as `dpl_7w6NmWNHHFF3nJQy96Uuw8g667GJ`, state `READY`; build completed and public `/api/health` returned HTTP 200 |
 | Media provider execution | BLOCKED | No verified processing/transcoding/fingerprinting provider was configured |
 
 ## Feature status matrix
@@ -89,7 +90,7 @@ Status values are **IMPLEMENTED**, **PARTIALLY DONE**, **BLOCKED**, or **NOT_IMP
 | 46. No-false-success rule | IMPLEMENTED in changed control-plane path | `decideSupervisorAction`, blocked provider state | Supervisor unit tests | Provider absence returns `degraded`; missing control DB returns explicit `blocked` | Existing legacy surfaces still need a full provider-state inventory |
 | 47. Data quality agent | NOT_IMPLEMENTED | No data-quality worker | No test | Not claimed | Need invariant checks and remediation queue |
 | 48. Backup/recovery | BLOCKED | Existing docs/operational boundary only | No provider/database backup verification | Cannot claim active backup | Need verified DB/storage backup and restore drill |
-| 49. Deployment verification | PARTIALLY DONE | Vercel config, build, local production smoke | `pnpm build`, local HTTP 200 | Local artifact is deployable | Production deployment/alias/remote headers were not independently verified in this run |
+| 49. Deployment verification | IMPLEMENTED for current deployment | `vercel.json`, Vercel project `hktube` | Deployment `dpl_7w6NmWNHHFF3nJQy96Uuw8g667GJ`, build events, public `/api/health` | Commit `6346b02` reached READY; public endpoint returned HTTP 200 with HSTS/no-store/security headers | Future production releases still require the same smoke checklist |
 | 50. Autonomous daily platform audit | NOT_IMPLEMENTED | No scheduler/trigger | No test | Not claimed | Need scheduled execution and report persistence |
 | 51. Weekly platform report | NOT_IMPLEMENTED | No report generator/scheduler | No test | Not claimed | Need metrics source and scheduled delivery |
 | 52. Agent watchdog | PARTIALLY DONE | `agent_health`, `heartbeatAgent`, supervisor snapshot | Typecheck/unit policy tests | Durable health contract exists | No scheduled watchdog evaluator or alert path |
@@ -101,15 +102,15 @@ Status values are **IMPLEMENTED**, **PARTIALLY DONE**, **BLOCKED**, or **NOT_IMP
 | 58. Final platform event flow | PARTIALLY DONE | event → policy → job → audit primitives | Typecheck/build/unit tests | Core flow is wired for video creation | No live worker/action/notification/recovery stages |
 | 59. Existing architecture inspection | IMPLEMENTED | Repository audit and preserved modules | Code review and baseline tests/build | Existing project reused; no duplicate app/backend created | Remote services could not be queried without credentials |
 | 60. Real implementation rule | IMPLEMENTED for this report | This report plus explicit statuses | Evidence matrix | Missing features are not marked complete | Remaining items are listed above |
-| 61. Final security rule | PARTIALLY DONE | Security middleware, RLS SQL, auth guards, upload checks | Tests/local security smoke | Core protections verified locally | Remote RLS, provider, secret, and production configuration checks remain |
+| 61. Final security rule | PARTIALLY DONE | Security middleware, live RLS/RPC hardening, auth guards, upload checks | 54 tests, live Supabase SQL checks, Edge Function deployment, Vercel smoke | Browser execution of high-impact RPCs was removed; protected gateway is active | Supabase leaked-password protection remains disabled; unused readable-secret env warning remains |
 | 62. Final acceptance criteria | PARTIALLY DONE | Entire repository and this report | 54 tests, typecheck, build, health smoke | Foundational control-plane and existing product work, not full platform | Many provider/scheduler/worker/remote verification items remain |
 
 ## Blocking dependencies
 
-1. Configure a real `DATABASE_URL`, execute migration `0006_autonomous_control_plane.sql`, and run a live migration/check against the target MySQL database.
-2. Verify and execute the Supabase RLS migrations in the real Supabase project; inspect storage bucket policies and auth MFA/recovery settings.
+1. Execute Drizzle migration `0006_autonomous_control_plane.sql` against the target MySQL runtime and verify the durable queue end to end.
+2. Enable Supabase leaked-password protection and remove/convert the unused Vercel `SUPABASE_KEY` variable with the provider console's deletion/edit workflow.
 3. Configure a durable queue worker/runtime and provider-backed transcoding, transcription, thumbnails, translation/TTS, moderation, and copyright services.
 4. Add distributed rate limiting, metrics/alerts, incident lifecycle, backups, restore drills, scheduled daily/weekly audits, and agent watchdog execution.
-5. Re-run deployment verification against the production Vercel deployment and capture `/api/health`, security headers, API authorization, queue, and migration evidence.
+5. Add live API authorization, queue, and migration tests against non-production fixtures; the current deployment and public health endpoint are already verified.
 
 **Conclusion:** the correct final status is **PARTIALLY DONE**, not 100% DONE. The new code is type-safe, tested, buildable, fail-closed on missing control-plane dependencies, and integrated into the existing HkTube architecture, but the complete autonomous platform requested by Clipboard 5 is not yet fully implemented or remotely verified.
