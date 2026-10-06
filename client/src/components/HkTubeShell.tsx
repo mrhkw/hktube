@@ -226,18 +226,12 @@ export function HkTubeShell({
                     className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
                   >
                     <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
-                      HkTube settings
+                      Account & settings
                     </p>
                     {[
+                      ["Notifications", "/notifications"],
                       ["Settings", "/settings"],
-                      ["Privacy Center", "/settings/privacy"],
-                      ["Security Center", "/settings/security"],
-                      ["Privacy Policy", "/privacy"],
-                      ["Terms of Use", "/terms"],
-                      ["Cookie Notice", "/cookies"],
-                      ["Community Guidelines", "/community"],
-                      ["Help & Contact", "/help"],
-                      ["About HkTube", "/about"],
+                      ["Account security", "/settings/security"],
                     ].map(([label, href]) => (
                       <Link
                         key={href}
@@ -249,6 +243,17 @@ export function HkTubeShell({
                         {label}
                       </Link>
                     ))}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setProfileSettingsOpen(false);
+                        void logout();
+                      }}
+                      className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
+                    >
+                      Sign out
+                    </button>
                   </div>
                 )}
               </div>
