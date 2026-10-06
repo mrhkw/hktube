@@ -26,14 +26,14 @@ This report deliberately does **not** claim 100% completion. The repository was 
 | Check | Result | Evidence |
 |---|---|---|
 | TypeScript | PASS | `pnpm check` |
-| Automated tests | PASS | 14 test files, 54 tests passed |
+| Automated tests | PASS | 17 test files, 65 tests passed |
 | Production build | PASS | `pnpm build` completed; Vite, server bundle, and Vercel API bundles emitted |
 | Local production health | PASS | `GET http://127.0.0.1:3100/api/health` returned HTTP 200 |
 | Security headers | PASS locally | Health response included DENY frame policy, `nosniff`, strict referrer policy, CSP, HSTS, and no-store API caching |
 | Drizzle migration execution | BLOCKED | The Drizzle/MySQL migration still needs the target MySQL runtime; Vercel confirms `DATABASE_URL` is configured, but its value was not read or exposed |
 | Supabase remote RLS verification | PASS | Connected Supabase project `jpdvunotyykfqmmkhmml`; live policies verified on all 10 AI runtime tables |
 | Supabase RPC privilege hardening | PASS | High-impact moderation/ban/publication RPC overloads verified service-role-only; protected Edge Function deployed |
-| Vercel deployment verification | PASS | Commit `6346b02` deployed as `dpl_7w6NmWNHHFF3nJQy96Uuw8g667GJ`, state `READY`; build completed and public `/api/health` returned HTTP 200 |
+| Vercel deployment verification | PASS | Rebased main commit `bb0afc3` deployed as `dpl_3F7kCLWVoz7DaFAYFq7rNBCzV8ye`, state `READY`; build completed and public `/api/health` returned HTTP 200 |
 | Media provider execution | BLOCKED | No verified processing/transcoding/fingerprinting provider was configured |
 
 ## Feature status matrix
@@ -90,7 +90,7 @@ Status values are **IMPLEMENTED**, **PARTIALLY DONE**, **BLOCKED**, or **NOT_IMP
 | 46. No-false-success rule | IMPLEMENTED in changed control-plane path | `decideSupervisorAction`, blocked provider state | Supervisor unit tests | Provider absence returns `degraded`; missing control DB returns explicit `blocked` | Existing legacy surfaces still need a full provider-state inventory |
 | 47. Data quality agent | NOT_IMPLEMENTED | No data-quality worker | No test | Not claimed | Need invariant checks and remediation queue |
 | 48. Backup/recovery | BLOCKED | Existing docs/operational boundary only | No provider/database backup verification | Cannot claim active backup | Need verified DB/storage backup and restore drill |
-| 49. Deployment verification | IMPLEMENTED for current deployment | `vercel.json`, Vercel project `hktube` | Deployment `dpl_7w6NmWNHHFF3nJQy96Uuw8g667GJ`, build events, public `/api/health` | Commit `6346b02` reached READY; public endpoint returned HTTP 200 with HSTS/no-store/security headers | Future production releases still require the same smoke checklist |
+| 49. Deployment verification | IMPLEMENTED for current deployment | `vercel.json`, Vercel project `hktube` | Deployment `dpl_3F7kCLWVoz7DaFAYFq7rNBCzV8ye`, build events, public `/api/health` | Commit `bb0afc3` reached READY; public endpoint returned HTTP 200 with HSTS/no-store/security headers | Future production releases still require the same smoke checklist |
 | 50. Autonomous daily platform audit | NOT_IMPLEMENTED | No scheduler/trigger | No test | Not claimed | Need scheduled execution and report persistence |
 | 51. Weekly platform report | NOT_IMPLEMENTED | No report generator/scheduler | No test | Not claimed | Need metrics source and scheduled delivery |
 | 52. Agent watchdog | PARTIALLY DONE | `agent_health`, `heartbeatAgent`, supervisor snapshot | Typecheck/unit policy tests | Durable health contract exists | No scheduled watchdog evaluator or alert path |
@@ -102,8 +102,8 @@ Status values are **IMPLEMENTED**, **PARTIALLY DONE**, **BLOCKED**, or **NOT_IMP
 | 58. Final platform event flow | PARTIALLY DONE | event → policy → job → audit primitives | Typecheck/build/unit tests | Core flow is wired for video creation | No live worker/action/notification/recovery stages |
 | 59. Existing architecture inspection | IMPLEMENTED | Repository audit and preserved modules | Code review and baseline tests/build | Existing project reused; no duplicate app/backend created | Remote services could not be queried without credentials |
 | 60. Real implementation rule | IMPLEMENTED for this report | This report plus explicit statuses | Evidence matrix | Missing features are not marked complete | Remaining items are listed above |
-| 61. Final security rule | PARTIALLY DONE | Security middleware, live RLS/RPC hardening, auth guards, upload checks | 54 tests, live Supabase SQL checks, Edge Function deployment, Vercel smoke | Browser execution of high-impact RPCs was removed; protected gateway is active | Supabase leaked-password protection remains disabled; unused readable-secret env warning remains |
-| 62. Final acceptance criteria | PARTIALLY DONE | Entire repository and this report | 54 tests, typecheck, build, health smoke | Foundational control-plane and existing product work, not full platform | Many provider/scheduler/worker/remote verification items remain |
+| 61. Final security rule | PARTIALLY DONE | Security middleware, live RLS/RPC hardening, auth guards, upload checks | 65 tests, live Supabase SQL checks, Edge Function deployment, Vercel smoke | Browser execution of high-impact RPCs was removed; protected gateway is active | Supabase leaked-password protection remains disabled; unused readable-secret env warning remains |
+| 62. Final acceptance criteria | PARTIALLY DONE | Entire repository and this report | 65 tests, typecheck, build, health smoke | Foundational control-plane and existing product work, not full platform | Many provider/scheduler/worker/remote verification items remain |
 
 ## Blocking dependencies
 
