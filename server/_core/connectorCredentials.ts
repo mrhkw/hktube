@@ -181,18 +181,20 @@ export function registerConnectorCredentialRoutes(app: Express) {
         const clean = value.trim();
         if (clean) sanitized[key] = clean;
       }
+      const existing = await getConnectorCredentials(ownerId, connector.data);
+      const merged = { ...(existing?.credentials ?? {}), ...sanitized };
       for (const field of fields) {
-        if (field.required && !sanitized[field.key]) {
+        if (field.required && !merged[field.key]) {
           res.status(400).json({ error: { message: `${field.label} is required.` } });
           return;
         }
       }
-      if (!Object.keys(sanitized).length) {
+      if (!Object.keys(sanitized).length && !existing) {
         res.status(400).json({ error: { message: "Enter at least one valid credential value." } });
         return;
       }
 
-      await upsertConnectorCredentials(ownerId, connector.data, parsed.data.authMode, sanitized);
+      await upsertConnectorCredentials(ownerId, connector.data, parsed.data.authMode, merged);
       res.status(200).json({ connectorId: connector.data, status: "connected", saved: true });
     } catch (error) {
       console.error("[AI Connectors] save failed", safeConnectorError(error));
