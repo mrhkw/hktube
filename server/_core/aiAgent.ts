@@ -64,6 +64,7 @@ export async function runBoundedAIAgent(input: {
   timeoutMs?: number;
   finalResponseFormat?: Parameters<typeof invokeLLM>[0]["responseFormat"];
   gmailAccessToken?: string;
+  ownerEmail?: string;
 }): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
