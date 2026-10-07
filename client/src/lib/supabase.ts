@@ -19,6 +19,19 @@ export const signInWithGoogle = async () => {
   if (error) console.error('Google Auth Error:', error.message);
 };
 
+export const connectGmailWithGoogle = async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/admin-agent`,
+      scopes: 'https://www.googleapis.com/auth/gmail.modify',
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+    },
+  });
+  if (error) console.error('Gmail connection error:', error.message);
+  return error;
+};
+
 export const signOut = async () => {
   await supabase.auth.signOut();
 };
@@ -40,7 +53,8 @@ export async function getAISessionHeaders(forceRefresh = false): Promise<Record<
   }
   const token = data.session?.access_token;
   if (error || !token) throw new Error("Please sign in with Google before using HkTube AI.");
-  return { Authorization: `Bearer ${token}` };
+  const providerToken = (data.session as (typeof data.session & { provider_token?: string | null }) | null)?.provider_token;
+  return { Authorization: `Bearer ${token}`, ...(providerToken ? { "X-Google-Provider-Token": providerToken } : {}) };
 }
 
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };

@@ -165,7 +165,7 @@ export function createApiApp(): Express {
           "Access-Control-Allow-Origin": origin,
           "Access-Control-Allow-Credentials": "true",
           "Access-Control-Allow-Methods": "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, X-TRPC-Source",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, X-TRPC-Source, X-Google-Provider-Token",
           Vary: "Origin",
         });
         if (req.method === "OPTIONS") {
