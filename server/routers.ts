@@ -14,6 +14,7 @@ import { parseAIChatOutput, presentAIError } from "./_core/aiResponse";
 import { adminProcedure, protectedProcedure, publicProcedure, router, sessionProcedure } from "./_core/trpc";
 import { sanitizeInput } from "@shared/security";
 import { decideSupervisorAction, emitPlatformEvent, enqueueAutomationJob, getSupervisorSnapshot, recordPolicyDecision, setAutomationKillSwitch, submitAppeal } from "./platformSupervisor";
+import { createUltraPlan } from "./autonomousManager";
 import { addVideoToPlaylist, createChannel, createComment, createLocalAccount, createPlaylist, createPost, createReport, createVideo, getChannelById, getCreatorStudioDashboard, getLocalAccount, getRelatedVideos, getVideoById, getVideoEngagement, incrementVideoView, listAdminVideos, listReports, listAuditLogs, listChannelSubscriptions, listChannelsByOwner, listComments, listFollowingVideos, listNotifications, listPlaylists, listPosts, listSavedVideos, listVideos, listWatchHistory, markAllNotificationsRead, markNotificationRead, recordWatchHistory, removeOwnedVideo, removeVideo, toggleChannelSubscription, togglePostLike, toggleSavedVideo, toggleVideoLike } from "./db";
 const videoCategory = z.enum(["regular", "shorts"]);
 const mediaUrl = z.string().trim().refine(value => { if (value.startsWith("/manus-storage/")) return true; try { const parsed = new URL(value); return parsed.protocol === "https:" || parsed.protocol === "http:"; } catch { return false; } }, "Provide a valid HTTP(S) URL or stored media path.");
@@ -66,6 +67,7 @@ export const appRouter = router({
     runSafeChecks: adminProcedure.mutation(async ({ ctx }) => { const videos = await listAdminVideos(); const reports = await listReports(); await (await import("./db")).writeAuditLog({ actorId: ctx.user.id, action: "algorithm.safe_checks_run", entityType: "algorithm", metadata: JSON.stringify({ videosChecked: videos.length, reportsReviewed: reports.length }) }); return { videosChecked: videos.length, reportsReviewed: reports.length, mode: "review-only" as const }; }),
   }),
   automation: router({
+    plan: adminProcedure.input(z.object({ goal: z.string().trim().min(3).max(4_000) })).mutation(async ({ ctx, input }) => createUltraPlan({ ownerId: ctx.user.id, goal: input.goal })),
     snapshot: adminProcedure.query(() => getSupervisorSnapshot()),
     killSwitch: adminProcedure.input(z.object({ key: z.string().trim().min(1).max(120), enabled: z.boolean() })).mutation(({ ctx, input }) => setAutomationKillSwitch(input.key, input.enabled, ctx.user.id)),
     appeal: protectedProcedure.input(z.object({ targetType: z.string().trim().min(1).max(80), targetId: z.number().int().positive(), reason: requiredSafeText(10_000), evidence: safeText(20_000).optional() })).mutation(({ ctx, input }) => submitAppeal({ appellantId: ctx.user.id, ...input })),
