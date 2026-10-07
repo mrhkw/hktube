@@ -57,6 +57,45 @@ export async function getAISessionHeaders(forceRefresh = false): Promise<Record<
   return { Authorization: `Bearer ${token}`, ...(providerToken ? { "X-Google-Provider-Token": providerToken } : {}) };
 }
 
+export type AIConnectorStatus = { connectorId: string; authMode: string; status: string; updatedAt: string };
+
+async function getAIConnectorHeaders(): Promise<Record<string, string>> {
+  const headers = await getAISessionHeaders();
+  delete headers["X-Google-Provider-Token"];
+  return headers;
+}
+
+async function parseConnectorResponse<T extends Record<string, unknown> = Record<string, unknown>>(response: Response): Promise<T> {
+  const payload = await response.json().catch(() => null) as T & { error?: { message?: string } };
+  if (!response.ok) throw new Error(payload?.error?.message || "Connector request failed.");
+  return payload;
+}
+
+export async function getAIConnectorStatuses(): Promise<AIConnectorStatus[]> {
+  const response = await fetch("/api/ai/connectors/status", { headers: await getAIConnectorHeaders(), credentials: "omit", cache: "no-store" });
+  const payload = await parseConnectorResponse(response);
+  return Array.isArray(payload?.connectors) ? payload.connectors : [];
+}
+
+export async function saveAIConnector(input: { connectorId: string; authMode: string; credentials: Record<string, string> }) {
+  const response = await fetch(`/api/ai/connectors/${encodeURIComponent(input.connectorId)}`, {
+    method: "POST",
+    headers: { ...(await getAIConnectorHeaders()), "content-type": "application/json" },
+    credentials: "omit",
+    body: JSON.stringify(input),
+  });
+  return parseConnectorResponse(response);
+}
+
+export async function disconnectAIConnector(connectorId: string) {
+  const response = await fetch(`/api/ai/connectors/${encodeURIComponent(connectorId)}`, {
+    method: "DELETE",
+    headers: await getAIConnectorHeaders(),
+    credentials: "omit",
+  });
+  return parseConnectorResponse(response);
+}
+
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
 export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };
 

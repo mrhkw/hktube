@@ -82,7 +82,7 @@ export async function runBoundedAIAgent(input: {
     signal: input.signal,
   });
   const calls = getToolCalls(first);
-  if (!calls.length) return { result: first, sources, toolCallsUsed: 0 };
+  if (!calls.length) return { result: first, sources, toolCallsUsed: 0, toolNames: [] as string[] };
 
   agentMessages.push({ role: "assistant", content: first.choices[0]?.message?.content || "", tool_calls: calls });
   for (const call of calls) {
@@ -118,7 +118,7 @@ export async function runBoundedAIAgent(input: {
     signal: input.signal,
     responseFormat: input.finalResponseFormat,
   });
-  return { result: final, sources, toolCallsUsed: calls.length };
+  const toolNames = calls.map(call => typeof call.function?.name === "string" ? call.function.name : "unknown");\n  return { result: final, sources, toolCallsUsed: calls.length, toolNames };
 }
 
 export const __agentInternals = { AGENT_TOOLS, MAX_TOOL_CALLS, parseSearchQuery };
