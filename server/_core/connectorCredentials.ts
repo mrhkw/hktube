@@ -73,7 +73,7 @@ export async function listConnectorCredentialStatus(ownerId: string) {
     WHERE owner_id = ${ownerId}
     ORDER BY updated_at DESC
   `);
-  const rows = result[0] as Array<Record<string, unknown>>;
+  const rows = result[0] as unknown as Array<Record<string, unknown>>;
   return rows.map(row => ({
     connectorId: String(row.connectorId),
     authMode: String(row.authMode),
@@ -90,7 +90,7 @@ export async function getConnectorCredentials(ownerId: string, connectorId: stri
     WHERE owner_id = ${ownerId} AND connector_id = ${connectorId}
     LIMIT 1
   `);
-  const rows = result[0] as Array<{ encrypted_payload: string; iv: Buffer | string; auth_tag: Buffer | string; authMode: string; status: string }>;
+  const rows = result[0] as unknown as Array<{ encrypted_payload: string; iv: Buffer | string; auth_tag: Buffer | string; authMode: string; status: string }>;
   const row = rows[0];
   if (!row) return null;
   return { credentials: decrypt(row), authMode: row.authMode, status: row.status };
