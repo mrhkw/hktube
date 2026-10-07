@@ -19,7 +19,7 @@ const chatSchema = z.object({
 type VerifiedUser = { id?: unknown; email?: unknown; email_confirmed_at?: unknown; confirmed_at?: unknown };
 type AdminVerification = { ok: true; user: VerifiedUser } | { ok: false; reason: "missing-token" | "supabase-rejected" | "email-not-allowlisted" };
 
-async function verifiedAdmin(req: Request, signal: AbortSignal): Promise<AdminVerification> {
+export async function verifiedAdmin(req: Request, signal: AbortSignal): Promise<AdminVerification> {
   const token = extractBearerToken(req.headers.authorization);
   if (!token) return { ok: false, reason: "missing-token" };
   const response = await fetch(`${ENV.supabaseUrl.replace(/\/$/, "")}/auth/v1/user`, {
