@@ -1,4 +1,4 @@
-export type ConnectorCategory = "AI" | "Communication" | "Content" | "Data" | "Developer" | "Finance" | "Marketing" | "Productivity" | "Storage" | "Infrastructure" | "Automation";
+export type ConnectorCategory = "AI" | "Communication" | "Content" | "Data" | "Developer" | "Finance" | "Marketing" | "Productivity" | "Storage" | "Infrastructure" | "Automation" | "Commerce";
 
 export type ConnectorDefinition = {
   id: string;
