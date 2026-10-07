@@ -65,8 +65,8 @@ async function getAIConnectorHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-async function parseConnectorResponse(response: Response) {
-  const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+async function parseConnectorResponse<T extends Record<string, unknown> = Record<string, unknown>>(response: Response): Promise<T> {
+  const payload = await response.json().catch(() => null) as T & { error?: { message?: string } };
   if (!response.ok) throw new Error(payload?.error?.message || "Connector request failed.");
   return payload;
 }
