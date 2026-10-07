@@ -21,6 +21,7 @@ const categoryLabels: Record<ConnectorCategory, string> = {
   Storage: "Storage",
   Infrastructure: "Infrastructure",
   Automation: "Automation",
+  Commerce: "Commerce",
 };
 
 const modeLabels: Record<CredentialMode, string> = {
