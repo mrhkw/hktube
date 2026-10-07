@@ -15,7 +15,11 @@ const C = (id: string, name: string, category: ConnectorCategory, auth: Connecto
 });
 
 export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
-  C("google", "Google", "Productivity", "OAuth", ["Gmail", "Drive", "Docs", "Sheets", "Calendar", "YouTube", "Search Console", "Analytics"], ["search and summarize data", "create/update supported content", "run research and reporting"]),
+  C("gmail", "Gmail", "Communication", "OAuth", ["email", "threads", "search", "labels"], ["search and summarize mail", "draft approved replies"]),
+  C("google-drive", "Google Drive", "Storage", "OAuth", ["files", "folders", "search", "permissions"], ["find and manage approved files"]),
+  C("google-docs", "Google Docs", "Productivity", "OAuth", ["documents", "content", "comments"], ["read and update approved documents"]),
+  C("google-sheets", "Google Sheets", "Data", "OAuth", ["spreadsheets", "cells", "ranges"], ["read and update approved spreadsheet data"]),
+  C("google-calendar", "Google Calendar", "Productivity", "OAuth", ["calendars", "events", "attendees"], ["read and manage approved events"]),
   C("github", "GitHub", "Developer", "OAuth/MCP", ["repositories", "issues", "pull requests", "code", "actions", "releases"], ["inspect code", "review PRs", "create/update issues", "run verified development workflows"]),
   C("gitlab", "GitLab", "Developer", "OAuth/API Key", ["repositories", "issues", "merge requests", "CI/CD"], ["review code", "manage issues and merge requests"]),
   C("bitbucket", "Bitbucket", "Developer", "OAuth/API Key", ["repositories", "pull requests", "pipelines"], ["inspect repositories", "review pull requests"]),
