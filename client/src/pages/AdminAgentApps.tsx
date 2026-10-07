@@ -54,6 +54,7 @@ export default function AdminAgentApps() {
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-400/[.06] px-3 py-1.5 text-xs font-semibold text-emerald-200"><ShieldCheck className="size-3.5" />No fake connected state</span>
+            <Button asChild variant="outline" className="border-cyan-300/20 bg-cyan-400/[.05] text-cyan-100"><Link href="/admin-agent/manager">Advanced AI Manager</Link></Button>
             <Button asChild variant="outline" className="border-white/10 bg-transparent text-slate-300"><Link href="/admin-agent">Back to Agent</Link></Button>
           </div>
         </header>
