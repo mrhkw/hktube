@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { automationPlans } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -47,10 +48,7 @@ function makePlanKey(ownerId: number, goal: string) {
   return `owner:${ownerId}:goal:${normalized.toLowerCase()}`.slice(0, 191);
 }
 
-export async function createUltraPlan(input: {
-  ownerId: number;
-  goal: string;
-}) {
+export async function createUltraPlan(input: { ownerId: number; goal: string }) {
   const goal = input.goal.trim().slice(0, 4_000);
   if (!goal) throw new Error("A task goal is required.");
 
@@ -58,9 +56,8 @@ export async function createUltraPlan(input: {
   const db = await getDb();
   if (!db) throw new Error("Automation database is unavailable; the plan was not saved.");
 
-  const existing = await db.select().from(automationPlans).where(
-    (table, { eq }) => eq(table.planKey, planKey)
-  ).limit(1);
+  const existing = await db.select().from(automationPlans)
+    .where(eq(automationPlans.planKey, planKey)).limit(1);
   if (existing[0]) return { plan: existing[0], reused: true as const };
 
   const result = await invokeLLM({
@@ -162,9 +159,8 @@ Current HkTube capability notes:
     createdBy: `owner:${input.ownerId}`,
   });
 
-  const rows = await db.select().from(automationPlans).where(
-    (table, { eq }) => eq(table.id, Number(inserted[0].insertId))
-  ).limit(1);
+  const rows = await db.select().from(automationPlans)
+    .where(eq(automationPlans.id, Number(inserted[0].insertId))).limit(1);
 
   if (!rows[0]) throw new Error("The AI plan was created but could not be read back.");
   return { plan: rows[0], reused: false as const };
