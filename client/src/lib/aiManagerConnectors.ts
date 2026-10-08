@@ -29,6 +29,7 @@ export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
   C("aws", "AWS", "Infrastructure", "API Key", ["cloud resources", "IAM-scoped services", "logs"], ["inspect resources", "run approved infrastructure tasks"]),
   C("s3", "Amazon S3", "Storage", "API Key", ["buckets", "objects", "metadata"], ["upload/download/manage approved objects"]),
   C("r2", "Cloudflare R2", "Storage", "API Key", ["buckets", "objects", "metadata"], ["manage media and storage objects"]),
+  C("whatsapp", "WhatsApp Business Cloud API", "Communication", "API Key", ["messages", "webhooks", "templates", "media"], ["receive verified webhook events", "send approved business messages"], "https://developers.facebook.com/docs/whatsapp/cloud-api/"),
   C("slack", "Slack", "Communication", "OAuth", ["channels", "messages", "threads", "events"], ["read authorized conversations", "send approved messages", "react to events"]),
   C("discord", "Discord", "Communication", "OAuth/Bot", ["servers", "channels", "messages", "events"], ["read authorized channels", "send approved messages"]),
   C("telegram", "Telegram", "Communication", "API Key", ["bots", "messages", "webhooks"], ["send bot messages", "process bot events"]),
