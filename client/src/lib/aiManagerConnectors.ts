@@ -8,6 +8,7 @@ export type ConnectorDefinition = {
   capabilities: string[];
   agentUses: string[];
   status: "available" | "setup-required";
+  developerUrl?: string;
 };
 
 const C = (id: string, name: string, category: ConnectorCategory, auth: ConnectorDefinition["auth"], capabilities: string[], agentUses: string[] = capabilities) => ({
@@ -31,6 +32,7 @@ export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
   C("r2", "Cloudflare R2", "Storage", "API Key", ["buckets", "objects", "metadata"], ["manage media and storage objects"]),
   C("slack", "Slack", "Communication", "OAuth", ["channels", "messages", "threads", "events"], ["read authorized conversations", "send approved messages", "react to events"]),
   C("discord", "Discord", "Communication", "OAuth/Bot", ["servers", "channels", "messages", "events"], ["read authorized channels", "send approved messages"]),
+  C("whatsapp", "WhatsApp Business", "Communication", "API Key", ["messages", "templates", "webhooks", "business accounts"], ["receive and send approved WhatsApp Business messages", "process verified webhook events"]),
   C("telegram", "Telegram", "Communication", "API Key", ["bots", "messages", "webhooks"], ["send bot messages", "process bot events"]),
   C("teams", "Microsoft Teams", "Communication", "OAuth", ["teams", "channels", "messages", "events"], ["read authorized conversations", "send approved messages"]),
   C("outlook-email", "Outlook Email", "Communication", "OAuth", ["mail", "threads", "folders"], ["search and summarize mail", "draft approved replies"]),
@@ -76,3 +78,17 @@ export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
 ];
 
 export const CONNECTOR_CATEGORIES = ["All", ...Array.from(new Set(AI_MANAGER_CONNECTORS.map(item => item.category)))];
+
+export const CONNECTOR_DEVELOPER_URLS: Record<string, string> = {
+  whatsapp: "https://developers.facebook.com/docs/whatsapp/cloud-api/get-started",
+  instagram: "https://developers.facebook.com/docs/instagram-api",
+  facebook: "https://developers.facebook.com/docs/graph-api",
+  youtube: "https://developers.google.com/youtube/v3/getting-started",
+  tiktok: "https://developers.tiktok.com/products/content-posting-api",
+  x: "https://developer.x.com/en/docs/x-api",
+  linkedin: "https://learn.microsoft.com/linkedin/",
+  reddit: "https://www.reddit.com/dev/api/",
+  pinterest: "https://developers.pinterest.com/docs/getting-started/introduction/",
+  discord: "https://discord.com/developers/docs/intro",
+  telegram: "https://core.telegram.org/bots/api",
+};
