@@ -72,6 +72,7 @@ export async function runBoundedAIAgent(input: {
   finalResponseFormat?: Parameters<typeof invokeLLM>[0]["responseFormat"];
   gmailAccessToken?: string;
   ownerEmail?: string;
+  ownerId?: string;
 }): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number; toolNames: string[] }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
@@ -109,7 +110,7 @@ export async function runBoundedAIAgent(input: {
     }
     if (call.function?.name === "hktube_create_plan") {
       const goal = typeof args?.goal === "string" ? args.goal.trim().slice(0, 4000) : "";
-      const ownerNumericId = typeof args?.ownerId === "number" ? Math.floor(args.ownerId) : 0;
+      const ownerNumericId = input.ownerId && /^\\d+$/.test(input.ownerId) ? Number.parseInt(input.ownerId, 10) : 0;
       if (!goal || !ownerNumericId) {
         agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "BLOCKED", reason: "A numeric owner ID is required by the current automation plan schema. No plan was persisted." }) });
       } else {
