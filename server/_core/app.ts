@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createHash, randomUUID } from "node:crypto";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerGoogleAuthRoutes } from "./googleAuth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
 import { registerAdminAgentRoute } from "./adminAgent";
@@ -185,6 +186,7 @@ export function createApiApp(): Express {
   app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "hktube", providers: providerStatus(), timestamp: new Date().toISOString() }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  registerGoogleAuthRoutes(app);
   registerMediaUploadRoute(app);
   registerAdminAgentRoute(app);
   registerAIAdminRoute(app);
