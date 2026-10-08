@@ -76,4 +76,24 @@ export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
   C("browser", "Browser / Live Research", "AI", "OAuth/API Key", ["web research", "page reading", "approved browser actions"], ["research current information", "verify public sources"]),
 ];
 
+const OFFICIAL_DEVELOPER_URLS: Record<string, string> = {
+  github: "https://docs.github.com/en/rest",
+  youtube: "https://developers.google.com/youtube/v3",
+  instagram: "https://developers.facebook.com/docs/instagram-platform/",
+  facebook: "https://developers.facebook.com/docs/pages/",
+  whatsapp: "https://developers.facebook.com/docs/whatsapp/cloud-api/",
+  tiktok: "https://developers.tiktok.com/",
+  x: "https://developer.x.com/en/docs",
+  linkedin: "https://learn.microsoft.com/en-us/linkedin/",
+  reddit: "https://www.reddit.com/dev/api/",
+  pinterest: "https://developers.pinterest.com/",
+  telegram: "https://core.telegram.org/bots/api",
+  discord: "https://discord.com/developers/docs/intro",
+  slack: "https://api.slack.com/",
+  teams: "https://learn.microsoft.com/en-us/microsoftteams/platform/",
+};
+for (const connector of AI_MANAGER_CONNECTORS) {
+  if (!connector.developerUrl && OFFICIAL_DEVELOPER_URLS[connector.id]) connector.developerUrl = OFFICIAL_DEVELOPER_URLS[connector.id];
+}
+
 export const CONNECTOR_CATEGORIES = ["All", ...Array.from(new Set(AI_MANAGER_CONNECTORS.map(item => item.category)))];
