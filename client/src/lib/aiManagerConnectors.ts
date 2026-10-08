@@ -10,8 +10,8 @@ export type ConnectorDefinition = {
   status: "available" | "setup-required";
 };
 
-const C = (id: string, name: string, category: ConnectorCategory, auth: ConnectorDefinition["auth"], capabilities: string[], agentUses: string[] = capabilities) => ({
-  id, name, category, auth, capabilities, agentUses, status: "setup-required" as const,
+const C = (id: string, name: string, category: ConnectorCategory, auth: ConnectorDefinition["auth"], capabilities: string[], agentUses: string[] = capabilities, developerUrl?: string) => ({
+  id, name, category, auth, capabilities, agentUses, status: "setup-required" as const, developerUrl,
 });
 
 export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
