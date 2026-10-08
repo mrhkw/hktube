@@ -95,6 +95,7 @@ async function generateNonce(): Promise<{ raw: string; hashed: string }> {
 export async function renderHkTubeGoogleButton(
   container: HTMLElement,
   onBusyChange?: (busy: boolean) => void,
+  onError?: (error: unknown) => void,
 ): Promise<() => void> {
   container.replaceChildren();
   onBusyChange?.(true);
@@ -122,6 +123,8 @@ export async function renderHkTubeGoogleButton(
           nonce: nonce.raw,
         });
         if (error) throw error;
+      } catch (error) {
+        onError?.(error);
       } finally {
         onBusyChange?.(false);
       }
