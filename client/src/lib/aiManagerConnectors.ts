@@ -10,8 +10,8 @@ export type ConnectorDefinition = {
   status: "available" | "setup-required";
 };
 
-const C = (id: string, name: string, category: ConnectorCategory, auth: ConnectorDefinition["auth"], capabilities: string[], agentUses: string[] = capabilities) => ({
-  id, name, category, auth, capabilities, agentUses, status: "setup-required" as const,
+const C = (id: string, name: string, category: ConnectorCategory, auth: ConnectorDefinition["auth"], capabilities: string[], agentUses: string[] = capabilities, developerUrl?: string) => ({
+  id, name, category, auth, capabilities, agentUses, status: "setup-required" as const, developerUrl,
 });
 
 export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
@@ -29,6 +29,7 @@ export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
   C("aws", "AWS", "Infrastructure", "API Key", ["cloud resources", "IAM-scoped services", "logs"], ["inspect resources", "run approved infrastructure tasks"]),
   C("s3", "Amazon S3", "Storage", "API Key", ["buckets", "objects", "metadata"], ["upload/download/manage approved objects"]),
   C("r2", "Cloudflare R2", "Storage", "API Key", ["buckets", "objects", "metadata"], ["manage media and storage objects"]),
+  C("whatsapp", "WhatsApp Business Cloud API", "Communication", "API Key", ["messages", "webhooks", "templates", "media"], ["receive verified webhook events", "send approved business messages"], "https://developers.facebook.com/docs/whatsapp/cloud-api/"),
   C("slack", "Slack", "Communication", "OAuth", ["channels", "messages", "threads", "events"], ["read authorized conversations", "send approved messages", "react to events"]),
   C("discord", "Discord", "Communication", "OAuth/Bot", ["servers", "channels", "messages", "events"], ["read authorized channels", "send approved messages"]),
   C("telegram", "Telegram", "Communication", "API Key", ["bots", "messages", "webhooks"], ["send bot messages", "process bot events"]),
@@ -74,5 +75,25 @@ export const AI_MANAGER_CONNECTORS: ConnectorDefinition[] = [
   C("webhook", "Webhook", "Automation", "Webhook", ["event intake", "signed callbacks"], ["react to verified events"]),
   C("browser", "Browser / Live Research", "AI", "OAuth/API Key", ["web research", "page reading", "approved browser actions"], ["research current information", "verify public sources"]),
 ];
+
+const OFFICIAL_DEVELOPER_URLS: Record<string, string> = {
+  github: "https://docs.github.com/en/rest",
+  youtube: "https://developers.google.com/youtube/v3",
+  instagram: "https://developers.facebook.com/docs/instagram-platform/",
+  facebook: "https://developers.facebook.com/docs/pages/",
+  whatsapp: "https://developers.facebook.com/docs/whatsapp/cloud-api/",
+  tiktok: "https://developers.tiktok.com/",
+  x: "https://developer.x.com/en/docs",
+  linkedin: "https://learn.microsoft.com/en-us/linkedin/",
+  reddit: "https://www.reddit.com/dev/api/",
+  pinterest: "https://developers.pinterest.com/",
+  telegram: "https://core.telegram.org/bots/api",
+  discord: "https://discord.com/developers/docs/intro",
+  slack: "https://api.slack.com/",
+  teams: "https://learn.microsoft.com/en-us/microsoftteams/platform/",
+};
+for (const connector of AI_MANAGER_CONNECTORS) {
+  if (!connector.developerUrl && OFFICIAL_DEVELOPER_URLS[connector.id]) connector.developerUrl = OFFICIAL_DEVELOPER_URLS[connector.id];
+}
 
 export const CONNECTOR_CATEGORIES = ["All", ...Array.from(new Set(AI_MANAGER_CONNECTORS.map(item => item.category)))];

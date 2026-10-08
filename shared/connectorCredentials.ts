@@ -44,6 +44,11 @@ export function getCredentialFields(connectorId: string, auth: string, mode?: Cr
     { key: "token", label: "Vercel Token", placeholder: "Paste your Vercel access token", helper: "Vercel Dashboard → Account Settings → Tokens. Create a token with only the permissions this agent needs.", secret: true, required: true },
     { key: "teamId", label: "Team ID", placeholder: "Optional team ID", helper: "Leave empty when the account's personal scope is enough.", required: false },
   ];
+  if (connectorId === "whatsapp") return [
+    { key: "accessToken", label: "WhatsApp Cloud API access token", placeholder: "Paste your Meta WhatsApp access token", helper: "Meta for Developers → WhatsApp → API Setup. Use a token with only the permissions required for your WhatsApp Business API workflow.", secret: true, required: true },
+    { key: "phoneNumberId", label: "Phone Number ID", placeholder: "123456789012345", helper: "Meta for Developers → WhatsApp → API Setup → Phone number ID.", required: true },
+    { key: "businessAccountId", label: "WhatsApp Business Account ID", placeholder: "Optional WABA ID", helper: "Meta Business / WhatsApp Manager. Required for some account-level operations.", required: false },
+  ];
   if (connectorId === "github") return [
     { key: "token", label: "GitHub token", placeholder: "github_pat_…", helper: "Use a fine-grained token with the smallest repository permissions required. GitHub treats tokens like passwords.", secret: true, required: true },
   ];
