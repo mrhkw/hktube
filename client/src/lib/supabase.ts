@@ -20,6 +20,7 @@ export const signInWithGoogle = async () => {
 };
 
 export const connectGmailWithGoogle = async () => {
+  window.localStorage.setItem("hktube-connector-return", "/admin-agent/apps?connected=gmail");
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -33,6 +34,7 @@ export const connectGmailWithGoogle = async () => {
 };
 
 export async function connectOAuthProvider(provider: string, scopes?: string) {
+  window.localStorage.setItem("hktube-connector-return", `/admin-agent/apps?connected=${encodeURIComponent(provider)}`);
   const { error } = await supabase.auth.signInWithOAuth({
     provider: provider as any,
     options: {
