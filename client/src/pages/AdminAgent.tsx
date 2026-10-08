@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { connectGmailWithGoogle, requestAIChat, supabase } from "@/lib/supabase";
 import { isAllowlistedAdminUser } from "@/lib/adminAccess";
-import { ArrowLeft, Bot, Code2, Loader2, LockKeyhole, Mail, PlugZap, Send, ShieldCheck, Sparkles, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, Bot, Code2, History, Loader2, LockKeyhole, Mail, PlugZap, Settings2, Send, ShieldCheck, Sparkles, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
