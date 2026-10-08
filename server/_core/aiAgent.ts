@@ -1,6 +1,10 @@
 import { invokeLLM, type InvokeResult, type Message, type Tool } from "./llm";
 import { searchWeb, type AIWebSource } from "./aiKnowledge";
 import { readGmailThread, searchGmail } from "./gmail";
+import { createUltraPlan } from "../autonomousManager";
+import { agentHealth } from "../../drizzle/schema";
+import { getDb } from "../db";
+import { desc } from "drizzle-orm";
 
 const WEB_SEARCH_TOOL: Tool = {
   type: "function",
@@ -32,7 +36,10 @@ const GMAIL_THREAD_TOOL: Tool = {
     parameters: { type: "object", properties: { threadId: { type: "string" } }, required: ["threadId"], additionalProperties: false },
   },
 };
-const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL];
+
+const HKTUBE_PLAN_TOOL: Tool = { type: "function", function: { name: "hktube_create_plan", description: "Create a real persisted HkTube execution plan when the owner asks to do, fix, implement, investigate, or complete a multi-step task that current tools cannot directly execute. Include blockers, risk, approval and verification. Never claim completion from a plan alone.", parameters: { type: "object", properties: { goal: { type: "string" } }, required: ["goal"], additionalProperties: false } } };
+const HKTUBE_HEALTH_TOOL: Tool = { type: "function", function: { name: "hktube_health_check", description: "Read verified HkTube internal agent health records when the owner asks whether the platform or agents are healthy, online, blocked or failing.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
+const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL];
 const MAX_TOOL_CALLS = 4;
 
 type ToolCall = NonNullable<NonNullable<InvokeResult["choices"][number]["message"]>["tool_calls"]>[number];
@@ -65,6 +72,7 @@ export async function runBoundedAIAgent(input: {
   finalResponseFormat?: Parameters<typeof invokeLLM>[0]["responseFormat"];
   gmailAccessToken?: string;
   ownerEmail?: string;
+  ownerId?: string;
 }): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number; toolNames: string[] }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
@@ -92,6 +100,23 @@ export async function runBoundedAIAgent(input: {
       const found = await searchWeb(query, input.signal);
       sources.push(...found);
       agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ query, sources: found }) });
+      continue;
+    }
+    if (call.function?.name === "hktube_health_check") {
+      const db = await getDb();
+      const rows = db ? await db.select().from(agentHealth).orderBy(desc(agentHealth.updatedAt)).limit(50) : [];
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: db ? "VERIFIED" : "BLOCKED", agents: rows }) });
+      continue;
+    }
+    if (call.function?.name === "hktube_create_plan") {
+      const goal = typeof args?.goal === "string" ? args.goal.trim().slice(0, 4000) : "";
+      const ownerNumericId = input.ownerId && /^\\d+$/.test(input.ownerId) ? Number.parseInt(input.ownerId, 10) : 0;
+      if (!goal || !ownerNumericId) {
+        agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "BLOCKED", reason: "A numeric owner ID is required by the current automation plan schema. No plan was persisted." }) });
+      } else {
+        const result = await createUltraPlan({ ownerId: ownerNumericId, goal });
+        agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "PLANNED", planId: result.plan.id, reused: result.reused, plan: result.plan }) });
+      }
       continue;
     }
     if (call.function?.name === "gmail_search") {
