@@ -46,7 +46,7 @@ export const SECURITY_HEADERS = {
 } as const;
 
 export const CONTENT_SECURITY_POLICY =
-  "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.manus.im; object-src 'none'; worker-src 'self' blob:; manifest-src 'self'";
+  "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://accounts.google.com; frame-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co https://accounts.google.com wss://*.supabase.co https://api.manus.im; object-src 'none'; worker-src 'self' blob:; manifest-src 'self'";
 
 export function applySecurityHeaders(set: (headers: Record<string, string>) => void) {
   set({ ...SECURITY_HEADERS, "Content-Security-Policy": CONTENT_SECURITY_POLICY });
