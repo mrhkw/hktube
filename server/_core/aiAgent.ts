@@ -65,7 +65,7 @@ export async function runBoundedAIAgent(input: {
   finalResponseFormat?: Parameters<typeof invokeLLM>[0]["responseFormat"];
   gmailAccessToken?: string;
   ownerEmail?: string;
-}): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number }> {
+}): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number; toolNames: string[] }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
     { role: "system", content: `${input.systemInstruction}\n\nYou are operating in bounded agent mode. For task requests, reason about the goal, use web_search when current or source-backed information is needed, and use Gmail tools when the user asks about their connected inbox. If Gmail access is unavailable, explain the connection requirement; do not silently refuse. Verify tool results before answering. You may only use the tools explicitly provided. Never claim to have changed files, accounts, deployments, or external data.` },
@@ -82,7 +82,7 @@ export async function runBoundedAIAgent(input: {
     signal: input.signal,
   });
   const calls = getToolCalls(first);
-  if (!calls.length) return { result: first, sources, toolCallsUsed: 0 };
+  if (!calls.length) return { result: first, sources, toolCallsUsed: 0, toolNames: [] };
 
   agentMessages.push({ role: "assistant", content: first.choices[0]?.message?.content || "", tool_calls: calls });
   for (const call of calls) {
@@ -118,7 +118,7 @@ export async function runBoundedAIAgent(input: {
     signal: input.signal,
     responseFormat: input.finalResponseFormat,
   });
-  return { result: final, sources, toolCallsUsed: calls.length };
+  return { result: final, sources, toolCallsUsed: calls.length, toolNames: calls.map(call => call.function?.name).filter((name): name is string => Boolean(name)) };
 }
 
 export const __agentInternals = { AGENT_TOOLS, MAX_TOOL_CALLS, parseSearchQuery };

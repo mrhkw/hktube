@@ -23,7 +23,7 @@ export const connectGmailWithGoogle = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/admin-agent`,
+      redirectTo: `${window.location.origin}/`,
       scopes: 'https://www.googleapis.com/auth/gmail.modify',
       queryParams: { access_type: 'offline', prompt: 'consent' },
     },
@@ -31,6 +31,18 @@ export const connectGmailWithGoogle = async () => {
   if (error) console.error('Gmail connection error:', error.message);
   return error;
 };
+
+export async function connectOAuthProvider(provider: string, scopes?: string) {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: provider as any,
+    options: {
+      redirectTo: `${window.location.origin}/`,
+      ...(scopes ? { scopes } : {}),
+      queryParams: provider === "google" ? { access_type: "offline", prompt: "consent" } : undefined,
+    },
+  });
+  return error;
+}
 
 export const signOut = async () => {
   await supabase.auth.signOut();

@@ -1,10 +1,10 @@
-export type ConnectorCategory = "AI" | "Communication" | "Content" | "Data" | "Developer" | "Finance" | "Marketing" | "Productivity" | "Storage" | "Infrastructure" | "Automation";
+export type ConnectorCategory = "AI" | "Communication" | "Content" | "Commerce" | "Data" | "Developer" | "Finance" | "Marketing" | "Productivity" | "Storage" | "Infrastructure" | "Automation";
 
 export type ConnectorDefinition = {
   id: string;
   name: string;
   category: ConnectorCategory;
-  auth: "OAuth" | "API Key" | "MCP" | "Webhook" | "OAuth/API";
+  auth: "OAuth" | "API Key" | "MCP" | "Webhook" | "OAuth/API" | "OAuth/MCP" | "OAuth/API Key" | "OAuth/Bot";
   capabilities: string[];
   agentUses: string[];
   status: "available" | "setup-required";
