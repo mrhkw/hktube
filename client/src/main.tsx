@@ -54,5 +54,30 @@ if (typeof idleWindow.requestIdleCallback === "function") {
 } else {
   window.setTimeout(warmHome, 60);
 }
+
+// Prefetch only when the user shows intent by hovering a local navigation link.
+// This keeps the initial bundle lean while making the next route feel instant.
+const routePrefetchers: Record<string, () => Promise<unknown>> = {
+  "/explore": () => import("./pages/HkTubeExplore"),
+  "/clips": () => import("./pages/Clips"),
+  "/ai": () => import("./pages/AIChat"),
+  "/upload": () => import("./pages/Upload"),
+  "/studio": () => import("./pages/CreatorStudio"),
+};
+const prefetchedRoutes = new Set<string>();
+window.addEventListener("pointerover", event => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const link = target.closest<HTMLAnchorElement>("a[href]");
+  if (!link || link.target === "_blank" || link.dataset.prefetched === "true") return;
+  let path = "";
+  try { path = new URL(link.href, window.location.origin).pathname; } catch { return; }
+  const load = routePrefetchers[path];
+  if (!load || prefetchedRoutes.has(path)) return;
+  prefetchedRoutes.add(path);
+  link.dataset.prefetched = "true";
+  void load().catch(() => prefetchedRoutes.delete(path));
+}, { passive: true });
+
 if ("serviceWorker" in navigator) window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(error => console.warn("[PWA] service worker unavailable", error)); });
 createRoot(document.getElementById("root")!).render(<ErrorBoundary><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><App /><SafeEnhancements /></QueryClientProvider></trpc.Provider></ErrorBoundary>);

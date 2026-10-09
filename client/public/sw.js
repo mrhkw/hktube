@@ -1,4 +1,4 @@
-const CACHE_NAME = "hktube-shell-v14-clips-reference-v2-2026-09-28";
+const CACHE_NAME = "hktube-shell-v15-fast-assets-2026-10-09";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
@@ -64,6 +64,12 @@ self.addEventListener("fetch", event => {
     if (!isStaticAsset) return fetch(event.request);
 
     try {
+      // Vite assets are content-hashed, so a cached copy is always safe and
+      // avoids a network round-trip on repeat mobile visits. New deployments
+      // get new filenames; the service-worker version is also rotated above.
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(event.request);
+      if (cached) return cached;
       const response = await fetchNetworkFirst(event.request);
       event.waitUntil(cacheResponse(event.request, response));
       return response;

@@ -10,10 +10,14 @@ const plugins = [react(), tailwindcss(), ...(isDevelopment ? [jsxLocPlugin(), vi
 
 function manualChunks(id: string) {
   if (!id.includes("node_modules")) return undefined;
+  if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) return "react-vendor";
   if (id.includes("/@radix-ui/")) return "radix-ui";
   if (id.includes("/@supabase/")) return "supabase";
-  if (id.includes("/@trpc/")) return "trpc";
+  if (id.includes("/@trpc/") || id.includes("/@tanstack/react-query/")) return "data-vendor";
   if (id.includes("/lucide-react/")) return "icons";
+  if (id.includes("/framer-motion/")) return "motion";
+  if (id.includes("/recharts/")) return "charts";
+  if (id.includes("/react-hook-form/") || id.includes("/@hookform/")) return "forms";
   if (id.includes("/date-fns/")) return "date-utils";
   if (id.includes("/superjson/")) return "serialization";
   if (id.includes("/zod/")) return "validation";
