@@ -2,6 +2,7 @@ import { ENV } from "./env";
 
 export type AIWebSource = { title: string; url: string; snippet: string };
 export type AIMemory = { memory_type: string; memory_key: string; value: unknown };
+export type AIMediaAsset = { url: string; mimeType: string; name?: string; size?: number };
 const clean = (value: string, max: number) => value.replace(/\s+/g, " ").trim().slice(0, max);
 const tokenFrom = (req: any) => {
   const value = req?.headers?.authorization;
@@ -62,7 +63,7 @@ export async function saveAIMemories(req: any, memories: AIMemory[], authenticat
   try { await supabaseRequest("ai_memory?on_conflict=user_id,memory_type,memory_key", token, "POST", safe, signal); } catch { /* best-effort personalization */ }
 }
 
-export async function saveAIConversation(req: any, input: { title: string; module: string; messages: Array<{ role: string; content: string }> }, authenticatedUserId?: string, signal?: AbortSignal) {
+export async function saveAIConversation(req: any, input: { title: string; module: string; messages: Array<{ role: string; content: string; metadata?: Record<string, unknown> }> }, authenticatedUserId?: string, signal?: AbortSignal) {
   const token = tokenFrom(req);
   const userId = authenticatedUserId || await getAIUserId(req, undefined, signal);
   if (!token || !userId) return;
@@ -72,9 +73,41 @@ export async function saveAIConversation(req: any, input: { title: string; modul
     const rows: unknown = await conversation.json();
     const conversationId = Array.isArray(rows) && rows[0] && typeof rows[0].id === "string" ? rows[0].id : "";
     if (!conversationId) return;
-    const messages = input.messages.slice(-20).map(message => ({ conversation_id: conversationId, user_id: userId, role: message.role, content: message.content.slice(0, 12_000), metadata: {} }));
+    const messages = input.messages.slice(-20).map(message => ({ conversation_id: conversationId, user_id: userId, role: message.role, content: message.content.slice(0, 12_000), metadata: message.metadata ?? {} }));
     if (messages.length) await supabaseRequest("ai_messages", token, "POST", messages, signal);
   } catch { /* conversation persistence must not invalidate a successful AI answer */ }
+}
+
+export async function listAIConversations(req: any, authenticatedUserId?: string, signal?: AbortSignal) {
+  const token = tokenFrom(req);
+  const userId = authenticatedUserId || await getAIUserId(req, undefined, signal);
+  if (!token || !userId) return [];
+  try {
+    const response = await supabaseRequest(`ai_conversations?select=id,title,module,status,created_at,updated_at&user_id=eq.${encodeURIComponent(userId)}&order=updated_at.desc&limit=30`, token, "GET", undefined, signal);
+    if (!response?.ok) return [];
+    const value: unknown = await response.json();
+    return Array.isArray(value) ? value : [];
+  } catch { return []; }
+}
+
+export async function loadAIConversation(req: any, conversationId: string, authenticatedUserId?: string, signal?: AbortSignal) {
+  const token = tokenFrom(req);
+  const userId = authenticatedUserId || await getAIUserId(req, undefined, signal);
+  if (!token || !userId || !/^[0-9a-f-]{36}$/i.test(conversationId)) return [];
+  try {
+    const response = await supabaseRequest(`ai_messages?select=id,role,content,metadata,created_at&conversation_id=eq.${encodeURIComponent(conversationId)}&user_id=eq.${encodeURIComponent(userId)}&order=created_at.asc&limit=100`, token, "GET", undefined, signal);
+    if (!response?.ok) return [];
+    const value: unknown = await response.json();
+    return Array.isArray(value) ? value : [];
+  } catch { return []; }
+}
+
+export async function saveAIAgentLog(req: any, input: { userId: string; conversationId?: string; step: string; status: string; metadata?: Record<string, unknown> }, signal?: AbortSignal) {
+  const token = tokenFrom(req);
+  if (!token || !input.userId) return;
+  try {
+    await supabaseRequest("ai_agent_logs", token, "POST", [{ user_id: input.userId, conversation_id: input.conversationId ?? null, step: clean(input.step, 80), status: clean(input.status, 40), metadata: input.metadata ?? {} }], signal);
+  } catch { /* observability must never fail a chat */ }
 }
 
 export async function searchWeb(query: string, signal?: AbortSignal): Promise<AIWebSource[]> {

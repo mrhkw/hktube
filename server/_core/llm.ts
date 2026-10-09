@@ -76,6 +76,8 @@ export type InvokeParams = {
   timeoutMs?: number;
   /** Override the default bounded retry count for latency-sensitive routes. */
   maxRetries?: number;
+  /** Force a provider for a capability-specific request, e.g. Gemini vision. */
+  provider?: "groq" | "gemini" | "openai" | "forge";
 };
 
 export type ToolCall = {
@@ -226,7 +228,8 @@ type LLMProvider = "groq" | "gemini" | "openai" | "forge";
 // Groq's free GPT-OSS endpoint is preferred when its key is configured. Keep
 // Gemini as a free-provider fallback, then preserve the existing Gemini/OpenAI
 // selection for deployments that have not opted into Groq.
-const resolvePrimaryProvider = (): LLMProvider => {
+const resolvePrimaryProvider = (override?: LLMProvider): LLMProvider => {
+  if (override) return override;
   if (ENV.groqApiKey.trim()) return "groq";
   if (ENV.geminiApiKey.trim()) return "gemini";
   if (ENV.openAiApiKey.trim()) return "openai";
@@ -442,6 +445,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     signal,
     timeoutMs,
     maxRetries,
+    provider: providerOverride,
   } = params;
 
   const payload: Record<string, unknown> = {
@@ -451,7 +455,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   if (model) {
     payload.model = model;
   } else {
-    const defaultModel = resolveProviderConfig(resolvePrimaryProvider()).model;
+    const defaultModel = resolveProviderConfig(resolvePrimaryProvider(providerOverride)).model;
     if (defaultModel) payload.model = defaultModel;
   }
 
@@ -497,7 +501,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     ? AbortSignal.any([signal, invocationTimeout])
     : invocationTimeout;
   const remainingBudgetMs = () => Math.max(1, invocationBudgetMs - (Date.now() - invocationStartedAt));
-  const primaryProvider = resolvePrimaryProvider();
+  const primaryProvider = resolvePrimaryProvider(providerOverride);
   const fallbackProvider = resolveFallbackProvider(primaryProvider);
   const canFailOver = Boolean(fallbackProvider);
   let primaryFailureDetails: { status?: number; kind: string } | undefined;

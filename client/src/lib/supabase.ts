@@ -72,7 +72,23 @@ export async function getAISessionHeaders(forceRefresh = false): Promise<Record<
 }
 
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
+export type AIChatMedia = { url: string; mimeType: string; name?: string; size?: number };
 export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };
+export type AIStreamEvent = { id?: string; label?: string; status?: string; count?: number };
+
+export async function uploadAIMedia(file: File): Promise<AIChatMedia> {
+  if (!/^(image|video)\//.test(file.type)) throw new Error("Sirf image ya video file upload karein.");
+  if (file.size > 100 * 1024 * 1024) throw new Error("Media file 100 MB se chhoti honi chahiye.");
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("Media upload ke liye pehle sign in karein.");
+  const extension = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
+  const path = `${userData.user.id}/${crypto.randomUUID()}.${extension}`;
+  const upload = await supabase.storage.from("user-media").upload(path, file, { contentType: file.type, upsert: false });
+  if (upload.error) throw new Error(`Media upload nahi ho saka: ${upload.error.message}`);
+  const signed = await supabase.storage.from("user-media").createSignedUrl(path, 60 * 60);
+  if (signed.error || !signed.data?.signedUrl) throw new Error("Uploaded media ka secure link nahi ban saka.");
+  return { url: signed.data.signedUrl, mimeType: file.type, name: file.name, size: file.size };
+}
 
 function aiTransportError(message: string, status?: number, code?: string) {
   const error = new Error(message) as Error & { status?: number; code?: string; retryable?: boolean };
@@ -83,8 +99,8 @@ function aiTransportError(message: string, status?: number, code?: string) {
 }
 
 /** Send AI through the verified direct endpoint so the legacy tRPC auth path cannot emit 10001. */
-export async function requestAIChat(messages: AIChatRequestMessage[], callerSignal?: AbortSignal): Promise<AIChatResponse> {
-  const body = JSON.stringify({ messages });
+export async function requestAIChat(messages: AIChatRequestMessage[], callerSignal?: AbortSignal, media: AIChatMedia[] = [], onEvent?: (event: AIStreamEvent) => void): Promise<AIChatResponse> {
+  const body = JSON.stringify({ messages, media });
   let headers = await getAISessionHeaders();
   let authRefreshed = false;
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -92,7 +108,7 @@ export async function requestAIChat(messages: AIChatRequestMessage[], callerSign
     try {
       const deadline = AbortSignal.timeout(27_000);
       const signal = callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline;
-      response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json" }, credentials: "omit", body, signal });
+      response = await fetch("/api/ai/chat", { method: "POST", headers: { ...headers, "content-type": "application/json", accept: "text/event-stream" }, credentials: "omit", body, signal });
     } catch (error) {
       if (callerSignal?.aborted) throw error;
       const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
@@ -105,6 +121,30 @@ export async function requestAIChat(messages: AIChatRequestMessage[], callerSign
       headers = await getAISessionHeaders(true);
       authRefreshed = true;
       continue;
+    }
+    if (response.headers.get("content-type")?.includes("text/event-stream") && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let result: AIChatResponse | null = null;
+      while (true) {
+        const chunk = await reader.read();
+        buffer += decoder.decode(chunk.value ?? new Uint8Array(), { stream: !chunk.done });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const eventText of events) {
+          const eventName = eventText.match(/^event:\s*(.+)$/m)?.[1]?.trim();
+          const dataLine = eventText.match(/^data:\s*(.+)$/m)?.[1];
+          if (!dataLine) continue;
+          const data = JSON.parse(dataLine);
+          if (eventName === "step") onEvent?.(data as AIStreamEvent);
+          if (eventName === "result") result = data as AIChatResponse;
+          if (eventName === "error") throw aiTransportError(typeof data?.message === "string" ? data.message : "AI response nahi aa saki.", response.status || 502, data?.code);
+        }
+        if (chunk.done) break;
+      }
+      if (result?.content) return result;
+      throw aiTransportError("AI ne koi response nahi diya, dobara try karein.", 502, "empty_response");
     }
     const payload = await response.json().catch(() => null) as any;
     if (!response.ok) {
@@ -124,6 +164,20 @@ export async function requestAIChat(messages: AIChatRequestMessage[], callerSign
     return { content: result.content.trim(), sources, usedWeb: result.usedWeb === true, model: typeof result.model === "string" ? result.model : "" };
   }
   throw aiTransportError("HkTube AI temporarily unavailable hai. Dobara try karein.", 503, "upstream");
+}
+
+export async function getAIHistory() {
+  const headers = await getAISessionHeaders();
+  const response = await fetch("/api/ai/history", { headers, credentials: "omit" });
+  if (!response.ok) throw new Error("AI history load nahi ho saki.");
+  return (await response.json()) as { conversations: Array<{ id: string; title: string; module: string; created_at: string; updated_at: string }> };
+}
+
+export async function getAIConversation(id: string) {
+  const headers = await getAISessionHeaders();
+  const response = await fetch(`/api/ai/history/${encodeURIComponent(id)}`, { headers, credentials: "omit" });
+  if (!response.ok) throw new Error("AI conversation load nahi ho saki.");
+  return (await response.json()) as { messages: Array<{ id: string; role: "user" | "assistant"; content: string; metadata?: Record<string, unknown>; created_at: string }> };
 }
 
 export interface SupabaseProfile {

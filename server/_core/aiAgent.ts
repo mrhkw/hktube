@@ -65,6 +65,7 @@ export async function runBoundedAIAgent(input: {
   finalResponseFormat?: Parameters<typeof invokeLLM>[0]["responseFormat"];
   gmailAccessToken?: string;
   ownerEmail?: string;
+  provider?: "groq" | "gemini" | "openai" | "forge";
 }): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number; toolNames: string[] }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
@@ -80,6 +81,7 @@ export async function runBoundedAIAgent(input: {
     timeoutMs: input.timeoutMs,
     maxRetries: 0,
     signal: input.signal,
+    provider: input.provider,
   });
   const calls = getToolCalls(first);
   if (!calls.length) return { result: first, sources, toolCallsUsed: 0, toolNames: [] };
@@ -117,6 +119,7 @@ export async function runBoundedAIAgent(input: {
     maxRetries: 0,
     signal: input.signal,
     responseFormat: input.finalResponseFormat,
+    provider: input.provider,
   });
   return { result: final, sources, toolCallsUsed: calls.length, toolNames: calls.map(call => call.function?.name).filter((name): name is string => Boolean(name)) };
 }
