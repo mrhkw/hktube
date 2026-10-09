@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { renderHkTubeGoogleButton } from "@/lib/googleAuth";
 import { toast } from "sonner";
 
 function readableAuthError(message: string) {
@@ -31,6 +32,7 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
   const isAndroidApp = new URLSearchParams(window.location.search).get("app") === "android";
 
   useEffect(() => {
@@ -48,17 +50,27 @@ export default function Auth() {
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [navigate]);
 
-  async function signInWithGoogle() {
-    setGooglePending(true);
-    try {
-      const redirectTo = `${window.location.origin}/`;
-      const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } }), "Google login is taking too long. Please try again.");
-      if (error) throw error;
-    } catch (error) {
-      toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));
-      setGooglePending(false);
-    }
-  }
+  useEffect(() => {
+    if (isAndroidApp || !googleButtonRef.current) return;
+    let disposed = false;
+    let cleanup = () => {};
+    renderHkTubeGoogleButton(
+      googleButtonRef.current,
+      busy => { if (!disposed) setGooglePending(busy); },
+      error => {
+        if (!disposed) toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));
+      },
+    ).then(disposer => {
+      if (disposed) disposer();
+      else cleanup = disposer;
+    }).catch(error => {
+      if (!disposed) {
+        setGooglePending(false);
+        toast.error(readableAuthError(error instanceof Error ? error.message : "Google login is unavailable."));
+      }
+    });
+    return () => { disposed = true; cleanup(); };
+  }, [isAndroidApp, mode]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -92,7 +104,7 @@ export default function Auth() {
         <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-zinc-300 bg-white text-zinc-950 shadow-sm"><LockKeyhole className="size-7" /></div>
         <h1 className="mt-5 text-center text-2xl font-black text-zinc-950">{mode === "login" ? "Log in to HkTube" : "Create your HkTube account"}</h1>
         <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{mode === "login" ? "Apne channel, library aur Creator Studio par continue karein." : "Aapka account Supabase Auth mein protected credentials ke sath save hoga."}</p>
-        {mode === "login" && !isAndroidApp && <><Button type="button" disabled={googlePending || pending} onClick={signInWithGoogle} variant="outline" className="mt-7 h-11 w-full rounded-full border-zinc-300 bg-white text-sm font-bold text-zinc-950 shadow-sm hover:bg-zinc-50"><span className="mr-2 grid size-5 place-items-center rounded-md border border-zinc-300 bg-white text-xs font-black text-zinc-950">G</span>{googlePending ? "Connecting to Google…" : "Continue with Google"}</Button><div className="my-5 flex items-center gap-3"><div className="h-px flex-1 bg-zinc-200" /><span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">or</span><div className="h-px flex-1 bg-zinc-200" /></div></>}
+        {!isAndroidApp && <><div ref={googleButtonRef} aria-label="Continue with Google" className="mt-7 flex min-h-11 w-full justify-center" /><div className="my-5 flex items-center gap-3"><div className="h-px flex-1 bg-zinc-200" /><span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">or</span><div className="h-px flex-1 bg-zinc-200" /></div></>}
         {mode === "login" && isAndroidApp && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-800">Android app sign-in uses secure email/password authentication inside the app. Google sign-in is available on the web version.</div>}
         <form onSubmit={submit} className="space-y-4">
           {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Display name</span><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required minLength={2} maxLength={120} value={name} onChange={e => setName(e.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="Your name" /></div></label>}
