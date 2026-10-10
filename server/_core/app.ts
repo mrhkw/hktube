@@ -5,6 +5,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerMediaUploadRoute } from "../mediaUpload";
 import { registerAdminAgentRoute } from "./adminAgent";
+import { registerAdminVerificationRoute } from "./adminVerification";
 import { registerAIAdminRoute } from "./aiAdminRoute";
 import { registerProviderRoutes } from "../providerRoutes";
 import { appRouter } from "../routers";
@@ -187,6 +188,7 @@ export function createApiApp(): Express {
   registerOAuthRoutes(app);
   registerMediaUploadRoute(app);
   registerAdminAgentRoute(app);
+  registerAdminVerificationRoute(app);
   registerAIAdminRoute(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

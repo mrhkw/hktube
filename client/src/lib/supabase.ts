@@ -71,6 +71,25 @@ export async function getAISessionHeaders(forceRefresh = false): Promise<Record<
   return { Authorization: `Bearer ${token}`, ...(providerToken ? { "X-Google-Provider-Token": providerToken } : {}) };
 }
 
+export type AdminVerificationTarget = { email: string; channels: Array<{ id: string; name: string; handle: string; verificationStatus: string }> };
+
+async function adminVerificationRequest(path: string, init?: RequestInit) {
+  const headers = await getAISessionHeaders();
+  const response = await fetch(path, { ...init, headers: { ...headers, ...(init?.headers ?? {}), "content-type": "application/json" }, credentials: "omit" });
+  const payload = await response.json().catch(() => null) as { targets?: AdminVerificationTarget[]; error?: { message?: string } } | null;
+  if (!response.ok) throw new Error(payload?.error?.message || "Verification action failed.");
+  return payload;
+}
+
+export async function listAdminVerificationTargets() {
+  const payload = await adminVerificationRequest("/api/admin/verification/targets");
+  return payload?.targets ?? [];
+}
+
+export async function setAdminVerificationBadge(email: string, channelId: string, verified: boolean) {
+  return adminVerificationRequest(`/api/admin/verification/${verified ? "grant" : "revoke"}`, { method: "POST", body: JSON.stringify({ email, channelId }) });
+}
+
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
 export type AIChatMedia = { url: string; mimeType: string; name?: string; size?: number };
 export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };

@@ -34,7 +34,7 @@ export function getSubscriberBadge(subscriberCount: number): BadgeTier | null {
   return [...BADGE_TIERS].reverse().find(tier => subscriberCount >= tier.threshold) ?? null;
 }
 
-export function ChannelBadge({ subscriberCount, verified = false, compact = false, verifiedColor = "#3EA6FF" }: { subscriberCount: number; verified?: boolean; compact?: boolean; verifiedColor?: string }) {
+export function ChannelBadge({ subscriberCount, verified = false, compact = false, verifiedColor = "#F5B301" }: { subscriberCount: number; verified?: boolean; compact?: boolean; verifiedColor?: string }) {
   const tier = getSubscriberBadge(Math.max(0, subscriberCount));
   if (!tier && !verified) return null;
   const size = compact ? "text-[10px]" : "text-xs";

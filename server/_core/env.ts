@@ -30,6 +30,7 @@ export const ENV = {
   geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-3.8-flash"),
   supabaseUrl: firstNonEmpty(process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
   supabaseAnonKey: firstNonEmpty(process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
+  supabaseServiceRoleKey: firstNonEmpty(process.env.SUPABASE_SERVICE_ROLE_KEY),
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "",
 };

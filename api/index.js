@@ -22667,24 +22667,24 @@ var init_column = __esm({
   "node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/column.js"() {
     init_entity();
     Column = class {
-      constructor(table, config2) {
+      constructor(table, config3) {
         this.table = table;
-        this.config = config2;
-        this.name = config2.name;
-        this.keyAsName = config2.keyAsName;
-        this.notNull = config2.notNull;
-        this.default = config2.default;
-        this.defaultFn = config2.defaultFn;
-        this.onUpdateFn = config2.onUpdateFn;
-        this.hasDefault = config2.hasDefault;
-        this.primary = config2.primaryKey;
-        this.isUnique = config2.isUnique;
-        this.uniqueName = config2.uniqueName;
-        this.uniqueType = config2.uniqueType;
-        this.dataType = config2.dataType;
-        this.columnType = config2.columnType;
-        this.generated = config2.generated;
-        this.generatedIdentity = config2.generatedIdentity;
+        this.config = config3;
+        this.name = config3.name;
+        this.keyAsName = config3.keyAsName;
+        this.notNull = config3.notNull;
+        this.default = config3.default;
+        this.defaultFn = config3.defaultFn;
+        this.onUpdateFn = config3.onUpdateFn;
+        this.hasDefault = config3.hasDefault;
+        this.primary = config3.primaryKey;
+        this.isUnique = config3.isUnique;
+        this.uniqueName = config3.uniqueName;
+        this.uniqueType = config3.uniqueType;
+        this.dataType = config3.dataType;
+        this.columnType = config3.columnType;
+        this.generated = config3.generated;
+        this.generatedIdentity = config3.generatedIdentity;
       }
       static [entityKind] = "Column";
       name;
@@ -22849,9 +22849,9 @@ var init_foreign_keys = __esm({
       _onUpdate = "no action";
       /** @internal */
       _onDelete = "no action";
-      constructor(config2, actions) {
+      constructor(config3, actions) {
         this.reference = () => {
-          const { name, columns, foreignColumns } = config2();
+          const { name, columns, foreignColumns } = config3();
           return { name, columns, foreignTable: foreignColumns[0].table, foreignColumns };
         };
         if (actions) {
@@ -23066,10 +23066,10 @@ var init_common = __esm({
         this.foreignKeyConfigs.push({ ref, actions });
         return this;
       }
-      unique(name, config2) {
+      unique(name, config3) {
         this.config.isUnique = true;
         this.config.uniqueName = name;
-        this.config.uniqueType = config2?.nulls;
+        this.config.uniqueType = config3?.nulls;
         return this;
       }
       generatedAlwaysAs(as) {
@@ -23108,11 +23108,11 @@ var init_common = __esm({
       }
     };
     PgColumn = class extends Column {
-      constructor(table, config2) {
-        if (!config2.uniqueName) {
-          config2.uniqueName = uniqueKeyName(table, [config2.name]);
+      constructor(table, config3) {
+        if (!config3.uniqueName) {
+          config3.uniqueName = uniqueKeyName(table, [config3.name]);
         }
-        super(table, config2);
+        super(table, config3);
         this.table = table;
       }
       static [entityKind] = "PgColumn";
@@ -23213,11 +23213,11 @@ var init_common = __esm({
       }
     };
     PgArray = class _PgArray extends PgColumn {
-      constructor(table, config2, baseColumn, range2) {
-        super(table, config2);
+      constructor(table, config3, baseColumn, range2) {
+        super(table, config3);
         this.baseColumn = baseColumn;
         this.range = range2;
-        this.size = config2.size;
+        this.size = config3.size;
       }
       size;
       static [entityKind] = "PgArray";
@@ -23268,9 +23268,9 @@ var init_enum = __esm({
       static [entityKind] = "PgEnumObjectColumn";
       enum;
       enumValues = this.config.enum.enumValues;
-      constructor(table, config2) {
-        super(table, config2);
-        this.enum = config2.enum;
+      constructor(table, config3) {
+        super(table, config3);
+        this.enum = config3.enum;
       }
       getSQLType() {
         return this.enum.enumName;
@@ -23295,9 +23295,9 @@ var init_enum = __esm({
       static [entityKind] = "PgEnumColumn";
       enum = this.config.enum;
       enumValues = this.config.enum.enumValues;
-      constructor(table, config2) {
-        super(table, config2);
-        this.enum = config2.enum;
+      constructor(table, config3) {
+        super(table, config3);
+        this.enum = config3.enum;
       }
       getSQLType() {
         return this.enum.enumName;
@@ -23551,9 +23551,9 @@ var init_sql = __esm({
         this.queryChunks.push(...query.queryChunks);
         return this;
       }
-      toQuery(config2) {
+      toQuery(config3) {
         return tracer.startActiveSpan("drizzle.buildSQL", (span) => {
-          const query = this.buildQueryFromSourceParams(this.queryChunks, config2);
+          const query = this.buildQueryFromSourceParams(this.queryChunks, config3);
           span?.setAttributes({
             "drizzle.query.text": query.sql,
             "drizzle.query.params": JSON.stringify(query.params)
@@ -23562,7 +23562,7 @@ var init_sql = __esm({
         });
       }
       buildQueryFromSourceParams(chunks, _config) {
-        const config2 = Object.assign({}, _config, {
+        const config3 = Object.assign({}, _config, {
           inlineParams: _config.inlineParams || this.shouldInlineParams,
           paramStartIndex: _config.paramStartIndex || { value: 0 }
         });
@@ -23573,7 +23573,7 @@ var init_sql = __esm({
           prepareTyping,
           inlineParams,
           paramStartIndex
-        } = config2;
+        } = config3;
         return mergeQueries(chunks.map((chunk) => {
           if (is(chunk, StringChunk)) {
             return { sql: chunk.value.join(""), params: [] };
@@ -23593,11 +23593,11 @@ var init_sql = __esm({
               }
             }
             result.push(new StringChunk(")"));
-            return this.buildQueryFromSourceParams(result, config2);
+            return this.buildQueryFromSourceParams(result, config3);
           }
           if (is(chunk, _SQL)) {
             return this.buildQueryFromSourceParams(chunk.queryChunks, {
-              ...config2,
+              ...config3,
               inlineParams: inlineParams || chunk.shouldInlineParams
             });
           }
@@ -23634,10 +23634,10 @@ var init_sql = __esm({
             }
             const mappedValue = chunk.value === null ? null : chunk.encoder.mapToDriverValue(chunk.value);
             if (is(mappedValue, _SQL)) {
-              return this.buildQueryFromSourceParams([mappedValue], config2);
+              return this.buildQueryFromSourceParams([mappedValue], config3);
             }
             if (inlineParams) {
-              return { sql: this.mapInlineParam(mappedValue, config2), params: [] };
+              return { sql: this.mapInlineParam(mappedValue, config3), params: [] };
             }
             let typings = ["none"];
             if (prepareTyping) {
@@ -23660,7 +23660,7 @@ var init_sql = __esm({
               chunk._.sql,
               new StringChunk(") "),
               new Name(chunk._.alias)
-            ], config2);
+            ], config3);
           }
           if (isPgEnum(chunk)) {
             if (chunk.schema) {
@@ -23670,16 +23670,16 @@ var init_sql = __esm({
           }
           if (isSQLWrapper(chunk)) {
             if (chunk.shouldOmitSQLParens?.()) {
-              return this.buildQueryFromSourceParams([chunk.getSQL()], config2);
+              return this.buildQueryFromSourceParams([chunk.getSQL()], config3);
             }
             return this.buildQueryFromSourceParams([
               new StringChunk("("),
               chunk.getSQL(),
               new StringChunk(")")
-            ], config2);
+            ], config3);
           }
           if (inlineParams) {
-            return { sql: this.mapInlineParam(chunk, config2), params: [] };
+            return { sql: this.mapInlineParam(chunk, config3), params: [] };
           }
           return { sql: escapeParam(paramStartIndex.value++, chunk), params: [chunk], typings: ["none"] };
         }));
@@ -24017,8 +24017,8 @@ var init_logger = __esm({
     DefaultLogger = class {
       static [entityKind] = "DefaultLogger";
       writer;
-      constructor(config2) {
-        this.writer = config2?.writer ?? new ConsoleLogWriter();
+      constructor(config3) {
+        this.writer = config3?.writer ?? new ConsoleLogWriter();
       }
       logQuery(query, params) {
         const stringifiedParams = params.map((p3) => {
@@ -24543,18 +24543,18 @@ function extractTablesRelationalConfig(schema, configHelpers) {
   return { tables: tablesConfig, tableNamesMap };
 }
 function createOne(sourceTable) {
-  return function one(table, config2) {
+  return function one(table, config3) {
     return new One(
       sourceTable,
       table,
-      config2,
-      config2?.fields.reduce((res, f3) => res && f3.notNull, true) ?? false
+      config3,
+      config3?.fields.reduce((res, f3) => res && f3.notNull, true) ?? false
     );
   };
 }
 function createMany(sourceTable) {
-  return function many(referencedTable, config2) {
-    return new Many(sourceTable, referencedTable, config2);
+  return function many(referencedTable, config3) {
+    return new Many(sourceTable, referencedTable, config3);
   };
 }
 function normalizeRelation(schema, tableNamesMap, relation) {
@@ -24674,16 +24674,16 @@ var init_relations = __esm({
       fieldName;
     };
     Relations = class {
-      constructor(table, config2) {
+      constructor(table, config3) {
         this.table = table;
-        this.config = config2;
+        this.config = config3;
       }
       static [entityKind] = "Relations";
     };
     One = class _One extends Relation {
-      constructor(sourceTable, referencedTable, config2, isNullable) {
-        super(sourceTable, referencedTable, config2?.relationName);
-        this.config = config2;
+      constructor(sourceTable, referencedTable, config3, isNullable) {
+        super(sourceTable, referencedTable, config3?.relationName);
+        this.config = config3;
         this.isNullable = isNullable;
       }
       static [entityKind] = "One";
@@ -24699,9 +24699,9 @@ var init_relations = __esm({
       }
     };
     Many = class _Many extends Relation {
-      constructor(sourceTable, referencedTable, config2) {
-        super(sourceTable, referencedTable, config2?.relationName);
-        this.config = config2;
+      constructor(sourceTable, referencedTable, config3) {
+        super(sourceTable, referencedTable, config3?.relationName);
+        this.config = config3;
       }
       static [entityKind] = "Many";
       withFieldName(fieldName) {
@@ -26070,16 +26070,16 @@ var require_parser_cache = __commonJS({
     var parserCache = createLRU({
       max: 15e3
     });
-    function keyFromFields(type, fields, options, config2) {
+    function keyFromFields(type, fields, options, config3) {
       const res = [
         type,
         typeof options.nestTables,
         options.nestTables,
         Boolean(options.rowsAsArray),
-        Boolean(options.supportBigNumbers || config2.supportBigNumbers),
-        Boolean(options.bigNumberStrings || config2.bigNumberStrings),
+        Boolean(options.supportBigNumbers || config3.supportBigNumbers),
+        Boolean(options.bigNumberStrings || config3.bigNumberStrings),
         typeof options.typeCast === "boolean" ? options.typeCast : typeof options.typeCast,
-        options.timezone || config2.timezone,
+        options.timezone || config3.timezone,
         Boolean(options.decimalNumbers),
         options.dateStrings
       ];
@@ -26097,13 +26097,13 @@ var require_parser_cache = __commonJS({
       }
       return JSON.stringify(res, null, 0);
     }
-    function getParser(type, fields, options, config2, compiler) {
-      const key = keyFromFields(type, fields, options, config2);
+    function getParser(type, fields, options, config3, compiler) {
+      const key = keyFromFields(type, fields, options, config3);
       let parser = parserCache.get(key);
       if (parser) {
         return parser;
       }
-      parser = compiler(fields, options, config2);
+      parser = compiler(fields, options, config3);
       parserCache.set(key, parser);
       return parser;
     }
@@ -39302,15 +39302,15 @@ var require_text_parser = __commonJS({
     for (const t4 in Types) {
       typeNames[Types[t4]] = t4;
     }
-    function readCodeFor(type, charset, encodingExpr, config2, options) {
+    function readCodeFor(type, charset, encodingExpr, config3, options) {
       const supportBigNumbers = Boolean(
-        options.supportBigNumbers || config2.supportBigNumbers
+        options.supportBigNumbers || config3.supportBigNumbers
       );
       const bigNumberStrings = Boolean(
-        options.bigNumberStrings || config2.bigNumberStrings
+        options.bigNumberStrings || config3.bigNumberStrings
       );
-      const timezone = options.timezone || config2.timezone;
-      const dateStrings = options.dateStrings || config2.dateStrings;
+      const timezone = options.timezone || config3.timezone;
+      const dateStrings = options.dateStrings || config3.dateStrings;
       switch (type) {
         case Types.TINY:
         case Types.SHORT:
@@ -39330,7 +39330,7 @@ var require_text_parser = __commonJS({
           return "packet.readLengthCodedNumber()";
         case Types.DECIMAL:
         case Types.NEWDECIMAL:
-          if (config2.decimalNumbers) {
+          if (config3.decimalNumbers) {
             return "packet.parseLengthCodedFloat()";
           }
           return 'packet.readLengthCodedString("ascii")';
@@ -39352,7 +39352,7 @@ var require_text_parser = __commonJS({
         case Types.VECTOR:
           return "packet.parseVector()";
         case Types.JSON:
-          return config2.jsonStrings ? 'packet.readLengthCodedString("utf8")' : 'JSON.parse(packet.readLengthCodedString("utf8"))';
+          return config3.jsonStrings ? 'packet.readLengthCodedString("utf8")' : 'JSON.parse(packet.readLengthCodedString("utf8"))';
         default:
           if (charset === Charsets.BINARY) {
             return "packet.readLengthCodedBuffer()";
@@ -39360,9 +39360,9 @@ var require_text_parser = __commonJS({
           return `packet.readLengthCodedString(${encodingExpr})`;
       }
     }
-    function compile(fields, options, config2) {
-      if (typeof config2.typeCast === "function" && typeof options.typeCast !== "function") {
-        options.typeCast = config2.typeCast;
+    function compile(fields, options, config3) {
+      if (typeof config3.typeCast === "function" && typeof options.typeCast !== "function") {
+        options.typeCast = config3.typeCast;
       }
       function wrap(field, _this) {
         return {
@@ -39439,7 +39439,7 @@ var require_text_parser = __commonJS({
             fields[i3].columnType,
             fields[i3].characterSet,
             encodingExpr,
-            config2,
+            config3,
             options
           );
           if (typeof options.typeCast === "function") {
@@ -39454,7 +39454,7 @@ var require_text_parser = __commonJS({
       parserFn("return result;");
       parserFn("}");
       parserFn("};")("})()");
-      if (config2.debug) {
+      if (config3.debug) {
         helpers.printDebugWithCode(
           "Compiled text protocol row parser",
           parserFn.toString()
@@ -39465,8 +39465,8 @@ var require_text_parser = __commonJS({
       }
       return parserFn.toFunction();
     }
-    function getTextParser(fields, options, config2) {
-      return parserCache.getParser("text", fields, options, config2, compile);
+    function getTextParser(fields, options, config3) {
+      return parserCache.getParser("text", fields, options, config3, compile);
     }
     module2.exports = getTextParser;
   }
@@ -39483,15 +39483,15 @@ var require_static_text_parser = __commonJS({
     for (const t4 in Types) {
       typeNames[Types[t4]] = t4;
     }
-    function readField({ packet, type, charset, encoding, config: config2, options }) {
+    function readField({ packet, type, charset, encoding, config: config3, options }) {
       const supportBigNumbers = Boolean(
-        options.supportBigNumbers || config2.supportBigNumbers
+        options.supportBigNumbers || config3.supportBigNumbers
       );
       const bigNumberStrings = Boolean(
-        options.bigNumberStrings || config2.bigNumberStrings
+        options.bigNumberStrings || config3.bigNumberStrings
       );
-      const timezone = options.timezone || config2.timezone;
-      const dateStrings = options.dateStrings || config2.dateStrings;
+      const timezone = options.timezone || config3.timezone;
+      const dateStrings = options.dateStrings || config3.dateStrings;
       switch (type) {
         case Types.TINY:
         case Types.SHORT:
@@ -39510,7 +39510,7 @@ var require_static_text_parser = __commonJS({
         case Types.NULL:
         case Types.DECIMAL:
         case Types.NEWDECIMAL:
-          if (config2.decimalNumbers) {
+          if (config3.decimalNumbers) {
             return packet.parseLengthCodedFloat();
           }
           return packet.readLengthCodedString("ascii");
@@ -39532,7 +39532,7 @@ var require_static_text_parser = __commonJS({
         case Types.VECTOR:
           return packet.parseVector();
         case Types.JSON:
-          return config2.jsonStrings ? packet.readLengthCodedString("utf8") : JSON.parse(packet.readLengthCodedString("utf8"));
+          return config3.jsonStrings ? packet.readLengthCodedString("utf8") : JSON.parse(packet.readLengthCodedString("utf8"));
         default:
           if (charset === Charsets.BINARY) {
             return packet.readLengthCodedBuffer();
@@ -39563,19 +39563,19 @@ var require_static_text_parser = __commonJS({
         }
       };
     }
-    function getTextParser(_fields, _options, config2) {
+    function getTextParser(_fields, _options, config3) {
       return {
         next(packet, fields, options) {
           const result = options.rowsAsArray ? [] : {};
           for (let i3 = 0; i3 < fields.length; i3++) {
             const field = fields[i3];
-            const typeCast = options.typeCast ? options.typeCast : config2.typeCast;
+            const typeCast = options.typeCast ? options.typeCast : config3.typeCast;
             const next = () => readField({
               packet,
               type: field.columnType,
               encoding: field.encoding,
               charset: field.characterSet,
-              config: config2,
+              config: config3,
               options
             });
             let value;
@@ -39960,15 +39960,15 @@ var require_binary_parser = __commonJS({
     for (const t4 in Types) {
       typeNames[Types[t4]] = t4;
     }
-    function readCodeFor(field, config2, options, fieldNum) {
+    function readCodeFor(field, config3, options, fieldNum) {
       const supportBigNumbers = Boolean(
-        options.supportBigNumbers || config2.supportBigNumbers
+        options.supportBigNumbers || config3.supportBigNumbers
       );
       const bigNumberStrings = Boolean(
-        options.bigNumberStrings || config2.bigNumberStrings
+        options.bigNumberStrings || config3.bigNumberStrings
       );
-      const timezone = options.timezone || config2.timezone;
-      const dateStrings = options.dateStrings || config2.dateStrings;
+      const timezone = options.timezone || config3.timezone;
+      const dateStrings = options.dateStrings || config3.dateStrings;
       const unsigned = field.flags & FieldFlags.UNSIGNED;
       switch (field.columnType) {
         case Types.TINY:
@@ -39998,7 +39998,7 @@ var require_binary_parser = __commonJS({
           return "packet.readTimeString()";
         case Types.DECIMAL:
         case Types.NEWDECIMAL:
-          if (config2.decimalNumbers) {
+          if (config3.decimalNumbers) {
             return "packet.parseLengthCodedFloat();";
           }
           return 'packet.readLengthCodedString("ascii");';
@@ -40007,7 +40007,7 @@ var require_binary_parser = __commonJS({
         case Types.VECTOR:
           return "packet.parseVector()";
         case Types.JSON:
-          return config2.jsonStrings ? 'packet.readLengthCodedString("utf8")' : 'JSON.parse(packet.readLengthCodedString("utf8"));';
+          return config3.jsonStrings ? 'packet.readLengthCodedString("utf8")' : 'JSON.parse(packet.readLengthCodedString("utf8"));';
         case Types.LONGLONG:
           if (!supportBigNumbers) {
             return unsigned ? "packet.readInt64JSNumber();" : "packet.readSInt64JSNumber();";
@@ -40023,7 +40023,7 @@ var require_binary_parser = __commonJS({
           return `packet.readLengthCodedString(fields[${fieldNum}].encoding)`;
       }
     }
-    function compile(fields, options, config2) {
+    function compile(fields, options, config3) {
       const parserFn = genFunc();
       const nullBitmapLength = Math.floor((fields.length + 7 + 2) / 8);
       function wrap(field, packet) {
@@ -40075,8 +40075,8 @@ var require_binary_parser = __commonJS({
       } else {
         parserFn("const result = {};");
       }
-      if (typeof config2.typeCast === "function" && typeof options.typeCast !== "function") {
-        options.typeCast = config2.typeCast;
+      if (typeof config3.typeCast === "function" && typeof options.typeCast !== "function") {
+        options.typeCast = config3.typeCast;
       }
       parserFn("packet.readInt8();");
       for (let i3 = 0; i3 < nullBitmapLength; ++i3) {
@@ -40108,7 +40108,7 @@ var require_binary_parser = __commonJS({
         } else {
           const fieldWrapperVar = `fieldWrapper${i3}`;
           parserFn(`const ${fieldWrapperVar} = wrap(fields[${i3}], packet);`);
-          const readCode = readCodeFor(fields[i3], config2, options, i3);
+          const readCode = readCodeFor(fields[i3], config3, options, i3);
           if (typeof options.typeCast === "function") {
             parserFn(
               `${lvalue} = options.typeCast(${fieldWrapperVar}, function() { return ${readCode} });`
@@ -40127,7 +40127,7 @@ var require_binary_parser = __commonJS({
       parserFn("return result;");
       parserFn("}");
       parserFn("};")("})()");
-      if (config2.debug) {
+      if (config3.debug) {
         helpers.printDebugWithCode(
           "Compiled binary protocol row parser",
           parserFn.toString()
@@ -40135,8 +40135,8 @@ var require_binary_parser = __commonJS({
       }
       return parserFn.toFunction({ wrap });
     }
-    function getBinaryParser(fields, options, config2) {
-      return parserCache.getParser("binary", fields, options, config2, compile);
+    function getBinaryParser(fields, options, config3) {
+      return parserCache.getParser("binary", fields, options, config3, compile);
     }
     module2.exports = getBinaryParser;
   }
@@ -40154,16 +40154,16 @@ var require_static_binary_parser = __commonJS({
     for (const t4 in Types) {
       typeNames[Types[t4]] = t4;
     }
-    function getBinaryParser(fields, _options, config2) {
-      function readCode(field, config3, options, fieldNum, packet) {
+    function getBinaryParser(fields, _options, config3) {
+      function readCode(field, config4, options, fieldNum, packet) {
         const supportBigNumbers = Boolean(
-          options.supportBigNumbers || config3.supportBigNumbers
+          options.supportBigNumbers || config4.supportBigNumbers
         );
         const bigNumberStrings = Boolean(
-          options.bigNumberStrings || config3.bigNumberStrings
+          options.bigNumberStrings || config4.bigNumberStrings
         );
-        const timezone = options.timezone || config3.timezone;
-        const dateStrings = options.dateStrings || config3.dateStrings;
+        const timezone = options.timezone || config4.timezone;
+        const dateStrings = options.dateStrings || config4.dateStrings;
         const unsigned = field.flags & FieldFlags.UNSIGNED;
         switch (field.columnType) {
           case Types.TINY:
@@ -40194,13 +40194,13 @@ var require_static_binary_parser = __commonJS({
             return packet.readTimeString();
           case Types.DECIMAL:
           case Types.NEWDECIMAL:
-            return config3.decimalNumbers ? packet.parseLengthCodedFloat() : packet.readLengthCodedString("ascii");
+            return config4.decimalNumbers ? packet.parseLengthCodedFloat() : packet.readLengthCodedString("ascii");
           case Types.GEOMETRY:
             return packet.parseGeometryValue();
           case Types.VECTOR:
             return packet.parseVector();
           case Types.JSON:
-            return config3.jsonStrings ? packet.readLengthCodedString("utf8") : JSON.parse(packet.readLengthCodedString("utf8"));
+            return config4.jsonStrings ? packet.readLengthCodedString("utf8") : JSON.parse(packet.readLengthCodedString("utf8"));
           case Types.LONGLONG:
             if (!supportBigNumbers)
               return unsigned ? packet.readInt64JSNumber() : packet.readSInt64JSNumber();
@@ -40224,14 +40224,14 @@ var require_static_binary_parser = __commonJS({
           let nullByteIndex = 0;
           for (let i3 = 0; i3 < fields2.length; i3++) {
             const field = fields2[i3];
-            const typeCast = options.typeCast !== void 0 ? options.typeCast : config2.typeCast;
+            const typeCast = options.typeCast !== void 0 ? options.typeCast : config3.typeCast;
             let value;
             if (nullBitmaskBytes[nullByteIndex] & currentFieldNullBit) {
               value = null;
             } else if (options.typeCast === false) {
               value = packet.readLengthCodedBuffer();
             } else {
-              const next = () => readCode(field, config2, options, i3, packet);
+              const next = () => readCode(field, config3, options, i3, packet);
               value = typeof typeCast === "function" ? typeCast(
                 {
                   type: typeNames[field.columnType],
@@ -41986,21 +41986,21 @@ var require_named_placeholders = __commonJS({
       }
       return [query];
     }
-    function createCompiler(config2) {
-      if (!config2)
-        config2 = {};
-      if (!config2.placeholder) {
-        config2.placeholder = "?";
+    function createCompiler(config3) {
+      if (!config3)
+        config3 = {};
+      if (!config3.placeholder) {
+        config3.placeholder = "?";
       }
       let ncache = 100;
       let cache4;
-      if (typeof config2.cache === "number") {
-        ncache = config2.cache;
+      if (typeof config3.cache === "number") {
+        ncache = config3.cache;
       }
-      if (typeof config2.cache === "object") {
-        cache4 = config2.cache;
+      if (typeof config3.cache === "object") {
+        cache4 = config3.cache;
       }
-      if (config2.cache !== false && !cache4) {
+      if (config3.cache !== false && !cache4) {
         cache4 = new (require_lru_cache())({ max: ncache });
       }
       function toArrayParams(tree, params) {
@@ -42029,17 +42029,17 @@ var require_named_placeholders = __commonJS({
         let unnamed = noTailingSemicolon(tree[0][0]);
         for (let i3 = 1; i3 < tree[0].length; ++i3) {
           if (tree[0][i3 - 1].slice(-1) == ":") {
-            unnamed += config2.placeholder;
+            unnamed += config3.placeholder;
           }
-          unnamed += config2.placeholder;
+          unnamed += config3.placeholder;
           unnamed += noTailingSemicolon(tree[0][i3]);
         }
         const last = tree[0][tree[0].length - 1];
         if (tree[0].length == tree[1].length) {
           if (last.slice(-1) == ":") {
-            unnamed += config2.placeholder;
+            unnamed += config3.placeholder;
           }
-          unnamed += config2.placeholder;
+          unnamed += config3.placeholder;
         }
         return [unnamed, tree[1]];
       }
@@ -42844,10 +42844,10 @@ var require_connection = __commonJS({
         this.addCommand = this._addCommandClosedState;
         return quitCmd;
       }
-      static createQuery(sql2, values, cb, config2) {
+      static createQuery(sql2, values, cb, config3) {
         let options = {
-          rowsAsArray: config2.rowsAsArray,
-          infileStreamFactory: config2.infileStreamFactory
+          rowsAsArray: config3.rowsAsArray,
+          infileStreamFactory: config3.infileStreamFactory
         };
         if (typeof sql2 === "object") {
           options = {
@@ -43768,13 +43768,13 @@ var require_pool_cluster = __commonJS({
       }
     };
     var PoolCluster = class extends EventEmitter2 {
-      constructor(config2) {
+      constructor(config3) {
         super();
-        config2 = config2 || {};
-        this._canRetry = typeof config2.canRetry === "undefined" ? true : config2.canRetry;
-        this._removeNodeErrorCount = config2.removeNodeErrorCount || 5;
-        this._restoreNodeTimeout = config2.restoreNodeTimeout || 0;
-        this._defaultSelector = config2.defaultSelector || "RR";
+        config3 = config3 || {};
+        this._canRetry = typeof config3.canRetry === "undefined" ? true : config3.canRetry;
+        this._removeNodeErrorCount = config3.removeNodeErrorCount || 5;
+        this._restoreNodeTimeout = config3.restoreNodeTimeout || 0;
+        this._defaultSelector = config3.defaultSelector || "RR";
         this._closed = false;
         this._lastId = 0;
         this._nodes = {};
@@ -43795,16 +43795,16 @@ var require_pool_cluster = __commonJS({
         }
         return this._namespaces[key];
       }
-      add(id, config2) {
+      add(id, config3) {
         if (typeof id === "object") {
-          config2 = id;
+          config3 = id;
           id = `CLUSTER::${++this._lastId}`;
         }
         if (typeof this._nodes[id] === "undefined") {
           this._nodes[id] = {
             id,
             errorCount: 0,
-            pool: new Pool({ config: new PoolConfig(config2) }),
+            pool: new Pool({ config: new PoolConfig(config3) }),
             _offlineUntil: 0
           };
           this._serviceableNodeIds.push(id);
@@ -43949,8 +43949,8 @@ var require_create_pool = __commonJS({
     "use strict";
     var Pool = require_pool3();
     var PoolConfig = require_pool_config();
-    function createPool2(config2) {
-      return new Pool({ config: new PoolConfig(config2) });
+    function createPool2(config3) {
+      return new Pool({ config: new PoolConfig(config3) });
     }
     module2.exports = createPool2;
   }
@@ -43961,8 +43961,8 @@ var require_create_pool_cluster = __commonJS({
   "node_modules/.pnpm/mysql2@3.15.1/node_modules/mysql2/lib/create_pool_cluster.js"(exports2, module2) {
     "use strict";
     var PoolCluster = require_pool_cluster();
-    function createPoolCluster(config2) {
-      return new PoolCluster(config2);
+    function createPoolCluster(config3) {
+      return new PoolCluster(config3);
     }
     module2.exports = createPoolCluster;
   }
@@ -44324,8 +44324,8 @@ var init_selection_proxy = __esm({
     SelectionProxyHandler = class _SelectionProxyHandler {
       static [entityKind] = "SelectionProxyHandler";
       config;
-      constructor(config2) {
-        this.config = { ...config2 };
+      constructor(config3) {
+        this.config = { ...config3 };
       }
       get(subquery, prop) {
         if (prop === "_") {
@@ -44486,9 +44486,9 @@ var init_foreign_keys2 = __esm({
       _onUpdate;
       /** @internal */
       _onDelete;
-      constructor(config2, actions) {
+      constructor(config3, actions) {
         this.reference = () => {
-          const { name, columns, foreignColumns } = config2();
+          const { name, columns, foreignColumns } = config3();
           return { name, columns, foreignTable: foreignColumns[0].table, foreignColumns };
         };
         if (actions) {
@@ -44588,8 +44588,8 @@ var init_indexes = __esm({
     Index = class {
       static [entityKind] = "MySqlIndex";
       config;
-      constructor(config2, table) {
-        this.config = { ...config2, table };
+      constructor(config3, table) {
+        this.config = { ...config3, table };
       }
     };
   }
@@ -44666,11 +44666,11 @@ var init_common2 = __esm({
         this.config.uniqueName = name;
         return this;
       }
-      generatedAlwaysAs(as, config2) {
+      generatedAlwaysAs(as, config3) {
         this.config.generated = {
           as,
           type: "always",
-          mode: config2?.mode ?? "virtual"
+          mode: config3?.mode ?? "virtual"
         };
         return this;
       }
@@ -44694,11 +44694,11 @@ var init_common2 = __esm({
       }
     };
     MySqlColumn = class extends Column {
-      constructor(table, config2) {
-        if (!config2.uniqueName) {
-          config2.uniqueName = uniqueKeyName2(table, [config2.name]);
+      constructor(table, config3) {
+        if (!config3.uniqueName) {
+          config3.uniqueName = uniqueKeyName2(table, [config3.name]);
         }
-        super(table, config2);
+        super(table, config3);
         this.table = table;
       }
       static [entityKind] = "MySqlColumn";
@@ -44724,11 +44724,11 @@ var init_common2 = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/bigint.js
 function bigint(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  if (config2.mode === "number") {
-    return new MySqlBigInt53Builder(name, config2.unsigned);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  if (config3.mode === "number") {
+    return new MySqlBigInt53Builder(name, config3.unsigned);
   }
-  return new MySqlBigInt64Builder(name, config2.unsigned);
+  return new MySqlBigInt64Builder(name, config3.unsigned);
 }
 var MySqlBigInt53Builder, MySqlBigInt53, MySqlBigInt64Builder, MySqlBigInt64;
 var init_bigint = __esm({
@@ -44791,8 +44791,8 @@ var init_bigint = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/binary.js
 function binary(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlBinaryBuilder(name, config2.length);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlBinaryBuilder(name, config3.length);
 }
 var MySqlBinaryBuilder, MySqlBinary;
 var init_binary = __esm({
@@ -44869,8 +44869,8 @@ var init_boolean = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/char.js
 function char(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlCharBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlCharBuilder(name, config3);
 }
 var MySqlCharBuilder, MySqlChar;
 var init_char = __esm({
@@ -44880,10 +44880,10 @@ var init_char = __esm({
     init_common2();
     MySqlCharBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlCharBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlChar");
-        this.config.length = config2.length;
-        this.config.enum = config2.enum;
+        this.config.length = config3.length;
+        this.config.enum = config3.enum;
       }
       /** @internal */
       build(table) {
@@ -44907,8 +44907,8 @@ var init_char = __esm({
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/custom.js
 function customType(customTypeParams) {
   return (a3, b3) => {
-    const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-    return new MySqlCustomColumnBuilder(name, config2, customTypeParams);
+    const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+    return new MySqlCustomColumnBuilder(name, config3, customTypeParams);
   };
 }
 var MySqlCustomColumnBuilder, MySqlCustomColumn;
@@ -44937,11 +44937,11 @@ var init_custom = __esm({
       sqlName;
       mapTo;
       mapFrom;
-      constructor(table, config2) {
-        super(table, config2);
-        this.sqlName = config2.customTypeParams.dataType(config2.fieldConfig);
-        this.mapTo = config2.customTypeParams.toDriver;
-        this.mapFrom = config2.customTypeParams.fromDriver;
+      constructor(table, config3) {
+        super(table, config3);
+        this.sqlName = config3.customTypeParams.dataType(config3.fieldConfig);
+        this.mapTo = config3.customTypeParams.toDriver;
+        this.mapFrom = config3.customTypeParams.fromDriver;
       }
       getSQLType() {
         return this.sqlName;
@@ -44958,8 +44958,8 @@ var init_custom = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/date.js
 function date(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  if (config2?.mode === "string") {
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  if (config3?.mode === "string") {
     return new MySqlDateStringBuilder(name);
   }
   return new MySqlDateBuilder(name);
@@ -44982,8 +44982,8 @@ var init_date = __esm({
     };
     MySqlDate = class extends MySqlColumn {
       static [entityKind] = "MySqlDate";
-      constructor(table, config2) {
-        super(table, config2);
+      constructor(table, config3) {
+        super(table, config3);
       }
       getSQLType() {
         return `date`;
@@ -45007,8 +45007,8 @@ var init_date = __esm({
     };
     MySqlDateString = class extends MySqlColumn {
       static [entityKind] = "MySqlDateString";
-      constructor(table, config2) {
-        super(table, config2);
+      constructor(table, config3) {
+        super(table, config3);
       }
       getSQLType() {
         return `date`;
@@ -45019,11 +45019,11 @@ var init_date = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/datetime.js
 function datetime(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  if (config2?.mode === "string") {
-    return new MySqlDateTimeStringBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  if (config3?.mode === "string") {
+    return new MySqlDateTimeStringBuilder(name, config3);
   }
-  return new MySqlDateTimeBuilder(name, config2);
+  return new MySqlDateTimeBuilder(name, config3);
 }
 var MySqlDateTimeBuilder, MySqlDateTime, MySqlDateTimeStringBuilder, MySqlDateTimeString;
 var init_datetime = __esm({
@@ -45033,9 +45033,9 @@ var init_datetime = __esm({
     init_common2();
     MySqlDateTimeBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlDateTimeBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "date", "MySqlDateTime");
-        this.config.fsp = config2?.fsp;
+        this.config.fsp = config3?.fsp;
       }
       /** @internal */
       build(table) {
@@ -45048,9 +45048,9 @@ var init_datetime = __esm({
     MySqlDateTime = class extends MySqlColumn {
       static [entityKind] = "MySqlDateTime";
       fsp;
-      constructor(table, config2) {
-        super(table, config2);
-        this.fsp = config2.fsp;
+      constructor(table, config3) {
+        super(table, config3);
+        this.fsp = config3.fsp;
       }
       getSQLType() {
         const precision = this.fsp === void 0 ? "" : `(${this.fsp})`;
@@ -45065,9 +45065,9 @@ var init_datetime = __esm({
     };
     MySqlDateTimeStringBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlDateTimeStringBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlDateTimeString");
-        this.config.fsp = config2?.fsp;
+        this.config.fsp = config3?.fsp;
       }
       /** @internal */
       build(table) {
@@ -45080,9 +45080,9 @@ var init_datetime = __esm({
     MySqlDateTimeString = class extends MySqlColumn {
       static [entityKind] = "MySqlDateTimeString";
       fsp;
-      constructor(table, config2) {
-        super(table, config2);
-        this.fsp = config2.fsp;
+      constructor(table, config3) {
+        super(table, config3);
+        this.fsp = config3.fsp;
       }
       getSQLType() {
         const precision = this.fsp === void 0 ? "" : `(${this.fsp})`;
@@ -45094,9 +45094,9 @@ var init_datetime = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/decimal.js
 function decimal(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  const mode = config2?.mode;
-  return mode === "number" ? new MySqlDecimalNumberBuilder(name, config2) : mode === "bigint" ? new MySqlDecimalBigIntBuilder(name, config2) : new MySqlDecimalBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  const mode = config3?.mode;
+  return mode === "number" ? new MySqlDecimalNumberBuilder(name, config3) : mode === "bigint" ? new MySqlDecimalBigIntBuilder(name, config3) : new MySqlDecimalBuilder(name, config3);
 }
 var MySqlDecimalBuilder, MySqlDecimal, MySqlDecimalNumberBuilder, MySqlDecimalNumber, MySqlDecimalBigIntBuilder, MySqlDecimalBigInt;
 var init_decimal = __esm({
@@ -45106,11 +45106,11 @@ var init_decimal = __esm({
     init_common2();
     MySqlDecimalBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlDecimalBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlDecimal");
-        this.config.precision = config2?.precision;
-        this.config.scale = config2?.scale;
-        this.config.unsigned = config2?.unsigned;
+        this.config.precision = config3?.precision;
+        this.config.scale = config3?.scale;
+        this.config.unsigned = config3?.unsigned;
       }
       /** @internal */
       build(table) {
@@ -45144,11 +45144,11 @@ var init_decimal = __esm({
     };
     MySqlDecimalNumberBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlDecimalNumberBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlDecimalNumber");
-        this.config.precision = config2?.precision;
-        this.config.scale = config2?.scale;
-        this.config.unsigned = config2?.unsigned;
+        this.config.precision = config3?.precision;
+        this.config.scale = config3?.scale;
+        this.config.unsigned = config3?.unsigned;
       }
       /** @internal */
       build(table) {
@@ -45183,11 +45183,11 @@ var init_decimal = __esm({
     };
     MySqlDecimalBigIntBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlDecimalBigIntBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "bigint", "MySqlDecimalBigInt");
-        this.config.precision = config2?.precision;
-        this.config.scale = config2?.scale;
-        this.config.unsigned = config2?.unsigned;
+        this.config.precision = config3?.precision;
+        this.config.scale = config3?.scale;
+        this.config.unsigned = config3?.unsigned;
       }
       /** @internal */
       build(table) {
@@ -45222,8 +45222,8 @@ var init_decimal = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/double.js
 function double(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlDoubleBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlDoubleBuilder(name, config3);
 }
 var MySqlDoubleBuilder, MySqlDouble;
 var init_double = __esm({
@@ -45233,11 +45233,11 @@ var init_double = __esm({
     init_common2();
     MySqlDoubleBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlDoubleBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlDouble");
-        this.config.precision = config2?.precision;
-        this.config.scale = config2?.scale;
-        this.config.unsigned = config2?.unsigned;
+        this.config.precision = config3?.precision;
+        this.config.scale = config3?.scale;
+        this.config.unsigned = config3?.unsigned;
       }
       /** @internal */
       build(table) {
@@ -45335,8 +45335,8 @@ var init_enum2 = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/float.js
 function float(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlFloatBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlFloatBuilder(name, config3);
 }
 var MySqlFloatBuilder, MySqlFloat;
 var init_float = __esm({
@@ -45346,11 +45346,11 @@ var init_float = __esm({
     init_common2();
     MySqlFloatBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlFloatBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlFloat");
-        this.config.precision = config2?.precision;
-        this.config.scale = config2?.scale;
-        this.config.unsigned = config2?.unsigned;
+        this.config.precision = config3?.precision;
+        this.config.scale = config3?.scale;
+        this.config.unsigned = config3?.unsigned;
       }
       /** @internal */
       build(table) {
@@ -45379,8 +45379,8 @@ var init_float = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/int.js
 function int(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlIntBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlIntBuilder(name, config3);
 }
 var MySqlIntBuilder, MySqlInt;
 var init_int = __esm({
@@ -45390,9 +45390,9 @@ var init_int = __esm({
     init_common2();
     MySqlIntBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlIntBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlInt");
-        this.config.unsigned = config2 ? config2.unsigned : false;
+        this.config.unsigned = config3 ? config3.unsigned : false;
       }
       /** @internal */
       build(table) {
@@ -45447,8 +45447,8 @@ var init_json = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/mediumint.js
 function mediumint(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlMediumIntBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlMediumIntBuilder(name, config3);
 }
 var MySqlMediumIntBuilder, MySqlMediumInt;
 var init_mediumint = __esm({
@@ -45458,9 +45458,9 @@ var init_mediumint = __esm({
     init_common2();
     MySqlMediumIntBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlMediumIntBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlMediumInt");
-        this.config.unsigned = config2 ? config2.unsigned : false;
+        this.config.unsigned = config3 ? config3.unsigned : false;
       }
       /** @internal */
       build(table) {
@@ -45487,8 +45487,8 @@ var init_mediumint = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/real.js
 function real(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlRealBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlRealBuilder(name, config3);
 }
 var MySqlRealBuilder, MySqlReal;
 var init_real = __esm({
@@ -45498,10 +45498,10 @@ var init_real = __esm({
     init_common2();
     MySqlRealBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlRealBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlReal");
-        this.config.precision = config2?.precision;
-        this.config.scale = config2?.scale;
+        this.config.precision = config3?.precision;
+        this.config.scale = config3?.scale;
       }
       /** @internal */
       build(table) {
@@ -45563,8 +45563,8 @@ var init_serial = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/smallint.js
 function smallint(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlSmallIntBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlSmallIntBuilder(name, config3);
 }
 var MySqlSmallIntBuilder, MySqlSmallInt;
 var init_smallint = __esm({
@@ -45574,9 +45574,9 @@ var init_smallint = __esm({
     init_common2();
     MySqlSmallIntBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlSmallIntBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlSmallInt");
-        this.config.unsigned = config2 ? config2.unsigned : false;
+        this.config.unsigned = config3 ? config3.unsigned : false;
       }
       /** @internal */
       build(table) {
@@ -45603,20 +45603,20 @@ var init_smallint = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/text.js
 function text(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlTextBuilder(name, "text", config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlTextBuilder(name, "text", config3);
 }
 function tinytext(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlTextBuilder(name, "tinytext", config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlTextBuilder(name, "tinytext", config3);
 }
 function mediumtext(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlTextBuilder(name, "mediumtext", config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlTextBuilder(name, "mediumtext", config3);
 }
 function longtext(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlTextBuilder(name, "longtext", config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlTextBuilder(name, "longtext", config3);
 }
 var MySqlTextBuilder, MySqlText;
 var init_text = __esm({
@@ -45626,10 +45626,10 @@ var init_text = __esm({
     init_common2();
     MySqlTextBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlTextBuilder";
-      constructor(name, textType, config2) {
+      constructor(name, textType, config3) {
         super(name, "string", "MySqlText");
         this.config.textType = textType;
-        this.config.enumValues = config2.enum;
+        this.config.enumValues = config3.enum;
       }
       /** @internal */
       build(table) {
@@ -45649,8 +45649,8 @@ var init_text = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/time.js
 function time(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlTimeBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlTimeBuilder(name, config3);
 }
 var MySqlTimeBuilder, MySqlTime;
 var init_time = __esm({
@@ -45660,9 +45660,9 @@ var init_time = __esm({
     init_common2();
     MySqlTimeBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlTimeBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlTime");
-        this.config.fsp = config2?.fsp;
+        this.config.fsp = config3?.fsp;
       }
       /** @internal */
       build(table) {
@@ -45708,11 +45708,11 @@ var init_date_common = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/timestamp.js
 function timestamp(a3, b3 = {}) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  if (config2?.mode === "string") {
-    return new MySqlTimestampStringBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  if (config3?.mode === "string") {
+    return new MySqlTimestampStringBuilder(name, config3);
   }
-  return new MySqlTimestampBuilder(name, config2);
+  return new MySqlTimestampBuilder(name, config3);
 }
 var MySqlTimestampBuilder, MySqlTimestamp, MySqlTimestampStringBuilder, MySqlTimestampString;
 var init_timestamp = __esm({
@@ -45722,9 +45722,9 @@ var init_timestamp = __esm({
     init_date_common();
     MySqlTimestampBuilder = class extends MySqlDateColumnBaseBuilder {
       static [entityKind] = "MySqlTimestampBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "date", "MySqlTimestamp");
-        this.config.fsp = config2?.fsp;
+        this.config.fsp = config3?.fsp;
       }
       /** @internal */
       build(table) {
@@ -45750,9 +45750,9 @@ var init_timestamp = __esm({
     };
     MySqlTimestampStringBuilder = class extends MySqlDateColumnBaseBuilder {
       static [entityKind] = "MySqlTimestampStringBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlTimestampString");
-        this.config.fsp = config2?.fsp;
+        this.config.fsp = config3?.fsp;
       }
       /** @internal */
       build(table) {
@@ -45775,8 +45775,8 @@ var init_timestamp = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/tinyint.js
 function tinyint(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlTinyIntBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlTinyIntBuilder(name, config3);
 }
 var MySqlTinyIntBuilder, MySqlTinyInt;
 var init_tinyint = __esm({
@@ -45786,9 +45786,9 @@ var init_tinyint = __esm({
     init_common2();
     MySqlTinyIntBuilder = class extends MySqlColumnBuilderWithAutoIncrement {
       static [entityKind] = "MySqlTinyIntBuilder";
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "number", "MySqlTinyInt");
-        this.config.unsigned = config2 ? config2.unsigned : false;
+        this.config.unsigned = config3 ? config3.unsigned : false;
       }
       /** @internal */
       build(table) {
@@ -45815,8 +45815,8 @@ var init_tinyint = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/varbinary.js
 function varbinary(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlVarBinaryBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlVarBinaryBuilder(name, config3);
 }
 var MySqlVarBinaryBuilder, MySqlVarBinary;
 var init_varbinary = __esm({
@@ -45827,9 +45827,9 @@ var init_varbinary = __esm({
     MySqlVarBinaryBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlVarBinaryBuilder";
       /** @internal */
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlVarBinary");
-        this.config.length = config2?.length;
+        this.config.length = config3?.length;
       }
       /** @internal */
       build(table) {
@@ -45860,8 +45860,8 @@ var init_varbinary = __esm({
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/columns/varchar.js
 function varchar(a3, b3) {
-  const { name, config: config2 } = getColumnNameAndConfig(a3, b3);
-  return new MySqlVarCharBuilder(name, config2);
+  const { name, config: config3 } = getColumnNameAndConfig(a3, b3);
+  return new MySqlVarCharBuilder(name, config3);
 }
 var MySqlVarCharBuilder, MySqlVarChar;
 var init_varchar = __esm({
@@ -45872,10 +45872,10 @@ var init_varchar = __esm({
     MySqlVarCharBuilder = class extends MySqlColumnBuilder {
       static [entityKind] = "MySqlVarCharBuilder";
       /** @internal */
-      constructor(name, config2) {
+      constructor(name, config3) {
         super(name, "string", "MySqlVarChar");
-        this.config.length = config2.length;
-        this.config.enum = config2.enum;
+        this.config.length = config3.length;
+        this.config.enum = config3.enum;
       }
       /** @internal */
       build(table) {
@@ -46312,11 +46312,11 @@ var init_dialect = __esm({
       static [entityKind] = "MySqlDialect";
       /** @internal */
       casing;
-      constructor(config2) {
-        this.casing = new CasingCache(config2?.casing);
+      constructor(config3) {
+        this.casing = new CasingCache(config3?.casing);
       }
-      async migrate(migrations, session, config2) {
-        const migrationsTable = config2.migrationsTable ?? "__drizzle_migrations";
+      async migrate(migrations, session, config3) {
+        const migrationsTable = config3.migrationsTable ?? "__drizzle_migrations";
         const migrationTableCreate = sql`
 			create table if not exists ${sql.identifier(migrationsTable)} (
 				id serial primary key,
@@ -46548,11 +46548,11 @@ var init_dialect = __esm({
         const ignoreIndexSql = this.buildIndex({ indexes: ignoreIndex, indexFor: "IGNORE" });
         let lockingClausesSql;
         if (lockingClause) {
-          const { config: config2, strength } = lockingClause;
+          const { config: config3, strength } = lockingClause;
           lockingClausesSql = sql` for ${sql.raw(strength)}`;
-          if (config2.noWait) {
+          if (config3.noWait) {
             lockingClausesSql.append(sql` nowait`);
-          } else if (config2.skipLocked) {
+          } else if (config3.skipLocked) {
             lockingClausesSql.append(sql` skip locked`);
           }
         }
@@ -46679,7 +46679,7 @@ var init_dialect = __esm({
         tableNamesMap,
         table,
         tableConfig,
-        queryConfig: config2,
+        queryConfig: config3,
         tableAlias,
         nestedQueryRelation,
         joinOn
@@ -46687,7 +46687,7 @@ var init_dialect = __esm({
         let selection = [];
         let limit, offset, orderBy, where;
         const joins = [];
-        if (config2 === true) {
+        if (config3 === true) {
           const selectionEntries = Object.entries(tableConfig.columns);
           selection = selectionEntries.map(([key, value]) => ({
             dbKey: value.name,
@@ -46701,15 +46701,15 @@ var init_dialect = __esm({
           const aliasedColumns = Object.fromEntries(
             Object.entries(tableConfig.columns).map(([key, value]) => [key, aliasedTableColumn(value, tableAlias)])
           );
-          if (config2.where) {
-            const whereSql = typeof config2.where === "function" ? config2.where(aliasedColumns, getOperators()) : config2.where;
+          if (config3.where) {
+            const whereSql = typeof config3.where === "function" ? config3.where(aliasedColumns, getOperators()) : config3.where;
             where = whereSql && mapColumnsInSQLToAlias(whereSql, tableAlias);
           }
           const fieldsSelection = [];
           let selectedColumns = [];
-          if (config2.columns) {
+          if (config3.columns) {
             let isIncludeMode = false;
-            for (const [field, value] of Object.entries(config2.columns)) {
+            for (const [field, value] of Object.entries(config3.columns)) {
               if (value === void 0) {
                 continue;
               }
@@ -46721,7 +46721,7 @@ var init_dialect = __esm({
               }
             }
             if (selectedColumns.length > 0) {
-              selectedColumns = isIncludeMode ? selectedColumns.filter((c3) => config2.columns?.[c3] === true) : Object.keys(tableConfig.columns).filter((key) => !selectedColumns.includes(key));
+              selectedColumns = isIncludeMode ? selectedColumns.filter((c3) => config3.columns?.[c3] === true) : Object.keys(tableConfig.columns).filter((key) => !selectedColumns.includes(key));
             }
           } else {
             selectedColumns = Object.keys(tableConfig.columns);
@@ -46731,12 +46731,12 @@ var init_dialect = __esm({
             fieldsSelection.push({ tsKey: field, value: column });
           }
           let selectedRelations = [];
-          if (config2.with) {
-            selectedRelations = Object.entries(config2.with).filter((entry) => !!entry[1]).map(([tsKey, queryConfig]) => ({ tsKey, queryConfig, relation: tableConfig.relations[tsKey] }));
+          if (config3.with) {
+            selectedRelations = Object.entries(config3.with).filter((entry) => !!entry[1]).map(([tsKey, queryConfig]) => ({ tsKey, queryConfig, relation: tableConfig.relations[tsKey] }));
           }
           let extras;
-          if (config2.extras) {
-            extras = typeof config2.extras === "function" ? config2.extras(aliasedColumns, { sql }) : config2.extras;
+          if (config3.extras) {
+            extras = typeof config3.extras === "function" ? config3.extras(aliasedColumns, { sql }) : config3.extras;
             for (const [tsKey, value] of Object.entries(extras)) {
               fieldsSelection.push({
                 tsKey,
@@ -46754,7 +46754,7 @@ var init_dialect = __esm({
               selection: []
             });
           }
-          let orderByOrig = typeof config2.orderBy === "function" ? config2.orderBy(aliasedColumns, getOrderByOperators()) : config2.orderBy ?? [];
+          let orderByOrig = typeof config3.orderBy === "function" ? config3.orderBy(aliasedColumns, getOrderByOperators()) : config3.orderBy ?? [];
           if (!Array.isArray(orderByOrig)) {
             orderByOrig = [orderByOrig];
           }
@@ -46764,8 +46764,8 @@ var init_dialect = __esm({
             }
             return mapColumnsInSQLToAlias(orderByValue, tableAlias);
           });
-          limit = config2.limit;
-          offset = config2.offset;
+          limit = config3.limit;
+          offset = config3.offset;
           for (const {
             tsKey: selectedRelationTsKey,
             queryConfig: selectedRelationConfigValue,
@@ -46904,14 +46904,14 @@ var init_dialect = __esm({
         tableNamesMap,
         table,
         tableConfig,
-        queryConfig: config2,
+        queryConfig: config3,
         tableAlias,
         nestedQueryRelation,
         joinOn
       }) {
         let selection = [];
         let limit, offset, orderBy = [], where;
-        if (config2 === true) {
+        if (config3 === true) {
           const selectionEntries = Object.entries(tableConfig.columns);
           selection = selectionEntries.map(([key, value]) => ({
             dbKey: value.name,
@@ -46925,15 +46925,15 @@ var init_dialect = __esm({
           const aliasedColumns = Object.fromEntries(
             Object.entries(tableConfig.columns).map(([key, value]) => [key, aliasedTableColumn(value, tableAlias)])
           );
-          if (config2.where) {
-            const whereSql = typeof config2.where === "function" ? config2.where(aliasedColumns, getOperators()) : config2.where;
+          if (config3.where) {
+            const whereSql = typeof config3.where === "function" ? config3.where(aliasedColumns, getOperators()) : config3.where;
             where = whereSql && mapColumnsInSQLToAlias(whereSql, tableAlias);
           }
           const fieldsSelection = [];
           let selectedColumns = [];
-          if (config2.columns) {
+          if (config3.columns) {
             let isIncludeMode = false;
-            for (const [field, value] of Object.entries(config2.columns)) {
+            for (const [field, value] of Object.entries(config3.columns)) {
               if (value === void 0) {
                 continue;
               }
@@ -46945,7 +46945,7 @@ var init_dialect = __esm({
               }
             }
             if (selectedColumns.length > 0) {
-              selectedColumns = isIncludeMode ? selectedColumns.filter((c3) => config2.columns?.[c3] === true) : Object.keys(tableConfig.columns).filter((key) => !selectedColumns.includes(key));
+              selectedColumns = isIncludeMode ? selectedColumns.filter((c3) => config3.columns?.[c3] === true) : Object.keys(tableConfig.columns).filter((key) => !selectedColumns.includes(key));
             }
           } else {
             selectedColumns = Object.keys(tableConfig.columns);
@@ -46955,12 +46955,12 @@ var init_dialect = __esm({
             fieldsSelection.push({ tsKey: field, value: column });
           }
           let selectedRelations = [];
-          if (config2.with) {
-            selectedRelations = Object.entries(config2.with).filter((entry) => !!entry[1]).map(([tsKey, queryConfig]) => ({ tsKey, queryConfig, relation: tableConfig.relations[tsKey] }));
+          if (config3.with) {
+            selectedRelations = Object.entries(config3.with).filter((entry) => !!entry[1]).map(([tsKey, queryConfig]) => ({ tsKey, queryConfig, relation: tableConfig.relations[tsKey] }));
           }
           let extras;
-          if (config2.extras) {
-            extras = typeof config2.extras === "function" ? config2.extras(aliasedColumns, { sql }) : config2.extras;
+          if (config3.extras) {
+            extras = typeof config3.extras === "function" ? config3.extras(aliasedColumns, { sql }) : config3.extras;
             for (const [tsKey, value] of Object.entries(extras)) {
               fieldsSelection.push({
                 tsKey,
@@ -46978,7 +46978,7 @@ var init_dialect = __esm({
               selection: []
             });
           }
-          let orderByOrig = typeof config2.orderBy === "function" ? config2.orderBy(aliasedColumns, getOrderByOperators()) : config2.orderBy ?? [];
+          let orderByOrig = typeof config3.orderBy === "function" ? config3.orderBy(aliasedColumns, getOrderByOperators()) : config3.orderBy ?? [];
           if (!Array.isArray(orderByOrig)) {
             orderByOrig = [orderByOrig];
           }
@@ -46988,8 +46988,8 @@ var init_dialect = __esm({
             }
             return mapColumnsInSQLToAlias(orderByValue, tableAlias);
           });
-          limit = config2.limit;
-          offset = config2.offset;
+          limit = config3.limit;
+          offset = config3.offset;
           for (const {
             tsKey: selectedRelationTsKey,
             queryConfig: selectedRelationConfigValue,
@@ -47178,14 +47178,14 @@ var init_select2 = __esm({
       dialect;
       withList = [];
       distinct;
-      constructor(config2) {
-        this.fields = config2.fields;
-        this.session = config2.session;
-        this.dialect = config2.dialect;
-        if (config2.withList) {
-          this.withList = config2.withList;
+      constructor(config3) {
+        this.fields = config3.fields;
+        this.session = config3.session;
+        this.dialect = config3.dialect;
+        if (config3.withList) {
+          this.withList = config3.withList;
         }
-        this.distinct = config2.distinct;
+        this.distinct = config3.distinct;
       }
       from(source, onIndex) {
         const isPartialSelect = !!this.fields;
@@ -47910,8 +47910,8 @@ var init_select2 = __esm({
        * @param strength the lock strength.
        * @param config the lock configuration.
        */
-      for(strength, config2 = {}) {
-        this.config.lockingClause = { strength, config: config2 };
+      for(strength, config3 = {}) {
+        this.config.lockingClause = { strength, config: config3 };
         return this;
       }
       /** @internal */
@@ -47943,8 +47943,8 @@ var init_select2 = __esm({
       $dynamic() {
         return this;
       }
-      $withCache(config2) {
-        this.cacheConfig = config2 === void 0 ? { config: {}, enable: true, autoInvalidate: true } : config2 === false ? { enable: false } : { enable: true, autoInvalidate: true, ...config2 };
+      $withCache(config3) {
+        this.cacheConfig = config3 === void 0 ? { config: {}, enable: true, autoInvalidate: true } : config3 === false ? { enable: false } : { enable: true, autoInvalidate: true, ...config3 };
         return this;
       }
     };
@@ -48154,8 +48154,8 @@ var init_insert = __esm({
        *   .onDuplicateKeyUpdate({ set: { id: sql`id` } });
        * ```
        */
-      onDuplicateKeyUpdate(config2) {
-        const setSql = this.dialect.buildUpdateSet(this.config.table, mapUpdateSet(this.config.table, config2.set));
+      onDuplicateKeyUpdate(config3) {
+        const setSql = this.dialect.buildUpdateSet(this.config.table, mapUpdateSet(this.config.table, config3.set));
         this.config.onConflict = sql`update ${setSql}`;
         return this;
       }
@@ -48374,7 +48374,7 @@ var init_query = __esm({
         this.mode = mode;
       }
       static [entityKind] = "MySqlRelationalQueryBuilder";
-      findMany(config2) {
+      findMany(config3) {
         return new MySqlRelationalQuery(
           this.fullSchema,
           this.schema,
@@ -48383,12 +48383,12 @@ var init_query = __esm({
           this.tableConfig,
           this.dialect,
           this.session,
-          config2 ? config2 : {},
+          config3 ? config3 : {},
           "many",
           this.mode
         );
       }
-      findFirst(config2) {
+      findFirst(config3) {
         return new MySqlRelationalQuery(
           this.fullSchema,
           this.schema,
@@ -48397,14 +48397,14 @@ var init_query = __esm({
           this.tableConfig,
           this.dialect,
           this.session,
-          config2 ? { ...config2, limit: 1 } : { limit: 1 },
+          config3 ? { ...config3, limit: 1 } : { limit: 1 },
           "first",
           this.mode
         );
       }
     };
     MySqlRelationalQuery = class extends QueryPromise {
-      constructor(fullSchema, schema, tableNamesMap, table, tableConfig, dialect, session, config2, queryMode, mode) {
+      constructor(fullSchema, schema, tableNamesMap, table, tableConfig, dialect, session, config3, queryMode, mode) {
         super();
         this.fullSchema = fullSchema;
         this.schema = schema;
@@ -48413,7 +48413,7 @@ var init_query = __esm({
         this.tableConfig = tableConfig;
         this.dialect = dialect;
         this.session = session;
-        this.config = config2;
+        this.config = config3;
         this.queryMode = queryMode;
         this.mode = mode;
       }
@@ -48698,8 +48698,8 @@ var init_db = __esm({
       execute(query) {
         return this.session.execute(typeof query === "string" ? sql.raw(query) : query.getSQL());
       }
-      transaction(transaction, config2) {
-        return this.session.transaction(transaction, config2);
+      transaction(transaction, config3) {
+        return this.session.transaction(transaction, config3);
       }
     };
   }
@@ -48853,20 +48853,20 @@ var init_session = __esm({
           res[0][0]["count"]
         );
       }
-      getSetTransactionSQL(config2) {
+      getSetTransactionSQL(config3) {
         const parts = [];
-        if (config2.isolationLevel) {
-          parts.push(`isolation level ${config2.isolationLevel}`);
+        if (config3.isolationLevel) {
+          parts.push(`isolation level ${config3.isolationLevel}`);
         }
         return parts.length ? sql`set transaction ${sql.raw(parts.join(" "))}` : void 0;
       }
-      getStartTransactionSQL(config2) {
+      getStartTransactionSQL(config3) {
         const parts = [];
-        if (config2.withConsistentSnapshot) {
+        if (config3.withConsistentSnapshot) {
           parts.push("with consistent snapshot");
         }
-        if (config2.accessMode) {
-          parts.push(config2.accessMode);
+        if (config3.accessMode) {
+          parts.push(config3.accessMode);
         }
         return parts.length ? sql`start transaction ${sql.raw(parts.join(" "))}` : void 0;
       }
@@ -49069,7 +49069,7 @@ var init_session2 = __esm({
         this.logger.logQuery(querySql.sql, querySql.params);
         return this.client.execute(querySql.sql, querySql.params).then((result) => result[0]);
       }
-      async transaction(transaction, config2) {
+      async transaction(transaction, config3) {
         const session = isPool(this.client) ? new _MySql2Session(
           await this.client.getConnection(),
           this.dialect,
@@ -49083,12 +49083,12 @@ var init_session2 = __esm({
           0,
           this.mode
         );
-        if (config2) {
-          const setTransactionConfigSql = this.getSetTransactionSQL(config2);
+        if (config3) {
+          const setTransactionConfigSql = this.getSetTransactionSQL(config3);
           if (setTransactionConfigSql) {
             await tx.execute(setTransactionConfigSql);
           }
-          const startTransactionSql = this.getStartTransactionSQL(config2);
+          const startTransactionSql = this.getStartTransactionSQL(config3);
           await (startTransactionSql ? tx.execute(startTransactionSql) : tx.execute(sql`begin`));
         } else {
           await tx.execute(sql`begin`);
@@ -49133,40 +49133,40 @@ var init_session2 = __esm({
 });
 
 // node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql2/driver.js
-function construct(client2, config2 = {}) {
-  const dialect = new MySqlDialect({ casing: config2.casing });
+function construct(client2, config3 = {}) {
+  const dialect = new MySqlDialect({ casing: config3.casing });
   let logger2;
-  if (config2.logger === true) {
+  if (config3.logger === true) {
     logger2 = new DefaultLogger();
-  } else if (config2.logger !== false) {
-    logger2 = config2.logger;
+  } else if (config3.logger !== false) {
+    logger2 = config3.logger;
   }
   const clientForInstance = isCallbackClient(client2) ? client2.promise() : client2;
   let schema;
-  if (config2.schema) {
-    if (config2.mode === void 0) {
+  if (config3.schema) {
+    if (config3.mode === void 0) {
       throw new DrizzleError({
         message: 'You need to specify "mode": "planetscale" or "default" when providing a schema. Read more: https://orm.drizzle.team/docs/rqb#modes'
       });
     }
     const tablesConfig = extractTablesRelationalConfig(
-      config2.schema,
+      config3.schema,
       createTableRelationsHelpers
     );
     schema = {
-      fullSchema: config2.schema,
+      fullSchema: config3.schema,
       schema: tablesConfig.tables,
       tableNamesMap: tablesConfig.tableNamesMap
     };
   }
-  const mode = config2.mode ?? "default";
-  const driver = new MySql2Driver(clientForInstance, dialect, { logger: logger2, cache: config2.cache });
+  const mode = config3.mode ?? "default";
+  const driver = new MySql2Driver(clientForInstance, dialect, { logger: logger2, cache: config3.cache });
   const session = driver.createSession(schema, mode);
   const db = new MySql2Database(dialect, session, schema, mode);
   db.$client = client2;
-  db.$cache = config2.cache;
+  db.$cache = config3.cache;
   if (db.$cache) {
-    db.$cache["invalidate"] = config2.cache?.onMutate;
+    db.$cache["invalidate"] = config3.cache?.onMutate;
   }
   return db;
 }
@@ -49224,8 +49224,8 @@ var init_driver = __esm({
       static [entityKind] = "MySql2Database";
     };
     ((drizzle2) => {
-      function mock(config2) {
-        return construct({}, config2);
+      function mock(config3) {
+        return construct({}, config3);
       }
       drizzle2.mock = mock;
     })(drizzle || (drizzle = {}));
@@ -49390,8 +49390,8 @@ var init_view = __esm({
     MySqlView = class extends MySqlViewBase {
       static [entityKind] = "MySqlView";
       [MySqlViewConfig];
-      constructor({ mysqlConfig, config: config2 }) {
-        super(config2);
+      constructor({ mysqlConfig, config: config3 }) {
+        super(config3);
         this[MySqlViewConfig] = mysqlConfig;
       }
     };
@@ -49710,6 +49710,7 @@ var init_env = __esm({
       geminiModel: firstNonEmpty(process.env.GEMINI_MODEL, "gemini-3.8-flash"),
       supabaseUrl: firstNonEmpty(process.env.VITE_SUPABASE_URL, "https://jpdvunotyykfqmmkhmml.supabase.co"),
       supabaseAnonKey: firstNonEmpty(process.env.VITE_SUPABASE_ANON_KEY, SUPABASE_PUBLIC_KEY),
+      supabaseServiceRoleKey: firstNonEmpty(process.env.SUPABASE_SERVICE_ROLE_KEY),
       resendApiKey: process.env.RESEND_API_KEY ?? "",
       resendFromEmail: process.env.RESEND_FROM_EMAIL ?? ""
     };
@@ -51600,8 +51601,8 @@ var require_dist_cjs = __commonJS({
     var getDefaultClientConfiguration = (runtimeConfig) => {
       return getChecksumConfiguration(runtimeConfig);
     };
-    var resolveDefaultRuntimeConfig3 = (config2) => {
-      return resolveChecksumRuntimeConfig(config2);
+    var resolveDefaultRuntimeConfig3 = (config3) => {
+      return resolveChecksumRuntimeConfig(config3);
     };
     exports2.FieldPosition = void 0;
     (function(FieldPosition) {
@@ -51993,15 +51994,15 @@ var init_AwsSdkSigV4Signer = __esm({
     };
     validateSigningProperties = async (signingProperties) => {
       const context = throwSigningPropertyError("context", signingProperties.context);
-      const config2 = throwSigningPropertyError("config", signingProperties.config);
+      const config3 = throwSigningPropertyError("config", signingProperties.config);
       const authScheme = context.endpointV2?.properties?.authSchemes?.[0];
-      const signerFunction = throwSigningPropertyError("signer", config2.signer);
+      const signerFunction = throwSigningPropertyError("signer", config3.signer);
       const signer = await signerFunction(authScheme);
       const signingRegion = signingProperties?.signingRegion;
       const signingRegionSet = signingProperties?.signingRegionSet;
       const signingName = signingProperties?.signingName;
       return {
-        config: config2,
+        config: config3,
         signer,
         signingRegion,
         signingRegionSet,
@@ -52014,7 +52015,7 @@ var init_AwsSdkSigV4Signer = __esm({
           throw new Error("The request is not an instance of `HttpRequest` and cannot be signed");
         }
         const validatedProps = await validateSigningProperties(signingProperties);
-        const { config: config2, signer } = validatedProps;
+        const { config: config3, signer } = validatedProps;
         let { signingRegion, signingName } = validatedProps;
         const handlerExecutionContext = signingProperties.context;
         if (handlerExecutionContext?.authSchemes?.length ?? 0 > 1) {
@@ -52025,7 +52026,7 @@ var init_AwsSdkSigV4Signer = __esm({
           }
         }
         const signedRequest = await signer.sign(httpRequest, {
-          signingDate: getSkewCorrectedDate(config2.systemClockOffset),
+          signingDate: getSkewCorrectedDate(config3.systemClockOffset),
           signingRegion,
           signingService: signingName
         });
@@ -52035,10 +52036,10 @@ var init_AwsSdkSigV4Signer = __esm({
         return (error47) => {
           const serverTime = error47.ServerTime ?? getDateHeader(error47.$response);
           if (serverTime) {
-            const config2 = throwSigningPropertyError("config", signingProperties.config);
-            const initialSystemClockOffset = config2.systemClockOffset;
-            config2.systemClockOffset = getUpdatedSystemClockOffset(serverTime, config2.systemClockOffset);
-            const clockSkewCorrected = config2.systemClockOffset !== initialSystemClockOffset;
+            const config3 = throwSigningPropertyError("config", signingProperties.config);
+            const initialSystemClockOffset = config3.systemClockOffset;
+            config3.systemClockOffset = getUpdatedSystemClockOffset(serverTime, config3.systemClockOffset);
+            const clockSkewCorrected = config3.systemClockOffset !== initialSystemClockOffset;
             if (clockSkewCorrected && error47.$metadata) {
               error47.$metadata.clockSkewCorrected = true;
             }
@@ -52049,8 +52050,8 @@ var init_AwsSdkSigV4Signer = __esm({
       successHandler(httpResponse, signingProperties) {
         const dateHeader = getDateHeader(httpResponse);
         if (dateHeader) {
-          const config2 = throwSigningPropertyError("config", signingProperties.config);
-          config2.systemClockOffset = getUpdatedSystemClockOffset(dateHeader, config2.systemClockOffset);
+          const config3 = throwSigningPropertyError("config", signingProperties.config);
+          config3.systemClockOffset = getUpdatedSystemClockOffset(dateHeader, config3.systemClockOffset);
         }
       }
     };
@@ -52070,11 +52071,11 @@ var init_AwsSdkSigV4ASigner = __esm({
         if (!import_protocol_http3.HttpRequest.isInstance(httpRequest)) {
           throw new Error("The request is not an instance of `HttpRequest` and cannot be signed");
         }
-        const { config: config2, signer, signingRegion, signingRegionSet, signingName } = await validateSigningProperties(signingProperties);
-        const configResolvedSigningRegionSet = await config2.sigv4aSigningRegionSet?.();
+        const { config: config3, signer, signingRegion, signingRegionSet, signingName } = await validateSigningProperties(signingProperties);
+        const configResolvedSigningRegionSet = await config3.sigv4aSigningRegionSet?.();
         const multiRegionOverride = (configResolvedSigningRegionSet ?? signingRegionSet ?? [signingRegion]).join(",");
         const signedRequest = await signer.sign(httpRequest, {
-          signingDate: getSkewCorrectedDate(config2.systemClockOffset),
+          signingDate: getSkewCorrectedDate(config3.systemClockOffset),
           signingRegion: multiRegionOverride,
           signingService: signingName
         });
@@ -52195,11 +52196,11 @@ var init_httpAuthSchemeMiddleware = __esm({
   "node_modules/.pnpm/@smithy+core@3.15.0/node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/httpAuthSchemeMiddleware.js"() {
     import_util_middleware = __toESM(require_dist_cjs4());
     init_resolveAuthOptions();
-    httpAuthSchemeMiddleware = (config2, mwOptions) => (next, context) => async (args) => {
-      const options = config2.httpAuthSchemeProvider(await mwOptions.httpAuthSchemeParametersProvider(config2, context, args.input));
-      const authSchemePreference = config2.authSchemePreference ? await config2.authSchemePreference() : [];
+    httpAuthSchemeMiddleware = (config3, mwOptions) => (next, context) => async (args) => {
+      const options = config3.httpAuthSchemeProvider(await mwOptions.httpAuthSchemeParametersProvider(config3, context, args.input));
+      const authSchemePreference = config3.authSchemePreference ? await config3.authSchemePreference() : [];
       const resolvedOptions = resolveAuthOptions(options, authSchemePreference);
-      const authSchemes = convertHttpAuthSchemesToMap(config2.httpAuthSchemes);
+      const authSchemes = convertHttpAuthSchemesToMap(config3.httpAuthSchemes);
       const smithyContext = (0, import_util_middleware.getSmithyContext)(context);
       const failureReasons = [];
       for (const option of resolvedOptions) {
@@ -52208,12 +52209,12 @@ var init_httpAuthSchemeMiddleware = __esm({
           failureReasons.push(`HttpAuthScheme \`${option.schemeId}\` was not enabled for this service.`);
           continue;
         }
-        const identityProvider = scheme.identityProvider(await mwOptions.identityProviderConfigProvider(config2));
+        const identityProvider = scheme.identityProvider(await mwOptions.identityProviderConfigProvider(config3));
         if (!identityProvider) {
           failureReasons.push(`HttpAuthScheme \`${option.schemeId}\` did not have an IdentityProvider configured.`);
           continue;
         }
-        const { identityProperties = {}, signingProperties = {} } = option.propertiesExtractor?.(config2, context) || {};
+        const { identityProperties = {}, signingProperties = {} } = option.propertiesExtractor?.(config3, context) || {};
         option.identityProperties = Object.assign(option.identityProperties || {}, identityProperties);
         option.signingProperties = Object.assign(option.signingProperties || {}, signingProperties);
         smithyContext.selectedHttpAuthScheme = {
@@ -52244,9 +52245,9 @@ var init_getHttpAuthSchemeEndpointRuleSetPlugin = __esm({
       relation: "before",
       toMiddleware: "endpointV2Middleware"
     };
-    getHttpAuthSchemeEndpointRuleSetPlugin = (config2, { httpAuthSchemeParametersProvider, identityProviderConfigProvider }) => ({
+    getHttpAuthSchemeEndpointRuleSetPlugin = (config3, { httpAuthSchemeParametersProvider, identityProviderConfigProvider }) => ({
       applyToStack: (clientStack) => {
-        clientStack.addRelativeTo(httpAuthSchemeMiddleware(config2, {
+        clientStack.addRelativeTo(httpAuthSchemeMiddleware(config3, {
           httpAuthSchemeParametersProvider,
           identityProviderConfigProvider
         }), httpAuthSchemeEndpointRuleSetMiddlewareOptions);
@@ -52334,11 +52335,11 @@ var require_dist_cjs5 = __commonJS({
       tags: ["SERIALIZER"],
       override: true
     };
-    function getSerdePlugin4(config2, serializer, deserializer) {
+    function getSerdePlugin4(config3, serializer, deserializer) {
       return {
         applyToStack: (commandStack) => {
-          commandStack.add(deserializerMiddleware(config2, deserializer), deserializerMiddlewareOption2);
-          commandStack.add(serializerMiddleware(config2, serializer), serializerMiddlewareOption3);
+          commandStack.add(deserializerMiddleware(config3, deserializer), deserializerMiddlewareOption2);
+          commandStack.add(serializerMiddleware(config3, serializer), serializerMiddlewareOption3);
         }
       };
     }
@@ -52364,9 +52365,9 @@ var init_getHttpAuthSchemePlugin = __esm({
       relation: "before",
       toMiddleware: import_middleware_serde.serializerMiddlewareOption.name
     };
-    getHttpAuthSchemePlugin = (config2, { httpAuthSchemeParametersProvider, identityProviderConfigProvider }) => ({
+    getHttpAuthSchemePlugin = (config3, { httpAuthSchemeParametersProvider, identityProviderConfigProvider }) => ({
       applyToStack: (clientStack) => {
-        clientStack.addRelativeTo(httpAuthSchemeMiddleware(config2, {
+        clientStack.addRelativeTo(httpAuthSchemeMiddleware(config3, {
           httpAuthSchemeParametersProvider,
           identityProviderConfigProvider
         }), httpAuthSchemeMiddlewareOptions);
@@ -52395,7 +52396,7 @@ var init_httpSigningMiddleware = __esm({
     };
     defaultSuccessHandler = (httpResponse, signingProperties) => {
     };
-    httpSigningMiddleware = (config2) => (next, context) => async (args) => {
+    httpSigningMiddleware = (config3) => (next, context) => async (args) => {
       if (!import_protocol_http4.HttpRequest.isInstance(args.request)) {
         return next(args);
       }
@@ -52429,9 +52430,9 @@ var init_getHttpSigningMiddleware = __esm({
       relation: "after",
       toMiddleware: "retryMiddleware"
     };
-    getHttpSigningPlugin = (config2) => ({
+    getHttpSigningPlugin = (config3) => ({
       applyToStack: (clientStack) => {
-        clientStack.addRelativeTo(httpSigningMiddleware(config2), httpSigningMiddlewareOptions);
+        clientStack.addRelativeTo(httpSigningMiddleware(config3), httpSigningMiddlewareOptions);
       }
     });
   }
@@ -52460,25 +52461,25 @@ var init_normalizeProvider = __esm({
 
 // node_modules/.pnpm/@smithy+core@3.15.0/node_modules/@smithy/core/dist-es/pagination/createPaginator.js
 function createPaginator(ClientCtor, CommandCtor, inputTokenName, outputTokenName, pageSizeTokenName) {
-  return async function* paginateOperation(config2, input, ...additionalArguments) {
+  return async function* paginateOperation(config3, input, ...additionalArguments) {
     const _input = input;
-    let token = config2.startingToken ?? _input[inputTokenName];
+    let token = config3.startingToken ?? _input[inputTokenName];
     let hasNext = true;
     let page;
     while (hasNext) {
       _input[inputTokenName] = token;
       if (pageSizeTokenName) {
-        _input[pageSizeTokenName] = _input[pageSizeTokenName] ?? config2.pageSize;
+        _input[pageSizeTokenName] = _input[pageSizeTokenName] ?? config3.pageSize;
       }
-      if (config2.client instanceof ClientCtor) {
-        page = await makePagedClientRequest(CommandCtor, config2.client, input, config2.withCommand, ...additionalArguments);
+      if (config3.client instanceof ClientCtor) {
+        page = await makePagedClientRequest(CommandCtor, config3.client, input, config3.withCommand, ...additionalArguments);
       } else {
         throw new Error(`Invalid client, expected instance of ${ClientCtor.name}`);
       }
       yield page;
       const prevToken = token;
       token = get(page, outputTokenName);
-      hasNext = !!(token && (!config2.stopOnSameToken || token !== prevToken));
+      hasNext = !!(token && (!config3.stopOnSameToken || token !== prevToken));
     }
     return void 0;
   };
@@ -53498,9 +53499,9 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
       }
       updateHttpClientConfig(key, value) {
         this.config = void 0;
-        this.configProvider = this.configProvider.then((config2) => {
+        this.configProvider = this.configProvider.then((config3) => {
           return {
-            ...config2,
+            ...config3,
             [key]: value
           };
         });
@@ -53542,8 +53543,8 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
       }
     };
     var NodeHttp2ConnectionManager = class {
-      constructor(config2) {
-        this.config = config2;
+      constructor(config3) {
+        this.config = config3;
         if (this.config.maxConcurrency && this.config.maxConcurrency <= 0) {
           throw new RangeError("maxConcurrency must be greater than zero.");
         }
@@ -53767,9 +53768,9 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
       }
       updateHttpClientConfig(key, value) {
         this.config = void 0;
-        this.configProvider = this.configProvider.then((config2) => {
+        this.configProvider = this.configProvider.then((config3) => {
           return {
-            ...config2,
+            ...config3,
             [key]: value
           };
         });
@@ -53985,9 +53986,9 @@ var require_dist_cjs13 = __commonJS({
       }
       updateHttpClientConfig(key, value) {
         this.config = void 0;
-        this.configProvider = this.configProvider.then((config2) => {
-          config2[key] = value;
-          return config2;
+        this.configProvider = this.configProvider.then((config3) => {
+          config3[key] = value;
+          return config3;
         });
       }
       httpHandlerConfigs() {
@@ -54413,12 +54414,12 @@ var init_schemaDeserializationMiddleware = __esm({
   "node_modules/.pnpm/@smithy+core@3.15.0/node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaDeserializationMiddleware.js"() {
     import_protocol_http5 = __toESM(require_dist_cjs2());
     import_util_middleware3 = __toESM(require_dist_cjs4());
-    schemaDeserializationMiddleware = (config2) => (next, context) => async (args) => {
+    schemaDeserializationMiddleware = (config3) => (next, context) => async (args) => {
       const { response } = await next(args);
       const { operationSchema } = (0, import_util_middleware3.getSmithyContext)(context);
       try {
-        const parsed = await config2.protocol.deserializeResponse(operationSchema, {
-          ...config2,
+        const parsed = await config3.protocol.deserializeResponse(operationSchema, {
+          ...config3,
           ...context
         }, response);
         return {
@@ -54475,11 +54476,11 @@ var import_util_middleware4, schemaSerializationMiddleware;
 var init_schemaSerializationMiddleware = __esm({
   "node_modules/.pnpm/@smithy+core@3.15.0/node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaSerializationMiddleware.js"() {
     import_util_middleware4 = __toESM(require_dist_cjs4());
-    schemaSerializationMiddleware = (config2) => (next, context) => async (args) => {
+    schemaSerializationMiddleware = (config3) => (next, context) => async (args) => {
       const { operationSchema } = (0, import_util_middleware4.getSmithyContext)(context);
-      const endpoint = context.endpointV2?.url && config2.urlParser ? async () => config2.urlParser(context.endpointV2.url) : config2.endpoint;
-      const request = await config2.protocol.serializeRequest(operationSchema, args.input, {
-        ...config2,
+      const endpoint = context.endpointV2?.url && config3.urlParser ? async () => config3.urlParser(context.endpointV2.url) : config3.endpoint;
+      const request = await config3.protocol.serializeRequest(operationSchema, args.input, {
+        ...config3,
         ...context,
         endpoint
       });
@@ -54492,12 +54493,12 @@ var init_schemaSerializationMiddleware = __esm({
 });
 
 // node_modules/.pnpm/@smithy+core@3.15.0/node_modules/@smithy/core/dist-es/submodules/schema/middleware/getSchemaSerdePlugin.js
-function getSchemaSerdePlugin(config2) {
+function getSchemaSerdePlugin(config3) {
   return {
     applyToStack: (commandStack) => {
-      commandStack.add(schemaSerializationMiddleware(config2), serializerMiddlewareOption2);
-      commandStack.add(schemaDeserializationMiddleware(config2), deserializerMiddlewareOption);
-      config2.protocol.setSerdeContext(config2);
+      commandStack.add(schemaSerializationMiddleware(config3), serializerMiddlewareOption2);
+      commandStack.add(schemaDeserializationMiddleware(config3), deserializerMiddlewareOption);
+      config3.protocol.setSerdeContext(config3);
     }
   };
 }
@@ -57511,8 +57512,8 @@ var init_DefaultIdentityProviderConfig = __esm({
   "node_modules/.pnpm/@smithy+core@3.15.0/node_modules/@smithy/core/dist-es/util-identity-and-auth/DefaultIdentityProviderConfig.js"() {
     DefaultIdentityProviderConfig = class {
       authSchemes = /* @__PURE__ */ new Map();
-      constructor(config2) {
-        for (const [key, value] of Object.entries(config2)) {
+      constructor(config3) {
+        for (const [key, value] of Object.entries(config3)) {
           if (value !== void 0) {
             this.authSchemes.set(key, value);
           }
@@ -57826,9 +57827,9 @@ var init_resolveAwsSdkSigV4AConfig = __esm({
   "node_modules/.pnpm/@aws-sdk+core@3.907.0/node_modules/@aws-sdk/core/dist-es/submodules/httpAuthSchemes/aws_sdk/resolveAwsSdkSigV4AConfig.js"() {
     init_dist_es();
     import_property_provider = __toESM(require_dist_cjs17());
-    resolveAwsSdkSigV4AConfig = (config2) => {
-      config2.sigv4aSigningRegionSet = normalizeProvider(config2.sigv4aSigningRegionSet);
-      return config2;
+    resolveAwsSdkSigV4AConfig = (config3) => {
+      config3.sigv4aSigningRegionSet = normalizeProvider(config3.sigv4aSigningRegionSet);
+      return config3;
     };
     NODE_SIGV4A_CONFIG_OPTIONS = {
       environmentVariableSelector(env) {
@@ -58374,7 +58375,7 @@ ${utilHexEncoding.toHex(hashedRequest)}`;
 });
 
 // node_modules/.pnpm/@aws-sdk+core@3.907.0/node_modules/@aws-sdk/core/dist-es/submodules/httpAuthSchemes/aws_sdk/resolveAwsSdkSigV4Config.js
-function normalizeCredentialProvider(config2, { credentials, credentialDefaultProvider }) {
+function normalizeCredentialProvider(config3, { credentials, credentialDefaultProvider }) {
   let credentialsProvider;
   if (credentials) {
     if (!credentials?.memoized) {
@@ -58384,8 +58385,8 @@ function normalizeCredentialProvider(config2, { credentials, credentialDefaultPr
     }
   } else {
     if (credentialDefaultProvider) {
-      credentialsProvider = normalizeProvider(credentialDefaultProvider(Object.assign({}, config2, {
-        parentClientConfig: config2
+      credentialsProvider = normalizeProvider(credentialDefaultProvider(Object.assign({}, config3, {
+        parentClientConfig: config3
       })));
     } else {
       credentialsProvider = async () => {
@@ -58396,11 +58397,11 @@ function normalizeCredentialProvider(config2, { credentials, credentialDefaultPr
   credentialsProvider.memoized = true;
   return credentialsProvider;
 }
-function bindCallerConfig(config2, credentialsProvider) {
+function bindCallerConfig(config3, credentialsProvider) {
   if (credentialsProvider.configBound) {
     return credentialsProvider;
   }
-  const fn = async (options) => credentialsProvider({ ...options, callerClientConfig: config2 });
+  const fn = async (options) => credentialsProvider({ ...options, callerClientConfig: config3 });
   fn.memoized = credentialsProvider.memoized;
   fn.configBound = true;
   return fn;
@@ -58411,21 +58412,21 @@ var init_resolveAwsSdkSigV4Config = __esm({
     init_client();
     init_dist_es();
     import_signature_v4 = __toESM(require_dist_cjs18());
-    resolveAwsSdkSigV4Config = (config2) => {
-      let inputCredentials = config2.credentials;
-      let isUserSupplied = !!config2.credentials;
+    resolveAwsSdkSigV4Config = (config3) => {
+      let inputCredentials = config3.credentials;
+      let isUserSupplied = !!config3.credentials;
       let resolvedCredentials = void 0;
-      Object.defineProperty(config2, "credentials", {
+      Object.defineProperty(config3, "credentials", {
         set(credentials) {
           if (credentials && credentials !== inputCredentials && credentials !== resolvedCredentials) {
             isUserSupplied = true;
           }
           inputCredentials = credentials;
-          const memoizedProvider = normalizeCredentialProvider(config2, {
+          const memoizedProvider = normalizeCredentialProvider(config3, {
             credentials: inputCredentials,
-            credentialDefaultProvider: config2.credentialDefaultProvider
+            credentialDefaultProvider: config3.credentialDefaultProvider
           });
-          const boundProvider = bindCallerConfig(config2, memoizedProvider);
+          const boundProvider = bindCallerConfig(config3, memoizedProvider);
           if (isUserSupplied && !boundProvider.attributed) {
             resolvedCredentials = async (options) => boundProvider(options).then((creds) => setCredentialFeature(creds, "CREDENTIALS_CODE", "e"));
             resolvedCredentials.memoized = boundProvider.memoized;
@@ -58441,58 +58442,58 @@ var init_resolveAwsSdkSigV4Config = __esm({
         enumerable: true,
         configurable: true
       });
-      config2.credentials = inputCredentials;
-      const { signingEscapePath = true, systemClockOffset = config2.systemClockOffset || 0, sha256 } = config2;
+      config3.credentials = inputCredentials;
+      const { signingEscapePath = true, systemClockOffset = config3.systemClockOffset || 0, sha256 } = config3;
       let signer;
-      if (config2.signer) {
-        signer = normalizeProvider(config2.signer);
-      } else if (config2.regionInfoProvider) {
-        signer = () => normalizeProvider(config2.region)().then(async (region) => [
-          await config2.regionInfoProvider(region, {
-            useFipsEndpoint: await config2.useFipsEndpoint(),
-            useDualstackEndpoint: await config2.useDualstackEndpoint()
+      if (config3.signer) {
+        signer = normalizeProvider(config3.signer);
+      } else if (config3.regionInfoProvider) {
+        signer = () => normalizeProvider(config3.region)().then(async (region) => [
+          await config3.regionInfoProvider(region, {
+            useFipsEndpoint: await config3.useFipsEndpoint(),
+            useDualstackEndpoint: await config3.useDualstackEndpoint()
           }) || {},
           region
         ]).then(([regionInfo, region]) => {
           const { signingRegion, signingService } = regionInfo;
-          config2.signingRegion = config2.signingRegion || signingRegion || region;
-          config2.signingName = config2.signingName || signingService || config2.serviceId;
+          config3.signingRegion = config3.signingRegion || signingRegion || region;
+          config3.signingName = config3.signingName || signingService || config3.serviceId;
           const params = {
-            ...config2,
-            credentials: config2.credentials,
-            region: config2.signingRegion,
-            service: config2.signingName,
+            ...config3,
+            credentials: config3.credentials,
+            region: config3.signingRegion,
+            service: config3.signingName,
             sha256,
             uriEscapePath: signingEscapePath
           };
-          const SignerCtor = config2.signerConstructor || import_signature_v4.SignatureV4;
+          const SignerCtor = config3.signerConstructor || import_signature_v4.SignatureV4;
           return new SignerCtor(params);
         });
       } else {
         signer = async (authScheme) => {
           authScheme = Object.assign({}, {
             name: "sigv4",
-            signingName: config2.signingName || config2.defaultSigningName,
-            signingRegion: await normalizeProvider(config2.region)(),
+            signingName: config3.signingName || config3.defaultSigningName,
+            signingRegion: await normalizeProvider(config3.region)(),
             properties: {}
           }, authScheme);
           const signingRegion = authScheme.signingRegion;
           const signingService = authScheme.signingName;
-          config2.signingRegion = config2.signingRegion || signingRegion;
-          config2.signingName = config2.signingName || signingService || config2.serviceId;
+          config3.signingRegion = config3.signingRegion || signingRegion;
+          config3.signingName = config3.signingName || signingService || config3.serviceId;
           const params = {
-            ...config2,
-            credentials: config2.credentials,
-            region: config2.signingRegion,
-            service: config2.signingName,
+            ...config3,
+            credentials: config3.credentials,
+            region: config3.signingRegion,
+            service: config3.signingName,
             sha256,
             uriEscapePath: signingEscapePath
           };
-          const SignerCtor = config2.signerConstructor || import_signature_v4.SignatureV4;
+          const SignerCtor = config3.signerConstructor || import_signature_v4.SignatureV4;
           return new SignerCtor(params);
         };
       }
-      const resolvedConfig = Object.assign(config2, {
+      const resolvedConfig = Object.assign(config3, {
         systemClockOffset,
         signingEscapePath,
         signer
@@ -60048,8 +60049,8 @@ var require_dist_cjs20 = __commonJS({
       middlewareStack = middlewareStack.constructStack();
       initConfig;
       handlers;
-      constructor(config2) {
-        this.config = config2;
+      constructor(config3) {
+        this.config = config3;
       }
       send(command, optionsOrCb, cb) {
         const options = typeof optionsOrCb !== "function" ? optionsOrCb : void 0;
@@ -60398,8 +60399,8 @@ var require_dist_cjs20 = __commonJS({
       return Object.assign(getChecksumConfiguration(runtimeConfig), getRetryConfiguration(runtimeConfig));
     };
     var getDefaultClientConfiguration = getDefaultExtensionConfiguration3;
-    var resolveDefaultRuntimeConfig3 = (config2) => {
-      return Object.assign(resolveChecksumRuntimeConfig(config2), resolveRetryRuntimeConfig(config2));
+    var resolveDefaultRuntimeConfig3 = (config3) => {
+      return Object.assign(resolveChecksumRuntimeConfig(config3), resolveRetryRuntimeConfig(config3));
     };
     var getArrayIfSingleItem = (mayBeArray) => Array.isArray(mayBeArray) ? mayBeArray : [mayBeArray];
     var getValueFromTextNode3 = (obj) => {
@@ -64244,10 +64245,10 @@ var require_dist_cjs25 = __commonJS({
       return false;
     };
     var isStreaming2 = (body) => body !== void 0 && typeof body !== "string" && !ArrayBuffer.isView(body) && !isArrayBuffer2.isArrayBuffer(body);
-    var selectChecksumAlgorithmFunction = (checksumAlgorithm, config2) => {
+    var selectChecksumAlgorithmFunction = (checksumAlgorithm, config3) => {
       switch (checksumAlgorithm) {
         case exports2.ChecksumAlgorithm.MD5:
-          return config2.md5;
+          return config3.md5;
         case exports2.ChecksumAlgorithm.CRC32:
           return getCrc32ChecksumAlgorithmFunction.getCrc32ChecksumAlgorithmFunction();
         case exports2.ChecksumAlgorithm.CRC32C:
@@ -64260,9 +64261,9 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
           }
           return crc64NvmeCrtContainer.CrtCrc64Nvme;
         case exports2.ChecksumAlgorithm.SHA1:
-          return config2.sha1;
+          return config3.sha1;
         case exports2.ChecksumAlgorithm.SHA256:
-          return config2.sha256;
+          return config3.sha256;
         default:
           throw new Error(`Unsupported checksum algorithm: ${checksumAlgorithm}`);
       }
@@ -64278,7 +64279,7 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
       tags: ["BODY_CHECKSUM"],
       override: true
     };
-    var flexibleChecksumsMiddleware = (config2, middlewareConfig) => (next, context) => async (args) => {
+    var flexibleChecksumsMiddleware = (config3, middlewareConfig) => (next, context) => async (args) => {
       if (!protocolHttp.HttpRequest.isInstance(args.request)) {
         return next(args);
       }
@@ -64287,9 +64288,9 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
       }
       const { request, input } = args;
       const { body: requestBody, headers } = request;
-      const { base64Encoder, streamHasher } = config2;
+      const { base64Encoder, streamHasher } = config3;
       const { requestChecksumRequired, requestAlgorithmMember } = middlewareConfig;
-      const requestChecksumCalculation = await config2.requestChecksumCalculation();
+      const requestChecksumCalculation = await config3.requestChecksumCalculation();
       const requestAlgorithmMemberName = requestAlgorithmMember?.name;
       const requestAlgorithmMemberHttpHeader = requestAlgorithmMember?.httpHeader;
       if (requestAlgorithmMemberName && !input[requestAlgorithmMemberName]) {
@@ -64326,10 +64327,10 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
             break;
         }
         const checksumLocationName = getChecksumLocationName(checksumAlgorithm);
-        const checksumAlgorithmFn = selectChecksumAlgorithmFunction(checksumAlgorithm, config2);
+        const checksumAlgorithmFn = selectChecksumAlgorithmFunction(checksumAlgorithm, config3);
         if (isStreaming2(requestBody)) {
-          const { getAwsChunkedEncodingStream, bodyLengthChecker } = config2;
-          updatedBody = getAwsChunkedEncodingStream(typeof config2.requestStreamBufferSize === "number" && config2.requestStreamBufferSize >= 8 * 1024 ? utilStream.createBufferedReadable(requestBody, config2.requestStreamBufferSize, context.logger) : requestBody, {
+          const { getAwsChunkedEncodingStream, bodyLengthChecker } = config3;
+          updatedBody = getAwsChunkedEncodingStream(typeof config3.requestStreamBufferSize === "number" && config3.requestStreamBufferSize >= 8 * 1024 ? utilStream.createBufferedReadable(requestBody, config3.requestStreamBufferSize, context.logger) : requestBody, {
             base64Encoder,
             bodyLengthChecker,
             checksumLocationName,
@@ -64370,11 +64371,11 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
       tags: ["BODY_CHECKSUM"],
       override: true
     };
-    var flexibleChecksumsInputMiddleware = (config2, middlewareConfig) => (next, context) => async (args) => {
+    var flexibleChecksumsInputMiddleware = (config3, middlewareConfig) => (next, context) => async (args) => {
       const input = args.input;
       const { requestValidationModeMember } = middlewareConfig;
-      const requestChecksumCalculation = await config2.requestChecksumCalculation();
-      const responseChecksumValidation = await config2.responseChecksumValidation();
+      const requestChecksumCalculation = await config3.requestChecksumCalculation();
+      const responseChecksumValidation = await config3.responseChecksumValidation();
       switch (requestChecksumCalculation) {
         case RequestChecksumCalculation.WHEN_REQUIRED:
           core.setFeature(context, "FLEXIBLE_CHECKSUMS_REQ_WHEN_REQUIRED", "a");
@@ -64422,7 +64423,7 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
       return false;
     };
     var getChecksum = async (body, { checksumAlgorithmFn, base64Encoder }) => base64Encoder(await stringHasher(checksumAlgorithmFn, body));
-    var validateChecksumFromResponse = async (response, { config: config2, responseAlgorithms, logger: logger2 }) => {
+    var validateChecksumFromResponse = async (response, { config: config3, responseAlgorithms, logger: logger2 }) => {
       const checksumAlgorithms = getChecksumAlgorithmListForResponse(responseAlgorithms);
       const { body: responseBody, headers: responseHeaders } = response;
       for (const algorithm of checksumAlgorithms) {
@@ -64431,7 +64432,7 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
         if (checksumFromResponse) {
           let checksumAlgorithmFn;
           try {
-            checksumAlgorithmFn = selectChecksumAlgorithmFunction(algorithm, config2);
+            checksumAlgorithmFn = selectChecksumAlgorithmFunction(algorithm, config3);
           } catch (error47) {
             if (algorithm === exports2.ChecksumAlgorithm.CRC64NVME) {
               logger2?.warn(`Skipping ${exports2.ChecksumAlgorithm.CRC64NVME} checksum validation: ${error47.message}`);
@@ -64439,7 +64440,7 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
             }
             throw error47;
           }
-          const { base64Encoder } = config2;
+          const { base64Encoder } = config3;
           if (isStreaming2(responseBody)) {
             response.body = utilStream.createChecksumStream({
               expectedChecksum: checksumFromResponse,
@@ -64465,7 +64466,7 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
       tags: ["BODY_CHECKSUM"],
       override: true
     };
-    var flexibleChecksumsResponseMiddleware = (config2, middlewareConfig) => (next, context) => async (args) => {
+    var flexibleChecksumsResponseMiddleware = (config3, middlewareConfig) => (next, context) => async (args) => {
       if (!protocolHttp.HttpRequest.isInstance(args.request)) {
         return next(args);
       }
@@ -64484,18 +64485,18 @@ For more information please go to https://github.com/aws/aws-sdk-js-v3#functiona
           return result;
         }
         await validateChecksumFromResponse(response, {
-          config: config2,
+          config: config3,
           responseAlgorithms,
           logger: context.logger
         });
       }
       return result;
     };
-    var getFlexibleChecksumsPlugin = (config2, middlewareConfig) => ({
+    var getFlexibleChecksumsPlugin = (config3, middlewareConfig) => ({
       applyToStack: (clientStack) => {
-        clientStack.add(flexibleChecksumsMiddleware(config2, middlewareConfig), flexibleChecksumsMiddlewareOptions);
-        clientStack.addRelativeTo(flexibleChecksumsInputMiddleware(config2, middlewareConfig), flexibleChecksumsInputMiddlewareOptions);
-        clientStack.addRelativeTo(flexibleChecksumsResponseMiddleware(config2, middlewareConfig), flexibleChecksumsResponseMiddlewareOptions);
+        clientStack.add(flexibleChecksumsMiddleware(config3, middlewareConfig), flexibleChecksumsMiddlewareOptions);
+        clientStack.addRelativeTo(flexibleChecksumsInputMiddleware(config3, middlewareConfig), flexibleChecksumsInputMiddlewareOptions);
+        clientStack.addRelativeTo(flexibleChecksumsResponseMiddleware(config3, middlewareConfig), flexibleChecksumsResponseMiddlewareOptions);
       }
     });
     var resolveFlexibleChecksumsConfig = (input) => {
@@ -64968,20 +64969,20 @@ var require_dist_cjs31 = __commonJS({
         clientStack.add(checkContentLengthHeader(), checkContentLengthHeaderMiddlewareOptions);
       }
     });
-    var regionRedirectEndpointMiddleware = (config2) => {
+    var regionRedirectEndpointMiddleware = (config3) => {
       return (next, context) => async (args) => {
-        const originalRegion = await config2.region();
-        const regionProviderRef = config2.region;
+        const originalRegion = await config3.region();
+        const regionProviderRef = config3.region;
         let unlock = () => {
         };
         if (context.__s3RegionRedirect) {
-          Object.defineProperty(config2, "region", {
+          Object.defineProperty(config3, "region", {
             writable: false,
             value: async () => {
               return context.__s3RegionRedirect;
             }
           });
-          unlock = () => Object.defineProperty(config2, "region", {
+          unlock = () => Object.defineProperty(config3, "region", {
             writable: true,
             value: regionProviderRef
           });
@@ -64990,7 +64991,7 @@ var require_dist_cjs31 = __commonJS({
           const result = await next(args);
           if (context.__s3RegionRedirect) {
             unlock();
-            const region = await config2.region();
+            const region = await config3.region();
             if (originalRegion !== region) {
               throw new Error("Region was not restored following S3 region redirect.");
             }
@@ -65047,7 +65048,7 @@ var require_dist_cjs31 = __commonJS({
         clientStack.addRelativeTo(regionRedirectEndpointMiddleware(clientConfig), regionRedirectEndpointMiddlewareOptions);
       }
     });
-    var s3ExpiresMiddleware = (config2) => {
+    var s3ExpiresMiddleware = (config3) => {
       return (next, context) => async (args) => {
         const result = await next(args);
         const { response } = result;
@@ -65278,7 +65279,7 @@ var require_dist_cjs31 = __commonJS({
     var defaultSuccessHandler2 = (httpResponse, signingProperties) => {
     };
     var s3ExpressHttpSigningMiddlewareOptions = core$1.httpSigningMiddlewareOptions;
-    var s3ExpressHttpSigningMiddleware = (config2) => (next, context) => async (args) => {
+    var s3ExpressHttpSigningMiddleware = (config3) => (next, context) => async (args) => {
       if (!protocolHttp.HttpRequest.isInstance(args.request)) {
         return next(args);
       }
@@ -65290,7 +65291,7 @@ var require_dist_cjs31 = __commonJS({
       const { httpAuthOption: { signingProperties = {} }, identity: identity2, signer } = scheme;
       let request;
       if (context.s3ExpressIdentity) {
-        request = await signS3Express(context.s3ExpressIdentity, signingProperties, args.request, await config2.signer());
+        request = await signS3Express(context.s3ExpressIdentity, signingProperties, args.request, await config3.signer());
       } else {
         request = await signer.sign(args.request, identity2, signingProperties);
       }
@@ -65301,9 +65302,9 @@ var require_dist_cjs31 = __commonJS({
       (signer.successHandler || defaultSuccessHandler2)(output.response, signingProperties);
       return output;
     };
-    var getS3ExpressHttpSigningPlugin = (config2) => ({
+    var getS3ExpressHttpSigningPlugin = (config3) => ({
       applyToStack: (clientStack) => {
-        clientStack.addRelativeTo(s3ExpressHttpSigningMiddleware(config2), core$1.httpSigningMiddlewareOptions);
+        clientStack.addRelativeTo(s3ExpressHttpSigningMiddleware(config3), core$1.httpSigningMiddlewareOptions);
       }
     });
     var resolveS3Config = (input, { session }) => {
@@ -65326,7 +65327,7 @@ var require_dist_cjs31 = __commonJS({
       CompleteMultipartUploadCommand: true
     };
     var MAX_BYTES_TO_INSPECT = 3e3;
-    var throw200ExceptionsMiddleware = (config2) => (next, context) => async (args) => {
+    var throw200ExceptionsMiddleware = (config3) => (next, context) => async (args) => {
       const result = await next(args);
       const { response } = result;
       if (!protocolHttp.HttpResponse.isInstance(response)) {
@@ -65354,7 +65355,7 @@ var require_dist_cjs31 = __commonJS({
       if (typeof bodyCopy?.destroy === "function") {
         bodyCopy.destroy();
       }
-      const bodyStringTail = config2.utf8Encoder(bodyBytes.subarray(bodyBytes.length - 16));
+      const bodyStringTail = config3.utf8Encoder(bodyBytes.subarray(bodyBytes.length - 16));
       if (bodyBytes.length === 0 && THROW_IF_EMPTY_BODY[context.commandName]) {
         const err = new Error("S3 aborted request");
         err.name = "InternalError";
@@ -65378,9 +65379,9 @@ var require_dist_cjs31 = __commonJS({
       name: "throw200ExceptionsMiddleware",
       override: true
     };
-    var getThrow200ExceptionsPlugin = (config2) => ({
+    var getThrow200ExceptionsPlugin = (config3) => ({
       applyToStack: (clientStack) => {
-        clientStack.addRelativeTo(throw200ExceptionsMiddleware(config2), throw200ExceptionsMiddlewareOptions);
+        clientStack.addRelativeTo(throw200ExceptionsMiddleware(config3), throw200ExceptionsMiddlewareOptions);
       }
     });
     function bucketEndpointMiddleware(options) {
@@ -66414,13 +66415,13 @@ var require_dist_cjs36 = __commonJS({
       });
     }
     var ACCOUNT_ID_ENDPOINT_REGEX = /\d{12}\.ddb/;
-    async function checkFeatures(context, config2, args) {
+    async function checkFeatures(context, config3, args) {
       const request = args.request;
       if (request?.headers?.["smithy-protocol"] === "rpc-v2-cbor") {
         core$1.setFeature(context, "PROTOCOL_RPC_V2_CBOR", "M");
       }
-      if (typeof config2.retryStrategy === "function") {
-        const retryStrategy = await config2.retryStrategy();
+      if (typeof config3.retryStrategy === "function") {
+        const retryStrategy = await config3.retryStrategy();
         if (typeof retryStrategy.acquireInitialRetryToken === "function") {
           if (retryStrategy.constructor?.name?.includes("Adaptive")) {
             core$1.setFeature(context, "RETRY_MODE_ADAPTIVE", "F");
@@ -66431,12 +66432,12 @@ var require_dist_cjs36 = __commonJS({
           core$1.setFeature(context, "RETRY_MODE_LEGACY", "D");
         }
       }
-      if (typeof config2.accountIdEndpointMode === "function") {
+      if (typeof config3.accountIdEndpointMode === "function") {
         const endpointV2 = context.endpointV2;
         if (String(endpointV2?.url?.hostname).match(ACCOUNT_ID_ENDPOINT_REGEX)) {
           core$1.setFeature(context, "ACCOUNT_ID_ENDPOINT", "O");
         }
-        switch (await config2.accountIdEndpointMode?.()) {
+        switch (await config3.accountIdEndpointMode?.()) {
           case "disabled":
             core$1.setFeature(context, "ACCOUNT_ID_MODE_DISABLED", "Q");
             break;
@@ -66545,9 +66546,9 @@ var require_dist_cjs36 = __commonJS({
       tags: ["SET_USER_AGENT", "USER_AGENT"],
       override: true
     };
-    var getUserAgentPlugin3 = (config2) => ({
+    var getUserAgentPlugin3 = (config3) => ({
       applyToStack: (clientStack) => {
-        clientStack.add(userAgentMiddleware(config2), getUserAgentMiddlewareOptions);
+        clientStack.add(userAgentMiddleware(config3), getUserAgentMiddlewareOptions);
       }
     });
     exports2.DEFAULT_UA_APP_ID = DEFAULT_UA_APP_ID;
@@ -67050,11 +67051,11 @@ var require_dist_cjs41 = __commonJS({
     }
     var fromEnv = (envVarSelector, options) => async () => {
       try {
-        const config2 = envVarSelector(process.env, options);
-        if (config2 === void 0) {
+        const config3 = envVarSelector(process.env, options);
+        if (config3 === void 0) {
           throw new Error();
         }
-        return config2;
+        return config3;
       } catch (e3) {
         throw new propertyProvider.CredentialsProviderError(e3.message || `Not found in ENV: ${getSelectorName(envVarSelector.toString())}`, { logger: options?.logger });
       }
@@ -67107,9 +67108,9 @@ var require_getEndpointUrlConfig = __commonJS({
           return endpointUrl;
         return void 0;
       },
-      configFileSelector: (profile, config2) => {
-        if (config2 && profile.services) {
-          const servicesSection = config2[["services", profile.services].join(shared_ini_file_loader_1.CONFIG_PREFIX_SEPARATOR)];
+      configFileSelector: (profile, config3) => {
+        if (config3 && profile.services) {
+          const servicesSection = config3[["services", profile.services].join(shared_ini_file_loader_1.CONFIG_PREFIX_SEPARATOR)];
           if (servicesSection) {
             const servicePrefixParts = serviceId.split(" ").map((w3) => w3.toLowerCase());
             const endpointUrl2 = servicesSection[[servicePrefixParts.join("_"), CONFIG_ENDPOINT_URL].join(shared_ini_file_loader_1.CONFIG_PREFIX_SEPARATOR)];
@@ -67181,9 +67182,9 @@ var require_dist_cjs42 = __commonJS({
       }
       return isValidArn;
     };
-    var createConfigValueProvider = (configKey, canonicalEndpointParamKey, config2) => {
+    var createConfigValueProvider = (configKey, canonicalEndpointParamKey, config3) => {
       const configProvider = async () => {
-        const configValue = config2[configKey] ?? config2[canonicalEndpointParamKey];
+        const configValue = config3[configKey] ?? config3[canonicalEndpointParamKey];
         if (typeof configValue === "function") {
           return configValue();
         }
@@ -67191,21 +67192,21 @@ var require_dist_cjs42 = __commonJS({
       };
       if (configKey === "credentialScope" || canonicalEndpointParamKey === "CredentialScope") {
         return async () => {
-          const credentials = typeof config2.credentials === "function" ? await config2.credentials() : config2.credentials;
+          const credentials = typeof config3.credentials === "function" ? await config3.credentials() : config3.credentials;
           const configValue = credentials?.credentialScope ?? credentials?.CredentialScope;
           return configValue;
         };
       }
       if (configKey === "accountId" || canonicalEndpointParamKey === "AccountId") {
         return async () => {
-          const credentials = typeof config2.credentials === "function" ? await config2.credentials() : config2.credentials;
+          const credentials = typeof config3.credentials === "function" ? await config3.credentials() : config3.credentials;
           const configValue = credentials?.accountId ?? credentials?.AccountId;
           return configValue;
         };
       }
       if (configKey === "endpoint" || canonicalEndpointParamKey === "endpoint") {
         return async () => {
-          if (config2.isCustomEndpoint === false) {
+          if (config3.isCustomEndpoint === false) {
             return void 0;
           }
           const endpoint = await configProvider();
@@ -67282,16 +67283,16 @@ var require_dist_cjs42 = __commonJS({
       }
       return endpointParams;
     };
-    var endpointMiddleware = ({ config: config2, instructions }) => {
+    var endpointMiddleware = ({ config: config3, instructions }) => {
       return (next, context) => async (args) => {
-        if (config2.isCustomEndpoint) {
+        if (config3.isCustomEndpoint) {
           core.setFeature(context, "ENDPOINT_OVERRIDE", "N");
         }
         const endpoint = await getEndpointFromInstructions(args.input, {
           getEndpointParameterInstructions() {
             return instructions;
           }
-        }, { ...config2 }, context);
+        }, { ...config3 }, context);
         context.endpointV2 = endpoint;
         context.authSchemes = endpoint.properties?.authSchemes;
         const authScheme = context.authSchemes?.[0];
@@ -67323,10 +67324,10 @@ var require_dist_cjs42 = __commonJS({
       relation: "before",
       toMiddleware: middlewareSerde.serializerMiddlewareOption.name
     };
-    var getEndpointPlugin4 = (config2, instructions) => ({
+    var getEndpointPlugin4 = (config3, instructions) => ({
       applyToStack: (clientStack) => {
         clientStack.addRelativeTo(endpointMiddleware({
-          config: config2,
+          config: config3,
           instructions
         }), endpointMiddlewareOptions);
       }
@@ -68415,22 +68416,22 @@ var require_httpAuthSchemeProvider = __commonJS({
     var middleware_endpoint_1 = require_dist_cjs42();
     var util_middleware_1 = require_dist_cjs4();
     var endpointResolver_1 = require_endpointResolver();
-    var createEndpointRuleSetHttpAuthSchemeParametersProvider = (defaultHttpAuthSchemeParametersProvider) => async (config2, context, input) => {
+    var createEndpointRuleSetHttpAuthSchemeParametersProvider = (defaultHttpAuthSchemeParametersProvider) => async (config3, context, input) => {
       if (!input) {
         throw new Error(`Could not find \`input\` for \`defaultEndpointRuleSetHttpAuthSchemeParametersProvider\``);
       }
-      const defaultParameters = await defaultHttpAuthSchemeParametersProvider(config2, context, input);
+      const defaultParameters = await defaultHttpAuthSchemeParametersProvider(config3, context, input);
       const instructionsFn = (0, util_middleware_1.getSmithyContext)(context)?.commandInstance?.constructor?.getEndpointParameterInstructions;
       if (!instructionsFn) {
         throw new Error(`getEndpointParameterInstructions() is not defined on \`${context.commandName}\``);
       }
-      const endpointParameters = await (0, middleware_endpoint_1.resolveParams)(input, { getEndpointParameterInstructions: instructionsFn }, config2);
+      const endpointParameters = await (0, middleware_endpoint_1.resolveParams)(input, { getEndpointParameterInstructions: instructionsFn }, config3);
       return Object.assign(defaultParameters, endpointParameters);
     };
-    var _defaultS3HttpAuthSchemeParametersProvider = async (config2, context, input) => {
+    var _defaultS3HttpAuthSchemeParametersProvider = async (config3, context, input) => {
       return {
         operation: (0, util_middleware_1.getSmithyContext)(context).operation,
-        region: await (0, util_middleware_1.normalizeProvider)(config2.region)() || (() => {
+        region: await (0, util_middleware_1.normalizeProvider)(config3.region)() || (() => {
           throw new Error("expected `region` to be configured for `aws.auth#sigv4`");
         })()
       };
@@ -68443,9 +68444,9 @@ var require_httpAuthSchemeProvider = __commonJS({
           name: "s3",
           region: authParameters.region
         },
-        propertiesExtractor: (config2, context) => ({
+        propertiesExtractor: (config3, context) => ({
           signingProperties: {
-            config: config2,
+            config: config3,
             context
           }
         })
@@ -68458,9 +68459,9 @@ var require_httpAuthSchemeProvider = __commonJS({
           name: "s3",
           region: authParameters.region
         },
-        propertiesExtractor: (config2, context) => ({
+        propertiesExtractor: (config3, context) => ({
           signingProperties: {
-            config: config2,
+            config: config3,
             context
           }
         })
@@ -68522,11 +68523,11 @@ var require_httpAuthSchemeProvider = __commonJS({
       "aws.auth#sigv4": createAwsAuthSigv4HttpAuthOption3,
       "aws.auth#sigv4a": createAwsAuthSigv4aHttpAuthOption
     });
-    var resolveHttpAuthSchemeConfig3 = (config2) => {
-      const config_0 = (0, core_1.resolveAwsSdkSigV4Config)(config2);
+    var resolveHttpAuthSchemeConfig3 = (config3) => {
+      const config_0 = (0, core_1.resolveAwsSdkSigV4Config)(config3);
       const config_1 = (0, core_1.resolveAwsSdkSigV4AConfig)(config_0);
       return Object.assign(config_1, {
-        authSchemePreference: (0, util_middleware_1.normalizeProvider)(config2.authSchemePreference ?? [])
+        authSchemePreference: (0, util_middleware_1.normalizeProvider)(config3.authSchemePreference ?? [])
       });
     };
     exports2.resolveHttpAuthSchemeConfig = resolveHttpAuthSchemeConfig3;
@@ -69264,9 +69265,9 @@ function createAwsAuthSigv4HttpAuthOption(authParameters) {
       name: "sso-oauth",
       region: authParameters.region
     },
-    propertiesExtractor: (config2, context) => ({
+    propertiesExtractor: (config3, context) => ({
       signingProperties: {
-        config: config2,
+        config: config3,
         context
       }
     })
@@ -69282,10 +69283,10 @@ var init_httpAuthSchemeProvider = __esm({
   "node_modules/.pnpm/@aws-sdk+nested-clients@3.907.0/node_modules/@aws-sdk/nested-clients/dist-es/submodules/sso-oidc/auth/httpAuthSchemeProvider.js"() {
     init_dist_es2();
     import_util_middleware6 = __toESM(require_dist_cjs4());
-    defaultSSOOIDCHttpAuthSchemeParametersProvider = async (config2, context, input) => {
+    defaultSSOOIDCHttpAuthSchemeParametersProvider = async (config3, context, input) => {
       return {
         operation: (0, import_util_middleware6.getSmithyContext)(context).operation,
-        region: await (0, import_util_middleware6.normalizeProvider)(config2.region)() || (() => {
+        region: await (0, import_util_middleware6.normalizeProvider)(config3.region)() || (() => {
           throw new Error("expected `region` to be configured for `aws.auth#sigv4`");
         })()
       };
@@ -69303,10 +69304,10 @@ var init_httpAuthSchemeProvider = __esm({
       }
       return options;
     };
-    resolveHttpAuthSchemeConfig = (config2) => {
-      const config_0 = resolveAwsSdkSigV4Config(config2);
+    resolveHttpAuthSchemeConfig = (config3) => {
+      const config_0 = resolveAwsSdkSigV4Config(config3);
       return Object.assign(config_0, {
-        authSchemePreference: (0, import_util_middleware6.normalizeProvider)(config2.authSchemePreference ?? [])
+        authSchemePreference: (0, import_util_middleware6.normalizeProvider)(config3.authSchemePreference ?? [])
       });
     };
   }
@@ -69472,7 +69473,7 @@ var require_dist_cjs50 = __commonJS({
       return null;
     };
     var createDefaultUserAgentProvider3 = ({ serviceId, clientVersion }) => {
-      return async (config2) => {
+      return async (config3) => {
         const sections = [
           ["aws-sdk-js", clientVersion],
           ["ua", "2.1"],
@@ -69490,7 +69491,7 @@ var require_dist_cjs50 = __commonJS({
         if (process2.env.AWS_EXECUTION_ENV) {
           sections.push([`exec-env/${process2.env.AWS_EXECUTION_ENV}`]);
         }
-        const appId = await config2?.userAgentAppId?.();
+        const appId = await config3?.userAgentAppId?.();
         const resolvedUserAgent = appId ? [...sections, [`app/${appId}`]] : [...sections];
         return resolvedUserAgent;
       };
@@ -69652,16 +69653,16 @@ var init_runtimeConfig_shared = __esm({
     import_util_utf88 = __toESM(require_dist_cjs8());
     init_httpAuthSchemeProvider();
     init_endpointResolver();
-    getRuntimeConfig = (config2) => {
+    getRuntimeConfig = (config3) => {
       return {
         apiVersion: "2019-06-10",
-        base64Decoder: config2?.base64Decoder ?? import_util_base648.fromBase64,
-        base64Encoder: config2?.base64Encoder ?? import_util_base648.toBase64,
-        disableHostPrefix: config2?.disableHostPrefix ?? false,
-        endpointProvider: config2?.endpointProvider ?? defaultEndpointResolver,
-        extensions: config2?.extensions ?? [],
-        httpAuthSchemeProvider: config2?.httpAuthSchemeProvider ?? defaultSSOOIDCHttpAuthSchemeProvider,
-        httpAuthSchemes: config2?.httpAuthSchemes ?? [
+        base64Decoder: config3?.base64Decoder ?? import_util_base648.fromBase64,
+        base64Encoder: config3?.base64Encoder ?? import_util_base648.toBase64,
+        disableHostPrefix: config3?.disableHostPrefix ?? false,
+        endpointProvider: config3?.endpointProvider ?? defaultEndpointResolver,
+        extensions: config3?.extensions ?? [],
+        httpAuthSchemeProvider: config3?.httpAuthSchemeProvider ?? defaultSSOOIDCHttpAuthSchemeProvider,
+        httpAuthSchemes: config3?.httpAuthSchemes ?? [
           {
             schemeId: "aws.auth#sigv4",
             identityProvider: (ipc) => ipc.getIdentityProvider("aws.auth#sigv4"),
@@ -69673,11 +69674,11 @@ var init_runtimeConfig_shared = __esm({
             signer: new NoAuthSigner()
           }
         ],
-        logger: config2?.logger ?? new import_smithy_client7.NoOpLogger(),
-        serviceId: config2?.serviceId ?? "SSO OIDC",
-        urlParser: config2?.urlParser ?? import_url_parser.parseUrl,
-        utf8Decoder: config2?.utf8Decoder ?? import_util_utf88.fromUtf8,
-        utf8Encoder: config2?.utf8Encoder ?? import_util_utf88.toUtf8
+        logger: config3?.logger ?? new import_smithy_client7.NoOpLogger(),
+        serviceId: config3?.serviceId ?? "SSO OIDC",
+        urlParser: config3?.urlParser ?? import_url_parser.parseUrl,
+        utf8Decoder: config3?.utf8Decoder ?? import_util_utf88.fromUtf8,
+        utf8Encoder: config3?.utf8Encoder ?? import_util_utf88.toUtf8
       };
     };
   }
@@ -69774,36 +69775,36 @@ var init_runtimeConfig = __esm({
     import_smithy_client8 = __toESM(require_dist_cjs20());
     import_util_defaults_mode_node = __toESM(require_dist_cjs53());
     import_smithy_client9 = __toESM(require_dist_cjs20());
-    getRuntimeConfig2 = (config2) => {
+    getRuntimeConfig2 = (config3) => {
       (0, import_smithy_client9.emitWarningIfUnsupportedVersion)(process.version);
-      const defaultsMode = (0, import_util_defaults_mode_node.resolveDefaultsModeConfig)(config2);
+      const defaultsMode = (0, import_util_defaults_mode_node.resolveDefaultsModeConfig)(config3);
       const defaultConfigProvider = () => defaultsMode().then(import_smithy_client8.loadConfigsForDefaultMode);
-      const clientSharedValues = getRuntimeConfig(config2);
+      const clientSharedValues = getRuntimeConfig(config3);
       emitWarningIfUnsupportedVersion(process.version);
       const loaderConfig = {
-        profile: config2?.profile,
+        profile: config3?.profile,
         logger: clientSharedValues.logger
       };
       return {
         ...clientSharedValues,
-        ...config2,
+        ...config3,
         runtime: "node",
         defaultsMode,
-        authSchemePreference: config2?.authSchemePreference ?? (0, import_node_config_provider.loadConfig)(NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
-        bodyLengthChecker: config2?.bodyLengthChecker ?? import_util_body_length_node.calculateBodyLength,
-        defaultUserAgentProvider: config2?.defaultUserAgentProvider ?? (0, import_util_user_agent_node.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_default.version }),
-        maxAttempts: config2?.maxAttempts ?? (0, import_node_config_provider.loadConfig)(import_middleware_retry.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config2),
-        region: config2?.region ?? (0, import_node_config_provider.loadConfig)(import_config_resolver.NODE_REGION_CONFIG_OPTIONS, { ...import_config_resolver.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
-        requestHandler: import_node_http_handler.NodeHttpHandler.create(config2?.requestHandler ?? defaultConfigProvider),
-        retryMode: config2?.retryMode ?? (0, import_node_config_provider.loadConfig)({
+        authSchemePreference: config3?.authSchemePreference ?? (0, import_node_config_provider.loadConfig)(NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
+        bodyLengthChecker: config3?.bodyLengthChecker ?? import_util_body_length_node.calculateBodyLength,
+        defaultUserAgentProvider: config3?.defaultUserAgentProvider ?? (0, import_util_user_agent_node.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_default.version }),
+        maxAttempts: config3?.maxAttempts ?? (0, import_node_config_provider.loadConfig)(import_middleware_retry.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config3),
+        region: config3?.region ?? (0, import_node_config_provider.loadConfig)(import_config_resolver.NODE_REGION_CONFIG_OPTIONS, { ...import_config_resolver.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
+        requestHandler: import_node_http_handler.NodeHttpHandler.create(config3?.requestHandler ?? defaultConfigProvider),
+        retryMode: config3?.retryMode ?? (0, import_node_config_provider.loadConfig)({
           ...import_middleware_retry.NODE_RETRY_MODE_CONFIG_OPTIONS,
           default: async () => (await defaultConfigProvider()).retryMode || import_util_retry.DEFAULT_RETRY_MODE
-        }, config2),
-        sha256: config2?.sha256 ?? import_hash_node.Hash.bind(null, "sha256"),
-        streamCollector: config2?.streamCollector ?? import_node_http_handler.streamCollector,
-        useDualstackEndpoint: config2?.useDualstackEndpoint ?? (0, import_node_config_provider.loadConfig)(import_config_resolver.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        useFipsEndpoint: config2?.useFipsEndpoint ?? (0, import_node_config_provider.loadConfig)(import_config_resolver.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        userAgentAppId: config2?.userAgentAppId ?? (0, import_node_config_provider.loadConfig)(import_util_user_agent_node.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
+        }, config3),
+        sha256: config3?.sha256 ?? import_hash_node.Hash.bind(null, "sha256"),
+        streamCollector: config3?.streamCollector ?? import_node_http_handler.streamCollector,
+        useDualstackEndpoint: config3?.useDualstackEndpoint ?? (0, import_node_config_provider.loadConfig)(import_config_resolver.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        useFipsEndpoint: config3?.useFipsEndpoint ?? (0, import_node_config_provider.loadConfig)(import_config_resolver.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        userAgentAppId: config3?.userAgentAppId ?? (0, import_node_config_provider.loadConfig)(import_util_user_agent_node.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
       };
     };
   }
@@ -69930,11 +69931,11 @@ var init_httpAuthExtensionConfiguration = __esm({
         }
       };
     };
-    resolveHttpAuthRuntimeConfig = (config2) => {
+    resolveHttpAuthRuntimeConfig = (config3) => {
       return {
-        httpAuthSchemes: config2.httpAuthSchemes(),
-        httpAuthSchemeProvider: config2.httpAuthSchemeProvider(),
-        credentials: config2.credentials()
+        httpAuthSchemes: config3.httpAuthSchemes(),
+        httpAuthSchemeProvider: config3.httpAuthSchemeProvider(),
+        credentials: config3.credentials()
       };
     };
   }
@@ -69997,8 +69998,8 @@ var init_SSOOIDCClient = __esm({
         this.middlewareStack.use((0, import_middleware_recursion_detection.getRecursionDetectionPlugin)(this.config));
         this.middlewareStack.use(getHttpAuthSchemeEndpointRuleSetPlugin(this.config, {
           httpAuthSchemeParametersProvider: defaultSSOOIDCHttpAuthSchemeParametersProvider,
-          identityProviderConfigProvider: async (config2) => new DefaultIdentityProviderConfig({
-            "aws.auth#sigv4": config2.credentials
+          identityProviderConfigProvider: async (config3) => new DefaultIdentityProviderConfig({
+            "aws.auth#sigv4": config3.credentials
           })
         }));
         this.middlewareStack.use(getHttpSigningPlugin(this.config));
@@ -70507,10 +70508,10 @@ var init_CreateTokenCommand = __esm({
     init_EndpointParameters();
     init_models_0();
     init_Aws_restJson1();
-    CreateTokenCommand = class extends import_smithy_client15.Command.classBuilder().ep(commonParams).m(function(Command, cs, config2, o3) {
+    CreateTokenCommand = class extends import_smithy_client15.Command.classBuilder().ep(commonParams).m(function(Command, cs, config3, o3) {
       return [
-        (0, import_middleware_serde2.getSerdePlugin)(config2, this.serialize, this.deserialize),
-        (0, import_middleware_endpoint2.getEndpointPlugin)(config2, Command.getEndpointParameterInstructions())
+        (0, import_middleware_serde2.getSerdePlugin)(config3, this.serialize, this.deserialize),
+        (0, import_middleware_endpoint2.getEndpointPlugin)(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AWSSSOOIDCService", "CreateToken", {}).n("SSOOIDCClient", "CreateTokenCommand").f(CreateTokenRequestFilterSensitiveLog, CreateTokenResponseFilterSensitiveLog).ser(se_CreateTokenCommand).de(de_CreateTokenCommand).build() {
     };
@@ -70742,10 +70743,10 @@ var require_httpAuthSchemeProvider2 = __commonJS({
     exports2.resolveHttpAuthSchemeConfig = exports2.defaultSSOHttpAuthSchemeProvider = exports2.defaultSSOHttpAuthSchemeParametersProvider = void 0;
     var core_1 = (init_dist_es2(), __toCommonJS(dist_es_exports2));
     var util_middleware_1 = require_dist_cjs4();
-    var defaultSSOHttpAuthSchemeParametersProvider = async (config2, context, input) => {
+    var defaultSSOHttpAuthSchemeParametersProvider = async (config3, context, input) => {
       return {
         operation: (0, util_middleware_1.getSmithyContext)(context).operation,
-        region: await (0, util_middleware_1.normalizeProvider)(config2.region)() || (() => {
+        region: await (0, util_middleware_1.normalizeProvider)(config3.region)() || (() => {
           throw new Error("expected `region` to be configured for `aws.auth#sigv4`");
         })()
       };
@@ -70758,9 +70759,9 @@ var require_httpAuthSchemeProvider2 = __commonJS({
           name: "awsssoportal",
           region: authParameters.region
         },
-        propertiesExtractor: (config2, context) => ({
+        propertiesExtractor: (config3, context) => ({
           signingProperties: {
-            config: config2,
+            config: config3,
             context
           }
         })
@@ -70797,10 +70798,10 @@ var require_httpAuthSchemeProvider2 = __commonJS({
       return options;
     };
     exports2.defaultSSOHttpAuthSchemeProvider = defaultSSOHttpAuthSchemeProvider;
-    var resolveHttpAuthSchemeConfig3 = (config2) => {
-      const config_0 = (0, core_1.resolveAwsSdkSigV4Config)(config2);
+    var resolveHttpAuthSchemeConfig3 = (config3) => {
+      const config_0 = (0, core_1.resolveAwsSdkSigV4Config)(config3);
       return Object.assign(config_0, {
-        authSchemePreference: (0, util_middleware_1.normalizeProvider)(config2.authSchemePreference ?? [])
+        authSchemePreference: (0, util_middleware_1.normalizeProvider)(config3.authSchemePreference ?? [])
       });
     };
     exports2.resolveHttpAuthSchemeConfig = resolveHttpAuthSchemeConfig3;
@@ -70984,16 +70985,16 @@ var require_runtimeConfig_shared = __commonJS({
     var util_utf8_1 = require_dist_cjs8();
     var httpAuthSchemeProvider_1 = require_httpAuthSchemeProvider2();
     var endpointResolver_1 = require_endpointResolver2();
-    var getRuntimeConfig5 = (config2) => {
+    var getRuntimeConfig5 = (config3) => {
       return {
         apiVersion: "2019-06-10",
-        base64Decoder: config2?.base64Decoder ?? util_base64_1.fromBase64,
-        base64Encoder: config2?.base64Encoder ?? util_base64_1.toBase64,
-        disableHostPrefix: config2?.disableHostPrefix ?? false,
-        endpointProvider: config2?.endpointProvider ?? endpointResolver_1.defaultEndpointResolver,
-        extensions: config2?.extensions ?? [],
-        httpAuthSchemeProvider: config2?.httpAuthSchemeProvider ?? httpAuthSchemeProvider_1.defaultSSOHttpAuthSchemeProvider,
-        httpAuthSchemes: config2?.httpAuthSchemes ?? [
+        base64Decoder: config3?.base64Decoder ?? util_base64_1.fromBase64,
+        base64Encoder: config3?.base64Encoder ?? util_base64_1.toBase64,
+        disableHostPrefix: config3?.disableHostPrefix ?? false,
+        endpointProvider: config3?.endpointProvider ?? endpointResolver_1.defaultEndpointResolver,
+        extensions: config3?.extensions ?? [],
+        httpAuthSchemeProvider: config3?.httpAuthSchemeProvider ?? httpAuthSchemeProvider_1.defaultSSOHttpAuthSchemeProvider,
+        httpAuthSchemes: config3?.httpAuthSchemes ?? [
           {
             schemeId: "aws.auth#sigv4",
             identityProvider: (ipc) => ipc.getIdentityProvider("aws.auth#sigv4"),
@@ -71005,11 +71006,11 @@ var require_runtimeConfig_shared = __commonJS({
             signer: new core_2.NoAuthSigner()
           }
         ],
-        logger: config2?.logger ?? new smithy_client_1.NoOpLogger(),
-        serviceId: config2?.serviceId ?? "SSO",
-        urlParser: config2?.urlParser ?? url_parser_1.parseUrl,
-        utf8Decoder: config2?.utf8Decoder ?? util_utf8_1.fromUtf8,
-        utf8Encoder: config2?.utf8Encoder ?? util_utf8_1.toUtf8
+        logger: config3?.logger ?? new smithy_client_1.NoOpLogger(),
+        serviceId: config3?.serviceId ?? "SSO",
+        urlParser: config3?.urlParser ?? url_parser_1.parseUrl,
+        utf8Decoder: config3?.utf8Decoder ?? util_utf8_1.fromUtf8,
+        utf8Encoder: config3?.utf8Encoder ?? util_utf8_1.toUtf8
       };
     };
     exports2.getRuntimeConfig = getRuntimeConfig5;
@@ -71037,36 +71038,36 @@ var require_runtimeConfig = __commonJS({
     var smithy_client_1 = require_dist_cjs20();
     var util_defaults_mode_node_1 = require_dist_cjs53();
     var smithy_client_2 = require_dist_cjs20();
-    var getRuntimeConfig5 = (config2) => {
+    var getRuntimeConfig5 = (config3) => {
       (0, smithy_client_2.emitWarningIfUnsupportedVersion)(process.version);
-      const defaultsMode = (0, util_defaults_mode_node_1.resolveDefaultsModeConfig)(config2);
+      const defaultsMode = (0, util_defaults_mode_node_1.resolveDefaultsModeConfig)(config3);
       const defaultConfigProvider = () => defaultsMode().then(smithy_client_1.loadConfigsForDefaultMode);
-      const clientSharedValues = (0, runtimeConfig_shared_1.getRuntimeConfig)(config2);
+      const clientSharedValues = (0, runtimeConfig_shared_1.getRuntimeConfig)(config3);
       (0, core_1.emitWarningIfUnsupportedVersion)(process.version);
       const loaderConfig = {
-        profile: config2?.profile,
+        profile: config3?.profile,
         logger: clientSharedValues.logger
       };
       return {
         ...clientSharedValues,
-        ...config2,
+        ...config3,
         runtime: "node",
         defaultsMode,
-        authSchemePreference: config2?.authSchemePreference ?? (0, node_config_provider_1.loadConfig)(core_1.NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
-        bodyLengthChecker: config2?.bodyLengthChecker ?? util_body_length_node_1.calculateBodyLength,
-        defaultUserAgentProvider: config2?.defaultUserAgentProvider ?? (0, util_user_agent_node_1.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_json_1.default.version }),
-        maxAttempts: config2?.maxAttempts ?? (0, node_config_provider_1.loadConfig)(middleware_retry_1.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config2),
-        region: config2?.region ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_REGION_CONFIG_OPTIONS, { ...config_resolver_1.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
-        requestHandler: node_http_handler_1.NodeHttpHandler.create(config2?.requestHandler ?? defaultConfigProvider),
-        retryMode: config2?.retryMode ?? (0, node_config_provider_1.loadConfig)({
+        authSchemePreference: config3?.authSchemePreference ?? (0, node_config_provider_1.loadConfig)(core_1.NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
+        bodyLengthChecker: config3?.bodyLengthChecker ?? util_body_length_node_1.calculateBodyLength,
+        defaultUserAgentProvider: config3?.defaultUserAgentProvider ?? (0, util_user_agent_node_1.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_json_1.default.version }),
+        maxAttempts: config3?.maxAttempts ?? (0, node_config_provider_1.loadConfig)(middleware_retry_1.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config3),
+        region: config3?.region ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_REGION_CONFIG_OPTIONS, { ...config_resolver_1.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
+        requestHandler: node_http_handler_1.NodeHttpHandler.create(config3?.requestHandler ?? defaultConfigProvider),
+        retryMode: config3?.retryMode ?? (0, node_config_provider_1.loadConfig)({
           ...middleware_retry_1.NODE_RETRY_MODE_CONFIG_OPTIONS,
           default: async () => (await defaultConfigProvider()).retryMode || util_retry_1.DEFAULT_RETRY_MODE
-        }, config2),
-        sha256: config2?.sha256 ?? hash_node_1.Hash.bind(null, "sha256"),
-        streamCollector: config2?.streamCollector ?? node_http_handler_1.streamCollector,
-        useDualstackEndpoint: config2?.useDualstackEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        useFipsEndpoint: config2?.useFipsEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        userAgentAppId: config2?.userAgentAppId ?? (0, node_config_provider_1.loadConfig)(util_user_agent_node_1.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
+        }, config3),
+        sha256: config3?.sha256 ?? hash_node_1.Hash.bind(null, "sha256"),
+        streamCollector: config3?.streamCollector ?? node_http_handler_1.streamCollector,
+        useDualstackEndpoint: config3?.useDualstackEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        useFipsEndpoint: config3?.useFipsEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        userAgentAppId: config3?.userAgentAppId ?? (0, node_config_provider_1.loadConfig)(util_user_agent_node_1.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
       };
     };
     exports2.getRuntimeConfig = getRuntimeConfig5;
@@ -71136,11 +71137,11 @@ var require_dist_cjs56 = __commonJS({
         }
       };
     };
-    var resolveHttpAuthRuntimeConfig3 = (config2) => {
+    var resolveHttpAuthRuntimeConfig3 = (config3) => {
       return {
-        httpAuthSchemes: config2.httpAuthSchemes(),
-        httpAuthSchemeProvider: config2.httpAuthSchemeProvider(),
-        credentials: config2.credentials()
+        httpAuthSchemes: config3.httpAuthSchemes(),
+        httpAuthSchemeProvider: config3.httpAuthSchemeProvider(),
+        credentials: config3.credentials()
       };
     };
     var resolveRuntimeExtensions3 = (runtimeConfig2, extensions) => {
@@ -71171,8 +71172,8 @@ var require_dist_cjs56 = __commonJS({
         this.middlewareStack.use(middlewareRecursionDetection.getRecursionDetectionPlugin(this.config));
         this.middlewareStack.use(core.getHttpAuthSchemeEndpointRuleSetPlugin(this.config, {
           httpAuthSchemeParametersProvider: httpAuthSchemeProvider.defaultSSOHttpAuthSchemeParametersProvider,
-          identityProviderConfigProvider: async (config2) => new core.DefaultIdentityProviderConfig({
-            "aws.auth#sigv4": config2.credentials
+          identityProviderConfigProvider: async (config3) => new core.DefaultIdentityProviderConfig({
+            "aws.auth#sigv4": config3.credentials
           })
         }));
         this.middlewareStack.use(core.getHttpSigningPlugin(this.config));
@@ -71464,31 +71465,31 @@ var require_dist_cjs56 = __commonJS({
     var _rN = "roleName";
     var _rn = "role_name";
     var _xasbt = "x-amz-sso_bearer_token";
-    var GetRoleCredentialsCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config2, o3) {
+    var GetRoleCredentialsCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("SWBPortalService", "GetRoleCredentials", {}).n("SSOClient", "GetRoleCredentialsCommand").f(GetRoleCredentialsRequestFilterSensitiveLog, GetRoleCredentialsResponseFilterSensitiveLog).ser(se_GetRoleCredentialsCommand).de(de_GetRoleCredentialsCommand).build() {
     };
-    var ListAccountRolesCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config2, o3) {
+    var ListAccountRolesCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("SWBPortalService", "ListAccountRoles", {}).n("SSOClient", "ListAccountRolesCommand").f(ListAccountRolesRequestFilterSensitiveLog, void 0).ser(se_ListAccountRolesCommand).de(de_ListAccountRolesCommand).build() {
     };
-    var ListAccountsCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config2, o3) {
+    var ListAccountsCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("SWBPortalService", "ListAccounts", {}).n("SSOClient", "ListAccountsCommand").f(ListAccountsRequestFilterSensitiveLog, void 0).ser(se_ListAccountsCommand).de(de_ListAccountsCommand).build() {
     };
-    var LogoutCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config2, o3) {
+    var LogoutCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("SWBPortalService", "Logout", {}).n("SSOClient", "LogoutCommand").f(LogoutRequestFilterSensitiveLog, void 0).ser(se_LogoutCommand).de(de_LogoutCommand).build() {
     };
@@ -71742,9 +71743,9 @@ function createAwsAuthSigv4HttpAuthOption2(authParameters) {
       name: "sts",
       region: authParameters.region
     },
-    propertiesExtractor: (config2, context) => ({
+    propertiesExtractor: (config3, context) => ({
       signingProperties: {
-        config: config2,
+        config: config3,
         context
       }
     })
@@ -71761,10 +71762,10 @@ var init_httpAuthSchemeProvider2 = __esm({
     init_dist_es2();
     import_util_middleware7 = __toESM(require_dist_cjs4());
     init_STSClient();
-    defaultSTSHttpAuthSchemeParametersProvider = async (config2, context, input) => {
+    defaultSTSHttpAuthSchemeParametersProvider = async (config3, context, input) => {
       return {
         operation: (0, import_util_middleware7.getSmithyContext)(context).operation,
-        region: await (0, import_util_middleware7.normalizeProvider)(config2.region)() || (() => {
+        region: await (0, import_util_middleware7.normalizeProvider)(config3.region)() || (() => {
           throw new Error("expected `region` to be configured for `aws.auth#sigv4`");
         })()
       };
@@ -71785,11 +71786,11 @@ var init_httpAuthSchemeProvider2 = __esm({
     resolveStsAuthConfig = (input) => Object.assign(input, {
       stsClientCtor: STSClient
     });
-    resolveHttpAuthSchemeConfig2 = (config2) => {
-      const config_0 = resolveStsAuthConfig(config2);
+    resolveHttpAuthSchemeConfig2 = (config3) => {
+      const config_0 = resolveStsAuthConfig(config3);
       const config_1 = resolveAwsSdkSigV4Config(config_0);
       return Object.assign(config_1, {
-        authSchemePreference: (0, import_util_middleware7.normalizeProvider)(config2.authSchemePreference ?? [])
+        authSchemePreference: (0, import_util_middleware7.normalizeProvider)(config3.authSchemePreference ?? [])
       });
     };
   }
@@ -71895,16 +71896,16 @@ var init_runtimeConfig_shared2 = __esm({
     import_util_utf89 = __toESM(require_dist_cjs8());
     init_httpAuthSchemeProvider2();
     init_endpointResolver2();
-    getRuntimeConfig3 = (config2) => {
+    getRuntimeConfig3 = (config3) => {
       return {
         apiVersion: "2011-06-15",
-        base64Decoder: config2?.base64Decoder ?? import_util_base649.fromBase64,
-        base64Encoder: config2?.base64Encoder ?? import_util_base649.toBase64,
-        disableHostPrefix: config2?.disableHostPrefix ?? false,
-        endpointProvider: config2?.endpointProvider ?? defaultEndpointResolver2,
-        extensions: config2?.extensions ?? [],
-        httpAuthSchemeProvider: config2?.httpAuthSchemeProvider ?? defaultSTSHttpAuthSchemeProvider,
-        httpAuthSchemes: config2?.httpAuthSchemes ?? [
+        base64Decoder: config3?.base64Decoder ?? import_util_base649.fromBase64,
+        base64Encoder: config3?.base64Encoder ?? import_util_base649.toBase64,
+        disableHostPrefix: config3?.disableHostPrefix ?? false,
+        endpointProvider: config3?.endpointProvider ?? defaultEndpointResolver2,
+        extensions: config3?.extensions ?? [],
+        httpAuthSchemeProvider: config3?.httpAuthSchemeProvider ?? defaultSTSHttpAuthSchemeProvider,
+        httpAuthSchemes: config3?.httpAuthSchemes ?? [
           {
             schemeId: "aws.auth#sigv4",
             identityProvider: (ipc) => ipc.getIdentityProvider("aws.auth#sigv4"),
@@ -71916,11 +71917,11 @@ var init_runtimeConfig_shared2 = __esm({
             signer: new NoAuthSigner()
           }
         ],
-        logger: config2?.logger ?? new import_smithy_client17.NoOpLogger(),
-        serviceId: config2?.serviceId ?? "STS",
-        urlParser: config2?.urlParser ?? import_url_parser2.parseUrl,
-        utf8Decoder: config2?.utf8Decoder ?? import_util_utf89.fromUtf8,
-        utf8Encoder: config2?.utf8Encoder ?? import_util_utf89.toUtf8
+        logger: config3?.logger ?? new import_smithy_client17.NoOpLogger(),
+        serviceId: config3?.serviceId ?? "STS",
+        urlParser: config3?.urlParser ?? import_url_parser2.parseUrl,
+        utf8Decoder: config3?.utf8Decoder ?? import_util_utf89.fromUtf8,
+        utf8Encoder: config3?.utf8Encoder ?? import_util_utf89.toUtf8
       };
     };
   }
@@ -71945,28 +71946,28 @@ var init_runtimeConfig2 = __esm({
     import_smithy_client18 = __toESM(require_dist_cjs20());
     import_util_defaults_mode_node2 = __toESM(require_dist_cjs53());
     import_smithy_client19 = __toESM(require_dist_cjs20());
-    getRuntimeConfig4 = (config2) => {
+    getRuntimeConfig4 = (config3) => {
       (0, import_smithy_client19.emitWarningIfUnsupportedVersion)(process.version);
-      const defaultsMode = (0, import_util_defaults_mode_node2.resolveDefaultsModeConfig)(config2);
+      const defaultsMode = (0, import_util_defaults_mode_node2.resolveDefaultsModeConfig)(config3);
       const defaultConfigProvider = () => defaultsMode().then(import_smithy_client18.loadConfigsForDefaultMode);
-      const clientSharedValues = getRuntimeConfig3(config2);
+      const clientSharedValues = getRuntimeConfig3(config3);
       emitWarningIfUnsupportedVersion(process.version);
       const loaderConfig = {
-        profile: config2?.profile,
+        profile: config3?.profile,
         logger: clientSharedValues.logger
       };
       return {
         ...clientSharedValues,
-        ...config2,
+        ...config3,
         runtime: "node",
         defaultsMode,
-        authSchemePreference: config2?.authSchemePreference ?? (0, import_node_config_provider2.loadConfig)(NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
-        bodyLengthChecker: config2?.bodyLengthChecker ?? import_util_body_length_node2.calculateBodyLength,
-        defaultUserAgentProvider: config2?.defaultUserAgentProvider ?? (0, import_util_user_agent_node2.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_default.version }),
-        httpAuthSchemes: config2?.httpAuthSchemes ?? [
+        authSchemePreference: config3?.authSchemePreference ?? (0, import_node_config_provider2.loadConfig)(NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
+        bodyLengthChecker: config3?.bodyLengthChecker ?? import_util_body_length_node2.calculateBodyLength,
+        defaultUserAgentProvider: config3?.defaultUserAgentProvider ?? (0, import_util_user_agent_node2.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_default.version }),
+        httpAuthSchemes: config3?.httpAuthSchemes ?? [
           {
             schemeId: "aws.auth#sigv4",
-            identityProvider: (ipc) => ipc.getIdentityProvider("aws.auth#sigv4") || (async (idProps) => await config2.credentialDefaultProvider(idProps?.__config || {})()),
+            identityProvider: (ipc) => ipc.getIdentityProvider("aws.auth#sigv4") || (async (idProps) => await config3.credentialDefaultProvider(idProps?.__config || {})()),
             signer: new AwsSdkSigV4Signer()
           },
           {
@@ -71975,18 +71976,18 @@ var init_runtimeConfig2 = __esm({
             signer: new NoAuthSigner()
           }
         ],
-        maxAttempts: config2?.maxAttempts ?? (0, import_node_config_provider2.loadConfig)(import_middleware_retry3.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config2),
-        region: config2?.region ?? (0, import_node_config_provider2.loadConfig)(import_config_resolver3.NODE_REGION_CONFIG_OPTIONS, { ...import_config_resolver3.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
-        requestHandler: import_node_http_handler2.NodeHttpHandler.create(config2?.requestHandler ?? defaultConfigProvider),
-        retryMode: config2?.retryMode ?? (0, import_node_config_provider2.loadConfig)({
+        maxAttempts: config3?.maxAttempts ?? (0, import_node_config_provider2.loadConfig)(import_middleware_retry3.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config3),
+        region: config3?.region ?? (0, import_node_config_provider2.loadConfig)(import_config_resolver3.NODE_REGION_CONFIG_OPTIONS, { ...import_config_resolver3.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
+        requestHandler: import_node_http_handler2.NodeHttpHandler.create(config3?.requestHandler ?? defaultConfigProvider),
+        retryMode: config3?.retryMode ?? (0, import_node_config_provider2.loadConfig)({
           ...import_middleware_retry3.NODE_RETRY_MODE_CONFIG_OPTIONS,
           default: async () => (await defaultConfigProvider()).retryMode || import_util_retry2.DEFAULT_RETRY_MODE
-        }, config2),
-        sha256: config2?.sha256 ?? import_hash_node2.Hash.bind(null, "sha256"),
-        streamCollector: config2?.streamCollector ?? import_node_http_handler2.streamCollector,
-        useDualstackEndpoint: config2?.useDualstackEndpoint ?? (0, import_node_config_provider2.loadConfig)(import_config_resolver3.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        useFipsEndpoint: config2?.useFipsEndpoint ?? (0, import_node_config_provider2.loadConfig)(import_config_resolver3.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        userAgentAppId: config2?.userAgentAppId ?? (0, import_node_config_provider2.loadConfig)(import_util_user_agent_node2.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
+        }, config3),
+        sha256: config3?.sha256 ?? import_hash_node2.Hash.bind(null, "sha256"),
+        streamCollector: config3?.streamCollector ?? import_node_http_handler2.streamCollector,
+        useDualstackEndpoint: config3?.useDualstackEndpoint ?? (0, import_node_config_provider2.loadConfig)(import_config_resolver3.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        useFipsEndpoint: config3?.useFipsEndpoint ?? (0, import_node_config_provider2.loadConfig)(import_config_resolver3.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        userAgentAppId: config3?.userAgentAppId ?? (0, import_node_config_provider2.loadConfig)(import_util_user_agent_node2.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
       };
     };
   }
@@ -72026,11 +72027,11 @@ var init_httpAuthExtensionConfiguration2 = __esm({
         }
       };
     };
-    resolveHttpAuthRuntimeConfig2 = (config2) => {
+    resolveHttpAuthRuntimeConfig2 = (config3) => {
       return {
-        httpAuthSchemes: config2.httpAuthSchemes(),
-        httpAuthSchemeProvider: config2.httpAuthSchemeProvider(),
-        credentials: config2.credentials()
+        httpAuthSchemes: config3.httpAuthSchemes(),
+        httpAuthSchemeProvider: config3.httpAuthSchemeProvider(),
+        credentials: config3.credentials()
       };
     };
   }
@@ -72093,8 +72094,8 @@ var init_STSClient = __esm({
         this.middlewareStack.use((0, import_middleware_recursion_detection2.getRecursionDetectionPlugin)(this.config));
         this.middlewareStack.use(getHttpAuthSchemeEndpointRuleSetPlugin(this.config, {
           httpAuthSchemeParametersProvider: defaultSTSHttpAuthSchemeParametersProvider,
-          identityProviderConfigProvider: async (config2) => new DefaultIdentityProviderConfig({
-            "aws.auth#sigv4": config2.credentials
+          identityProviderConfigProvider: async (config3) => new DefaultIdentityProviderConfig({
+            "aws.auth#sigv4": config3.credentials
           })
         }));
         this.middlewareStack.use(getHttpSigningPlugin(this.config));
@@ -72771,10 +72772,10 @@ var init_AssumeRoleCommand = __esm({
     init_EndpointParameters2();
     init_models_02();
     init_Aws_query();
-    AssumeRoleCommand = class extends import_smithy_client25.Command.classBuilder().ep(commonParams2).m(function(Command, cs, config2, o3) {
+    AssumeRoleCommand = class extends import_smithy_client25.Command.classBuilder().ep(commonParams2).m(function(Command, cs, config3, o3) {
       return [
-        (0, import_middleware_serde3.getSerdePlugin)(config2, this.serialize, this.deserialize),
-        (0, import_middleware_endpoint4.getEndpointPlugin)(config2, Command.getEndpointParameterInstructions())
+        (0, import_middleware_serde3.getSerdePlugin)(config3, this.serialize, this.deserialize),
+        (0, import_middleware_endpoint4.getEndpointPlugin)(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AWSSecurityTokenServiceV20110615", "AssumeRole", {}).n("STSClient", "AssumeRoleCommand").f(void 0, AssumeRoleResponseFilterSensitiveLog).ser(se_AssumeRoleCommand).de(de_AssumeRoleCommand).build() {
     };
@@ -72791,10 +72792,10 @@ var init_AssumeRoleWithWebIdentityCommand = __esm({
     init_EndpointParameters2();
     init_models_02();
     init_Aws_query();
-    AssumeRoleWithWebIdentityCommand = class extends import_smithy_client26.Command.classBuilder().ep(commonParams2).m(function(Command, cs, config2, o3) {
+    AssumeRoleWithWebIdentityCommand = class extends import_smithy_client26.Command.classBuilder().ep(commonParams2).m(function(Command, cs, config3, o3) {
       return [
-        (0, import_middleware_serde4.getSerdePlugin)(config2, this.serialize, this.deserialize),
-        (0, import_middleware_endpoint5.getEndpointPlugin)(config2, Command.getEndpointParameterInstructions())
+        (0, import_middleware_serde4.getSerdePlugin)(config3, this.serialize, this.deserialize),
+        (0, import_middleware_endpoint5.getEndpointPlugin)(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AWSSecurityTokenServiceV20110615", "AssumeRoleWithWebIdentity", {}).n("STSClient", "AssumeRoleWithWebIdentityCommand").f(AssumeRoleWithWebIdentityRequestFilterSensitiveLog, AssumeRoleWithWebIdentityResponseFilterSensitiveLog).ser(se_AssumeRoleWithWebIdentityCommand).de(de_AssumeRoleWithWebIdentityCommand).build() {
     };
@@ -72942,8 +72943,8 @@ var init_defaultRoleAssumers = __esm({
         return baseCtor;
       else
         return class CustomizableSTSClient extends baseCtor {
-          constructor(config2) {
-            super(config2);
+          constructor(config3) {
+            super(config3);
             for (const customization of customizations) {
               this.middlewareStack.use(customization);
             }
@@ -74552,17 +74553,17 @@ var require_runtimeConfig_shared2 = __commonJS({
     var util_utf8_1 = require_dist_cjs8();
     var httpAuthSchemeProvider_1 = require_httpAuthSchemeProvider();
     var endpointResolver_1 = require_endpointResolver();
-    var getRuntimeConfig5 = (config2) => {
+    var getRuntimeConfig5 = (config3) => {
       return {
         apiVersion: "2006-03-01",
-        base64Decoder: config2?.base64Decoder ?? util_base64_1.fromBase64,
-        base64Encoder: config2?.base64Encoder ?? util_base64_1.toBase64,
-        disableHostPrefix: config2?.disableHostPrefix ?? false,
-        endpointProvider: config2?.endpointProvider ?? endpointResolver_1.defaultEndpointResolver,
-        extensions: config2?.extensions ?? [],
-        getAwsChunkedEncodingStream: config2?.getAwsChunkedEncodingStream ?? util_stream_1.getAwsChunkedEncodingStream,
-        httpAuthSchemeProvider: config2?.httpAuthSchemeProvider ?? httpAuthSchemeProvider_1.defaultS3HttpAuthSchemeProvider,
-        httpAuthSchemes: config2?.httpAuthSchemes ?? [
+        base64Decoder: config3?.base64Decoder ?? util_base64_1.fromBase64,
+        base64Encoder: config3?.base64Encoder ?? util_base64_1.toBase64,
+        disableHostPrefix: config3?.disableHostPrefix ?? false,
+        endpointProvider: config3?.endpointProvider ?? endpointResolver_1.defaultEndpointResolver,
+        extensions: config3?.extensions ?? [],
+        getAwsChunkedEncodingStream: config3?.getAwsChunkedEncodingStream ?? util_stream_1.getAwsChunkedEncodingStream,
+        httpAuthSchemeProvider: config3?.httpAuthSchemeProvider ?? httpAuthSchemeProvider_1.defaultS3HttpAuthSchemeProvider,
+        httpAuthSchemes: config3?.httpAuthSchemes ?? [
           {
             schemeId: "aws.auth#sigv4",
             identityProvider: (ipc) => ipc.getIdentityProvider("aws.auth#sigv4"),
@@ -74574,15 +74575,15 @@ var require_runtimeConfig_shared2 = __commonJS({
             signer: new core_1.AwsSdkSigV4ASigner()
           }
         ],
-        logger: config2?.logger ?? new smithy_client_1.NoOpLogger(),
-        sdkStreamMixin: config2?.sdkStreamMixin ?? util_stream_1.sdkStreamMixin,
-        serviceId: config2?.serviceId ?? "S3",
-        signerConstructor: config2?.signerConstructor ?? signature_v4_multi_region_1.SignatureV4MultiRegion,
-        signingEscapePath: config2?.signingEscapePath ?? false,
-        urlParser: config2?.urlParser ?? url_parser_1.parseUrl,
-        useArnRegion: config2?.useArnRegion ?? void 0,
-        utf8Decoder: config2?.utf8Decoder ?? util_utf8_1.fromUtf8,
-        utf8Encoder: config2?.utf8Encoder ?? util_utf8_1.toUtf8
+        logger: config3?.logger ?? new smithy_client_1.NoOpLogger(),
+        sdkStreamMixin: config3?.sdkStreamMixin ?? util_stream_1.sdkStreamMixin,
+        serviceId: config3?.serviceId ?? "S3",
+        signerConstructor: config3?.signerConstructor ?? signature_v4_multi_region_1.SignatureV4MultiRegion,
+        signingEscapePath: config3?.signingEscapePath ?? false,
+        urlParser: config3?.urlParser ?? url_parser_1.parseUrl,
+        useArnRegion: config3?.useArnRegion ?? void 0,
+        utf8Decoder: config3?.utf8Decoder ?? util_utf8_1.fromUtf8,
+        utf8Encoder: config3?.utf8Encoder ?? util_utf8_1.toUtf8
       };
     };
     exports2.getRuntimeConfig = getRuntimeConfig5;
@@ -74616,46 +74617,46 @@ var require_runtimeConfig2 = __commonJS({
     var smithy_client_1 = require_dist_cjs20();
     var util_defaults_mode_node_1 = require_dist_cjs53();
     var smithy_client_2 = require_dist_cjs20();
-    var getRuntimeConfig5 = (config2) => {
+    var getRuntimeConfig5 = (config3) => {
       (0, smithy_client_2.emitWarningIfUnsupportedVersion)(process.version);
-      const defaultsMode = (0, util_defaults_mode_node_1.resolveDefaultsModeConfig)(config2);
+      const defaultsMode = (0, util_defaults_mode_node_1.resolveDefaultsModeConfig)(config3);
       const defaultConfigProvider = () => defaultsMode().then(smithy_client_1.loadConfigsForDefaultMode);
-      const clientSharedValues = (0, runtimeConfig_shared_1.getRuntimeConfig)(config2);
+      const clientSharedValues = (0, runtimeConfig_shared_1.getRuntimeConfig)(config3);
       (0, core_1.emitWarningIfUnsupportedVersion)(process.version);
       const loaderConfig = {
-        profile: config2?.profile,
+        profile: config3?.profile,
         logger: clientSharedValues.logger
       };
       return {
         ...clientSharedValues,
-        ...config2,
+        ...config3,
         runtime: "node",
         defaultsMode,
-        authSchemePreference: config2?.authSchemePreference ?? (0, node_config_provider_1.loadConfig)(core_1.NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
-        bodyLengthChecker: config2?.bodyLengthChecker ?? util_body_length_node_1.calculateBodyLength,
-        credentialDefaultProvider: config2?.credentialDefaultProvider ?? credential_provider_node_1.defaultProvider,
-        defaultUserAgentProvider: config2?.defaultUserAgentProvider ?? (0, util_user_agent_node_1.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_json_1.default.version }),
-        disableS3ExpressSessionAuth: config2?.disableS3ExpressSessionAuth ?? (0, node_config_provider_1.loadConfig)(middleware_sdk_s3_1.NODE_DISABLE_S3_EXPRESS_SESSION_AUTH_OPTIONS, loaderConfig),
-        eventStreamSerdeProvider: config2?.eventStreamSerdeProvider ?? eventstream_serde_node_1.eventStreamSerdeProvider,
-        maxAttempts: config2?.maxAttempts ?? (0, node_config_provider_1.loadConfig)(middleware_retry_1.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config2),
-        md5: config2?.md5 ?? hash_node_1.Hash.bind(null, "md5"),
-        region: config2?.region ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_REGION_CONFIG_OPTIONS, { ...config_resolver_1.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
-        requestChecksumCalculation: config2?.requestChecksumCalculation ?? (0, node_config_provider_1.loadConfig)(middleware_flexible_checksums_1.NODE_REQUEST_CHECKSUM_CALCULATION_CONFIG_OPTIONS, loaderConfig),
-        requestHandler: node_http_handler_1.NodeHttpHandler.create(config2?.requestHandler ?? defaultConfigProvider),
-        responseChecksumValidation: config2?.responseChecksumValidation ?? (0, node_config_provider_1.loadConfig)(middleware_flexible_checksums_1.NODE_RESPONSE_CHECKSUM_VALIDATION_CONFIG_OPTIONS, loaderConfig),
-        retryMode: config2?.retryMode ?? (0, node_config_provider_1.loadConfig)({
+        authSchemePreference: config3?.authSchemePreference ?? (0, node_config_provider_1.loadConfig)(core_1.NODE_AUTH_SCHEME_PREFERENCE_OPTIONS, loaderConfig),
+        bodyLengthChecker: config3?.bodyLengthChecker ?? util_body_length_node_1.calculateBodyLength,
+        credentialDefaultProvider: config3?.credentialDefaultProvider ?? credential_provider_node_1.defaultProvider,
+        defaultUserAgentProvider: config3?.defaultUserAgentProvider ?? (0, util_user_agent_node_1.createDefaultUserAgentProvider)({ serviceId: clientSharedValues.serviceId, clientVersion: package_json_1.default.version }),
+        disableS3ExpressSessionAuth: config3?.disableS3ExpressSessionAuth ?? (0, node_config_provider_1.loadConfig)(middleware_sdk_s3_1.NODE_DISABLE_S3_EXPRESS_SESSION_AUTH_OPTIONS, loaderConfig),
+        eventStreamSerdeProvider: config3?.eventStreamSerdeProvider ?? eventstream_serde_node_1.eventStreamSerdeProvider,
+        maxAttempts: config3?.maxAttempts ?? (0, node_config_provider_1.loadConfig)(middleware_retry_1.NODE_MAX_ATTEMPT_CONFIG_OPTIONS, config3),
+        md5: config3?.md5 ?? hash_node_1.Hash.bind(null, "md5"),
+        region: config3?.region ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_REGION_CONFIG_OPTIONS, { ...config_resolver_1.NODE_REGION_CONFIG_FILE_OPTIONS, ...loaderConfig }),
+        requestChecksumCalculation: config3?.requestChecksumCalculation ?? (0, node_config_provider_1.loadConfig)(middleware_flexible_checksums_1.NODE_REQUEST_CHECKSUM_CALCULATION_CONFIG_OPTIONS, loaderConfig),
+        requestHandler: node_http_handler_1.NodeHttpHandler.create(config3?.requestHandler ?? defaultConfigProvider),
+        responseChecksumValidation: config3?.responseChecksumValidation ?? (0, node_config_provider_1.loadConfig)(middleware_flexible_checksums_1.NODE_RESPONSE_CHECKSUM_VALIDATION_CONFIG_OPTIONS, loaderConfig),
+        retryMode: config3?.retryMode ?? (0, node_config_provider_1.loadConfig)({
           ...middleware_retry_1.NODE_RETRY_MODE_CONFIG_OPTIONS,
           default: async () => (await defaultConfigProvider()).retryMode || util_retry_1.DEFAULT_RETRY_MODE
-        }, config2),
-        sha1: config2?.sha1 ?? hash_node_1.Hash.bind(null, "sha1"),
-        sha256: config2?.sha256 ?? hash_node_1.Hash.bind(null, "sha256"),
-        sigv4aSigningRegionSet: config2?.sigv4aSigningRegionSet ?? (0, node_config_provider_1.loadConfig)(core_1.NODE_SIGV4A_CONFIG_OPTIONS, loaderConfig),
-        streamCollector: config2?.streamCollector ?? node_http_handler_1.streamCollector,
-        streamHasher: config2?.streamHasher ?? hash_stream_node_1.readableStreamHasher,
-        useArnRegion: config2?.useArnRegion ?? (0, node_config_provider_1.loadConfig)(middleware_bucket_endpoint_1.NODE_USE_ARN_REGION_CONFIG_OPTIONS, loaderConfig),
-        useDualstackEndpoint: config2?.useDualstackEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        useFipsEndpoint: config2?.useFipsEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
-        userAgentAppId: config2?.userAgentAppId ?? (0, node_config_provider_1.loadConfig)(util_user_agent_node_1.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
+        }, config3),
+        sha1: config3?.sha1 ?? hash_node_1.Hash.bind(null, "sha1"),
+        sha256: config3?.sha256 ?? hash_node_1.Hash.bind(null, "sha256"),
+        sigv4aSigningRegionSet: config3?.sigv4aSigningRegionSet ?? (0, node_config_provider_1.loadConfig)(core_1.NODE_SIGV4A_CONFIG_OPTIONS, loaderConfig),
+        streamCollector: config3?.streamCollector ?? node_http_handler_1.streamCollector,
+        streamHasher: config3?.streamHasher ?? hash_stream_node_1.readableStreamHasher,
+        useArnRegion: config3?.useArnRegion ?? (0, node_config_provider_1.loadConfig)(middleware_bucket_endpoint_1.NODE_USE_ARN_REGION_CONFIG_OPTIONS, loaderConfig),
+        useDualstackEndpoint: config3?.useDualstackEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_DUALSTACK_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        useFipsEndpoint: config3?.useFipsEndpoint ?? (0, node_config_provider_1.loadConfig)(config_resolver_1.NODE_USE_FIPS_ENDPOINT_CONFIG_OPTIONS, loaderConfig),
+        userAgentAppId: config3?.userAgentAppId ?? (0, node_config_provider_1.loadConfig)(util_user_agent_node_1.NODE_APP_ID_CONFIG_OPTIONS, loaderConfig)
       };
     };
     exports2.getRuntimeConfig = getRuntimeConfig5;
@@ -74738,9 +74739,9 @@ var require_dist_cjs67 = __commonJS({
       tags: ["SSE"],
       override: true
     };
-    var getSsecPlugin = /* @__PURE__ */ __name((config2) => ({
+    var getSsecPlugin = /* @__PURE__ */ __name((config3) => ({
       applyToStack: /* @__PURE__ */ __name((clientStack) => {
-        clientStack.add(ssecMiddleware(config2), ssecMiddlewareOptions);
+        clientStack.add(ssecMiddleware(config3), ssecMiddlewareOptions);
       }, "applyToStack")
     }), "getSsecPlugin");
     function isValidBase64EncodedSSECustomerKey(str, options) {
@@ -74809,9 +74810,9 @@ var require_dist_cjs68 = __commonJS({
       name: "locationConstraintMiddleware",
       override: true
     };
-    var getLocationConstraintPlugin = /* @__PURE__ */ __name((config2) => ({
+    var getLocationConstraintPlugin = /* @__PURE__ */ __name((config3) => ({
       applyToStack: /* @__PURE__ */ __name((clientStack) => {
-        clientStack.add(locationConstraintMiddleware(config2), locationConstraintMiddlewareOptions);
+        clientStack.add(locationConstraintMiddleware(config3), locationConstraintMiddlewareOptions);
       }, "applyToStack")
     }), "getLocationConstraintPlugin");
   }
@@ -83760,11 +83761,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       DisableS3ExpressSessionAuth: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "CreateSession", {}).n("S3Client", "CreateSessionCommand").f(CreateSessionRequestFilterSensitiveLog, CreateSessionOutputFilterSensitiveLog).ser(se_CreateSessionCommand).de(de_CreateSessionCommand).build() {
     };
@@ -83798,11 +83799,11 @@ var require_dist_cjs70 = __commonJS({
         }
       };
     };
-    var resolveHttpAuthRuntimeConfig3 = (config2) => {
+    var resolveHttpAuthRuntimeConfig3 = (config3) => {
       return {
-        httpAuthSchemes: config2.httpAuthSchemes(),
-        httpAuthSchemeProvider: config2.httpAuthSchemeProvider(),
-        credentials: config2.credentials()
+        httpAuthSchemes: config3.httpAuthSchemes(),
+        httpAuthSchemeProvider: config3.httpAuthSchemeProvider(),
+        credentials: config3.credentials()
       };
     };
     var resolveRuntimeExtensions3 = (runtimeConfig2, extensions) => {
@@ -83836,9 +83837,9 @@ var require_dist_cjs70 = __commonJS({
         this.middlewareStack.use(middlewareRecursionDetection.getRecursionDetectionPlugin(this.config));
         this.middlewareStack.use(core.getHttpAuthSchemeEndpointRuleSetPlugin(this.config, {
           httpAuthSchemeParametersProvider: httpAuthSchemeProvider.defaultS3HttpAuthSchemeParametersProvider,
-          identityProviderConfigProvider: async (config2) => new core.DefaultIdentityProviderConfig({
-            "aws.auth#sigv4": config2.credentials,
-            "aws.auth#sigv4a": config2.credentials
+          identityProviderConfigProvider: async (config3) => new core.DefaultIdentityProviderConfig({
+            "aws.auth#sigv4": config3.credentials,
+            "aws.auth#sigv4a": config3.credentials
           })
         }));
         this.middlewareStack.use(core.getHttpSigningPlugin(this.config));
@@ -83856,11 +83857,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "AbortMultipartUpload", {}).n("S3Client", "AbortMultipartUploadCommand").f(void 0, void 0).ser(se_AbortMultipartUploadCommand).de(de_AbortMultipartUploadCommand).build() {
     };
@@ -83868,12 +83869,12 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "CompleteMultipartUpload", {}).n("S3Client", "CompleteMultipartUploadCommand").f(CompleteMultipartUploadRequestFilterSensitiveLog, CompleteMultipartUploadOutputFilterSensitiveLog).ser(se_CompleteMultipartUploadCommand).de(de_CompleteMultipartUploadCommand).build() {
     };
@@ -83883,12 +83884,12 @@ var require_dist_cjs70 = __commonJS({
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" },
       CopySource: { type: "contextParams", name: "CopySource" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "CopyObject", {}).n("S3Client", "CopyObjectCommand").f(CopyObjectRequestFilterSensitiveLog, CopyObjectOutputFilterSensitiveLog).ser(se_CopyObjectCommand).de(de_CopyObjectCommand).build() {
     };
@@ -83897,12 +83898,12 @@ var require_dist_cjs70 = __commonJS({
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       DisableAccessPoints: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareLocationConstraint.getLocationConstraintPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareLocationConstraint.getLocationConstraintPlugin(config3)
       ];
     }).s("AmazonS3", "CreateBucket", {}).n("S3Client", "CreateBucketCommand").f(void 0, void 0).ser(se_CreateBucketCommand).de(de_CreateBucketCommand).build() {
     };
@@ -83910,11 +83911,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -83925,11 +83926,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -83940,12 +83941,12 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "CreateMultipartUpload", {}).n("S3Client", "CreateMultipartUploadCommand").f(CreateMultipartUploadRequestFilterSensitiveLog, CreateMultipartUploadOutputFilterSensitiveLog).ser(se_CreateMultipartUploadCommand).de(de_CreateMultipartUploadCommand).build() {
     };
@@ -83953,10 +83954,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketAnalyticsConfiguration", {}).n("S3Client", "DeleteBucketAnalyticsConfigurationCommand").f(void 0, void 0).ser(se_DeleteBucketAnalyticsConfigurationCommand).de(de_DeleteBucketAnalyticsConfigurationCommand).build() {
     };
@@ -83964,10 +83965,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucket", {}).n("S3Client", "DeleteBucketCommand").f(void 0, void 0).ser(se_DeleteBucketCommand).de(de_DeleteBucketCommand).build() {
     };
@@ -83975,10 +83976,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketCors", {}).n("S3Client", "DeleteBucketCorsCommand").f(void 0, void 0).ser(se_DeleteBucketCorsCommand).de(de_DeleteBucketCorsCommand).build() {
     };
@@ -83986,10 +83987,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketEncryption", {}).n("S3Client", "DeleteBucketEncryptionCommand").f(void 0, void 0).ser(se_DeleteBucketEncryptionCommand).de(de_DeleteBucketEncryptionCommand).build() {
     };
@@ -83997,10 +83998,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketIntelligentTieringConfiguration", {}).n("S3Client", "DeleteBucketIntelligentTieringConfigurationCommand").f(void 0, void 0).ser(se_DeleteBucketIntelligentTieringConfigurationCommand).de(de_DeleteBucketIntelligentTieringConfigurationCommand).build() {
     };
@@ -84008,10 +84009,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketInventoryConfiguration", {}).n("S3Client", "DeleteBucketInventoryConfigurationCommand").f(void 0, void 0).ser(se_DeleteBucketInventoryConfigurationCommand).de(de_DeleteBucketInventoryConfigurationCommand).build() {
     };
@@ -84019,10 +84020,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketLifecycle", {}).n("S3Client", "DeleteBucketLifecycleCommand").f(void 0, void 0).ser(se_DeleteBucketLifecycleCommand).de(de_DeleteBucketLifecycleCommand).build() {
     };
@@ -84030,10 +84031,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketMetadataConfiguration", {}).n("S3Client", "DeleteBucketMetadataConfigurationCommand").f(void 0, void 0).ser(se_DeleteBucketMetadataConfigurationCommand).de(de_DeleteBucketMetadataConfigurationCommand).build() {
     };
@@ -84041,10 +84042,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketMetadataTableConfiguration", {}).n("S3Client", "DeleteBucketMetadataTableConfigurationCommand").f(void 0, void 0).ser(se_DeleteBucketMetadataTableConfigurationCommand).de(de_DeleteBucketMetadataTableConfigurationCommand).build() {
     };
@@ -84052,10 +84053,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketMetricsConfiguration", {}).n("S3Client", "DeleteBucketMetricsConfigurationCommand").f(void 0, void 0).ser(se_DeleteBucketMetricsConfigurationCommand).de(de_DeleteBucketMetricsConfigurationCommand).build() {
     };
@@ -84063,10 +84064,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketOwnershipControls", {}).n("S3Client", "DeleteBucketOwnershipControlsCommand").f(void 0, void 0).ser(se_DeleteBucketOwnershipControlsCommand).de(de_DeleteBucketOwnershipControlsCommand).build() {
     };
@@ -84074,10 +84075,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketPolicy", {}).n("S3Client", "DeleteBucketPolicyCommand").f(void 0, void 0).ser(se_DeleteBucketPolicyCommand).de(de_DeleteBucketPolicyCommand).build() {
     };
@@ -84085,10 +84086,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketReplication", {}).n("S3Client", "DeleteBucketReplicationCommand").f(void 0, void 0).ser(se_DeleteBucketReplicationCommand).de(de_DeleteBucketReplicationCommand).build() {
     };
@@ -84096,10 +84097,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketTagging", {}).n("S3Client", "DeleteBucketTaggingCommand").f(void 0, void 0).ser(se_DeleteBucketTaggingCommand).de(de_DeleteBucketTaggingCommand).build() {
     };
@@ -84107,10 +84108,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeleteBucketWebsite", {}).n("S3Client", "DeleteBucketWebsiteCommand").f(void 0, void 0).ser(se_DeleteBucketWebsiteCommand).de(de_DeleteBucketWebsiteCommand).build() {
     };
@@ -84118,37 +84119,37 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "DeleteObject", {}).n("S3Client", "DeleteObjectCommand").f(void 0, void 0).ser(se_DeleteObjectCommand).de(de_DeleteObjectCommand).build() {
     };
     var DeleteObjectsCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "DeleteObjects", {}).n("S3Client", "DeleteObjectsCommand").f(void 0, void 0).ser(se_DeleteObjectsCommand).de(de_DeleteObjectsCommand).build() {
     };
     var DeleteObjectTaggingCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "DeleteObjectTagging", {}).n("S3Client", "DeleteObjectTaggingCommand").f(void 0, void 0).ser(se_DeleteObjectTaggingCommand).de(de_DeleteObjectTaggingCommand).build() {
     };
@@ -84156,10 +84157,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "DeletePublicAccessBlock", {}).n("S3Client", "DeletePublicAccessBlockCommand").f(void 0, void 0).ser(se_DeletePublicAccessBlockCommand).de(de_DeletePublicAccessBlockCommand).build() {
     };
@@ -84167,11 +84168,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketAccelerateConfiguration", {}).n("S3Client", "GetBucketAccelerateConfigurationCommand").f(void 0, void 0).ser(se_GetBucketAccelerateConfigurationCommand).de(de_GetBucketAccelerateConfigurationCommand).build() {
     };
@@ -84179,11 +84180,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketAcl", {}).n("S3Client", "GetBucketAclCommand").f(void 0, void 0).ser(se_GetBucketAclCommand).de(de_GetBucketAclCommand).build() {
     };
@@ -84191,11 +84192,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketAnalyticsConfiguration", {}).n("S3Client", "GetBucketAnalyticsConfigurationCommand").f(void 0, void 0).ser(se_GetBucketAnalyticsConfigurationCommand).de(de_GetBucketAnalyticsConfigurationCommand).build() {
     };
@@ -84203,11 +84204,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketCors", {}).n("S3Client", "GetBucketCorsCommand").f(void 0, void 0).ser(se_GetBucketCorsCommand).de(de_GetBucketCorsCommand).build() {
     };
@@ -84215,11 +84216,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketEncryption", {}).n("S3Client", "GetBucketEncryptionCommand").f(void 0, GetBucketEncryptionOutputFilterSensitiveLog).ser(se_GetBucketEncryptionCommand).de(de_GetBucketEncryptionCommand).build() {
     };
@@ -84227,11 +84228,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketIntelligentTieringConfiguration", {}).n("S3Client", "GetBucketIntelligentTieringConfigurationCommand").f(void 0, void 0).ser(se_GetBucketIntelligentTieringConfigurationCommand).de(de_GetBucketIntelligentTieringConfigurationCommand).build() {
     };
@@ -84239,11 +84240,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketInventoryConfiguration", {}).n("S3Client", "GetBucketInventoryConfigurationCommand").f(void 0, GetBucketInventoryConfigurationOutputFilterSensitiveLog).ser(se_GetBucketInventoryConfigurationCommand).de(de_GetBucketInventoryConfigurationCommand).build() {
     };
@@ -84251,11 +84252,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketLifecycleConfiguration", {}).n("S3Client", "GetBucketLifecycleConfigurationCommand").f(void 0, void 0).ser(se_GetBucketLifecycleConfigurationCommand).de(de_GetBucketLifecycleConfigurationCommand).build() {
     };
@@ -84263,11 +84264,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketLocation", {}).n("S3Client", "GetBucketLocationCommand").f(void 0, void 0).ser(se_GetBucketLocationCommand).de(de_GetBucketLocationCommand).build() {
     };
@@ -84275,11 +84276,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketLogging", {}).n("S3Client", "GetBucketLoggingCommand").f(void 0, void 0).ser(se_GetBucketLoggingCommand).de(de_GetBucketLoggingCommand).build() {
     };
@@ -84287,11 +84288,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketMetadataConfiguration", {}).n("S3Client", "GetBucketMetadataConfigurationCommand").f(void 0, void 0).ser(se_GetBucketMetadataConfigurationCommand).de(de_GetBucketMetadataConfigurationCommand).build() {
     };
@@ -84299,11 +84300,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketMetadataTableConfiguration", {}).n("S3Client", "GetBucketMetadataTableConfigurationCommand").f(void 0, void 0).ser(se_GetBucketMetadataTableConfigurationCommand).de(de_GetBucketMetadataTableConfigurationCommand).build() {
     };
@@ -84311,11 +84312,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketMetricsConfiguration", {}).n("S3Client", "GetBucketMetricsConfigurationCommand").f(void 0, void 0).ser(se_GetBucketMetricsConfigurationCommand).de(de_GetBucketMetricsConfigurationCommand).build() {
     };
@@ -84323,11 +84324,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketNotificationConfiguration", {}).n("S3Client", "GetBucketNotificationConfigurationCommand").f(void 0, void 0).ser(se_GetBucketNotificationConfigurationCommand).de(de_GetBucketNotificationConfigurationCommand).build() {
     };
@@ -84335,11 +84336,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketOwnershipControls", {}).n("S3Client", "GetBucketOwnershipControlsCommand").f(void 0, void 0).ser(se_GetBucketOwnershipControlsCommand).de(de_GetBucketOwnershipControlsCommand).build() {
     };
@@ -84347,11 +84348,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketPolicy", {}).n("S3Client", "GetBucketPolicyCommand").f(void 0, void 0).ser(se_GetBucketPolicyCommand).de(de_GetBucketPolicyCommand).build() {
     };
@@ -84359,11 +84360,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketPolicyStatus", {}).n("S3Client", "GetBucketPolicyStatusCommand").f(void 0, void 0).ser(se_GetBucketPolicyStatusCommand).de(de_GetBucketPolicyStatusCommand).build() {
     };
@@ -84371,11 +84372,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketReplication", {}).n("S3Client", "GetBucketReplicationCommand").f(void 0, void 0).ser(se_GetBucketReplicationCommand).de(de_GetBucketReplicationCommand).build() {
     };
@@ -84383,11 +84384,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketRequestPayment", {}).n("S3Client", "GetBucketRequestPaymentCommand").f(void 0, void 0).ser(se_GetBucketRequestPaymentCommand).de(de_GetBucketRequestPaymentCommand).build() {
     };
@@ -84395,11 +84396,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketTagging", {}).n("S3Client", "GetBucketTaggingCommand").f(void 0, void 0).ser(se_GetBucketTaggingCommand).de(de_GetBucketTaggingCommand).build() {
     };
@@ -84407,11 +84408,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketVersioning", {}).n("S3Client", "GetBucketVersioningCommand").f(void 0, void 0).ser(se_GetBucketVersioningCommand).de(de_GetBucketVersioningCommand).build() {
     };
@@ -84419,11 +84420,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetBucketWebsite", {}).n("S3Client", "GetBucketWebsiteCommand").f(void 0, void 0).ser(se_GetBucketWebsiteCommand).de(de_GetBucketWebsiteCommand).build() {
     };
@@ -84431,23 +84432,23 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetObjectAcl", {}).n("S3Client", "GetObjectAclCommand").f(void 0, void 0).ser(se_GetObjectAclCommand).de(de_GetObjectAclCommand).build() {
     };
     var GetObjectAttributesCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "GetObjectAttributes", {}).n("S3Client", "GetObjectAttributesCommand").f(GetObjectAttributesRequestFilterSensitiveLog, void 0).ser(se_GetObjectAttributesCommand).de(de_GetObjectAttributesCommand).build() {
     };
@@ -84455,71 +84456,71 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestChecksumRequired: false,
           requestValidationModeMember: "ChecksumMode",
           responseAlgorithms: ["CRC64NVME", "CRC32", "CRC32C", "SHA256", "SHA1"]
         }),
-        middlewareSsec.getSsecPlugin(config2),
-        middlewareSdkS3.getS3ExpiresMiddlewarePlugin(config2)
+        middlewareSsec.getSsecPlugin(config3),
+        middlewareSdkS3.getS3ExpiresMiddlewarePlugin(config3)
       ];
     }).s("AmazonS3", "GetObject", {}).n("S3Client", "GetObjectCommand").f(GetObjectRequestFilterSensitiveLog, GetObjectOutputFilterSensitiveLog).ser(se_GetObjectCommand).de(de_GetObjectCommand).build() {
     };
     var GetObjectLegalHoldCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetObjectLegalHold", {}).n("S3Client", "GetObjectLegalHoldCommand").f(void 0, void 0).ser(se_GetObjectLegalHoldCommand).de(de_GetObjectLegalHoldCommand).build() {
     };
     var GetObjectLockConfigurationCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetObjectLockConfiguration", {}).n("S3Client", "GetObjectLockConfigurationCommand").f(void 0, void 0).ser(se_GetObjectLockConfigurationCommand).de(de_GetObjectLockConfigurationCommand).build() {
     };
     var GetObjectRetentionCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetObjectRetention", {}).n("S3Client", "GetObjectRetentionCommand").f(void 0, void 0).ser(se_GetObjectRetentionCommand).de(de_GetObjectRetentionCommand).build() {
     };
     var GetObjectTaggingCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetObjectTagging", {}).n("S3Client", "GetObjectTaggingCommand").f(void 0, void 0).ser(se_GetObjectTaggingCommand).de(de_GetObjectTaggingCommand).build() {
     };
     var GetObjectTorrentCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "GetObjectTorrent", {}).n("S3Client", "GetObjectTorrentCommand").f(void 0, GetObjectTorrentOutputFilterSensitiveLog).ser(se_GetObjectTorrentCommand).de(de_GetObjectTorrentCommand).build() {
     };
@@ -84527,22 +84528,22 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "GetPublicAccessBlock", {}).n("S3Client", "GetPublicAccessBlockCommand").f(void 0, void 0).ser(se_GetPublicAccessBlockCommand).de(de_GetPublicAccessBlockCommand).build() {
     };
     var HeadBucketCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "HeadBucket", {}).n("S3Client", "HeadBucketCommand").f(void 0, void 0).ser(se_HeadBucketCommand).de(de_HeadBucketCommand).build() {
     };
@@ -84550,13 +84551,13 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2),
-        middlewareSdkS3.getS3ExpiresMiddlewarePlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3),
+        middlewareSdkS3.getS3ExpiresMiddlewarePlugin(config3)
       ];
     }).s("AmazonS3", "HeadObject", {}).n("S3Client", "HeadObjectCommand").f(HeadObjectRequestFilterSensitiveLog, HeadObjectOutputFilterSensitiveLog).ser(se_HeadObjectCommand).de(de_HeadObjectCommand).build() {
     };
@@ -84564,11 +84565,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListBucketAnalyticsConfigurations", {}).n("S3Client", "ListBucketAnalyticsConfigurationsCommand").f(void 0, void 0).ser(se_ListBucketAnalyticsConfigurationsCommand).de(de_ListBucketAnalyticsConfigurationsCommand).build() {
     };
@@ -84576,11 +84577,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListBucketIntelligentTieringConfigurations", {}).n("S3Client", "ListBucketIntelligentTieringConfigurationsCommand").f(void 0, void 0).ser(se_ListBucketIntelligentTieringConfigurationsCommand).de(de_ListBucketIntelligentTieringConfigurationsCommand).build() {
     };
@@ -84588,41 +84589,41 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListBucketInventoryConfigurations", {}).n("S3Client", "ListBucketInventoryConfigurationsCommand").f(void 0, ListBucketInventoryConfigurationsOutputFilterSensitiveLog).ser(se_ListBucketInventoryConfigurationsCommand).de(de_ListBucketInventoryConfigurationsCommand).build() {
     };
     var ListBucketMetricsConfigurationsCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListBucketMetricsConfigurations", {}).n("S3Client", "ListBucketMetricsConfigurationsCommand").f(void 0, void 0).ser(se_ListBucketMetricsConfigurationsCommand).de(de_ListBucketMetricsConfigurationsCommand).build() {
     };
-    var ListBucketsCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config2, o3) {
+    var ListBucketsCommand = class extends smithyClient.Command.classBuilder().ep(commonParams3).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListBuckets", {}).n("S3Client", "ListBucketsCommand").f(void 0, void 0).ser(se_ListBucketsCommand).de(de_ListBucketsCommand).build() {
     };
     var ListDirectoryBucketsCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListDirectoryBuckets", {}).n("S3Client", "ListDirectoryBucketsCommand").f(void 0, void 0).ser(se_ListDirectoryBucketsCommand).de(de_ListDirectoryBucketsCommand).build() {
     };
@@ -84630,11 +84631,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Prefix: { type: "contextParams", name: "Prefix" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListMultipartUploads", {}).n("S3Client", "ListMultipartUploadsCommand").f(void 0, void 0).ser(se_ListMultipartUploadsCommand).de(de_ListMultipartUploadsCommand).build() {
     };
@@ -84642,11 +84643,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Prefix: { type: "contextParams", name: "Prefix" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListObjects", {}).n("S3Client", "ListObjectsCommand").f(void 0, void 0).ser(se_ListObjectsCommand).de(de_ListObjectsCommand).build() {
     };
@@ -84654,11 +84655,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Prefix: { type: "contextParams", name: "Prefix" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListObjectsV2", {}).n("S3Client", "ListObjectsV2Command").f(void 0, void 0).ser(se_ListObjectsV2Command).de(de_ListObjectsV2Command).build() {
     };
@@ -84666,11 +84667,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Prefix: { type: "contextParams", name: "Prefix" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "ListObjectVersions", {}).n("S3Client", "ListObjectVersionsCommand").f(void 0, void 0).ser(se_ListObjectVersionsCommand).de(de_ListObjectVersionsCommand).build() {
     };
@@ -84678,12 +84679,12 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "ListParts", {}).n("S3Client", "ListPartsCommand").f(ListPartsRequestFilterSensitiveLog, void 0).ser(se_ListPartsCommand).de(de_ListPartsCommand).build() {
     };
@@ -84691,11 +84692,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: false
         })
@@ -84706,11 +84707,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84721,10 +84722,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "PutBucketAnalyticsConfiguration", {}).n("S3Client", "PutBucketAnalyticsConfigurationCommand").f(void 0, void 0).ser(se_PutBucketAnalyticsConfigurationCommand).de(de_PutBucketAnalyticsConfigurationCommand).build() {
     };
@@ -84732,11 +84733,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84747,11 +84748,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84762,10 +84763,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "PutBucketIntelligentTieringConfiguration", {}).n("S3Client", "PutBucketIntelligentTieringConfigurationCommand").f(void 0, void 0).ser(se_PutBucketIntelligentTieringConfigurationCommand).de(de_PutBucketIntelligentTieringConfigurationCommand).build() {
     };
@@ -84773,10 +84774,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "PutBucketInventoryConfiguration", {}).n("S3Client", "PutBucketInventoryConfigurationCommand").f(PutBucketInventoryConfigurationRequestFilterSensitiveLog, void 0).ser(se_PutBucketInventoryConfigurationCommand).de(de_PutBucketInventoryConfigurationCommand).build() {
     };
@@ -84784,15 +84785,15 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "PutBucketLifecycleConfiguration", {}).n("S3Client", "PutBucketLifecycleConfigurationCommand").f(void 0, void 0).ser(se_PutBucketLifecycleConfigurationCommand).de(de_PutBucketLifecycleConfigurationCommand).build() {
     };
@@ -84800,11 +84801,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84815,10 +84816,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "PutBucketMetricsConfiguration", {}).n("S3Client", "PutBucketMetricsConfigurationCommand").f(void 0, void 0).ser(se_PutBucketMetricsConfigurationCommand).de(de_PutBucketMetricsConfigurationCommand).build() {
     };
@@ -84826,10 +84827,10 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "PutBucketNotificationConfiguration", {}).n("S3Client", "PutBucketNotificationConfigurationCommand").f(void 0, void 0).ser(se_PutBucketNotificationConfigurationCommand).de(de_PutBucketNotificationConfigurationCommand).build() {
     };
@@ -84837,11 +84838,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84852,11 +84853,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84867,11 +84868,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84882,11 +84883,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84897,11 +84898,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84912,11 +84913,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84927,11 +84928,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -84942,15 +84943,15 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "PutObjectAcl", {}).n("S3Client", "PutObjectAclCommand").f(void 0, void 0).ser(se_PutObjectAclCommand).de(de_PutObjectAclCommand).build() {
     };
@@ -84958,77 +84959,77 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: false
         }),
-        middlewareSdkS3.getCheckContentLengthHeaderPlugin(config2),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSdkS3.getCheckContentLengthHeaderPlugin(config3),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "PutObject", {}).n("S3Client", "PutObjectCommand").f(PutObjectRequestFilterSensitiveLog, PutObjectOutputFilterSensitiveLog).ser(se_PutObjectCommand).de(de_PutObjectCommand).build() {
     };
     var PutObjectLegalHoldCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "PutObjectLegalHold", {}).n("S3Client", "PutObjectLegalHoldCommand").f(void 0, void 0).ser(se_PutObjectLegalHoldCommand).de(de_PutObjectLegalHoldCommand).build() {
     };
     var PutObjectLockConfigurationCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "PutObjectLockConfiguration", {}).n("S3Client", "PutObjectLockConfigurationCommand").f(void 0, void 0).ser(se_PutObjectLockConfigurationCommand).de(de_PutObjectLockConfigurationCommand).build() {
     };
     var PutObjectRetentionCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "PutObjectRetention", {}).n("S3Client", "PutObjectRetentionCommand").f(void 0, void 0).ser(se_PutObjectRetentionCommand).de(de_PutObjectRetentionCommand).build() {
     };
     var PutObjectTaggingCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "PutObjectTagging", {}).n("S3Client", "PutObjectTaggingCommand").f(void 0, void 0).ser(se_PutObjectTaggingCommand).de(de_PutObjectTaggingCommand).build() {
     };
@@ -85036,11 +85037,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -85051,38 +85052,38 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "RenameObject", {}).n("S3Client", "RenameObjectCommand").f(void 0, void 0).ser(se_RenameObjectCommand).de(de_RenameObjectCommand).build() {
     };
     var RestoreObjectCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: false
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3)
       ];
     }).s("AmazonS3", "RestoreObject", {}).n("S3Client", "RestoreObjectCommand").f(RestoreObjectRequestFilterSensitiveLog, void 0).ser(se_RestoreObjectCommand).de(de_RestoreObjectCommand).build() {
     };
     var SelectObjectContentCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "SelectObjectContent", {
       eventStream: {
@@ -85094,11 +85095,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -85109,11 +85110,11 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       UseS3ExpressControlEndpoint: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: true
         })
@@ -85124,16 +85125,16 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       Bucket: { type: "contextParams", name: "Bucket" },
       Key: { type: "contextParams", name: "Key" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config2, {
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareFlexibleChecksums.getFlexibleChecksumsPlugin(config3, {
           requestAlgorithmMember: { httpHeader: "x-amz-sdk-checksum-algorithm", name: "ChecksumAlgorithm" },
           requestChecksumRequired: false
         }),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "UploadPart", {}).n("S3Client", "UploadPartCommand").f(UploadPartRequestFilterSensitiveLog, UploadPartOutputFilterSensitiveLog).ser(se_UploadPartCommand).de(de_UploadPartCommand).build() {
     };
@@ -85141,22 +85142,22 @@ var require_dist_cjs70 = __commonJS({
       ...commonParams3,
       DisableS3ExpressSessionAuth: { type: "staticContextParams", value: true },
       Bucket: { type: "contextParams", name: "Bucket" }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions()),
-        middlewareSdkS3.getThrow200ExceptionsPlugin(config2),
-        middlewareSsec.getSsecPlugin(config2)
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions()),
+        middlewareSdkS3.getThrow200ExceptionsPlugin(config3),
+        middlewareSsec.getSsecPlugin(config3)
       ];
     }).s("AmazonS3", "UploadPartCopy", {}).n("S3Client", "UploadPartCopyCommand").f(UploadPartCopyRequestFilterSensitiveLog, UploadPartCopyOutputFilterSensitiveLog).ser(se_UploadPartCopyCommand).de(de_UploadPartCopyCommand).build() {
     };
     var WriteGetObjectResponseCommand = class extends smithyClient.Command.classBuilder().ep({
       ...commonParams3,
       UseObjectLambdaEndpoint: { type: "staticContextParams", value: true }
-    }).m(function(Command, cs, config2, o3) {
+    }).m(function(Command, cs, config3, o3) {
       return [
-        middlewareSerde.getSerdePlugin(config2, this.serialize, this.deserialize),
-        middlewareEndpoint.getEndpointPlugin(config2, Command.getEndpointParameterInstructions())
+        middlewareSerde.getSerdePlugin(config3, this.serialize, this.deserialize),
+        middlewareEndpoint.getEndpointPlugin(config3, Command.getEndpointParameterInstructions())
       ];
     }).s("AmazonS3", "WriteGetObjectResponse", {}).n("S3Client", "WriteGetObjectResponseCommand").f(WriteGetObjectResponseRequestFilterSensitiveLog, void 0).ser(se_WriteGetObjectResponseCommand).de(de_WriteGetObjectResponseCommand).build() {
     };
@@ -89102,7 +89103,7 @@ var require_RealtimeChannel = __commonJS({
           const postgres_changes = (_b = (_a2 = this.bindings.postgres_changes) === null || _a2 === void 0 ? void 0 : _a2.map((r3) => r3.filter)) !== null && _b !== void 0 ? _b : [];
           const presence_enabled = !!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] && this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0 || ((_c = this.params.config.presence) === null || _c === void 0 ? void 0 : _c.enabled) === true;
           const accessTokenPayload = {};
-          const config2 = {
+          const config3 = {
             broadcast,
             presence: Object.assign(Object.assign({}, presence), { enabled: presence_enabled }),
             postgres_changes,
@@ -89115,7 +89116,7 @@ var require_RealtimeChannel = __commonJS({
             callback === null || callback === void 0 ? void 0 : callback(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, (0, normalizeChannelError_1.normalizeChannelError)(reason));
           });
           this._onClose(() => callback === null || callback === void 0 ? void 0 : callback(REALTIME_SUBSCRIBE_STATES.CLOSED));
-          this.updateJoinPayload(Object.assign({ config: config2 }, accessTokenPayload));
+          this.updateJoinPayload(Object.assign({ config: config3 }, accessTokenPayload));
           this._updateFilterMessage();
           this.channelAdapter.subscribe(timeout).receive("ok", async ({ postgres_changes: postgres_changes2 }) => {
             if (!this.socket._isManualToken()) {
@@ -100544,7 +100545,7 @@ var require_objectSpread2 = __commonJS2({ "../../node_modules/.pnpm/@oxc-project
 } });
 var import_objectSpread2 = __toESM2(require_objectSpread2(), 1);
 function getErrorShape(opts) {
-  const { path, error: error47, config: config2 } = opts;
+  const { path, error: error47, config: config3 } = opts;
   const { code } = opts.error;
   const shape = {
     message: error47.message,
@@ -100554,9 +100555,9 @@ function getErrorShape(opts) {
       httpStatus: getHTTPStatusCodeFromError(error47)
     }
   };
-  if (config2.isDev && typeof opts.error.stack === "string") shape.data.stack = opts.error.stack;
+  if (config3.isDev && typeof opts.error.stack === "string") shape.data.stack = opts.error.stack;
   if (typeof path === "string") shape.data.path = path;
-  return config2.errorFormatter((0, import_objectSpread2.default)((0, import_objectSpread2.default)({}, opts), {}, { shape }));
+  return config3.errorFormatter((0, import_objectSpread2.default)((0, import_objectSpread2.default)({}, opts), {}, { shape }));
 }
 
 // node_modules/.pnpm/@trpc+server@11.6.0_typescript@5.9.3/node_modules/@trpc/server/dist/tracked-Blz8XOf1.mjs
@@ -100615,13 +100616,13 @@ var defaultTransformer = {
     deserialize: (obj) => obj
   }
 };
-function transformTRPCResponseItem(config2, item) {
-  if ("error" in item) return (0, import_objectSpread2$1.default)((0, import_objectSpread2$1.default)({}, item), {}, { error: config2.transformer.output.serialize(item.error) });
-  if ("data" in item.result) return (0, import_objectSpread2$1.default)((0, import_objectSpread2$1.default)({}, item), {}, { result: (0, import_objectSpread2$1.default)((0, import_objectSpread2$1.default)({}, item.result), {}, { data: config2.transformer.output.serialize(item.result.data) }) });
+function transformTRPCResponseItem(config3, item) {
+  if ("error" in item) return (0, import_objectSpread2$1.default)((0, import_objectSpread2$1.default)({}, item), {}, { error: config3.transformer.output.serialize(item.error) });
+  if ("data" in item.result) return (0, import_objectSpread2$1.default)((0, import_objectSpread2$1.default)({}, item), {}, { result: (0, import_objectSpread2$1.default)((0, import_objectSpread2$1.default)({}, item.result), {}, { data: config3.transformer.output.serialize(item.result.data) }) });
   return item;
 }
-function transformTRPCResponse(config2, itemOrItems) {
-  return Array.isArray(itemOrItems) ? itemOrItems.map((item) => transformTRPCResponseItem(config2, item)) : transformTRPCResponseItem(config2, itemOrItems);
+function transformTRPCResponse(config3, itemOrItems) {
+  return Array.isArray(itemOrItems) ? itemOrItems.map((item) => transformTRPCResponseItem(config3, item)) : transformTRPCResponseItem(config3, itemOrItems);
 }
 var import_objectSpread22 = __toESM2(require_objectSpread2(), 1);
 var lazyMarker = "lazyMarker";
@@ -100654,7 +100655,7 @@ var reservedWords = [
   "call",
   "apply"
 ];
-function createRouterFactory(config2) {
+function createRouterFactory(config3) {
   function createRouterInner(input) {
     const reservedWordsUsed = new Set(Object.keys(input).filter((v3) => reservedWords.includes(v3)));
     if (reservedWordsUsed.size > 0) throw new Error("Reserved words used in `router({})` call: " + Array.from(reservedWordsUsed).join(", "));
@@ -100710,7 +100711,7 @@ function createRouterFactory(config2) {
     }
     const record2 = step(input);
     const _def = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({
-      _config: config2,
+      _config: config3,
       router: true,
       procedures,
       lazy: lazy$1
@@ -102198,7 +102199,7 @@ async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
   const { router: router2, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router2._def._config;
+  const config3 = router2._def._config;
   const url3 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -102242,7 +102243,7 @@ async function resolveResponse(opts) {
   });
   const methodMapper = allowMethodOverride ? TYPE_ACCEPTED_METHOD_MAP_WITH_METHOD_OVERRIDE : TYPE_ACCEPTED_METHOD_MAP;
   const isStreamCall = req.headers.get("trpc-accept") === "application/jsonl";
-  const experimentalSSE = (_config$sse$enabled = (_config$sse = config2.sse) === null || _config$sse === void 0 ? void 0 : _config$sse.enabled) !== null && _config$sse$enabled !== void 0 ? _config$sse$enabled : true;
+  const experimentalSSE = (_config$sse$enabled = (_config$sse = config3.sse) === null || _config$sse === void 0 ? void 0 : _config$sse.enabled) !== null && _config$sse$enabled !== void 0 ? _config$sse$enabled : true;
   try {
     const [infoError, info] = infoTuple;
     if (infoError) throw infoError;
@@ -102309,7 +102310,7 @@ async function resolveResponse(opts) {
             message: "Cannot use stream-like response in non-streaming request - use httpBatchStreamLink"
           });
           const res = error47 ? { error: getErrorShape({
-            config: config2,
+            config: config3,
             ctx: ctxManager.valueOrUndefined(),
             error: error47,
             input: call.result(),
@@ -102324,7 +102325,7 @@ async function resolveResponse(opts) {
             headers,
             untransformedJSON: [res]
           });
-          return new Response(JSON.stringify(transformTRPCResponse(config2, res)), {
+          return new Response(JSON.stringify(transformTRPCResponse(config3, res)), {
             status: headResponse$1.status,
             headers
           });
@@ -102343,9 +102344,9 @@ async function resolveResponse(opts) {
             const dataAsIterable = isObservable(result.data) ? observableToAsyncIterable(result.data, opts.req.signal) : result.data;
             return dataAsIterable;
           });
-          const stream4 = sseStreamProducer((0, import_objectSpread23.default)((0, import_objectSpread23.default)({}, config2.sse), {}, {
+          const stream4 = sseStreamProducer((0, import_objectSpread23.default)((0, import_objectSpread23.default)({}, config3.sse), {}, {
             data: iterable,
-            serialize: (v3) => config2.transformer.output.serialize(v3),
+            serialize: (v3) => config3.transformer.output.serialize(v3),
             formatError(errorOpts) {
               var _call$procedure$_def$2, _call$procedure3, _opts$onError2;
               const error$1 = getTRPCErrorFromUnknown(errorOpts.error);
@@ -102361,7 +102362,7 @@ async function resolveResponse(opts) {
                 type
               });
               const shape = getErrorShape({
-                config: config2,
+                config: config3,
                 ctx: ctxManager.valueOrUndefined(),
                 error: error$1,
                 input,
@@ -102398,7 +102399,7 @@ async function resolveResponse(opts) {
         headers,
         untransformedJSON: null
       });
-      const stream4 = jsonlStreamProducer((0, import_objectSpread23.default)((0, import_objectSpread23.default)({}, config2.jsonl), {}, {
+      const stream4 = jsonlStreamProducer((0, import_objectSpread23.default)((0, import_objectSpread23.default)({}, config3.jsonl), {}, {
         maxDepth: Infinity,
         data: rpcCalls.map(async (res) => {
           const [error47, result] = await res;
@@ -102406,7 +102407,7 @@ async function resolveResponse(opts) {
           if (error47) {
             var _procedure$_def$type, _procedure;
             return { error: getErrorShape({
-              config: config2,
+              config: config3,
               ctx: ctxManager.valueOrUndefined(),
               error: error47,
               input: call.result(),
@@ -102417,7 +102418,7 @@ async function resolveResponse(opts) {
           const iterable = isObservable(result.data) ? observableToAsyncIterable(result.data, opts.req.signal) : Promise.resolve(result.data);
           return { result: Promise.resolve({ data: iterable }) };
         }),
-        serialize: (data2) => config2.transformer.output.serialize(data2),
+        serialize: (data2) => config3.transformer.output.serialize(data2),
         onError: (cause) => {
           var _opts$onError3, _info$type;
           (_opts$onError3 = opts.onError) === null || _opts$onError3 === void 0 || _opts$onError3.call(opts, {
@@ -102437,7 +102438,7 @@ async function resolveResponse(opts) {
           const path = call === null || call === void 0 ? void 0 : call.path;
           const type = (_call$procedure$_def$3 = call === null || call === void 0 || (_call$procedure4 = call.procedure) === null || _call$procedure4 === void 0 ? void 0 : _call$procedure4._def.type) !== null && _call$procedure$_def$3 !== void 0 ? _call$procedure$_def$3 : "unknown";
           const shape = getErrorShape({
-            config: config2,
+            config: config3,
             ctx: ctxManager.valueOrUndefined(),
             error: error47,
             input,
@@ -102467,7 +102468,7 @@ async function resolveResponse(opts) {
       if (error47) {
         var _call$procedure$_def$4, _call$procedure5;
         return { error: getErrorShape({
-          config: config2,
+          config: config3,
           ctx: ctxManager.valueOrUndefined(),
           error: error47,
           input: call.result(),
@@ -102486,7 +102487,7 @@ async function resolveResponse(opts) {
       errors,
       headers
     });
-    return new Response(JSON.stringify(transformTRPCResponse(config2, resultAsRPCResponse)), {
+    return new Response(JSON.stringify(transformTRPCResponse(config3, resultAsRPCResponse)), {
       status: headResponse.status,
       headers
     });
@@ -102796,7 +102797,7 @@ var TRPCBuilder = class TRPCBuilder2 {
   */
   create(opts) {
     var _opts$transformer, _opts$isDev, _globalThis$process$1, _opts$allowOutsideOfS, _opts$errorFormatter, _opts$isServer;
-    const config2 = (0, import_objectSpread24.default)((0, import_objectSpread24.default)({}, opts), {}, {
+    const config3 = (0, import_objectSpread24.default)((0, import_objectSpread24.default)({}, opts), {}, {
       transformer: getDataTransformer((_opts$transformer = opts === null || opts === void 0 ? void 0 : opts.transformer) !== null && _opts$transformer !== void 0 ? _opts$transformer : defaultTransformer),
       isDev: (_opts$isDev = opts === null || opts === void 0 ? void 0 : opts.isDev) !== null && _opts$isDev !== void 0 ? _opts$isDev : ((_globalThis$process$1 = globalThis.process) === null || _globalThis$process$1 === void 0 ? void 0 : _globalThis$process$1.env["NODE_ENV"]) !== "production",
       allowOutsideOfServer: (_opts$allowOutsideOfS = opts === null || opts === void 0 ? void 0 : opts.allowOutsideOfServer) !== null && _opts$allowOutsideOfS !== void 0 ? _opts$allowOutsideOfS : false,
@@ -102810,10 +102811,10 @@ var TRPCBuilder = class TRPCBuilder2 {
       if (!isServer && (opts === null || opts === void 0 ? void 0 : opts.allowOutsideOfServer) !== true) throw new Error(`You're trying to use @trpc/server in a non-server environment. This is not supported by default.`);
     }
     return {
-      _config: config2,
+      _config: config3,
       procedure: createBuilder({ meta: opts === null || opts === void 0 ? void 0 : opts.defaultMeta }),
       middleware: createMiddlewareFactory(),
-      router: createRouterFactory(config2),
+      router: createRouterFactory(config3),
       mergeRouters,
       createCallerFactory: createCallerFactory()
     };
@@ -103487,7 +103488,7 @@ var utils_default = {
 };
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/core/AxiosError.js
-function AxiosError(message2, code, config2, request, response) {
+function AxiosError(message2, code, config3, request, response) {
   Error.call(this);
   if (Error.captureStackTrace) {
     Error.captureStackTrace(this, this.constructor);
@@ -103497,7 +103498,7 @@ function AxiosError(message2, code, config2, request, response) {
   this.message = message2;
   this.name = "AxiosError";
   code && (this.code = code);
-  config2 && (this.config = config2);
+  config3 && (this.config = config3);
   request && (this.request = request);
   if (response) {
     this.response = response;
@@ -103546,7 +103547,7 @@ var descriptors = {};
 });
 Object.defineProperties(AxiosError, descriptors);
 Object.defineProperty(prototype, "isAxiosError", { value: true });
-AxiosError.from = (error47, code, config2, request, response, customProps) => {
+AxiosError.from = (error47, code, config3, request, response, customProps) => {
   const axiosError = Object.create(prototype);
   utils_default.toFlatObject(error47, axiosError, function filter2(obj) {
     return obj !== Error.prototype;
@@ -103555,7 +103556,7 @@ AxiosError.from = (error47, code, config2, request, response, customProps) => {
   });
   const msg = error47 && error47.message ? error47.message : "Error";
   const errCode = code == null && error47 ? error47.code : code;
-  AxiosError.call(axiosError, msg, errCode, config2, request, response);
+  AxiosError.call(axiosError, msg, errCode, config3, request, response);
   if (error47 && axiosError.cause == null) {
     Object.defineProperty(axiosError, "cause", { value: error47, configurable: true });
   }
@@ -104332,12 +104333,12 @@ var AxiosHeaders_default = AxiosHeaders;
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/core/transformData.js
 function transformData(fns, response) {
-  const config2 = this || defaults_default;
-  const context = response || config2;
+  const config3 = this || defaults_default;
+  const context = response || config3;
   const headers = AxiosHeaders_default.from(context.headers);
   let data2 = context.data;
   utils_default.forEach(fns, function transform2(fn) {
-    data2 = fn.call(config2, data2, headers.normalize(), response ? response.status : void 0);
+    data2 = fn.call(config3, data2, headers.normalize(), response ? response.status : void 0);
   });
   headers.normalize();
   return data2;
@@ -104349,8 +104350,8 @@ function isCancel(value) {
 }
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/cancel/CanceledError.js
-function CanceledError(message2, config2, request) {
-  AxiosError_default.call(this, message2 == null ? "canceled" : message2, AxiosError_default.ERR_CANCELED, config2, request);
+function CanceledError(message2, config3, request) {
+  AxiosError_default.call(this, message2 == null ? "canceled" : message2, AxiosError_default.ERR_CANCELED, config3, request);
   this.name = "CanceledError";
 }
 utils_default.inherits(CanceledError, AxiosError_default, {
@@ -104943,11 +104944,11 @@ var resolveFamily = ({ address, family }) => {
   };
 };
 var buildAddressEntry = (address, family) => resolveFamily(utils_default.isObject(address) ? address : { address, family });
-var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
+var http_default = isHttpAdapterSupported && function httpAdapter(config3) {
   return wrapAsync(async function dispatchHttpRequest(resolve, reject, onDone) {
-    let { data: data2, lookup, family } = config2;
-    const { responseType, responseEncoding } = config2;
-    const method = config2.method.toUpperCase();
+    let { data: data2, lookup, family } = config3;
+    const { responseType, responseEncoding } = config3;
+    const method = config3.method.toUpperCase();
     let isDone;
     let rejected = false;
     let req;
@@ -104965,11 +104966,11 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
     }
     const emitter = new import_events.EventEmitter();
     const onFinished = () => {
-      if (config2.cancelToken) {
-        config2.cancelToken.unsubscribe(abort);
+      if (config3.cancelToken) {
+        config3.cancelToken.unsubscribe(abort);
       }
-      if (config2.signal) {
-        config2.signal.removeEventListener("abort", abort);
+      if (config3.signal) {
+        config3.signal.removeEventListener("abort", abort);
       }
       emitter.removeAllListeners();
     };
@@ -104981,27 +104982,27 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       }
     });
     function abort(reason) {
-      emitter.emit("abort", !reason || reason.type ? new CanceledError_default(null, config2, req) : reason);
+      emitter.emit("abort", !reason || reason.type ? new CanceledError_default(null, config3, req) : reason);
     }
     emitter.once("abort", reject);
-    if (config2.cancelToken || config2.signal) {
-      config2.cancelToken && config2.cancelToken.subscribe(abort);
-      if (config2.signal) {
-        config2.signal.aborted ? abort() : config2.signal.addEventListener("abort", abort);
+    if (config3.cancelToken || config3.signal) {
+      config3.cancelToken && config3.cancelToken.subscribe(abort);
+      if (config3.signal) {
+        config3.signal.aborted ? abort() : config3.signal.addEventListener("abort", abort);
       }
     }
-    const fullPath = buildFullPath(config2.baseURL, config2.url, config2.allowAbsoluteUrls);
+    const fullPath = buildFullPath(config3.baseURL, config3.url, config3.allowAbsoluteUrls);
     const parsed = new URL(fullPath, platform_default.hasBrowserEnv ? platform_default.origin : void 0);
     const protocol = parsed.protocol || supportedProtocols[0];
     if (protocol === "data:") {
-      if (config2.maxContentLength > -1) {
-        const dataUrl = String(config2.url || fullPath || "");
+      if (config3.maxContentLength > -1) {
+        const dataUrl = String(config3.url || fullPath || "");
         const estimated = estimateDataURLDecodedBytes(dataUrl);
-        if (estimated > config2.maxContentLength) {
+        if (estimated > config3.maxContentLength) {
           return reject(new AxiosError_default(
-            "maxContentLength size of " + config2.maxContentLength + " exceeded",
+            "maxContentLength size of " + config3.maxContentLength + " exceeded",
             AxiosError_default.ERR_BAD_RESPONSE,
-            config2
+            config3
           ));
         }
       }
@@ -105011,15 +105012,15 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
           status: 405,
           statusText: "method not allowed",
           headers: {},
-          config: config2
+          config: config3
         });
       }
       try {
-        convertedData = fromDataURI(config2.url, responseType === "blob", {
-          Blob: config2.env && config2.env.Blob
+        convertedData = fromDataURI(config3.url, responseType === "blob", {
+          Blob: config3.env && config3.env.Blob
         });
       } catch (err) {
-        throw AxiosError_default.from(err, AxiosError_default.ERR_BAD_REQUEST, config2);
+        throw AxiosError_default.from(err, AxiosError_default.ERR_BAD_REQUEST, config3);
       }
       if (responseType === "text") {
         convertedData = convertedData.toString(responseEncoding);
@@ -105034,20 +105035,20 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         status: 200,
         statusText: "OK",
         headers: new AxiosHeaders_default(),
-        config: config2
+        config: config3
       });
     }
     if (supportedProtocols.indexOf(protocol) === -1) {
       return reject(new AxiosError_default(
         "Unsupported protocol " + protocol,
         AxiosError_default.ERR_BAD_REQUEST,
-        config2
+        config3
       ));
     }
-    const headers = AxiosHeaders_default.from(config2.headers).normalize();
+    const headers = AxiosHeaders_default.from(config3.headers).normalize();
     headers.set("User-Agent", "axios/" + VERSION, false);
-    const { onUploadProgress, onDownloadProgress } = config2;
-    const maxRate = config2.maxRate;
+    const { onUploadProgress, onDownloadProgress } = config3;
+    const maxRate = config3.maxRate;
     let maxUploadRate = void 0;
     let maxDownloadRate = void 0;
     if (utils_default.isSpecCompliantForm(data2)) {
@@ -105081,15 +105082,15 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         return reject(new AxiosError_default(
           "Data after transformation must be a string, an ArrayBuffer, a Buffer, or a Stream",
           AxiosError_default.ERR_BAD_REQUEST,
-          config2
+          config3
         ));
       }
       headers.setContentLength(data2.length, false);
-      if (config2.maxBodyLength > -1 && data2.length > config2.maxBodyLength) {
+      if (config3.maxBodyLength > -1 && data2.length > config3.maxBodyLength) {
         return reject(new AxiosError_default(
           "Request body larger than maxBodyLength limit",
           AxiosError_default.ERR_BAD_REQUEST,
-          config2
+          config3
         ));
       }
     }
@@ -105116,9 +105117,9 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       ));
     }
     let auth = void 0;
-    if (config2.auth) {
-      const username = config2.auth.username || "";
-      const password = config2.auth.password || "";
+    if (config3.auth) {
+      const username = config3.auth.username || "";
+      const password = config3.auth.password || "";
       auth = username + ":" + password;
     }
     if (!auth && parsed.username) {
@@ -105131,13 +105132,13 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
     try {
       path = buildURL(
         parsed.pathname + parsed.search,
-        config2.params,
-        config2.paramsSerializer
+        config3.params,
+        config3.paramsSerializer
       ).replace(/^\?/, "");
     } catch (err) {
       const customErr = new Error(err.message);
-      customErr.config = config2;
-      customErr.url = config2.url;
+      customErr.config = config3;
+      customErr.url = config3.url;
       customErr.exists = true;
       return reject(customErr);
     }
@@ -105150,7 +105151,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       path,
       method,
       headers: headers.toJSON(),
-      agents: { http: config2.httpAgent, https: config2.httpsAgent },
+      agents: { http: config3.httpAgent, https: config3.httpsAgent },
       auth,
       protocol,
       family,
@@ -105158,36 +105159,36 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       beforeRedirects: {}
     };
     !utils_default.isUndefined(lookup) && (options.lookup = lookup);
-    if (config2.socketPath) {
-      options.socketPath = config2.socketPath;
+    if (config3.socketPath) {
+      options.socketPath = config3.socketPath;
     } else {
       options.hostname = parsed.hostname.startsWith("[") ? parsed.hostname.slice(1, -1) : parsed.hostname;
       options.port = parsed.port;
-      setProxy(options, config2.proxy, protocol + "//" + parsed.hostname + (parsed.port ? ":" + parsed.port : "") + options.path);
+      setProxy(options, config3.proxy, protocol + "//" + parsed.hostname + (parsed.port ? ":" + parsed.port : "") + options.path);
     }
     let transport;
     const isHttpsRequest = isHttps.test(options.protocol);
-    options.agent = isHttpsRequest ? config2.httpsAgent : config2.httpAgent;
-    if (config2.transport) {
-      transport = config2.transport;
-    } else if (config2.maxRedirects === 0) {
+    options.agent = isHttpsRequest ? config3.httpsAgent : config3.httpAgent;
+    if (config3.transport) {
+      transport = config3.transport;
+    } else if (config3.maxRedirects === 0) {
       transport = isHttpsRequest ? import_https.default : import_http.default;
     } else {
-      if (config2.maxRedirects) {
-        options.maxRedirects = config2.maxRedirects;
+      if (config3.maxRedirects) {
+        options.maxRedirects = config3.maxRedirects;
       }
-      if (config2.beforeRedirect) {
-        options.beforeRedirects.config = config2.beforeRedirect;
+      if (config3.beforeRedirect) {
+        options.beforeRedirects.config = config3.beforeRedirect;
       }
       transport = isHttpsRequest ? httpsFollow : httpFollow;
     }
-    if (config2.maxBodyLength > -1) {
-      options.maxBodyLength = config2.maxBodyLength;
+    if (config3.maxBodyLength > -1) {
+      options.maxBodyLength = config3.maxBodyLength;
     } else {
       options.maxBodyLength = Infinity;
     }
-    if (config2.insecureHTTPParser) {
-      options.insecureHTTPParser = config2.insecureHTTPParser;
+    if (config3.insecureHTTPParser) {
+      options.insecureHTTPParser = config3.insecureHTTPParser;
     }
     req = transport.request(options, function handleResponse(res) {
       if (req.destroyed) return;
@@ -105208,7 +105209,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       }
       let responseStream = res;
       const lastRequest = res.req || req;
-      if (config2.decompress !== false && res.headers["content-encoding"]) {
+      if (config3.decompress !== false && res.headers["content-encoding"]) {
         if (method === "HEAD" || res.statusCode === 204) {
           delete res.headers["content-encoding"];
         }
@@ -105242,7 +105243,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         status: res.statusCode,
         statusText: res.statusMessage,
         headers: new AxiosHeaders_default(res.headers),
-        config: config2,
+        config: config3,
         request: lastRequest
       };
       if (responseType === "stream") {
@@ -105254,13 +105255,13 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         responseStream.on("data", function handleStreamData(chunk) {
           responseBuffer.push(chunk);
           totalResponseBytes += chunk.length;
-          if (config2.maxContentLength > -1 && totalResponseBytes > config2.maxContentLength) {
+          if (config3.maxContentLength > -1 && totalResponseBytes > config3.maxContentLength) {
             rejected = true;
             responseStream.destroy();
             reject(new AxiosError_default(
-              "maxContentLength size of " + config2.maxContentLength + " exceeded",
+              "maxContentLength size of " + config3.maxContentLength + " exceeded",
               AxiosError_default.ERR_BAD_RESPONSE,
-              config2,
+              config3,
               lastRequest
             ));
           }
@@ -105272,7 +105273,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
           const err = new AxiosError_default(
             "stream has been aborted",
             AxiosError_default.ERR_BAD_RESPONSE,
-            config2,
+            config3,
             lastRequest
           );
           responseStream.destroy(err);
@@ -105280,7 +105281,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         });
         responseStream.on("error", function handleStreamError(err) {
           if (req.destroyed) return;
-          reject(AxiosError_default.from(err, null, config2, lastRequest));
+          reject(AxiosError_default.from(err, null, config3, lastRequest));
         });
         responseStream.on("end", function handleStreamEnd() {
           try {
@@ -105293,7 +105294,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
             }
             response.data = responseData;
           } catch (err) {
-            return reject(AxiosError_default.from(err, null, config2, response.request, response));
+            return reject(AxiosError_default.from(err, null, config3, response.request, response));
           }
           settle(resolve, reject, response);
         });
@@ -105310,33 +105311,33 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       req.destroy(err);
     });
     req.on("error", function handleRequestError(err) {
-      reject(AxiosError_default.from(err, null, config2, req));
+      reject(AxiosError_default.from(err, null, config3, req));
     });
     req.on("socket", function handleRequestSocket(socket) {
       socket.setKeepAlive(true, 1e3 * 60);
     });
-    if (config2.timeout) {
-      const timeout = parseInt(config2.timeout, 10);
+    if (config3.timeout) {
+      const timeout = parseInt(config3.timeout, 10);
       if (Number.isNaN(timeout)) {
         reject(new AxiosError_default(
           "error trying to parse `config.timeout` to int",
           AxiosError_default.ERR_BAD_OPTION_VALUE,
-          config2,
+          config3,
           req
         ));
         return;
       }
       req.setTimeout(timeout, function handleRequestTimeout() {
         if (isDone) return;
-        let timeoutErrorMessage = config2.timeout ? "timeout of " + config2.timeout + "ms exceeded" : "timeout exceeded";
-        const transitional2 = config2.transitional || transitional_default;
-        if (config2.timeoutErrorMessage) {
-          timeoutErrorMessage = config2.timeoutErrorMessage;
+        let timeoutErrorMessage = config3.timeout ? "timeout of " + config3.timeout + "ms exceeded" : "timeout exceeded";
+        const transitional2 = config3.transitional || transitional_default;
+        if (config3.timeoutErrorMessage) {
+          timeoutErrorMessage = config3.timeoutErrorMessage;
         }
         reject(new AxiosError_default(
           timeoutErrorMessage,
           transitional2.clarifyTimeoutError ? AxiosError_default.ETIMEDOUT : AxiosError_default.ECONNABORTED,
-          config2,
+          config3,
           req
         ));
         abort();
@@ -105354,7 +105355,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       });
       data2.on("close", () => {
         if (!ended && !errored) {
-          abort(new CanceledError_default("Request stream has been aborted", config2, req));
+          abort(new CanceledError_default("Request stream has been aborted", config3, req));
         }
       });
       data2.pipe(req);
@@ -105408,8 +105409,8 @@ var cookies_default = platform_default.hasStandardBrowserEnv ? (
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/core/mergeConfig.js
 var headersToObject = (thing) => thing instanceof AxiosHeaders_default ? { ...thing } : thing;
-function mergeConfig(config1, config2) {
-  config2 = config2 || {};
+function mergeConfig(config1, config22) {
+  config22 = config22 || {};
   const config3 = {};
   function getMergedValue(target, source, prop, caseless) {
     if (utils_default.isPlainObject(target) && utils_default.isPlainObject(source)) {
@@ -105441,7 +105442,7 @@ function mergeConfig(config1, config2) {
     }
   }
   function mergeDirectKeys(a3, b3, prop) {
-    if (prop in config2) {
+    if (prop in config22) {
       return getMergedValue(a3, b3);
     } else if (prop in config1) {
       return getMergedValue(void 0, a3);
@@ -105478,20 +105479,20 @@ function mergeConfig(config1, config2) {
     validateStatus: mergeDirectKeys,
     headers: (a3, b3, prop) => mergeDeepProperties(headersToObject(a3), headersToObject(b3), prop, true)
   };
-  utils_default.forEach(Object.keys({ ...config1, ...config2 }), function computeConfigValue(prop) {
+  utils_default.forEach(Object.keys({ ...config1, ...config22 }), function computeConfigValue(prop) {
     const merge3 = mergeMap[prop] || mergeDeepProperties;
-    const configValue = merge3(config1[prop], config2[prop], prop);
+    const configValue = merge3(config1[prop], config22[prop], prop);
     utils_default.isUndefined(configValue) && merge3 !== mergeDirectKeys || (config3[prop] = configValue);
   });
   return config3;
 }
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/helpers/resolveConfig.js
-var resolveConfig_default = (config2) => {
-  const newConfig = mergeConfig({}, config2);
+var resolveConfig_default = (config3) => {
+  const newConfig = mergeConfig({}, config3);
   let { data: data2, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth } = newConfig;
   newConfig.headers = headers = AxiosHeaders_default.from(headers);
-  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url, newConfig.allowAbsoluteUrls), config2.params, config2.paramsSerializer);
+  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url, newConfig.allowAbsoluteUrls), config3.params, config3.paramsSerializer);
   if (auth) {
     headers.set(
       "Authorization",
@@ -105525,9 +105526,9 @@ var resolveConfig_default = (config2) => {
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/adapters/xhr.js
 var isXHRAdapterSupported = typeof XMLHttpRequest !== "undefined";
-var xhr_default = isXHRAdapterSupported && function(config2) {
+var xhr_default = isXHRAdapterSupported && function(config3) {
   return new Promise(function dispatchXhrRequest(resolve, reject) {
-    const _config = resolveConfig_default(config2);
+    const _config = resolveConfig_default(config3);
     let requestData = _config.data;
     const requestHeaders = AxiosHeaders_default.from(_config.headers).normalize();
     let { responseType, onUploadProgress, onDownloadProgress } = _config;
@@ -105556,7 +105557,7 @@ var xhr_default = isXHRAdapterSupported && function(config2) {
         status: request.status,
         statusText: request.statusText,
         headers: responseHeaders,
-        config: config2,
+        config: config3,
         request
       };
       settle(function _resolve(value) {
@@ -105585,12 +105586,12 @@ var xhr_default = isXHRAdapterSupported && function(config2) {
       if (!request) {
         return;
       }
-      reject(new AxiosError_default("Request aborted", AxiosError_default.ECONNABORTED, config2, request));
+      reject(new AxiosError_default("Request aborted", AxiosError_default.ECONNABORTED, config3, request));
       request = null;
     };
     request.onerror = function handleError2(event) {
       const msg = event && event.message ? event.message : "Network Error";
-      const err = new AxiosError_default(msg, AxiosError_default.ERR_NETWORK, config2, request);
+      const err = new AxiosError_default(msg, AxiosError_default.ERR_NETWORK, config3, request);
       err.event = event || null;
       reject(err);
       request = null;
@@ -105604,7 +105605,7 @@ var xhr_default = isXHRAdapterSupported && function(config2) {
       reject(new AxiosError_default(
         timeoutErrorMessage,
         transitional2.clarifyTimeoutError ? AxiosError_default.ETIMEDOUT : AxiosError_default.ECONNABORTED,
-        config2,
+        config3,
         request
       ));
       request = null;
@@ -105635,7 +105636,7 @@ var xhr_default = isXHRAdapterSupported && function(config2) {
         if (!request) {
           return;
         }
-        reject(!cancel || cancel.type ? new CanceledError_default(null, config2, request) : cancel);
+        reject(!cancel || cancel.type ? new CanceledError_default(null, config3, request) : cancel);
         request.abort();
         request = null;
       };
@@ -105646,7 +105647,7 @@ var xhr_default = isXHRAdapterSupported && function(config2) {
     }
     const protocol = parseProtocol(_config.url);
     if (protocol && platform_default.protocols.indexOf(protocol) === -1) {
-      reject(new AxiosError_default("Unsupported protocol " + protocol + ":", AxiosError_default.ERR_BAD_REQUEST, config2));
+      reject(new AxiosError_default("Unsupported protocol " + protocol + ":", AxiosError_default.ERR_BAD_REQUEST, config3));
       return;
     }
     request.send(requestData || null);
@@ -105815,12 +105816,12 @@ var factory = (env) => {
   };
   isFetchSupported && (() => {
     ["text", "arrayBuffer", "blob", "formData", "stream"].forEach((type) => {
-      !resolvers[type] && (resolvers[type] = (res, config2) => {
+      !resolvers[type] && (resolvers[type] = (res, config3) => {
         let method = res && res[type];
         if (method) {
           return method.call(res);
         }
-        throw new AxiosError_default(`Response type '${type}' is not supported`, AxiosError_default.ERR_NOT_SUPPORT, config2);
+        throw new AxiosError_default(`Response type '${type}' is not supported`, AxiosError_default.ERR_NOT_SUPPORT, config3);
       });
     });
   })();
@@ -105852,7 +105853,7 @@ var factory = (env) => {
     const length = utils_default.toFiniteNumber(headers.getContentLength());
     return length == null ? getBodyLength(body) : length;
   };
-  return async (config2) => {
+  return async (config3) => {
     let {
       url: url3,
       method,
@@ -105866,7 +105867,7 @@ var factory = (env) => {
       headers,
       withCredentials = "same-origin",
       fetchOptions
-    } = resolveConfig_default(config2);
+    } = resolveConfig_default(config3);
     let _fetch = envFetch || fetch;
     responseType = responseType ? (responseType + "").toLowerCase() : "text";
     let composedSignal = composeSignals_default([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
@@ -105929,7 +105930,7 @@ var factory = (env) => {
         );
       }
       responseType = responseType || "text";
-      let responseData = await resolvers[utils_default.findKey(resolvers, responseType) || "text"](response, config2);
+      let responseData = await resolvers[utils_default.findKey(resolvers, responseType) || "text"](response, config3);
       !isStreamResponse && unsubscribe && unsubscribe();
       return await new Promise((resolve, reject) => {
         settle(resolve, reject, {
@@ -105937,7 +105938,7 @@ var factory = (env) => {
           headers: AxiosHeaders_default.from(response.headers),
           status: response.status,
           statusText: response.statusText,
-          config: config2,
+          config: config3,
           request
         });
       });
@@ -105945,19 +105946,19 @@ var factory = (env) => {
       unsubscribe && unsubscribe();
       if (err && err.name === "TypeError" && /Load failed|fetch/i.test(err.message)) {
         throw Object.assign(
-          new AxiosError_default("Network Error", AxiosError_default.ERR_NETWORK, config2, request),
+          new AxiosError_default("Network Error", AxiosError_default.ERR_NETWORK, config3, request),
           {
             cause: err.cause || err
           }
         );
       }
-      throw AxiosError_default.from(err, err && err.code, config2, request);
+      throw AxiosError_default.from(err, err && err.code, config3, request);
     }
   };
 };
 var seedCache = /* @__PURE__ */ new Map();
-var getFetch = (config2) => {
-  let env = config2 ? config2.env : {};
+var getFetch = (config3) => {
+  let env = config3 ? config3.env : {};
   const { fetch: fetch2, Request: Request2, Response: Response2 } = env;
   const seeds = [
     Request2,
@@ -105995,7 +105996,7 @@ utils_default.forEach(knownAdapters, (fn, value) => {
 var renderReason = (reason) => `- ${reason}`;
 var isResolvedHandle = (adapter2) => utils_default.isFunction(adapter2) || adapter2 === null || adapter2 === false;
 var adapters_default = {
-  getAdapter: (adapters, config2) => {
+  getAdapter: (adapters, config3) => {
     adapters = utils_default.isArray(adapters) ? adapters : [adapters];
     const { length } = adapters;
     let nameOrAdapter;
@@ -106011,7 +106012,7 @@ var adapters_default = {
           throw new AxiosError_default(`Unknown adapter '${id}'`);
         }
       }
-      if (adapter2 && (utils_default.isFunction(adapter2) || (adapter2 = adapter2.get(config2)))) {
+      if (adapter2 && (utils_default.isFunction(adapter2) || (adapter2 = adapter2.get(config3)))) {
         break;
       }
       rejectedReasons[id || "#" + i3] = adapter2;
@@ -106032,41 +106033,41 @@ var adapters_default = {
 };
 
 // node_modules/.pnpm/axios@1.12.2/node_modules/axios/lib/core/dispatchRequest.js
-function throwIfCancellationRequested(config2) {
-  if (config2.cancelToken) {
-    config2.cancelToken.throwIfRequested();
+function throwIfCancellationRequested(config3) {
+  if (config3.cancelToken) {
+    config3.cancelToken.throwIfRequested();
   }
-  if (config2.signal && config2.signal.aborted) {
-    throw new CanceledError_default(null, config2);
+  if (config3.signal && config3.signal.aborted) {
+    throw new CanceledError_default(null, config3);
   }
 }
-function dispatchRequest(config2) {
-  throwIfCancellationRequested(config2);
-  config2.headers = AxiosHeaders_default.from(config2.headers);
-  config2.data = transformData.call(
-    config2,
-    config2.transformRequest
+function dispatchRequest(config3) {
+  throwIfCancellationRequested(config3);
+  config3.headers = AxiosHeaders_default.from(config3.headers);
+  config3.data = transformData.call(
+    config3,
+    config3.transformRequest
   );
-  if (["post", "put", "patch"].indexOf(config2.method) !== -1) {
-    config2.headers.setContentType("application/x-www-form-urlencoded", false);
+  if (["post", "put", "patch"].indexOf(config3.method) !== -1) {
+    config3.headers.setContentType("application/x-www-form-urlencoded", false);
   }
-  const adapter2 = adapters_default.getAdapter(config2.adapter || defaults_default.adapter, config2);
-  return adapter2(config2).then(function onAdapterResolution(response) {
-    throwIfCancellationRequested(config2);
+  const adapter2 = adapters_default.getAdapter(config3.adapter || defaults_default.adapter, config3);
+  return adapter2(config3).then(function onAdapterResolution(response) {
+    throwIfCancellationRequested(config3);
     response.data = transformData.call(
-      config2,
-      config2.transformResponse,
+      config3,
+      config3.transformResponse,
       response
     );
     response.headers = AxiosHeaders_default.from(response.headers);
     return response;
   }, function onAdapterRejection(reason) {
     if (!isCancel(reason)) {
-      throwIfCancellationRequested(config2);
+      throwIfCancellationRequested(config3);
       if (reason && reason.response) {
         reason.response.data = transformData.call(
-          config2,
-          config2.transformResponse,
+          config3,
+          config3.transformResponse,
           reason.response
         );
         reason.response.headers = AxiosHeaders_default.from(reason.response.headers);
@@ -106158,9 +106159,9 @@ var Axios = class {
    *
    * @returns {Promise} The Promise to be fulfilled
    */
-  async request(configOrUrl, config2) {
+  async request(configOrUrl, config3) {
     try {
-      return await this._request(configOrUrl, config2);
+      return await this._request(configOrUrl, config3);
     } catch (err) {
       if (err instanceof Error) {
         let dummy = {};
@@ -106178,15 +106179,15 @@ var Axios = class {
       throw err;
     }
   }
-  _request(configOrUrl, config2) {
+  _request(configOrUrl, config3) {
     if (typeof configOrUrl === "string") {
-      config2 = config2 || {};
-      config2.url = configOrUrl;
+      config3 = config3 || {};
+      config3.url = configOrUrl;
     } else {
-      config2 = configOrUrl || {};
+      config3 = configOrUrl || {};
     }
-    config2 = mergeConfig(this.defaults, config2);
-    const { transitional: transitional2, paramsSerializer, headers } = config2;
+    config3 = mergeConfig(this.defaults, config3);
+    const { transitional: transitional2, paramsSerializer, headers } = config3;
     if (transitional2 !== void 0) {
       validator_default.assertOptions(transitional2, {
         silentJSONParsing: validators2.transitional(validators2.boolean),
@@ -106196,7 +106197,7 @@ var Axios = class {
     }
     if (paramsSerializer != null) {
       if (utils_default.isFunction(paramsSerializer)) {
-        config2.paramsSerializer = {
+        config3.paramsSerializer = {
           serialize: paramsSerializer
         };
       } else {
@@ -106206,20 +106207,20 @@ var Axios = class {
         }, true);
       }
     }
-    if (config2.allowAbsoluteUrls !== void 0) {
+    if (config3.allowAbsoluteUrls !== void 0) {
     } else if (this.defaults.allowAbsoluteUrls !== void 0) {
-      config2.allowAbsoluteUrls = this.defaults.allowAbsoluteUrls;
+      config3.allowAbsoluteUrls = this.defaults.allowAbsoluteUrls;
     } else {
-      config2.allowAbsoluteUrls = true;
+      config3.allowAbsoluteUrls = true;
     }
-    validator_default.assertOptions(config2, {
+    validator_default.assertOptions(config3, {
       baseUrl: validators2.spelling("baseURL"),
       withXsrfToken: validators2.spelling("withXSRFToken")
     }, true);
-    config2.method = (config2.method || this.defaults.method || "get").toLowerCase();
+    config3.method = (config3.method || this.defaults.method || "get").toLowerCase();
     let contextHeaders = headers && utils_default.merge(
       headers.common,
-      headers[config2.method]
+      headers[config3.method]
     );
     headers && utils_default.forEach(
       ["delete", "get", "head", "post", "put", "patch", "common"],
@@ -106227,11 +106228,11 @@ var Axios = class {
         delete headers[method];
       }
     );
-    config2.headers = AxiosHeaders_default.concat(contextHeaders, headers);
+    config3.headers = AxiosHeaders_default.concat(contextHeaders, headers);
     const requestInterceptorChain = [];
     let synchronousRequestInterceptors = true;
     this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
-      if (typeof interceptor.runWhen === "function" && interceptor.runWhen(config2) === false) {
+      if (typeof interceptor.runWhen === "function" && interceptor.runWhen(config3) === false) {
         return;
       }
       synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
@@ -106249,14 +106250,14 @@ var Axios = class {
       chain.unshift(...requestInterceptorChain);
       chain.push(...responseInterceptorChain);
       len = chain.length;
-      promise2 = Promise.resolve(config2);
+      promise2 = Promise.resolve(config3);
       while (i3 < len) {
         promise2 = promise2.then(chain[i3++], chain[i3++]);
       }
       return promise2;
     }
     len = requestInterceptorChain.length;
-    let newConfig = config2;
+    let newConfig = config3;
     while (i3 < len) {
       const onFulfilled = requestInterceptorChain[i3++];
       const onRejected = requestInterceptorChain[i3++];
@@ -106279,25 +106280,25 @@ var Axios = class {
     }
     return promise2;
   }
-  getUri(config2) {
-    config2 = mergeConfig(this.defaults, config2);
-    const fullPath = buildFullPath(config2.baseURL, config2.url, config2.allowAbsoluteUrls);
-    return buildURL(fullPath, config2.params, config2.paramsSerializer);
+  getUri(config3) {
+    config3 = mergeConfig(this.defaults, config3);
+    const fullPath = buildFullPath(config3.baseURL, config3.url, config3.allowAbsoluteUrls);
+    return buildURL(fullPath, config3.params, config3.paramsSerializer);
   }
 };
 utils_default.forEach(["delete", "get", "head", "options"], function forEachMethodNoData(method) {
-  Axios.prototype[method] = function(url3, config2) {
-    return this.request(mergeConfig(config2 || {}, {
+  Axios.prototype[method] = function(url3, config3) {
+    return this.request(mergeConfig(config3 || {}, {
       method,
       url: url3,
-      data: (config2 || {}).data
+      data: (config3 || {}).data
     }));
   };
 });
 utils_default.forEach(["post", "put", "patch"], function forEachMethodWithData(method) {
   function generateHTTPMethod(isForm) {
-    return function httpMethod(url3, data2, config2) {
-      return this.request(mergeConfig(config2 || {}, {
+    return function httpMethod(url3, data2, config3) {
+      return this.request(mergeConfig(config3 || {}, {
         method,
         headers: isForm ? {
           "Content-Type": "multipart/form-data"
@@ -106342,11 +106343,11 @@ var CancelToken = class _CancelToken {
       };
       return promise2;
     };
-    executor(function cancel(message2, config2, request) {
+    executor(function cancel(message2, config3, request) {
       if (token.reason) {
         return;
       }
-      token.reason = new CanceledError_default(message2, config2, request);
+      token.reason = new CanceledError_default(message2, config3, request);
       resolvePromise(token.reason);
     });
   }
@@ -108659,11 +108660,11 @@ function serverSupabaseConfig() {
 }
 async function verifiedAdminFromRequest(req) {
   const token = extractBearerToken(req.headers.authorization);
-  const config2 = serverSupabaseConfig();
-  if (!token || !config2) return false;
-  const response = await fetch(`${config2.url}/auth/v1/user`, {
+  const config3 = serverSupabaseConfig();
+  if (!token || !config3) return false;
+  const response = await fetch(`${config3.url}/auth/v1/user`, {
     method: "GET",
-    headers: { apikey: config2.anonKey, Authorization: `Bearer ${token}` },
+    headers: { apikey: config3.anonKey, Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(8e3)
   });
   if (!response.ok) return false;
@@ -108738,6 +108739,126 @@ function registerAdminAgentRoute(app2) {
       res.status(timedOut ? 504 : network ? 503 : 502).json({ error: { message: timedOut ? "HkTube AI ko jawab dene mein zyada waqt laga. Chhota sawal bhej kar dobara try karein." : network ? "Network connection ka masla hai. Internet check karke dobara try karein." : "HkTube AI temporarily unavailable hai. Dobara try karein.", code: timedOut ? "timeout" : network ? "network" : "upstream" } });
     }
   });
+}
+
+// server/_core/adminVerification.ts
+init_env();
+function config() {
+  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey || !ENV.supabaseServiceRoleKey) return null;
+  return { url: ENV.supabaseUrl.replace(/\/$/, ""), anonKey: ENV.supabaseAnonKey, serviceKey: ENV.supabaseServiceRoleKey };
+}
+async function verifyOwner(req) {
+  const token = extractBearerToken(req.headers.authorization);
+  const current = config();
+  if (!token || !current) return null;
+  const response = await fetch(`${current.url}/auth/v1/user`, {
+    headers: { apikey: current.anonKey, Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(8e3)
+  });
+  if (!response.ok) return null;
+  const user = await response.json();
+  return isAllowedAdminIdentity(user) ? user : null;
+}
+async function adminRest(path, current, init) {
+  if (!current) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured.");
+  return fetch(`${current.url}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: current.serviceKey,
+      Authorization: `Bearer ${current.serviceKey}`,
+      "Content-Type": "application/json",
+      ...init?.headers ?? {}
+    },
+    signal: init?.signal ?? AbortSignal.timeout(1e4)
+  });
+}
+async function listUsers(current) {
+  if (!current) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured.");
+  const response = await fetch(`${current.url}/auth/v1/admin/users?page=1&per_page=1000`, {
+    headers: { apikey: current.serviceKey, Authorization: `Bearer ${current.serviceKey}` },
+    signal: AbortSignal.timeout(1e4)
+  });
+  if (!response.ok) throw new Error("Supabase admin users could not be loaded.");
+  const payload2 = await response.json();
+  return payload2.users ?? [];
+}
+async function listChannels(current, ownerId) {
+  const filter2 = ownerId ? `&owner_id=eq.${encodeURIComponent(ownerId)}` : "";
+  const response = await adminRest(`channels?select=id,owner_id,name,handle,verification_status&order=created_at.desc&limit=1000${filter2}`, current);
+  if (!response.ok) throw new Error("Channel owners could not be loaded.");
+  return await response.json();
+}
+function registerAdminVerificationRoute(app2) {
+  app2.get("/api/admin/verification/targets", async (req, res) => {
+    try {
+      const owner = await verifyOwner(req);
+      const current = config();
+      if (!owner || !current) {
+        res.status(owner ? 503 : 403).json({ error: { message: owner ? "Admin verification is not configured yet." : "Only an authorized HkTube admin can manage verification." } });
+        return;
+      }
+      const [users2, channels2] = await Promise.all([listUsers(current), listChannels(current)]);
+      const usersById = new Map(users2.map((user) => [String(user.id ?? ""), user]));
+      const targets = channels2.map((channel) => {
+        const user = usersById.get(String(channel.owner_id));
+        return { email: typeof user?.email === "string" ? user.email.trim().toLowerCase() : "", channels: [{ id: String(channel.id), name: channel.name, handle: channel.handle, verificationStatus: channel.verification_status }] };
+      }).filter((target) => target.email);
+      const merged = /* @__PURE__ */ new Map();
+      for (const target of targets) {
+        const existing = merged.get(target.email);
+        if (existing) existing.channels.push(...target.channels);
+        else merged.set(target.email, target);
+      }
+      res.json({ targets: [...merged.values()] });
+    } catch (error47) {
+      res.status(503).json({ error: { message: error47 instanceof Error ? error47.message : "Verification targets could not be loaded." } });
+    }
+  });
+  app2.post("/api/admin/verification/grant", async (req, res) => {
+    await updateVerification(req, res, "verified");
+  });
+  app2.post("/api/admin/verification/revoke", async (req, res) => {
+    await updateVerification(req, res, "unverified");
+  });
+}
+async function updateVerification(req, res, status) {
+  try {
+    const owner = await verifyOwner(req);
+    const current = config();
+    if (!owner || !current) {
+      res.status(owner ? 503 : 403).json({ error: { message: owner ? "Admin verification is not configured yet." : "Only an authorized HkTube admin can manage verification." } });
+      return;
+    }
+    const targetEmail = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const channelId = typeof req.body?.channelId === "string" ? req.body.channelId.trim() : "";
+    if (!targetEmail || !targetEmail.includes("@") || !channelId) {
+      res.status(400).json({ error: { message: "Target Gmail aur channel select karna zaroori hai." } });
+      return;
+    }
+    const users2 = await listUsers(current);
+    const targetUser = users2.find((user) => typeof user.email === "string" && user.email.trim().toLowerCase() === targetEmail);
+    if (!targetUser?.id) {
+      res.status(404).json({ error: { message: "Is Gmail ka HkTube channel nahi mila." } });
+      return;
+    }
+    const response = await adminRest(`channels?id=eq.${encodeURIComponent(channelId)}&owner_id=eq.${encodeURIComponent(String(targetUser.id))}`, current, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ verification_status: status, updated_at: (/* @__PURE__ */ new Date()).toISOString() })
+    });
+    if (!response.ok) {
+      res.status(502).json({ error: { message: "Verification badge update nahi ho saka." } });
+      return;
+    }
+    const updated = await response.json();
+    if (!updated.length) {
+      res.status(404).json({ error: { message: "Selected channel is Gmail owner se match nahi karta." } });
+      return;
+    }
+    res.json({ ok: true, status, email: targetEmail, channel: updated[0] });
+  } catch (error47) {
+    res.status(503).json({ error: { message: error47 instanceof Error ? error47.message : "Verification action failed." } });
+  }
 }
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/classic/external.js
@@ -108837,7 +108958,7 @@ __export(external_exports, {
   clone: () => clone,
   codec: () => codec,
   coerce: () => coerce_exports,
-  config: () => config,
+  config: () => config2,
   core: () => core_exports2,
   cuid: () => cuid3,
   cuid2: () => cuid22,
@@ -109203,7 +109324,7 @@ __export(core_exports2, {
   _void: () => _void,
   _xid: () => _xid,
   clone: () => clone,
-  config: () => config,
+  config: () => config2,
   decode: () => decode3,
   decodeAsync: () => decodeAsync,
   encode: () => encode5,
@@ -109294,7 +109415,7 @@ var $ZodEncodeError = class extends Error {
   }
 };
 var globalConfig = {};
-function config(newConfig) {
+function config2(newConfig) {
   if (newConfig)
     Object.assign(globalConfig, newConfig);
   return globalConfig;
@@ -109846,10 +109967,10 @@ function prefixIssues(path, issues) {
 function unwrapMessage(message2) {
   return typeof message2 === "string" ? message2 : message2?.message;
 }
-function finalizeIssue(iss, ctx, config2) {
+function finalizeIssue(iss, ctx, config3) {
   const full = { ...iss, path: iss.path ?? [] };
   if (!iss.message) {
-    const message2 = unwrapMessage(iss.inst?._zod.def?.error?.(iss)) ?? unwrapMessage(ctx?.error?.(iss)) ?? unwrapMessage(config2.customError?.(iss)) ?? unwrapMessage(config2.localeError?.(iss)) ?? "Invalid input";
+    const message2 = unwrapMessage(iss.inst?._zod.def?.error?.(iss)) ?? unwrapMessage(ctx?.error?.(iss)) ?? unwrapMessage(config3.customError?.(iss)) ?? unwrapMessage(config3.localeError?.(iss)) ?? "Invalid input";
     full.message = message2;
   }
   delete full.inst;
@@ -110078,7 +110199,7 @@ var _parse = (_Err) => (schema, value, _ctx, _params) => {
     throw new $ZodAsyncError();
   }
   if (result.issues.length) {
-    const e3 = new (_params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())));
+    const e3 = new (_params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config2())));
     captureStackTrace(e3, _params?.callee);
     throw e3;
   }
@@ -110091,7 +110212,7 @@ var _parseAsync = (_Err) => async (schema, value, _ctx, params) => {
   if (result instanceof Promise)
     result = await result;
   if (result.issues.length) {
-    const e3 = new (params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())));
+    const e3 = new (params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config2())));
     captureStackTrace(e3, params?.callee);
     throw e3;
   }
@@ -110106,7 +110227,7 @@ var _safeParse = (_Err) => (schema, value, _ctx) => {
   }
   return result.issues.length ? {
     success: false,
-    error: new (_Err ?? $ZodError)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+    error: new (_Err ?? $ZodError)(result.issues.map((iss) => finalizeIssue(iss, ctx, config2())))
   } : { success: true, data: result.value };
 };
 var safeParse = /* @__PURE__ */ _safeParse($ZodRealError);
@@ -110117,7 +110238,7 @@ var _safeParseAsync = (_Err) => async (schema, value, _ctx) => {
     result = await result;
   return result.issues.length ? {
     success: false,
-    error: new _Err(result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+    error: new _Err(result.issues.map((iss) => finalizeIssue(iss, ctx, config2())))
   } : { success: true, data: result.value };
 };
 var safeParseAsync = /* @__PURE__ */ _safeParseAsync($ZodRealError);
@@ -111757,7 +111878,7 @@ function handleUnionResults(results, final, inst, ctx) {
     code: "invalid_union",
     input: final.value,
     inst,
-    errors: results.map((result) => result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+    errors: results.map((result) => result.issues.map((iss) => finalizeIssue(iss, ctx, config2())))
   });
   return final;
 }
@@ -112083,7 +112204,7 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
           payload2.issues.push({
             code: "invalid_key",
             origin: "record",
-            issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
+            issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config2())),
             input: key,
             path: [key],
             inst
@@ -112154,7 +112275,7 @@ function handleMapResult(keyResult, valueResult, final, key, input, inst, ctx) {
         origin: "map",
         input,
         inst,
-        issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config()))
+        issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config2()))
       });
     }
   }
@@ -112168,7 +112289,7 @@ function handleMapResult(keyResult, valueResult, final, key, input, inst, ctx) {
         input,
         inst,
         key,
-        issues: valueResult.issues.map((iss) => finalizeIssue(iss, ctx, config()))
+        issues: valueResult.issues.map((iss) => finalizeIssue(iss, ctx, config2()))
       });
     }
   }
@@ -112429,7 +112550,7 @@ var $ZodCatch = /* @__PURE__ */ $constructor("$ZodCatch", (inst, def) => {
           payload2.value = def.catchValue({
             ...payload2,
             error: {
-              issues: result2.issues.map((iss) => finalizeIssue(iss, ctx, config()))
+              issues: result2.issues.map((iss) => finalizeIssue(iss, ctx, config2()))
             },
             input: payload2.value
           });
@@ -112443,7 +112564,7 @@ var $ZodCatch = /* @__PURE__ */ $constructor("$ZodCatch", (inst, def) => {
       payload2.value = def.catchValue({
         ...payload2,
         error: {
-          issues: result.issues.map((iss) => finalizeIssue(iss, ctx, config()))
+          issues: result.issues.map((iss) => finalizeIssue(iss, ctx, config2()))
         },
         input: payload2.value
       });
@@ -121243,12 +121364,12 @@ var ZodIssueCode = {
   custom: "custom"
 };
 function setErrorMap(map4) {
-  config({
+  config2({
     customError: map4
   });
 }
 function getErrorMap() {
-  return config().customError;
+  return config2().customError;
 }
 var ZodFirstPartyTypeKind;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind2) {
@@ -121280,7 +121401,7 @@ function date6(params) {
 }
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/classic/external.js
-config(en_default());
+config2(en_default());
 
 // server/_core/llm.ts
 init_env();
@@ -123900,12 +124021,12 @@ var PostgrestFilterBuilder = class extends PostgrestTransformBuilder {
     else this.url.searchParams.append(column, `ov.{${value.join(",")}}`);
     return this;
   }
-  textSearch(column, query, { config: config2, type } = {}) {
+  textSearch(column, query, { config: config3, type } = {}) {
     let typePart = "";
     if (type === "plain") typePart = "pl";
     else if (type === "phrase") typePart = "ph";
     else if (type === "websearch") typePart = "w";
-    const configPart = config2 === void 0 ? "" : `(${config2})`;
+    const configPart = config3 === void 0 ? "" : `(${config3})`;
     this.url.searchParams.append(column, `${typePart}fts${configPart}.${query}`);
     return this;
   }
@@ -131237,6 +131358,7 @@ function createApiApp() {
   registerOAuthRoutes(app2);
   registerMediaUploadRoute(app2);
   registerAdminAgentRoute(app2);
+  registerAdminVerificationRoute(app2);
   registerAIAdminRoute(app2);
   app2.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app2.use((error47, _req, res, _next) => {
@@ -131604,3 +131726,5 @@ long/umd/index.js:
 @trpc/server/dist/resolveResponse-DngSgha6.mjs:
   (* istanbul ignore if -- @preserve *)
 */
+
+module.exports = module.exports.default;
