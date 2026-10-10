@@ -114,8 +114,8 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       if (controller.signal.aborted) throw controller.signal.reason;
       const toolNames = agentRun.toolNames;
       const executionReceipt = toolNames.length
-        ? `Agent execution verified: ${toolNames.join(", ")}. Tool calls: ${agentRun.toolCallsUsed}. These results came from HkTube's server-side tools; no file/deployment change is claimed unless the response explicitly reports a verified action.`
-        : "Agent execution: no HkTube action tool was needed for this response.";
+        ? `Agent tools invoked: ${toolNames.join(", ")}. Tool calls: ${agentRun.toolCallsUsed}. Tool invocation alone does not prove success; the answer below must disclose any unavailable, blocked, empty, or failed result. No file, account, or deployment change is implied.`
+        : "Agent execution: no HkTube tool was invoked for this response.";
       res.status(200).json({
         content: `${executionReceipt}\n\n${output.answer}`,
         sources: agentSources,
