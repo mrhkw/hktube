@@ -135,8 +135,7 @@ export async function runBoundedAIAgent(input: {
         try {
           const result = await createUltraPlan({ ownerId: ownerNumericId, goal });
           agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "PLANNED", planId: result.plan.id, reused: result.reused, plan: result.plan, executed: false }) });
-        } catch (error) {
-          const reason = error instanceof Error ? error.message : "Unknown planning error";
+        } catch {
           const safeReason = "Planning failed; detailed error is intentionally not returned to the model.";
           agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "FAILED", reason: safeReason, executed: false }) });
         }
