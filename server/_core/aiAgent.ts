@@ -80,7 +80,7 @@ export async function runBoundedAIAgent(input: {
     ...input.messages,
   ];
 
-  const first = await invokeLLM({
+  let currentResult = await invokeLLM({
     messages: agentMessages,
     tools: AGENT_TOOLS,
     toolChoice: "auto",
@@ -89,11 +89,18 @@ export async function runBoundedAIAgent(input: {
     maxRetries: 0,
     signal: input.signal,
   });
-  const calls = getToolCalls(first);
-  if (!calls.length) return { result: first, sources, toolCallsUsed: 0, toolNames: [] };
+  let totalToolCalls = 0;
+  const allToolNames: string[] = [];
 
-  agentMessages.push({ role: "assistant", content: first.choices[0]?.message?.content || "", tool_calls: calls });
-  for (const call of calls) {
+  while (true) {
+    const calls = getToolCalls(currentResult).slice(0, MAX_TOOL_CALLS - totalToolCalls);
+    if (!calls.length) {
+      return { result: currentResult, sources, toolCallsUsed: totalToolCalls, toolNames: allToolNames };
+    }
+    totalToolCalls += calls.length;
+    allToolNames.push(...calls.map(call => call.function?.name).filter((name): name is string => Boolean(name)));
+    agentMessages.push({ role: "assistant", content: currentResult.choices[0]?.message?.content || "", tool_calls: calls });
+    for (const call of calls) {
     const query = parseSearchQuery(call);
     const args = parseToolArguments(call);
     if (query) {
@@ -156,17 +163,30 @@ export async function runBoundedAIAgent(input: {
       continue;
     }
     agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: "Unsupported tool call" }) });
-  }
+    }
 
-  const final = await invokeLLM({
-    messages: agentMessages,
-    maxTokens: 2200,
-    timeoutMs: input.timeoutMs,
-    maxRetries: 0,
-    signal: input.signal,
-    responseFormat: input.finalResponseFormat,
-  });
-  return { result: final, sources, toolCallsUsed: calls.length, toolNames: calls.map(call => call.function?.name).filter((name): name is string => Boolean(name)) };
+    if (totalToolCalls >= MAX_TOOL_CALLS) {
+      currentResult = await invokeLLM({
+        messages: agentMessages,
+        maxTokens: 2200,
+        timeoutMs: input.timeoutMs,
+        maxRetries: 0,
+        signal: input.signal,
+        responseFormat: input.finalResponseFormat,
+      });
+      return { result: currentResult, sources, toolCallsUsed: totalToolCalls, toolNames: allToolNames };
+    }
+
+    currentResult = await invokeLLM({
+      messages: agentMessages,
+      tools: AGENT_TOOLS,
+      toolChoice: "auto",
+      maxTokens: 1400,
+      timeoutMs: input.timeoutMs,
+      maxRetries: 0,
+      signal: input.signal,
+    });
+  }
 }
 
 export const __agentInternals = { AGENT_TOOLS, MAX_TOOL_CALLS, parseSearchQuery };
