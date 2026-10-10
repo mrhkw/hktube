@@ -132,8 +132,14 @@ export async function runBoundedAIAgent(input: {
           }),
         });
       } else {
-        const result = await createUltraPlan({ ownerId: ownerNumericId, goal });
-        agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "PLANNED", planId: result.plan.id, reused: result.reused, plan: result.plan }) });
+        try {
+          const result = await createUltraPlan({ ownerId: ownerNumericId, goal });
+          agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "PLANNED", planId: result.plan.id, reused: result.reused, plan: result.plan, executed: false }) });
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : "Unknown planning error";
+          const safeReason = reason.replace(/Bearer\\s+[^\\s]+/gi, "Bearer [REDACTED]").replace(/(api[_ -]?key|token|secret|password)\\s*[:=]\\s*[^\\s,]+/gi, "$1=[REDACTED]").slice(0, 300);
+          agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "FAILED", reason: safeReason, executed: false }) });
+        }
       }
       continue;
     }
