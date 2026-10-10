@@ -137,7 +137,7 @@ export async function runBoundedAIAgent(input: {
           agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "PLANNED", planId: result.plan.id, reused: result.reused, plan: result.plan, executed: false }) });
         } catch (error) {
           const reason = error instanceof Error ? error.message : "Unknown planning error";
-          const safeReason = reason.replace(/Bearer\\s+[^\\s]+/gi, "Bearer [REDACTED]").replace(/(api[_ -]?key|token|secret|password)\\s*[:=]\\s*[^\\s,]+/gi, "$1=[REDACTED]").slice(0, 300);
+          const safeReason = "Planning failed; detailed error is intentionally not returned to the model.";
           agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "FAILED", reason: safeReason, executed: false }) });
         }
       }
