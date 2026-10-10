@@ -2,9 +2,9 @@ import { invokeLLM, type InvokeResult, type Message, type Tool } from "./llm";
 import { searchWeb, type AIWebSource } from "./aiKnowledge";
 import { readGmailThread, searchGmail } from "./gmail";
 import { createUltraPlan } from "../autonomousManager";
-import { agentHealth } from "../../drizzle/schema";
+import { agentHealth, users } from "../../drizzle/schema";
 import { getDb } from "../db";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 const WEB_SEARCH_TOOL: Tool = {
   type: "function",
@@ -110,9 +110,27 @@ export async function runBoundedAIAgent(input: {
     }
     if (call.function?.name === "hktube_create_plan") {
       const goal = typeof args?.goal === "string" ? args.goal.trim().slice(0, 4000) : "";
-      const ownerNumericId = input.ownerId && /^\\d+$/.test(input.ownerId) ? Number.parseInt(input.ownerId, 10) : 0;
+      const ownerEmail = typeof input.ownerEmail === "string" ? input.ownerEmail.trim().toLowerCase() : "";
+      const db = ownerEmail ? await getDb() : null;
+      const ownerRows = db && ownerEmail
+        ? await db.select({ id: users.id }).from(users).where(eq(users.email, ownerEmail)).limit(1)
+        : [];
+      const ownerNumericId = ownerRows[0]?.id;
       if (!goal || !ownerNumericId) {
-        agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "BLOCKED", reason: "A numeric owner ID is required by the current automation plan schema. No plan was persisted." }) });
+        agentMessages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify({
+            status: "BLOCKED",
+            reason: !goal
+              ? "A task goal is required. No plan was persisted."
+              : !ownerEmail
+                ? "The verified admin email is unavailable. No plan was persisted."
+                : !db
+                  ? "The automation database is unavailable. No plan was persisted."
+                  : "The verified admin has no matching local HkTube user record. No plan was persisted.",
+          }),
+        });
       } else {
         const result = await createUltraPlan({ ownerId: ownerNumericId, goal });
         agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: "PLANNED", planId: result.plan.id, reused: result.reused, plan: result.plan }) });
