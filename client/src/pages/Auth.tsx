@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LockKeyhole, Mail, RefreshCw, UserRound } from "lucide-react";
 import { HkTubeShell } from "@/components/HkTubeShell";
@@ -35,6 +35,7 @@ export default function Auth() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pending, setPending] = useState(false);
   const [resendIn, setResendIn] = useState(0);
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -112,14 +113,14 @@ export default function Auth() {
 
   return <HkTubeShell title="HKW account" subtitle="Apna HKW account banayein ya login karein.">
     <div className="mx-auto grid min-h-[calc(100dvh-220px)] max-w-md place-items-center px-5 py-10">
-      <section className="relative w-full overflow-hidden rounded-[32px] border border-violet-200/70 bg-white p-6 shadow-[0_24px_80px_rgba(91,33,182,.14)] sm:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-20 size-48 rounded-full bg-violet-200/45 blur-3xl" /><div className="pointer-events-none absolute -bottom-24 -left-20 size-48 rounded-full bg-cyan-200/45 blur-3xl" />
+      <section className="relative w-full overflow-hidden rounded-[32px] border border-violet-200/70 bg-white p-6 shadow-[0_24px_80px_rgba(91,33,182,.14)] transition-all duration-500 sm:p-8">
+        <div className="pointer-events-none absolute -right-20 -top-20 size-48 animate-pulse rounded-full bg-violet-200/45 blur-3xl" /><div className="pointer-events-none absolute -bottom-24 -left-20 size-48 animate-pulse rounded-full bg-cyan-200/45 blur-3xl [animation-delay:700ms]" /><div className="pointer-events-none absolute left-1/2 top-0 h-1 w-32 -translate-x-1/2 rounded-full bg-gradient-to-r from-violet-500 via-cyan-400 to-violet-500" />
         <div className="relative mx-auto grid size-20 place-items-center"><div className="absolute inset-0 rounded-[28%] border-2 border-violet-300/70 animate-[spin_7s_linear_infinite]" /><div className="absolute -inset-2 rounded-[32%] border border-cyan-300/50 animate-pulse" /><div className="relative grid size-16 place-items-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-[0_0_35px_rgba(124,58,237,.35)]"><img src="/brand/hkw-mark.webp" alt="HKW" className="size-full object-cover" /></div></div>
         <h1 className="mt-5 text-center text-2xl font-black text-zinc-950">{mode === "login" ? "Log in to HKW" : registerStep === "otp" ? "Verify your email" : "Create your HKW account"}</h1>
         <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{mode === "login" ? "Apne channel, library aur Creator Studio par continue karein." : registerStep === "otp" ? <>Code ya verification button <b>{email}</b> par bheja gaya hai.</> : "Facebook-style simple signup — apna naam, email aur password set karein."}</p>
         {mode === "register" && <div className="relative mx-auto mt-6 flex max-w-xs items-center justify-between"><span className="absolute left-5 right-5 top-2.5 h-px bg-zinc-200" /><span className={`relative z-10 grid size-5 place-items-center rounded-full text-[10px] font-black ${registerStep === "details" ? "bg-violet-600 text-white" : "bg-emerald-500 text-white"}`}>{registerStep === "details" ? "1" : "✓"}</span><span className={`relative z-10 grid size-5 place-items-center rounded-full text-[10px] font-black ${registerStep === "otp" ? "bg-violet-600 text-white" : "bg-zinc-200 text-zinc-500"}`}>2</span></div>}
-        {mode === "register" && registerStep === "otp" ? <form onSubmit={verifySignupOtp} className="mt-7 space-y-5">
-          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">6-digit email code</span><Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} className="h-14 border-zinc-300 bg-white text-center text-2xl font-black tracking-[.55em] text-zinc-950" placeholder="000000" /></label>
+        {mode === "register" && registerStep === "otp" ? <form onSubmit={verifySignupOtp} className="mt-7 animate-in space-y-5 duration-500">
+          <label className="block"><span className="mb-3 block text-center text-xs font-bold uppercase tracking-wider text-zinc-600">6-digit email code</span><div role="group" aria-label="6-digit email code" onClick={() => otpInputRef.current?.focus()} className="relative mx-auto flex max-w-[290px] cursor-text justify-center gap-2"><Input ref={otpInputRef} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0" aria-label="Enter six digit code" />{Array.from({ length: 6 }, (_, index) => <span key={index} className={`grid size-11 place-items-center rounded-xl border text-lg font-black transition-all duration-200 ${otp[index] ? "border-violet-500 bg-violet-50 text-violet-700 shadow-[0_0_16px_rgba(124,58,237,.18)]" : index === otp.length ? "border-violet-400 bg-white ring-2 ring-violet-100" : "border-zinc-300 bg-zinc-50 text-zinc-300"}`}>{otp[index] || "•"}</span>)}</div></label>
           <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3 text-xs leading-5 text-violet-900"><Mail className="mr-2 inline size-4" />Gmail inbox aur spam folder check karein. Code 10 minutes ke liye valid hai.</div>
           <Button disabled={pending || otp.length !== 6} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Verifying…" : <><CheckCircle2 className="mr-2 size-4" />Verify & create account</>}</Button>
           <div className="flex items-center justify-between text-xs font-semibold"><button type="button" onClick={() => { window.localStorage.removeItem("hkw-pending-signup"); setRegisterStep("details"); setOtp(""); }} className="inline-flex items-center gap-1 text-zinc-500 hover:text-black"><ArrowLeft className="size-3.5" />Change details</button><button type="button" disabled={resendIn > 0 || pending} onClick={() => void resendOtp()} className="inline-flex items-center gap-1 text-violet-700 disabled:text-zinc-400"><RefreshCw className="size-3.5" />{resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}</button></div>
