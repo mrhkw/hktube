@@ -52,7 +52,7 @@ function logSafeError(error: unknown) {
 }
 
 function toolProgressLabel(name: string) {
-  const labels: Record<string, string> = { web_search: "Searching the web…", gmail_search: "Searching Gmail…", gmail_read_thread: "Reading Gmail thread…", github_repo_status: "Checking GitHub…", github_read_file: "Reading repository file…", vercel_project_status: "Checking Vercel project…", vercel_recent_deployments: "Verifying recent deployments…", hktube_health_check: "Checking HkTube health…", hktube_create_plan: "Creating a verified plan…" };
+  const labels: Record<string, string> = { web_search: "Searching the web…", gmail_search: "Searching Gmail…", gmail_read_thread: "Reading Gmail thread…", github_repo_status: "Checking GitHub…", github_security_alerts: "Reviewing repository security alerts…", github_read_file: "Reading repository file…", vercel_project_status: "Checking Vercel project…", vercel_recent_deployments: "Verifying recent deployments…", hktube_health_check: "Checking HkTube health…", hktube_create_plan: "Creating a verified plan…" };
   return labels[name] ?? `Running ${name.replaceAll("_", " ")}…`;
 }
 
