@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LockKeyhole, Mail, RefreshCw, UserRound } from "lucide-react";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,98 +10,119 @@ import { toast } from "sonner";
 function readableAuthError(message: string) {
   const value = message.toLowerCase();
   if (value.includes("invalid login credentials")) return "Email ya password ghalat hai.";
-  if (value.includes("user already registered")) return "Is email par HkTube account pehle se mojood hai. Login karein.";
-  if (value.includes("provider is not enabled") || value.includes("unsupported provider")) return "Google login abhi Supabase mein enable nahi hua. Provider settings check karein.";
-  if (value.includes("redirect") && value.includes("not allowed")) return "Google login redirect URL Supabase mein allow nahi hai.";
-  if (value.includes("password") && (value.includes("character") || value.includes("number") || value.includes("letter"))) return "Password kam az kam 8 characters ka ho aur is mein kam az kam 1 letter aur 1 number ho.";
+  if (value.includes("user already registered")) return "Is email par HKW account pehle se mojood hai. Login karein.";
+  if (value.includes("email not confirmed")) return "Pehle apni email verify karein.";
+  if (value.includes("rate limit") || value.includes("too many")) return "Bohat zyada attempts ho gaye. Thori dair baad dobara try karein.";
   if (value.includes("password")) return "Password kam az kam 8 characters ka hona chahiye.";
   if (value.includes("email")) return "Valid email address enter karein.";
   return message || "Account request complete nahi ho saki. Dobara try karein.";
 }
 
-function validSignupPassword(value: string) { return value.length >= 8 && /[A-Za-z]/.test(value) && /\d/.test(value); }
+function validPassword(value: string) { return value.length >= 8 && /[A-Za-z]/.test(value) && /\d/.test(value); }
 function withTimeout<T>(promise: PromiseLike<T>, message: string, timeoutMs = 20_000) { return Promise.race([Promise.resolve(promise), new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error(message)), timeoutMs))]); }
 
 export default function Auth() {
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [registerStep, setRegisterStep] = useState<"details" | "otp">("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [pending, setPending] = useState(false);
-  const [googlePending, setGooglePending] = useState(false);
-  const isAndroidApp = new URLSearchParams(window.location.search).get("app") === "android";
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
     let active = true;
-    const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    hashParams.forEach((value, key) => params.set(key, value));
-    const callbackError = params.get("error_description") || params.get("error");
-    if (callbackError) {
-      toast.error(readableAuthError(callbackError.replace(/\+/g, " ")));
-      window.history.replaceState({}, document.title, "/auth");
-    }
     supabase.auth.getSession().then(({ data }) => { if (active && data.session) navigate("/menu"); });
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => { if (active && session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) navigate("/menu"); });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [navigate]);
 
-  async function signInWithGoogle() {
-    setGooglePending(true);
-    try {
-      const redirectTo = `${window.location.origin}/`;
-      const { error } = await withTimeout(supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } }), "Google login is taking too long. Please try again.");
-      if (error) throw error;
-    } catch (error) {
-      toast.error(readableAuthError(error instanceof Error ? error.message : "Google login failed."));
-      setGooglePending(false);
-    }
+  useEffect(() => {
+    if (!resendIn) return;
+    const timer = window.setInterval(() => setResendIn(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendIn]);
+
+  function switchMode(next: "login" | "register") {
+    setMode(next); setRegisterStep("details"); setOtp(""); setPassword(""); setConfirmPassword("");
   }
 
-  async function submit(event: React.FormEvent) {
+  async function sendSignupOtp(event: React.FormEvent) {
     event.preventDefault();
+    if (!name.trim() || name.trim().length < 2) { toast.error("Apna naam enter karein."); return; }
+    if (!email.trim() || !email.includes("@")) { toast.error("Valid Gmail/email enter karein."); return; }
+    if (!validPassword(password)) { toast.error("Password 8+ characters ka ho aur is mein letter aur number ho."); return; }
+    if (password !== confirmPassword) { toast.error("Passwords match nahi karte."); return; }
     setPending(true);
     try {
-      if (mode === "login") {
-        const { error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim(), password }), "Login is taking too long. Please check your connection and try again.");
-        if (error) throw error;
-        toast.success("Welcome back to HkTube.");
-        navigate("/menu");
-      } else {
-        if (!validSignupPassword(password)) throw new Error("Password should be at least 8 characters and contain at least one letter and one number.");
-        const { data, error } = await withTimeout(supabase.auth.signUp({ email: email.trim(), password, options: { data: { display_name: name.trim() }, emailRedirectTo: `${window.location.origin}/auth` } }), "Account creation is taking too long. Please try again.");
-        if (error) throw error;
-        if (data.session) {
-          toast.success("Your HkTube account is ready.");
-          navigate("/menu");
-        } else {
-          toast.success("Account created. Email verification complete karke login karein.");
-          setMode("login");
-          setPassword("");
-        }
-      }
-    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Account request failed.")); }
+      const { error } = await withTimeout(supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true, data: { display_name: name.trim(), full_name: name.trim() } } }), "OTP request is taking too long. Dobara try karein.");
+      if (error) throw error;
+      setRegisterStep("otp"); setOtp(""); setResendIn(45);
+      toast.success(`6-digit verification code ${email.trim().toLowerCase()} par bhej diya gaya.`);
+    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "OTP send nahi ho saka.")); }
     finally { setPending(false); }
   }
 
-  return <HkTubeShell title="HkTube account" subtitle="Apna HkTube account banayein aur channel, library aur creator activity ko ek jagah rakhein.">
+  async function verifySignupOtp(event: React.FormEvent) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(otp)) { toast.error("6-digit OTP enter karein."); return; }
+    setPending(true);
+    try {
+      const { error } = await withTimeout(supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: otp, type: "email" }), "OTP verification is taking too long.");
+      if (error) throw error;
+      const { error: passwordError } = await withTimeout(supabase.auth.updateUser({ password, data: { display_name: name.trim(), full_name: name.trim() } }), "Password setup is taking too long.");
+      if (passwordError) throw passwordError;
+      toast.success("HKW account ready. Welcome!"); navigate("/menu");
+    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "OTP verify nahi ho saka.")); }
+    finally { setPending(false); }
+  }
+
+  async function resendOtp() {
+    if (resendIn > 0 || pending) return;
+    setPending(true);
+    try {
+      const { error } = await withTimeout(supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } }), "OTP request is taking too long.");
+      if (error) throw error;
+      setResendIn(45); setOtp(""); toast.success("Naya OTP bhej diya gaya.");
+    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "OTP resend nahi ho saka.")); }
+    finally { setPending(false); }
+  }
+
+  async function submitLogin(event: React.FormEvent) {
+    event.preventDefault(); setPending(true);
+    try {
+      const { error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }), "Login is taking too long. Check your connection.");
+      if (error) throw error;
+      toast.success("Welcome back to HKW."); navigate("/menu");
+    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login failed.")); }
+    finally { setPending(false); }
+  }
+
+  return <HkTubeShell title="HKW account" subtitle="Apna HKW account banayein ya login karein.">
     <div className="mx-auto grid min-h-[calc(100dvh-220px)] max-w-md place-items-center px-5 py-10">
       <section className="w-full rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-zinc-300 bg-white text-zinc-950 shadow-sm"><LockKeyhole className="size-7" /></div>
-        <h1 className="mt-5 text-center text-2xl font-black text-zinc-950">{mode === "login" ? "Log in to HkTube" : "Create your HkTube account"}</h1>
-        <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{mode === "login" ? "Apne channel, library aur Creator Studio par continue karein." : "Aapka account Supabase Auth mein protected credentials ke sath save hoga."}</p>
-        {mode === "login" && !isAndroidApp && <><Button type="button" disabled={googlePending || pending} onClick={signInWithGoogle} variant="outline" className="mt-7 h-11 w-full rounded-full border-zinc-300 bg-white text-sm font-bold text-zinc-950 shadow-sm hover:bg-zinc-50"><span className="mr-2 grid size-5 place-items-center rounded-md border border-zinc-300 bg-white text-xs font-black text-zinc-950">G</span>{googlePending ? "Connecting to Google…" : "Continue with Google"}</Button><div className="my-5 flex items-center gap-3"><div className="h-px flex-1 bg-zinc-200" /><span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">or</span><div className="h-px flex-1 bg-zinc-200" /></div></>}
-        {mode === "login" && isAndroidApp && <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-800">Android app sign-in uses secure email/password authentication inside the app. Google sign-in is available on the web version.</div>}
-        <form onSubmit={submit} className="space-y-4">
-          {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Display name</span><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required minLength={2} maxLength={120} value={name} onChange={e => setName(e.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="Your name" /></div></label>}
-          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Email</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="you@example.com" /></div></label>
-          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Password</span><div className="relative"><Input required minLength={mode === "register" ? 8 : 1} maxLength={128} pattern={mode === "register" ? "(?=.*[A-Za-z])(?=.*\\d).{8,}" : undefined} title={mode === "register" ? "8 characters, including at least 1 letter and 1 number" : undefined} type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder={mode === "register" ? "8+ chars with a letter and number" : "Your password"} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-black">{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div>{mode === "register" && <span className="mt-1.5 block text-xs text-zinc-500">8 characters, including at least 1 letter and 1 number.</span>}</label>
-          <Button disabled={pending || googlePending} type="submit" className="h-11 w-full rounded-full border border-zinc-950 bg-white font-bold text-zinc-950 shadow-sm hover:bg-zinc-100">{pending ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}</Button>
-        </form>
-        <button type="button" onClick={() => setMode(mode === "login" ? "register" : "login")} className="mt-5 w-full text-center text-sm font-semibold text-zinc-700 hover:text-black">{mode === "login" ? "New to HkTube? Create an account" : "Already have an account? Log in"}</button>
-        <p className="mt-5 text-center text-xs leading-5 text-zinc-500">Supabase session refresh ke baad bhi account ko remember rakhega.</p>
+        <div className="mx-auto grid size-16 place-items-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-sm"><img src="/brand/hkw-mark.webp" alt="HKW" className="size-full object-cover" /></div>
+        <h1 className="mt-5 text-center text-2xl font-black text-zinc-950">{mode === "login" ? "Log in to HKW" : registerStep === "otp" ? "Verify your email" : "Create your HKW account"}</h1>
+        <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{mode === "login" ? "Apne channel, library aur Creator Studio par continue karein." : registerStep === "otp" ? <>Code <b>{email}</b> par bheja gaya hai.</> : "Facebook-style simple signup — apna naam, email aur password set karein."}</p>
+        {mode === "register" && registerStep === "otp" ? <form onSubmit={verifySignupOtp} className="mt-7 space-y-5">
+          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">6-digit email code</span><Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} className="h-14 border-zinc-300 bg-white text-center text-2xl font-black tracking-[.55em] text-zinc-950" placeholder="000000" /></label>
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3 text-xs leading-5 text-violet-900"><Mail className="mr-2 inline size-4" />Gmail inbox aur spam folder check karein. Code 10 minutes ke liye valid hai.</div>
+          <Button disabled={pending || otp.length !== 6} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Verifying…" : <><CheckCircle2 className="mr-2 size-4" />Verify & create account</>}</Button>
+          <div className="flex items-center justify-between text-xs font-semibold"><button type="button" onClick={() => { setRegisterStep("details"); setOtp(""); }} className="inline-flex items-center gap-1 text-zinc-500 hover:text-black"><ArrowLeft className="size-3.5" />Change details</button><button type="button" disabled={resendIn > 0 || pending} onClick={() => void resendOtp()} className="inline-flex items-center gap-1 text-violet-700 disabled:text-zinc-400"><RefreshCw className="size-3.5" />{resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}</button></div>
+        </form> : <form onSubmit={mode === "login" ? submitLogin : sendSignupOtp} className="mt-7 space-y-4">
+          {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Full name</span><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required minLength={2} maxLength={120} value={name} onChange={event => setName(event.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="Your name" /></div></label>}
+          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Gmail / Email</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="you@gmail.com" /></div></label>
+          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Password</span><div className="relative"><Input required minLength={mode === "register" ? 8 : 1} maxLength={128} type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder={mode === "register" ? "8+ chars with letter and number" : "Your password"} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></label>
+          {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Confirm password</span><div className="relative"><Input required minLength={8} maxLength={128} type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder="Repeat password" /><button type="button" aria-label={showConfirm ? "Hide password" : "Show password"} onClick={() => setShowConfirm(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div><span className="mt-1.5 block text-xs text-zinc-500">OTP verify hone ke baad password activate hoga.</span></label>}
+          <Button disabled={pending} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Please wait…" : mode === "login" ? <><KeyRound className="mr-2 size-4" />Log in</> : <><ArrowRight className="mr-2 size-4" />Continue to email verification</>}</Button>
+        </form>}
+        <button type="button" onClick={() => switchMode(mode === "login" ? "register" : "login")} className="mt-5 w-full text-center text-sm font-semibold text-zinc-700 hover:text-black">{mode === "login" ? "New to HKW? Create an account" : "Already have an account? Log in"}</button>
+        <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs leading-5 text-zinc-500"><LockKeyhole className="size-3.5" />HKW email authentication. No Google sign-in.</p>
         <Link href="/" className="mt-5 block text-center text-xs font-semibold text-zinc-500 hover:text-black">Back to Home</Link>
       </section>
     </div>

@@ -9,16 +9,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABA
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 
-export const signInWithGoogle = async () => {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-    },
-  });
-  if (error) console.error('Google Auth Error:', error.message);
-};
-
 export const connectGmailWithGoogle = async () => {
   window.localStorage.setItem("hktube-connector-return", "/admin-agent/apps?connected=gmail");
   const { error } = await supabase.auth.signInWithOAuth({
