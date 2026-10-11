@@ -5,6 +5,7 @@ import { createUltraPlan } from "../autonomousManager";
 import { agentHealth, users } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { desc, eq } from "drizzle-orm";
+import { commitAgentFile, createAgentBranch, getRepositoryStatus, openAgentPullRequest, readRepositoryFile } from "./agentGitHub";
 
 const WEB_SEARCH_TOOL: Tool = {
   type: "function",
@@ -39,8 +40,13 @@ const GMAIL_THREAD_TOOL: Tool = {
 
 const HKTUBE_PLAN_TOOL: Tool = { type: "function", function: { name: "hktube_create_plan", description: "Create a real persisted HkTube execution plan when the owner asks to do, fix, implement, investigate, or complete a multi-step task that current tools cannot directly execute. Include blockers, risk, approval and verification. Never claim completion from a plan alone.", parameters: { type: "object", properties: { goal: { type: "string" } }, required: ["goal"], additionalProperties: false } } };
 const HKTUBE_HEALTH_TOOL: Tool = { type: "function", function: { name: "hktube_health_check", description: "Read verified HkTube internal agent health records when the owner asks whether the platform or agents are healthy, online, blocked or failing.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
-const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL];
-const MAX_TOOL_CALLS = 4;
+const GITHUB_STATUS_TOOL: Tool = { type: "function", function: { name: "github_repo_status", description: "Read the configured HkTube GitHub repository and base-branch commit. Use when repository state or runtime GitHub connection must be verified.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
+const GITHUB_READ_TOOL: Tool = { type: "function", function: { name: "github_read_file", description: "Read a text source file from the configured HkTube repository. Use for code inspection before proposing or making a fix. Path must be repository-relative; ref defaults to the configured base branch.", parameters: { type: "object", properties: { path: { type: "string" }, ref: { type: "string" } }, required: ["path"], additionalProperties: false } } };
+const GITHUB_BRANCH_TOOL: Tool = { type: "function", function: { name: "github_create_branch", description: "Create a new isolated ai-agent/* branch from the configured base branch for an explicitly requested code change. Never create or write directly to main or production.", parameters: { type: "object", properties: { label: { type: "string" } }, required: ["label"], additionalProperties: false } } };
+const GITHUB_COMMIT_TOOL: Tool = { type: "function", function: { name: "github_commit_file", description: "Commit a complete text file to an existing ai-agent/* branch created by github_create_branch. Only for an explicit owner request to implement/fix code. Never edit production secrets, env files, Vercel config, package manifests/lockfiles, or GitHub workflows. A commit is not a test pass or production deployment.", parameters: { type: "object", properties: { path: { type: "string" }, content: { type: "string" }, branch: { type: "string" }, message: { type: "string" } }, required: ["path", "content", "branch", "message"], additionalProperties: false } } };
+const GITHUB_PR_TOOL: Tool = { type: "function", function: { name: "github_open_pull_request", description: "Open a draft pull request from an ai-agent/* branch after code changes. Never merge it or claim production deployment. Include summary, tests actually run (or explicitly not run), and remaining risks.", parameters: { type: "object", properties: { branch: { type: "string" }, title: { type: "string" }, body: { type: "string" } }, required: ["branch", "title", "body"], additionalProperties: false } } };
+const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL, GITHUB_STATUS_TOOL, GITHUB_READ_TOOL, GITHUB_BRANCH_TOOL, GITHUB_COMMIT_TOOL, GITHUB_PR_TOOL];
+const MAX_TOOL_CALLS = 6;
 
 type ToolCall = NonNullable<NonNullable<InvokeResult["choices"][number]["message"]>["tool_calls"]>[number];
 
@@ -108,6 +114,41 @@ export async function runBoundedAIAgent(input: {
       const found = await searchWeb(query, input.signal);
       sources.push(...found);
       agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ query, sources: found }) });
+      continue;
+    }
+    if (call.function?.name === "github_repo_status") {
+      const result = await getRepositoryStatus();
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "github_read_file") {
+      const path = typeof args?.path === "string" ? args.path : "";
+      const ref = typeof args?.ref === "string" ? args.ref : undefined;
+      const result = await readRepositoryFile(path, ref);
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "github_create_branch") {
+      const label = typeof args?.label === "string" ? args.label : "code-task";
+      const result = await createAgentBranch(label);
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "github_commit_file") {
+      const path = typeof args?.path === "string" ? args.path : "";
+      const content = typeof args?.content === "string" ? args.content : "";
+      const branch = typeof args?.branch === "string" ? args.branch : "";
+      const message = typeof args?.message === "string" ? args.message : "";
+      const result = await commitAgentFile({ path, content, branch, message });
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "github_open_pull_request") {
+      const branch = typeof args?.branch === "string" ? args.branch : "";
+      const title = typeof args?.title === "string" ? args.title : "";
+      const body = typeof args?.body === "string" ? args.body : "";
+      const result = await openAgentPullRequest({ branch, title, body });
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
       continue;
     }
     if (call.function?.name === "hktube_health_check") {
