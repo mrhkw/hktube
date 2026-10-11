@@ -93,6 +93,71 @@ export async function getRepositoryStatus() {
   };
 }
 
+export async function getRepositorySecurityOverview() {
+  const { repository } = configuration();
+  type DependabotAlert = {
+    number?: number; state?: string; html_url?: string;
+    security_advisory?: { summary?: string; severity?: string };
+    dependency?: { package?: { name?: string }; manifest_path?: string };
+  };
+  type CodeAlert = {
+    number?: number; state?: string; html_url?: string;
+    rule?: { id?: string; description?: string; severity?: string };
+    most_recent_instance?: { location?: { path?: string; start_line?: number } };
+  };
+
+  const dependabot = await request<DependabotAlert[]>(
+    `/repos/${repository}/dependabot/alerts?state=open&per_page=20`,
+  ).then(alerts => ({
+    status: "VERIFIED" as const,
+    openCount: alerts?.length ?? 0,
+    alerts: (alerts ?? []).map(alert => ({
+      number: alert.number ?? null,
+      severity: alert.security_advisory?.severity ?? "unknown",
+      package: alert.dependency?.package?.name ?? "unknown",
+      summary: (alert.security_advisory?.summary ?? "No summary provided").slice(0, 240),
+      manifestPath: alert.dependency?.manifest_path ?? null,
+      url: alert.html_url ?? null,
+    })),
+  })).catch(error => ({
+    status: "BLOCKED" as const,
+    reason: error instanceof AgentGitHubError && error.code === "GITHUB_NOT_CONFIGURED"
+      ? "GITHUB_TOKEN is not configured."
+      : "Dependabot alerts could not be read. Check token permissions and repository alert settings.",
+    alerts: [] as Array<{ number: number | null; severity: string; package: string; summary: string; manifestPath: string | null; url: string | null }>,
+  }));
+
+  const codeScanning = await request<CodeAlert[]>(
+    `/repos/${repository}/code-scanning/alerts?state=open&per_page=20`,
+  ).then(alerts => ({
+    status: "VERIFIED" as const,
+    openCount: alerts?.length ?? 0,
+    alerts: (alerts ?? []).map(alert => ({
+      number: alert.number ?? null,
+      severity: alert.rule?.severity ?? "unknown",
+      ruleId: alert.rule?.id ?? "unknown",
+      summary: (alert.rule?.description ?? "No description provided").slice(0, 240),
+      file: alert.most_recent_instance?.location?.path ?? null,
+      line: alert.most_recent_instance?.location?.start_line ?? null,
+      url: alert.html_url ?? null,
+    })),
+  })).catch(error => ({
+    status: "BLOCKED" as const,
+    reason: error instanceof AgentGitHubError && error.code === "GITHUB_NOT_CONFIGURED"
+      ? "GITHUB_TOKEN is not configured."
+      : "Code-scanning alerts could not be read. Enable GitHub code scanning and grant read access to security alerts.",
+    alerts: [] as Array<{ number: number | null; severity: string; ruleId: string; summary: string; file: string | null; line: number | null; url: string | null }>,
+  }));
+
+  return {
+    status: dependabot.status === "VERIFIED" || codeScanning.status === "VERIFIED" ? "PARTIAL_OR_VERIFIED" : "BLOCKED",
+    repository,
+    sources: { dependabot, codeScanning },
+    note: "An empty alert list means no open alerts were returned by that source; a BLOCKED source is not evidence of zero vulnerabilities.",
+    permissions: "read-only",
+  };
+}
+
 export async function readRepositoryFile(path: string, ref?: string) {
   const { repository, baseBranch } = configuration();
   const safePath = validatePath(path);
