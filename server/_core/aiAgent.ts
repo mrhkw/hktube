@@ -6,6 +6,7 @@ import { agentHealth, users } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { desc, eq } from "drizzle-orm";
 import { AgentGitHubError, commitAgentFile, createAgentBranch, getRepositoryStatus, openAgentPullRequest, readRepositoryFile } from "./agentGitHub";
+import { AgentVercelError, getVercelProjectStatus, listVercelDeployments } from "./agentVercel";
 
 const WEB_SEARCH_TOOL: Tool = {
   type: "function",
@@ -41,11 +42,13 @@ const GMAIL_THREAD_TOOL: Tool = {
 const HKTUBE_PLAN_TOOL: Tool = { type: "function", function: { name: "hktube_create_plan", description: "Create a real persisted HkTube execution plan when the owner asks to do, fix, implement, investigate, or complete a multi-step task that current tools cannot directly execute. Include blockers, risk, approval and verification. Never claim completion from a plan alone.", parameters: { type: "object", properties: { goal: { type: "string" } }, required: ["goal"], additionalProperties: false } } };
 const HKTUBE_HEALTH_TOOL: Tool = { type: "function", function: { name: "hktube_health_check", description: "Read verified HkTube internal agent health records when the owner asks whether the platform or agents are healthy, online, blocked or failing.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
 const GITHUB_STATUS_TOOL: Tool = { type: "function", function: { name: "github_repo_status", description: "Read the configured HkTube GitHub repository and base-branch commit. Use when repository state or runtime GitHub connection must be verified.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
+const VERCEL_STATUS_TOOL: Tool = { type: "function", function: { name: "vercel_project_status", description: "Read verified Vercel project configuration using the configured server-side token. This is read-only and does not change deployment settings.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
+const VERCEL_DEPLOYMENTS_TOOL: Tool = { type: "function", function: { name: "vercel_recent_deployments", description: "Read recent deployments for the configured HkTube Vercel project, including production/preview target, state, commit and branch. This is read-only.", parameters: { type: "object", properties: { limit: { type: "number", description: "Number of recent deployments, 1 to 10." } }, additionalProperties: false } } };
 const GITHUB_READ_TOOL: Tool = { type: "function", function: { name: "github_read_file", description: "Read a text source file from the configured HkTube repository. Use for code inspection before proposing or making a fix. Path must be repository-relative; ref defaults to the configured base branch.", parameters: { type: "object", properties: { path: { type: "string" }, ref: { type: "string" } }, required: ["path"], additionalProperties: false } } };
 const GITHUB_BRANCH_TOOL: Tool = { type: "function", function: { name: "github_create_branch", description: "Create a new isolated ai-agent/* branch from the configured base branch for an explicitly requested code change. Never create or write directly to main or production.", parameters: { type: "object", properties: { label: { type: "string" } }, required: ["label"], additionalProperties: false } } };
 const GITHUB_COMMIT_TOOL: Tool = { type: "function", function: { name: "github_commit_file", description: "Commit a complete text file to an existing ai-agent/* branch created by github_create_branch. Only for an explicit owner request to implement/fix code. Never edit production secrets, env files, Vercel config, package manifests/lockfiles, or GitHub workflows. A commit is not a test pass or production deployment.", parameters: { type: "object", properties: { path: { type: "string" }, content: { type: "string" }, branch: { type: "string" }, message: { type: "string" } }, required: ["path", "content", "branch", "message"], additionalProperties: false } } };
 const GITHUB_PR_TOOL: Tool = { type: "function", function: { name: "github_open_pull_request", description: "Open a draft pull request from an ai-agent/* branch after code changes. Never merge it or claim production deployment. Include summary, tests actually run (or explicitly not run), and remaining risks.", parameters: { type: "object", properties: { branch: { type: "string" }, title: { type: "string" }, body: { type: "string" } }, required: ["branch", "title", "body"], additionalProperties: false } } };
-const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL, GITHUB_STATUS_TOOL, GITHUB_READ_TOOL, GITHUB_BRANCH_TOOL, GITHUB_COMMIT_TOOL, GITHUB_PR_TOOL];
+const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL, GITHUB_STATUS_TOOL, GITHUB_READ_TOOL, GITHUB_BRANCH_TOOL, GITHUB_COMMIT_TOOL, GITHUB_PR_TOOL, VERCEL_STATUS_TOOL, VERCEL_DEPLOYMENTS_TOOL];
 const MAX_TOOL_CALLS = 6;
 
 type ToolCall = NonNullable<NonNullable<InvokeResult["choices"][number]["message"]>["tool_calls"]>[number];
@@ -123,6 +126,17 @@ export async function runBoundedAIAgent(input: {
     }
     if (call.function?.name === "github_repo_status") {
       const result = await getRepositoryStatus();
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "vercel_project_status") {
+      const result = await getVercelProjectStatus();
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "vercel_recent_deployments") {
+      const limit = typeof args?.limit === "number" ? Math.min(Math.max(Math.floor(args.limit), 1), 10) : 5;
+      const result = await listVercelDeployments(limit);
       agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
       continue;
     }
@@ -211,10 +225,16 @@ export async function runBoundedAIAgent(input: {
     }
     agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: "Unsupported tool call" }) });
       } catch (error) {
-        const code = error instanceof AgentGitHubError ? error.code : "TOOL_EXECUTION_FAILED";
+        const code = error instanceof AgentGitHubError || error instanceof AgentVercelError ? error.code : "TOOL_EXECUTION_FAILED";
         const safeMessage = code === "GITHUB_NOT_CONFIGURED"
           ? "GitHub coding is blocked: add GITHUB_TOKEN to the HkTube Vercel server environment, then redeploy."
-          : code === "GITHUB_INVALID_INPUT"
+          : code === "VERCEL_NOT_CONFIGURED"
+            ? "Vercel status checks are blocked: add VERCEL_TOKEN to the HkTube Vercel server environment, then redeploy."
+            : code === "VERCEL_INVALID_INPUT"
+              ? "The Vercel operation was rejected by input safety checks. No change was made."
+              : code === "VERCEL_REQUEST_FAILED"
+                ? "Vercel status could not be verified. Check token permissions and provider availability."
+                : code === "GITHUB_INVALID_INPUT"
             ? "The GitHub operation was rejected by input safety checks. No change was made."
             : code === "GITHUB_NOT_FOUND"
               ? "The requested repository, file, or branch was not found. No change was confirmed."
