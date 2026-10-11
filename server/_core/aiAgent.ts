@@ -83,7 +83,7 @@ export async function runBoundedAIAgent(input: {
 }): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number; toolNames: string[] }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
-    { role: "system", content: `${input.systemInstruction}\n\nYou are operating in bounded agent mode. For task requests, reason about the goal, use web_search when current or source-backed information is needed, and use Gmail tools when the user asks about their connected inbox. If Gmail access is unavailable, explain the connection requirement; do not silently refuse. Verify tool results before answering. You may only use the tools explicitly provided. Never claim to have changed files, accounts, deployments, or external data.` },
+    { role: "system", content: `${input.systemInstruction}\n\nYou are operating in bounded agent mode. For task requests, reason about the goal, use web_search when current or source-backed information is needed, and use Gmail tools when the user asks about their connected inbox. If Gmail access is unavailable, explain the connection requirement; do not silently refuse. Verify tool results before answering. You may only use the tools explicitly provided. Never claim an action succeeded unless its tool result explicitly confirms it. A source commit or draft PR does not prove tests passed or production changed; report those only after separate verification.` },
     ...input.messages,
   ];
 
@@ -156,7 +156,7 @@ export async function runBoundedAIAgent(input: {
     if (call.function?.name === "hktube_health_check") {
       const db = await getDb();
       const rows = db ? await db.select().from(agentHealth).orderBy(desc(agentHealth.updatedAt)).limit(50) : [];
-      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: db ? "VERIFIED" : "BLOCKED", agents: rows }) });
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ status: !db ? "BLOCKED" : rows.length ? "HEALTH_RECORDS_FOUND" : "NO_HEALTH_RECORDS", database: db ? "AVAILABLE" : "BLOCKED", recordCount: rows.length, agents: rows }) });
       continue;
     }
     if (call.function?.name === "hktube_create_plan") {
