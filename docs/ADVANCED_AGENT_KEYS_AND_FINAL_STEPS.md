@@ -10,8 +10,16 @@ This checklist is for the guarded runtime coding tools. Never paste credentials 
    - This enables reading source, creating an isolated `ai-agent/*` branch, committing eligible source files, and opening a **draft PR**. It does not merge PRs or deploy production.
 2. `HKTUBE_GITHUB_REPO` — set to `mrhkw/hktube`. Optional because the code defaults to this repository.
 3. `HKTUBE_GITHUB_BASE_BRANCH` — set to `main`. Optional because the code defaults to `main`.
+4. For security alerts, grant this same token **Dependabot alerts: Read-only** and **Code scanning alerts: Read-only**. If either permission is missing or the feature is disabled, that source will show `BLOCKED`, not “zero vulnerabilities”.
 
 The coding tools intentionally block writes to `.env*`, `.github/workflows/*`, `vercel.json`, `package.json`, and package lockfiles. Source edits are committed only to a branch with the `ai-agent/*` prefix. PRs are created as drafts and require human review. The agent does not merge or claim that a PR is a production deployment.
+
+## Required for runtime Vercel status verification
+
+- `VERCEL_TOKEN` — a dedicated Vercel access token used only by the server runtime for read-only project and deployment status checks. Do not paste it into the chat or browser form.
+- `VERCEL_PROJECT_ID` is optional; the runtime defaults to the existing HkTube project `prj_LL0NmUD6dRdekzY0CKDo4R5ROQ8U`.
+
+The Vercel adapter only reads project metadata and recent deployments. It cannot change settings, promote deployments, or deploy production.
 
 ## Required AI model configuration
 
@@ -30,7 +38,7 @@ These are separate from the GitHub coding agent. Missing providers must remain v
 
 ## Final verification after saving keys
 
-1. Save the GitHub token and required model key only in Vercel Environment Variables for the intended environment.
+1. Save `GITHUB_TOKEN` and `VERCEL_TOKEN` only in Vercel Environment Variables for the intended environment. The existing `GROQ_API_KEY`/`GEMINI_API_KEY` configuration should remain unchanged if already working.
 2. Redeploy a preview first.
 3. In HkTube Admin Agent, ask it to check repository status and read `server/_core/aiAgent.ts`. Confirm it reports a verified repository and base commit.
 4. Ask for a small harmless source change. Confirm it creates an `ai-agent/*` branch and a draft PR, without touching `main`.
