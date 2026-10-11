@@ -64,4 +64,27 @@ describe("bounded HkTube agent", () => {
     expect(result.result.choices[0]?.message.content).toContain("Final verified answer");
   });
 
+
+  it("returns a structured tool failure and continues instead of crashing the whole agent", async () => {
+    searchWebMock.mockRejectedValueOnce(new Error("provider secret or internal detail must not leak"));
+    invokeLLMMock
+      .mockResolvedValueOnce({ choices: [{ message: { role: "assistant", content: "", tool_calls: [{ id: "call-failed", type: "function", function: { name: "web_search", arguments: JSON.stringify({ query: "test failure path" }) } }] } }] })
+      .mockResolvedValueOnce({ model: "openai/gpt-oss-20b", choices: [{ message: { role: "assistant", content: JSON.stringify({ answer: "The search failed; no result was verified.", memories: [] }) } }] });
+
+    const { runBoundedAIAgent } = await import("./aiAgent");
+    const result = await runBoundedAIAgent({
+      messages: [{ role: "user", content: "Research this safely." }],
+      systemInstruction: "Be accurate.",
+      finalResponseFormat: { type: "json_object" },
+    });
+
+    expect(result.toolCallsUsed).toBe(1);
+    expect(result.toolNames).toEqual(["web_search"]);
+    expect(invokeLLMMock).toHaveBeenCalledTimes(2);
+    const finalMessages = invokeLLMMock.mock.calls[1][0].messages;
+    const failure = finalMessages.find((message: { role: string; tool_call_id?: string }) => message.role === "tool" && message.tool_call_id === "call-failed");
+    expect(failure?.content).toContain('"status":"FAILED"');
+    expect(failure?.content).not.toContain("provider secret");
+  });
+
 });
