@@ -5,7 +5,7 @@ import { createUltraPlan } from "../autonomousManager";
 import { agentHealth, users } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { desc, eq } from "drizzle-orm";
-import { commitAgentFile, createAgentBranch, getRepositoryStatus, openAgentPullRequest, readRepositoryFile } from "./agentGitHub";
+import { AgentGitHubError, commitAgentFile, createAgentBranch, getRepositoryStatus, openAgentPullRequest, readRepositoryFile } from "./agentGitHub";
 
 const WEB_SEARCH_TOOL: Tool = {
   type: "function",
@@ -205,11 +205,19 @@ export async function runBoundedAIAgent(input: {
       continue;
     }
     agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: "Unsupported tool call" }) });
-      } catch {
+      } catch (error) {
+        const code = error instanceof AgentGitHubError ? error.code : "TOOL_EXECUTION_FAILED";
+        const safeMessage = code === "GITHUB_NOT_CONFIGURED"
+          ? "GitHub coding is blocked: add GITHUB_TOKEN to the HkTube Vercel server environment, then redeploy."
+          : code === "GITHUB_INVALID_INPUT"
+            ? "The GitHub operation was rejected by input safety checks. No change was made."
+            : code === "GITHUB_NOT_FOUND"
+              ? "The requested repository, file, or branch was not found. No change was confirmed."
+              : "Tool execution failed safely. No action is confirmed; inspect provider permissions or retry.";
         agentMessages.push({
           role: "tool",
           tool_call_id: call.id,
-          content: JSON.stringify({ status: "FAILED", error: "Tool execution failed safely. No action is confirmed; retry or inspect the provider connection." }),
+          content: JSON.stringify({ status: "FAILED", code, error: safeMessage }),
         });
       }
     }
