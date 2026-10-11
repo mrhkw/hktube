@@ -147,7 +147,7 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       const output = parseAIChatOutput(result);
       await Promise.allSettled([
         saveAIMemories(req, output.memories, userId, controller.signal),
-        saveAIConversation(req, { title: latest || "HkTube AI chat", module: "admin-ai", messages: [...messages, { role: "assistant", content: output.answer, metadata: media.length ? { media } : {} }] }, userId, controller.signal),
+        saveAIConversation(req, { title: latest || "HkTube AI chat", module: "admin-ai", messages: [...messages, { role: "assistant", content: output.answer, metadata: { ...(media.length ? { media } : {}), ...(agentSources.length ? { sources: agentSources } : {}) } }] }, userId, controller.signal),
         saveAIAgentLog(req, { userId, step: "executing", status: "complete", metadata: { provider: media.length ? "gemini" : "groq", toolNames: agentRun.toolNames } }, controller.signal),
       ]);
       if (controller.signal.aborted) throw controller.signal.reason;
