@@ -136,16 +136,13 @@ export default function Auth() {
 
   async function submitLogin(event: React.FormEvent) {
     event.preventDefault(); setPending(true);
-    authFlowRef.current = "login-otp";
     try {
       const { error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }), "Login is taking too long. Check your connection.");
       if (error) throw error;
-      await supabase.auth.signOut();
-      const { error: otpError } = await withTimeout(supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: false, emailRedirectTo: authRedirectUrl() } }), "Login OTP request is taking too long.");
-      if (otpError) throw otpError;
-      setLoginStep("otp"); setOtp(""); setResendIn(45); toast.success("Login verification email bheji gayi. Us mein code ya verification link hoga.");
+      authFlowRef.current = "idle";
+      toast.success("Welcome back to HKW."); navigate("/menu");
     } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login failed.")); }
-    finally { if (loginStep === "details") setPending(false); }
+    finally { setPending(false); }
   }
 
   async function verifyLoginOtp(event: React.FormEvent) {
