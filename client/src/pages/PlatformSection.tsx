@@ -15,7 +15,6 @@ import {
   Inbox,
   Library,
   ListVideo,
-  Loader2,
   Sparkles,
   UsersRound,
   Upload,
@@ -25,6 +24,7 @@ import {
 import { FormEvent, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { HKWLoader } from "@/components/HKWLoader";
 
 export type PlatformSectionKind =
   | "posts"
@@ -61,7 +61,7 @@ function SignInState() {
 }
 
 function LoadingState() {
-  return <div className="grid min-h-[28vh] place-items-center"><Loader2 className="size-7 animate-spin text-fuchsia-300" aria-label="Loading" /></div>;
+  return <HKWLoader label="Loading section" />;
 }
 
 export function PlatformSection({ kind }: { kind: PlatformSectionKind }) {
