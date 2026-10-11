@@ -1,9 +1,15 @@
 import { ENV } from "./env";
 
 export type AIWebSource = { title: string; url: string; snippet: string };
-export type AIMemory = { memory_type: string; memory_key: string; value: unknown };
+export type AIMemory = { memory_type: string; memory_key: string; value: unknown; provenance?: string };
 export type AIMediaAsset = { url: string; mimeType: string; name?: string; size?: number };
 const clean = (value: string, max: number) => value.replace(/\s+/g, " ").trim().slice(0, max);
+const SECRET_PATTERN = /(api[_ -]?key|secret|password|passwd|token|bearer|private[_ -]?key|access[_ -]?token|refresh[_ -]?token|credit[_ -]?card|cvv)/i;
+const isSafeMemory = (item: AIMemory) => {
+  const key = `${item.memory_type} ${item.memory_key}`;
+  const value = typeof item.value === "string" ? item.value : JSON.stringify(item.value ?? "");
+  return !SECRET_PATTERN.test(key) && !SECRET_PATTERN.test(value) && value.length <= 1_000;
+};
 const tokenFrom = (req: any) => {
   const value = req?.headers?.authorization;
   if (typeof value !== "string") return "";
@@ -41,24 +47,29 @@ export async function getAIUserId(req: any, authenticatedUser?: { openId?: strin
   } catch { return null; }
 }
 
-export async function loadAIMemory(req: any, signal?: AbortSignal): Promise<AIMemory[]> {
+export async function loadAIMemory(req: any, signal?: AbortSignal, query = ""): Promise<AIMemory[]> {
   const token = tokenFrom(req);
   if (!token) return [];
   try {
-    const response = await supabaseRequest("ai_memory?select=memory_type,memory_key,value&enabled=eq.true&order=updated_at.desc&limit=30", token, "GET", undefined, signal);
+    const response = await supabaseRequest("ai_memory?select=memory_type,memory_key,value,provenance&enabled=eq.true&order=updated_at.desc&limit=50", token, "GET", undefined, signal);
     if (!response?.ok) return [];
     const data: unknown = await response.json();
-    return Array.isArray(data) ? data as AIMemory[] : [];
+    if (!Array.isArray(data)) return [];
+    const memories = data as AIMemory[];
+    const terms = clean(query, 300).toLowerCase().split(/\W+/).filter(term => term.length >= 3).slice(0, 12);
+    if (!terms.length) return memories.slice(0, 12);
+    const relevant = memories.filter(item => terms.some(term => `${item.memory_type} ${item.memory_key} ${JSON.stringify(item.value)}`.toLowerCase().includes(term)));
+    return (relevant.length ? relevant : memories.slice(0, 5)).slice(0, 12);
   } catch { return []; }
 }
 
-export async function saveAIMemories(req: any, memories: AIMemory[], authenticatedUserId?: string, signal?: AbortSignal) {
+export async function saveAIMemories(req: any, memories: AIMemory[], authenticatedUserId?: string, signal?: AbortSignal, consented = false) {
   const token = tokenFrom(req);
   const userId = authenticatedUserId || await getAIUserId(req, undefined, signal);
-  if (!token || !userId || !Array.isArray(memories)) return;
-  const safe = memories.filter(item => item && typeof item.memory_type === "string" && item.memory_type.trim() && typeof item.memory_key === "string" && item.memory_key.trim() && item.value !== undefined)
+  if (!token || !userId || !Array.isArray(memories) || !consented) return;
+  const safe = memories.filter(item => item && typeof item.memory_type === "string" && item.memory_type.trim() && typeof item.memory_key === "string" && item.memory_key.trim() && item.value !== undefined && isSafeMemory(item))
     .slice(0, 5)
-    .map(item => ({ user_id: userId, memory_type: clean(item.memory_type, 40), memory_key: clean(item.memory_key, 120), value: item.value, enabled: true }));
+    .map(item => ({ user_id: userId, memory_type: clean(item.memory_type, 40), memory_key: clean(item.memory_key, 120), value: item.value, provenance: "user_confirmed", enabled: true }));
   if (!safe.length) return;
   try { await supabaseRequest("ai_memory?on_conflict=user_id,memory_type,memory_key", token, "POST", safe, signal); } catch { /* best-effort personalization */ }
 }

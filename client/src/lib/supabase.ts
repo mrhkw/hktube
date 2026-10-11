@@ -118,8 +118,8 @@ function aiTransportError(message: string, status?: number, code?: string) {
 }
 
 /** Send AI through the verified direct endpoint so the legacy tRPC auth path cannot emit 10001. */
-export async function requestAIChat(messages: AIChatRequestMessage[], callerSignal?: AbortSignal, media: AIChatMedia[] = [], onEvent?: (event: AIStreamEvent) => void): Promise<AIChatResponse> {
-  const body = JSON.stringify({ messages, media });
+export async function requestAIChat(messages: AIChatRequestMessage[], callerSignal?: AbortSignal, media: AIChatMedia[] = [], onEvent?: (event: AIStreamEvent) => void, memoryEnabled = true): Promise<AIChatResponse> {
+  const body = JSON.stringify({ messages, media, memoryEnabled });
   let headers = await getAISessionHeaders();
   let authRefreshed = false;
   for (let attempt = 0; attempt < 2; attempt++) {

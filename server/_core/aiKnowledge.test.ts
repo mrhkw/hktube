@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAIUserId } from "./aiKnowledge";
+import { getAIUserId, saveAIMemories } from "./aiKnowledge";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -34,5 +34,19 @@ describe("AI chat Supabase session verification", () => {
   it("rejects revoked or expired tokens", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
     await expect(getAIUserId({ headers: { authorization: "Bearer expired-token" } })).resolves.toBeNull();
+  });
+
+  it("does not persist model memories without explicit user consent", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await saveAIMemories({ headers: { authorization: "Bearer valid" } }, [{ memory_type: "preference", memory_key: "language", value: "Roman Urdu" }], "verified-user", undefined, false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects secrets even when the user explicitly asks to remember them", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await saveAIMemories({ headers: { authorization: "Bearer valid" } }, [{ memory_type: "credential", memory_key: "api_key", value: "secret" }], "verified-user", undefined, true);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

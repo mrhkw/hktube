@@ -12,6 +12,7 @@ const MODEL_RESERVE_MS = 1_800;
 const chatSchema = z.object({
   messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(6_000) })).min(1).max(20),
   media: z.array(z.object({ url: z.string().url(), mimeType: z.string().regex(/^(image|video)\//), name: z.string().max(180).optional(), size: z.number().int().positive().max(100_000_000).optional() })).max(4).default([]),
+  memoryEnabled: z.boolean().default(true),
 }).superRefine((value, ctx) => {
   const total = value.messages.reduce((sum, message) => sum + message.content.length, 0);
   if (total > 24_000) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Chat is too long. Start a new chat." });
@@ -94,10 +95,11 @@ export function registerAIAdminRoute(app: Express) {
       const messages = parsed.data.messages;
       const media = parsed.data.media;
       const latest = messages.filter(message => message.role === "user").at(-1)?.content ?? "";
+      const memoryConsent = parsed.data.memoryEnabled && /\b(remember|save this|save that|keep this in memory|yaad rakh|yaad rakho|is ko yaad)\b/i.test(latest);
       emit("step", { id: "planning", label: "Planning", status: "active" });
       void saveAIAgentLog(req, { userId, step: "planning", status: "started", metadata: { mediaCount: media.length } }, controller.signal);
       const [memory, sources] = await Promise.all([
-        loadAIMemory(req, controller.signal),
+        loadAIMemory(req, controller.signal, latest),
         shouldSearchWeb(messages) ? searchWeb(latest, controller.signal) : Promise.resolve([]),
       ]);
       const memoryText = memory.length ? memory.map(item => `- ${item.memory_key}: ${JSON.stringify(item.value)}`).join("\n") : "None";
@@ -135,7 +137,7 @@ Relevant long-term memory:
 ${memoryText}
 Fresh web research:
 ${webText}
-Return JSON containing answer plus only durable, non-sensitive user preferences/facts worth remembering. Never store passwords, tokens, financial secrets, health diagnoses or political preferences.`,
+Return JSON containing answer plus only durable, non-sensitive user preferences/facts worth remembering. Only propose memories when the user explicitly asks to remember or save something. Never store passwords, tokens, financial secrets, health diagnoses or political preferences.`,
         finalResponseFormat: { type: "json_schema", json_schema: { name: "hktube_ai_response", strict: true, schema: {
           type: "object",
           properties: { answer: { type: "string" }, memories: { type: "array", items: { type: "object", properties: { memory_type: { type: "string" }, memory_key: { type: "string" }, value: {} }, required: ["memory_type", "memory_key", "value"], additionalProperties: false } } },
@@ -146,7 +148,7 @@ Return JSON containing answer plus only durable, non-sensitive user preferences/
       const agentSources = agentRun.sources;
       const output = parseAIChatOutput(result);
       await Promise.allSettled([
-        saveAIMemories(req, output.memories, userId, controller.signal),
+        saveAIMemories(req, output.memories, userId, controller.signal, memoryConsent),
         saveAIConversation(req, { title: latest || "HkTube AI chat", module: "admin-ai", messages: [...messages, { role: "assistant", content: output.answer, metadata: { ...(media.length ? { media } : {}), ...(agentSources.length ? { sources: agentSources } : {}) } }] }, userId, controller.signal),
         saveAIAgentLog(req, { userId, step: "executing", status: "complete", metadata: { provider: media.length ? "gemini" : "groq", toolNames: agentRun.toolNames } }, controller.signal),
       ]);
