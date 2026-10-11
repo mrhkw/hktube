@@ -22,8 +22,7 @@ const googleScopes: Record<string, string> = {
 };
 const connectorEnvironment: Record<string, string[]> = {
   github: ["GITHUB_TOKEN"],
-  vercel: ["VERCEL_TOKEN (only if the runtime adapter requires it)"],
-  supabase: ["SUPABASE_URL", "SUPABASE_ANON_KEY"],
+  supabase: ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"],
   mux: ["MUX_TOKEN_ID", "MUX_TOKEN_SECRET", "MUX_WEBHOOK_SECRET"],
   deepgram: ["DEEPGRAM_API_KEY"],
   hive: ["HIVE_API_KEY"],
