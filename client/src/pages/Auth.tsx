@@ -95,9 +95,14 @@ export default function Auth() {
       const { data, error } = await withTimeout(supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: { emailRedirectTo: authRedirectUrl(), data: { display_name: name.trim(), full_name: name.trim() } } }), "OTP request is taking too long. Dobara try karein.");
       if (error) throw error;
       if (data.session) { toast.success("HKW account ready. Welcome!"); navigate("/menu"); return; }
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        setMode("login"); setRegisterStep("details"); setLoginStep("details"); setPassword(""); setConfirmPassword("");
+        toast.error("Is email par HKW account pehle se bana hua hai. Signup nahi, Login use karein.");
+        return;
+      }
       window.localStorage.setItem("hkw-pending-signup", JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase() }));
       setRegisterStep("otp"); setOtp(""); setResendIn(45);
-      toast.success(`6-digit verification code ${email.trim().toLowerCase()} par bhej diya gaya.`);
+      toast.success(`Verification email ${email.trim().toLowerCase()} par bheji gayi. Us mein code ya verification link hoga.`);
     } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "OTP send nahi ho saka.")); }
     finally { setPending(false); }
   }
@@ -138,7 +143,7 @@ export default function Auth() {
       await supabase.auth.signOut();
       const { error: otpError } = await withTimeout(supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: false, emailRedirectTo: authRedirectUrl() } }), "Login OTP request is taking too long.");
       if (otpError) throw otpError;
-      setLoginStep("otp"); setOtp(""); setResendIn(45); toast.success("Login verification code email par bhej diya gaya.");
+      setLoginStep("otp"); setOtp(""); setResendIn(45); toast.success("Login verification email bheji gayi. Us mein code ya verification link hoga.");
     } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login failed.")); }
     finally { if (loginStep === "details") setPending(false); }
   }
