@@ -25,3 +25,16 @@
 .hkw-startup-entering,.hkw-startup-leaving { position:fixed; inset:0; z-index:99999; }
 .hkw-startup-entering { animation:hkw-startup-in .55s cubic-bezier(.2,.8,.2,1) both; }
 .hkw-startup-leaving { animation:hkw-startup-out .45s ease both; pointer-events:none; }
+@keyframes hkw-piece-tl { 0%,100% { transform:translate(-22px,-22px) rotate(-38deg) scale(.72); opacity:.35; } 38%,68% { transform:translate(0,0) rotate(0deg) scale(1); opacity:1; } }
+@keyframes hkw-piece-tr { 0%,100% { transform:translate(22px,-22px) rotate(38deg) scale(.72); opacity:.35; } 38%,68% { transform:translate(0,0) rotate(0deg) scale(1); opacity:1; } }
+@keyframes hkw-piece-bl { 0%,100% { transform:translate(-22px,22px) rotate(38deg) scale(.72); opacity:.35; } 38%,68% { transform:translate(0,0) rotate(0deg) scale(1); opacity:1; } }
+@keyframes hkw-piece-br { 0%,100% { transform:translate(22px,22px) rotate(-38deg) scale(.72); opacity:.35; } 38%,68% { transform:translate(0,0) rotate(0deg) scale(1); opacity:1; } }
+@keyframes hkw-join-glow { 0%,100% { transform:scale(.65); opacity:.05; } 42%,65% { transform:scale(1.05); opacity:.78; } }
+.hkw-loader-piece { position:absolute; width:50%; height:50%; background-image:url('/brand/hkw-mark.webp'); background-repeat:no-repeat; background-size:200% 200%; filter:drop-shadow(0 5px 7px rgba(0,0,0,.3)); transform-origin:center; z-index:2; }
+.hkw-loader-piece-tl { left:0; top:0; background-position:0 0; animation:hkw-piece-tl 2.75s cubic-bezier(.65,0,.25,1) infinite; }
+.hkw-loader-piece-tr { right:0; top:0; background-position:100% 0; animation:hkw-piece-tr 2.75s cubic-bezier(.65,0,.25,1) infinite; animation-delay:.05s; }
+.hkw-loader-piece-bl { left:0; bottom:0; background-position:0 100%; animation:hkw-piece-bl 2.75s cubic-bezier(.65,0,.25,1) infinite; animation-delay:.1s; }
+.hkw-loader-piece-br { right:0; bottom:0; background-position:100% 100%; animation:hkw-piece-br 2.75s cubic-bezier(.65,0,.25,1) infinite; animation-delay:.15s; }
+.hkw-loader-join-glow { position:absolute; inset:17%; z-index:1; border-radius:36%; background:radial-gradient(circle,rgba(103,232,249,.5),rgba(167,139,250,.2) 45%,transparent 72%); filter:blur(10px); animation:hkw-join-glow 2.75s ease-in-out infinite; }
+.hkw-loader-orbit { display:block; }
+@media (prefers-reduced-motion:reduce) { .hkw-loader-piece,.hkw-loader-join-glow { animation:none !important; } }

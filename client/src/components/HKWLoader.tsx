@@ -19,15 +19,12 @@ export function HKWLoader({ fullscreen = false, label = "Loading HKW", className
     >
       {fullscreen && <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true"><span className="hkw-loader-aurora hkw-loader-aurora-one" /><span className="hkw-loader-aurora hkw-loader-aurora-two" /><span className="hkw-loader-grid" /></div>}
       <div className="relative z-10 flex flex-col items-center">
-        <div className={cn("hkw-loader-orbit relative grid place-items-center", fullscreen ? "size-36" : "size-24")}>
-          <span className="hkw-loader-ring hkw-loader-ring-one" />
-          <span className="hkw-loader-ring hkw-loader-ring-two" />
-          <span className="hkw-loader-ring hkw-loader-ring-three" />
-          <span className="hkw-loader-spark hkw-loader-spark-one" />
-          <span className="hkw-loader-spark hkw-loader-spark-two" />
-          <div className={cn("hkw-loader-core overflow-hidden rounded-[28%] border border-white/35 bg-slate-950 shadow-[0_0_45px_rgba(113,87,255,.65)]", fullscreen ? "size-20" : "size-14")}>
-            <img src="/brand/hkw-mark.webp" alt="HKW" className="size-full object-cover" />
-          </div>
+        <div className={cn("hkw-loader-orbit relative", fullscreen ? "size-40" : "size-28")} aria-hidden="true">
+          <span className="hkw-loader-piece hkw-loader-piece-tl" />
+          <span className="hkw-loader-piece hkw-loader-piece-tr" />
+          <span className="hkw-loader-piece hkw-loader-piece-bl" />
+          <span className="hkw-loader-piece hkw-loader-piece-br" />
+          <span className="hkw-loader-join-glow" />
         </div>
         <div className={cn("mt-5 flex items-center gap-2 font-black tracking-tight", fullscreen ? "text-2xl text-white" : "text-base text-slate-800")}>
           <span>HKW</span><span className="hkw-loader-live-dot" /><span className={cn("font-medium", fullscreen ? "text-white/55" : "text-slate-400")}>{label.replace(/^Loading HKW\s*/, "") || "Live"}</span>
