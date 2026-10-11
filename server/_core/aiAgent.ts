@@ -80,6 +80,8 @@ export async function runBoundedAIAgent(input: {
   ownerEmail?: string;
   ownerId?: string;
   provider?: "groq" | "gemini" | "openai" | "forge";
+  toolChoice?: Parameters<typeof invokeLLM>[0]["toolChoice"];
+  onTool?: (toolName: string) => void;
 }): Promise<{ result: InvokeResult; sources: AIWebSource[]; toolCallsUsed: number; toolNames: string[] }> {
   const sources = [...(input.initialSources ?? [])];
   const agentMessages: Message[] = [
@@ -90,7 +92,7 @@ export async function runBoundedAIAgent(input: {
   let currentResult = await invokeLLM({
     messages: agentMessages,
     tools: AGENT_TOOLS,
-    toolChoice: "auto",
+    toolChoice: input.toolChoice ?? "auto",
     maxTokens: 1400,
     timeoutMs: input.timeoutMs,
     maxRetries: 0,
@@ -110,6 +112,7 @@ export async function runBoundedAIAgent(input: {
     agentMessages.push({ role: "assistant", content: currentResult.choices[0]?.message?.content || "", tool_calls: calls });
     for (const call of calls) {
       try {
+    if (call.function?.name) input.onTool?.(call.function.name);
     const query = parseSearchQuery(call);
     const args = parseToolArguments(call);
     if (query) {

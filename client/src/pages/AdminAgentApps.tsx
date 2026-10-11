@@ -61,6 +61,8 @@ export default function AdminAgentApps() {
     const { data } = supabase.auth.onAuthStateChange(() => { void readSession(); });
     const connected = new URLSearchParams(window.location.search).get("connected");
     if (connected) toast.success(`${connected === "google" || connected === "gmail" ? "Google" : connected} authorization returned to HkTube.`);
+    const focus = new URLSearchParams(window.location.search).get("focus");
+    if (focus && AI_MANAGER_CONNECTORS.some(item => item.id === focus)) setSelected(focus);
     return () => { active = false; data.subscription.unsubscribe(); };
   }, []);
   const filtered = useMemo(() => {

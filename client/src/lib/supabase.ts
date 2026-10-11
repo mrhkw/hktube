@@ -92,7 +92,7 @@ export async function setAdminVerificationBadge(email: string, channelId: string
 
 export type AIChatRequestMessage = { role: "user" | "assistant"; content: string };
 export type AIChatMedia = { url: string; mimeType: string; name?: string; size?: number };
-export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string };
+export type AIChatResponse = { content: string; sources: Array<{ title: string; url: string; snippet: string }>; usedWeb: boolean; model: string; toolNames?: string[]; connectorAction?: { id: string; label: string; href: string } };
 export type AIStreamEvent = { id?: string; label?: string; status?: string; count?: number };
 
 export async function uploadAIMedia(file: File): Promise<AIChatMedia> {
