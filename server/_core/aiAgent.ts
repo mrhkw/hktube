@@ -101,6 +101,7 @@ export async function runBoundedAIAgent(input: {
     allToolNames.push(...calls.map(call => call.function?.name).filter((name): name is string => Boolean(name)));
     agentMessages.push({ role: "assistant", content: currentResult.choices[0]?.message?.content || "", tool_calls: calls });
     for (const call of calls) {
+      try {
     const query = parseSearchQuery(call);
     const args = parseToolArguments(call);
     if (query) {
@@ -163,6 +164,13 @@ export async function runBoundedAIAgent(input: {
       continue;
     }
     agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: "Unsupported tool call" }) });
+      } catch {
+        agentMessages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify({ status: "FAILED", error: "Tool execution failed safely. No action is confirmed; retry or inspect the provider connection." }),
+        });
+      }
     }
 
     if (totalToolCalls >= MAX_TOOL_CALLS) {
