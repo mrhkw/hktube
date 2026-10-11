@@ -1,6 +1,6 @@
-const CACHE_NAME = "hktube-shell-v15-fast-assets-2026-10-09";
+const CACHE_NAME = "hkw-shell-v16-brand-2026-10-11";
 const OFFLINE_URL = "/offline.html";
-const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/hktube-icon.svg"];
+const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/icon-192.png", "/brand/hkw-mark.webp"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
 
 self.addEventListener("install", event => {
@@ -15,7 +15,7 @@ self.addEventListener("activate", event => {
   event.waitUntil((async () => {
     try { await self.registration.navigationPreload.enable(); } catch {}
     const keys = await caches.keys();
-    await Promise.all(keys.filter(key => key.startsWith("hktube-shell-") && key !== CACHE_NAME).map(key => caches.delete(key)));
+    await Promise.all(keys.filter(key => (key.startsWith("hktube-shell-") || key.startsWith("hkw-shell-")) && key !== CACHE_NAME).map(key => caches.delete(key)));
     await self.clients.claim();
   })());
 });
@@ -55,7 +55,7 @@ self.addEventListener("fetch", event => {
       } catch {
         const cache = await caches.open(CACHE_NAME);
         return await cache.match(OFFLINE_URL) || new Response(
-          "HkTube is temporarily offline. Please try again.",
+          "HKW is temporarily offline. Please try again.",
           { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       }

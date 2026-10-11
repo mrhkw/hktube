@@ -186,12 +186,10 @@ export function HkTubeShell({
             <Link
               href="/"
               className="hktube-reference-logo flex min-w-0 shrink-0 items-center"
-              aria-label="Go to HkTube homepage"
+                aria-label="Go to HKW homepage"
             >
-              <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">
-                <span className="text-neutral-950">Hk</span>
-                <span className="text-red-600">Tube</span>
-              </span>
+              <img src="/brand/hkw-mark.webp" alt="HKW" className="size-8 rounded-lg object-cover shadow-sm" />
+              <span className="ml-2 whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">HKW</span>
             </Link>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <Link
@@ -274,8 +272,8 @@ export function HkTubeShell({
       <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <DialogContent className="max-w-sm border-slate-200 bg-white text-slate-900">
           <DialogHeader>
-            <DialogTitle>HkTube navigation</DialogTitle>
-            <DialogDescription>Jump to any part of HkTube.</DialogDescription>
+            <DialogTitle>HKW navigation</DialogTitle>
+            <DialogDescription>Jump to any part of HKW.</DialogDescription>
           </DialogHeader>
           <nav className="grid gap-1" aria-label="Mobile menu">
             {[

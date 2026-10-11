@@ -7,8 +7,8 @@ interface SeoMetaProps {
   url?: string;
 }
 
-const DEFAULT_DESCRIPTION = "Watch and share high-quality videos on HkTube.";
-const DEFAULT_IMAGE = "https://hktube.vercel.app/hktube-icon.svg";
+const DEFAULT_DESCRIPTION = "Watch and share high-quality videos on HKW.";
+const DEFAULT_IMAGE = "https://hkw.vercel.app/brand/hkw-mark.webp";
 
 function setMeta(selector: string, content: string) {
   const element = document.querySelector<HTMLMetaElement>(selector);
@@ -21,7 +21,7 @@ export default function SeoMeta({ title, description, image, url }: SeoMetaProps
     const resolvedImage = image || DEFAULT_IMAGE;
     const resolvedUrl = url || window.location.href;
 
-    document.title = `${title} - HkTube`;
+    document.title = `${title} - HKW`;
     setMeta('meta[name="description"]', resolvedDescription);
     setMeta('meta[property="og:title"]', title);
     setMeta('meta[property="og:description"]', resolvedDescription);

@@ -1,8 +1,8 @@
 {
-  "name": "HkTube — Watch. Create. Grow.",
-  "short_name": "HkTube",
+  "name": "HKW — Watch. Create. Grow.",
+  "short_name": "HKW",
   "id": "/",
-  "description": "HkTube — discover videos, watch Clips, follow creators and publish your own content.",
+  "description": "HKW — discover videos, watch Clips, follow creators and publish your own content.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -14,10 +14,10 @@
   "theme_color": "#111625",
   "categories": ["video", "social", "entertainment"],
   "shortcuts": [
-    { "name": "Watch Shorts", "short_name": "Shorts", "url": "/shorts", "icons": [{ "src": "/hktube-icon.svg", "sizes": "any" }] },
-    { "name": "Trending", "short_name": "Trending", "url": "/trending", "icons": [{ "src": "/hktube-icon.svg", "sizes": "any" }] },
-    { "name": "Create", "short_name": "Create", "url": "/upload", "icons": [{ "src": "/hktube-icon.svg", "sizes": "any" }] }
+    { "name": "Watch Shorts", "short_name": "Shorts", "url": "/shorts", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Trending", "short_name": "Trending", "url": "/trending", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Create", "short_name": "Create", "url": "/upload", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ],
-  "icons": [{ "src": "/hktube-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }, { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }],
   "prefer_related_applications": false
 }

@@ -8,4 +8,4 @@ Disallow: /settings
 Disallow: /studio
 Disallow: /algorithm
 
-Sitemap: https://hktube.vercel.app/sitemap.xml
+Sitemap: https://hkw.vercel.app/sitemap.xml
