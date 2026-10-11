@@ -18,7 +18,30 @@ function readableAuthError(message: string) {
   return message || "Account request complete nahi ho saki. Dobara try karein.";
 }
 
-function validPassword(value: string) { return value.length >= 12; }
+function passwordPolicy(value: string) {
+  const characters = Array.from(value).length;
+  return {
+    characters,
+    length: characters >= 12,
+    uppercase: /[A-Z]/.test(value),
+    lowercase: /[a-z]/.test(value),
+    number: /\d/.test(value),
+    special: /[^A-Za-z\d\s]/.test(value),
+    spaces: /^\S(?:.*\S)?$/.test(value),
+  };
+}
+function validPassword(value: string) { const policy = passwordPolicy(value); return policy.length && policy.uppercase && policy.lowercase && policy.number && policy.special && policy.spaces; }
+function missingPasswordRules(value: string) {
+  const policy = passwordPolicy(value);
+  return [
+    !policy.length && "12 characters",
+    !policy.uppercase && "1 uppercase letter",
+    !policy.lowercase && "1 lowercase letter",
+    !policy.number && "1 number",
+    !policy.special && "1 special character",
+    !policy.spaces && "no leading/trailing spaces",
+  ].filter(Boolean) as string[];
+}
 function withTimeout<T>(promise: PromiseLike<T>, message: string, timeoutMs = 20_000) { return Promise.race([Promise.resolve(promise), new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error(message)), timeoutMs))]); }
 function authRedirectUrl() { return `${window.location.origin}/auth`; }
 
@@ -65,7 +88,7 @@ export default function Auth() {
     event.preventDefault();
     if (!name.trim() || name.trim().length < 2) { toast.error("Apna naam enter karein."); return; }
     if (!email.trim() || !email.includes("@")) { toast.error("Valid Gmail/email enter karein."); return; }
-    if (!validPassword(password)) { toast.error("Password kam az kam 12 characters ka hona chahiye."); return; }
+    if (!validPassword(password)) { toast.error(`Password rules missing: ${missingPasswordRules(password).join(", ")}.`); return; }
     if (password !== confirmPassword) { toast.error("Passwords match nahi karte."); return; }
     setPending(true);
     try {
@@ -148,9 +171,9 @@ export default function Auth() {
         </form> : <form onSubmit={mode === "login" ? submitLogin : sendSignupOtp} className="mt-7 space-y-4">
           {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Full name</span><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required minLength={2} maxLength={120} value={name} onChange={event => setName(event.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="Your name" /></div></label>}
           <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Gmail / Email</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="you@gmail.com" /></div></label>
-          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Password</span><div className="relative"><Input required minLength={mode === "register" ? 12 : 1} maxLength={128} type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder={mode === "register" ? "12+ characters" : "Your password"} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></label>
-          {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Confirm password</span><div className="relative"><Input required minLength={12} maxLength={128} type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder="Repeat 12+ character password" /><button type="button" aria-label={showConfirm ? "Hide password" : "Show password"} onClick={() => setShowConfirm(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div><span className="mt-1.5 block text-xs text-zinc-500">Minimum 12 characters.</span></label>}
-          <Button disabled={pending} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Please wait…" : mode === "login" ? <><KeyRound className="mr-2 size-4" />Log in</> : <><ArrowRight className="mr-2 size-4" />Continue to email verification</>}</Button>
+          <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Password</span><div className="relative"><Input required minLength={mode === "register" ? 12 : 1} maxLength={128} type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder={mode === "register" ? "Example: HkwSecure12!" : "Your password"} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div>{mode === "register" && <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs"><div className="mb-2 flex items-center justify-between font-bold text-zinc-700"><span>Password requirements</span><span className={passwordPolicy(password).length ? "text-emerald-600" : "text-zinc-500"}>{passwordPolicy(password).characters}/12</span></div><div className="grid grid-cols-2 gap-1.5 text-zinc-500"><span className={passwordPolicy(password).length ? "text-emerald-600" : ""}>● 12+ characters</span><span className={passwordPolicy(password).uppercase ? "text-emerald-600" : ""}>● Uppercase</span><span className={passwordPolicy(password).lowercase ? "text-emerald-600" : ""}>● Lowercase</span><span className={passwordPolicy(password).number ? "text-emerald-600" : ""}>● Number</span><span className={passwordPolicy(password).special ? "text-emerald-600" : ""}>● Special character</span><span className={passwordPolicy(password).spaces ? "text-emerald-600" : ""}>● No outer spaces</span></div></div>}</label>
+          {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Confirm password</span><div className="relative"><Input required minLength={12} maxLength={128} type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder="Repeat password" /><button type="button" aria-label={showConfirm ? "Hide password" : "Show password"} onClick={() => setShowConfirm(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div>{confirmPassword && <span className={`mt-1.5 block text-xs ${password === confirmPassword ? "text-emerald-600" : "text-rose-600"}`}>{password === confirmPassword ? "Passwords match" : "Passwords do not match"}</span>}</label>}
+          <Button disabled={pending || (mode === "register" && (!validPassword(password) || password !== confirmPassword))} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Please wait…" : mode === "login" ? <><KeyRound className="mr-2 size-4" />Log in</> : <><ArrowRight className="mr-2 size-4" />Continue to email verification</>}</Button>
         </form>}
         <button type="button" onClick={() => switchMode(mode === "login" ? "register" : "login")} className="mt-5 w-full text-center text-sm font-semibold text-zinc-700 hover:text-black">{mode === "login" ? "New to HKW? Create an account" : "Already have an account? Log in"}</button>
         <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs leading-5 text-zinc-500"><LockKeyhole className="size-3.5" />HKW email authentication. No Google sign-in.</p>
