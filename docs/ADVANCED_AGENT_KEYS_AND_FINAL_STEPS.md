@@ -1,6 +1,6 @@
 # HkTube Advanced Agent: Required Setup and Verification
 
-This checklist is for the guarded runtime coding tools. Never paste credentials into chat, source code, GitHub issues, or pull-request descriptions. Add them only in Vercel Project Settings → Environment Variables, then redeploy the relevant environment.
+This checklist is for the unified HkTube Agent runtime. Never paste credentials into chat, source code, GitHub issues, or pull-request descriptions. Add them only in Vercel Project Settings → Environment Variables, then redeploy the relevant environment.
 
 ## Required for runtime GitHub coding
 
@@ -21,6 +21,10 @@ The coding tools intentionally block writes to `.env*`, `.github/workflows/*`, `
 
 The Vercel adapter only reads project metadata and recent deployments. It cannot change settings, promote deployments, or deploy production.
 
+## Secret-safe provider readiness check
+
+The Agent now has an `agent_runtime_readiness` tool. Ask the private HkTube Agent: “Check provider readiness and list only missing environment variable names.” It returns configured/missing flags and variable names only, never secret values. A non-empty variable is not proof the key is valid; run each provider's actual test before treating it as connected.
+
 ## Required AI model configuration
 
 At least one server-side model provider must be configured for the HkTube agent: `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `BUILT_IN_FORGE_API_KEY`. Keep any existing working provider configuration; do not create duplicate variables or replace a working key without checking the current Vercel settings.
@@ -38,7 +42,7 @@ These are separate from the GitHub coding agent. Missing providers must remain v
 
 ## Final verification after saving keys
 
-1. Save `GITHUB_TOKEN` and `VERCEL_TOKEN` only in Vercel Environment Variables for the intended environment. The existing `GROQ_API_KEY`/`GEMINI_API_KEY` configuration should remain unchanged if already working.
+1. Save `GITHUB_TOKEN` and `VERCEL_TOKEN` only in Vercel Environment Variables for the intended environment. Add them to Production and Preview only if both environments need those tools. The existing `GROQ_API_KEY`/`GEMINI_API_KEY` configuration should remain unchanged if already working.
 2. Redeploy a preview first.
 3. In HkTube Admin Agent, ask it to check repository status and read `server/_core/aiAgent.ts`. Confirm it reports a verified repository and base commit.
 4. Ask for a small harmless source change. Confirm it creates an `ai-agent/*` branch and a draft PR, without touching `main`.
