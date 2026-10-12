@@ -89,6 +89,7 @@ describe("bounded HkTube agent", () => {
 
 
   it("reports provider environment presence without exposing secret values", async () => {
+    const originalVercelToken = process.env.VERCEL_TOKEN;
     process.env.VERCEL_TOKEN = "never-return-this-token";
     invokeLLMMock
       .mockResolvedValueOnce({ choices: [{ message: { role: "assistant", content: "", tool_calls: [{ id: "readiness-1", type: "function", function: { name: "agent_runtime_readiness", arguments: "{}" } }] } }] })
@@ -106,7 +107,8 @@ describe("bounded HkTube agent", () => {
     expect(toolMessage?.content).toContain('"environment":"VERCEL_TOKEN"');
     expect(toolMessage?.content).toContain('"configured":true');
     expect(toolMessage?.content).not.toContain("never-return-this-token");
-    delete process.env.VERCEL_TOKEN;
+    if (originalVercelToken === undefined) delete process.env.VERCEL_TOKEN;
+    else process.env.VERCEL_TOKEN = originalVercelToken;
   });
 
 });
