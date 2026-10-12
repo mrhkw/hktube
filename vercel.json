@@ -43,6 +43,7 @@
     "api/storage.js": { "maxDuration": 60 }
   },
   "routes": [
+    { "src": "^/$", "methods": ["POST"], "dest": "/api/auth-hook" },
     { "handle": "filesystem" },
     { "src": "/api/(.*)", "dest": "/api" },
     { "src": "/manus-storage/(.*)", "dest": "/api/storage?path=$1" },
