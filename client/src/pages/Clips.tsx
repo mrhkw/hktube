@@ -11,6 +11,7 @@ import {
   Play,
   Search,
   Send,
+  Settings2,
   Star,
   Volume2,
   X,
@@ -143,6 +144,8 @@ export default function ClipsPage() {
   const [more, setMore] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [lastTap, setLastTap] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -254,6 +257,10 @@ export default function ClipsPage() {
     const v = media.current;
     if (v) v.muted = !soundOn;
   }, [soundOn]);
+  useEffect(() => {
+    const v = media.current;
+    if (v) v.playbackRate = playbackRate;
+  }, [playbackRate]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (
@@ -424,7 +431,21 @@ export default function ClipsPage() {
         <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSearchOpen(v => !v)}
+              onClick={() => {
+                setSettingsOpen(v => !v);
+                setSearchOpen(false);
+              }}
+              className="grid size-11 place-items-center rounded-full text-white"
+              aria-label="Clips player settings"
+              aria-expanded={settingsOpen}
+            >
+              <Settings2 className="size-6" />
+            </button>
+            <button
+              onClick={() => {
+                setSearchOpen(v => !v);
+                setSettingsOpen(false);
+              }}
               className="grid size-11 place-items-center rounded-full text-white"
               aria-label="Search Clips"
             >
@@ -443,27 +464,11 @@ export default function ClipsPage() {
             className={
               "rounded-full px-1 py-2 text-[17px] transition-colors " +
               (tab === "all"
-                ? "font-black text-white"
-                : "font-semibold text-white/75 hover:text-white")
+                ? "border-b-2 border-white font-black text-white"
+                : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")
             }
           >
             All
-          </button>
-          <button
-            type="button"
-            aria-pressed={tab === "following"}
-            onClick={() => {
-              setTab("following");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-1 py-2 text-[17px] transition-colors " +
-              (tab === "following"
-                ? "font-black text-white"
-                : "font-semibold text-white/75 hover:text-white")
-            }
-          >
-            Following
           </button>
           <button
             type="button"
@@ -475,11 +480,27 @@ export default function ClipsPage() {
             className={
               "rounded-full px-1 py-2 text-[17px] transition-colors " +
               (tab === "for-you"
-                ? "font-black text-white"
-                : "font-semibold text-white/75 hover:text-white")
+                ? "border-b-2 border-white font-black text-white"
+                : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")
             }
           >
             For You
+          </button>
+          <button
+            type="button"
+            aria-pressed={tab === "following"}
+            onClick={() => {
+              setTab("following");
+              setActive(0);
+            }}
+            className={
+              "rounded-full px-1 py-2 text-[17px] transition-colors " +
+              (tab === "following"
+                ? "border-b-2 border-white font-black text-white"
+                : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")
+            }
+          >
+            Following
           </button>
         </div>
         {searchOpen && (
@@ -503,6 +524,42 @@ export default function ClipsPage() {
               aria-label="Close search"
             >
               <X className="size-5" />
+            </button>
+          </div>
+        )}
+        {settingsOpen && (
+          <div className="absolute right-4 top-16 z-50 w-64 rounded-2xl border border-white/10 bg-[#10131b]/95 p-3 text-sm shadow-2xl backdrop-blur-xl">
+            <div className="mb-2 flex items-center justify-between px-2">
+              <span className="font-black">Player settings</span>
+              <span className="text-xs text-white/50">Clips</span>
+            </div>
+            <p className="px-2 pb-1 text-xs font-semibold text-white/55">
+              Playback speed
+            </p>
+            <div className="grid grid-cols-4 gap-1">
+              {[0.5, 1, 1.5, 2].map(rate => (
+                <button
+                  key={rate}
+                  type="button"
+                  onClick={() => setPlaybackRate(rate)}
+                  className={
+                    "rounded-xl px-2 py-2 text-xs font-bold transition " +
+                    (playbackRate === rate
+                      ? "bg-white text-black"
+                      : "bg-white/10 text-white hover:bg-white/20")
+                  }
+                >
+                  {rate === 1 ? "Normal" : `${rate}x`}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => void toggleSound()}
+              className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"
+            >
+              <span>{soundOn ? "Mute sound" : "Use sound"}</span>
+              <span className="text-xs text-white/55">{soundOn ? "On" : "Off"}</span>
             </button>
           </div>
         )}
