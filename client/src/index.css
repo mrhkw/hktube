@@ -1023,8 +1023,48 @@ body:has(.hktube-clips-page)
   color: #fff !important;
 }
 body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
-  display: none !important;
-  visibility: hidden !important;
+  display: grid !important;
+  visibility: visible !important;
+  z-index: 10000 !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch !important;
+  background: rgb(11 13 19 / 0.97) !important;
+  border-top: 1px solid rgb(255 255 255 / 0.12) !important;
+  color: #fff !important;
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 0.26) !important;
+}
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a,
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button {
+  height: 68px !important;
+  min-height: 68px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  color: rgb(255 255 255 / 0.78) !important;
+}
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a[aria-current="page"] {
+  color: #fff !important;
+}
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
+  color: currentColor !important;
+}
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
+  color: inherit !important;
+  font-size: 10px !important;
+  line-height: 13px !important;
+}
+body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button > span:first-child {
+  background: rgb(255 255 255 / 0.16) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+@media (min-width: 768px) {
+  body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
+    display: none !important;
+  }
 }
 
 /* Android Home reference layout: one social post per row, full-width media. */

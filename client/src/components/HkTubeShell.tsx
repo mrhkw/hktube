@@ -615,7 +615,7 @@ export function HkTubeShell({
       <nav
         className={cn(
           "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 text-white backdrop-blur-xl md:hidden",
-          compactClipsDock && "!h-[58px] !px-1 !pb-[max(0.25rem,env(safe-area-inset-bottom))] !pt-0.5",
+          compactClipsDock && "!h-[76px] !px-2 !pb-[max(0.35rem,env(safe-area-inset-bottom))] !pt-1.5",
           usesPrimaryNavigation && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
@@ -625,17 +625,30 @@ export function HkTubeShell({
         aria-label="Mobile navigation"
         data-hktube-navigation-layout={usesPrimaryNavigation ? "primary" : undefined}
       >
-        {[
-          { label: "Home", href: "/", icon: Home },
-          { label: "Clips", href: "/clips", icon: MonitorPlay },
-          { label: "Create", href: "#create", icon: Plus },
-          { label: "Library", href: "/library", icon: Library },
-          {
-            label: "Profile",
-            href: isAuthenticated ? "/profile" : "/auth",
-            icon: ProfileGlyph,
-          },
-        ].map(item => {
+        {(compactClipsDock
+          ? [
+              { label: "Home", href: "/", icon: Home },
+              { label: "Shorts", href: "/clips", icon: MonitorPlay },
+              { label: "Create", href: "#create", icon: Plus },
+              { label: "Subscriptions", href: "/subscriptions", icon: UserRound },
+              {
+                label: "You",
+                href: isAuthenticated ? "/profile" : "/auth",
+                icon: ProfileGlyph,
+              },
+            ]
+          : [
+              { label: "Home", href: "/", icon: Home },
+              { label: "Clips", href: "/clips", icon: MonitorPlay },
+              { label: "Create", href: "#create", icon: Plus },
+              { label: "Library", href: "/library", icon: Library },
+              {
+                label: "Profile",
+                href: isAuthenticated ? "/profile" : "/auth",
+                icon: ProfileGlyph,
+              },
+            ]
+        ).map(item => {
           const active =
             item.href === "/"
               ? location === "/"
@@ -648,18 +661,18 @@ export function HkTubeShell({
               aria-label="Create content"
               className={cn(
                 "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300",
-                compactClipsDock && "!min-h-12 !gap-0 !text-[9px]"
+                compactClipsDock && "!min-h-14 !gap-1 !text-[10px]"
               )}
             >
               <span
                 className={cn(
                   "grid size-9 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
-                  compactClipsDock && "!size-7",
+                  compactClipsDock && "!size-9",
                   usesPrimaryNavigation &&
                     "rounded-full bg-red-50 text-red-700 shadow-none"
                 )}
               >
-                <Plus className={cn(SHELL_ICON_CLASS, compactClipsDock && "!size-4")} />
+                <Plus className={cn(SHELL_ICON_CLASS, compactClipsDock && "!size-5")} />
               </span>
             </button>
           ) : (
@@ -669,7 +682,7 @@ export function HkTubeShell({
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
-                compactClipsDock && "!min-h-12 !gap-0 !text-[9px]",
+                compactClipsDock && "!min-h-14 !gap-1 !text-[10px]",
                 active
                   ? "text-red-700"
                   : usesPrimaryNavigation
@@ -680,7 +693,7 @@ export function HkTubeShell({
               <item.icon
                 className={cn(
                   SHELL_ICON_CLASS,
-                  compactClipsDock && "!size-4",
+                  compactClipsDock && "!size-5",
                   active && "fill-red-600/10"
                 )}
               />
