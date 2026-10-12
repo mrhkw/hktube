@@ -60,6 +60,9 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryConfirm, setRecoveryConfirm] = useState("");
   const [pending, setPending] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const otpInputRef = useRef<HTMLInputElement>(null);
@@ -74,8 +77,8 @@ export default function Auth() {
       const saved = JSON.parse(window.localStorage.getItem("hkw-pending-signup") || "null") as { name?: string; email?: string; phone?: string; method?: AuthMethod; countryCode?: string } | null;
       if (saved && ((saved.email && saved.method !== "phone") || saved.phone)) { setMode("register"); setRegisterStep("otp"); setName(saved.name || ""); setMethod(saved.method || (saved.phone ? "phone" : "email")); setCountryCode(saved.countryCode || "PK"); setEmail(saved.email || ""); setPhone(saved.phone || ""); }
     } catch { window.localStorage.removeItem("hkw-pending-signup"); }
-    supabase.auth.getSession().then(({ data }) => { if (active && data.session) navigate("/menu"); });
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => { if (active && session && authFlowRef.current !== "login-otp" && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) navigate("/menu"); });
+    supabase.auth.getSession().then(({ data }) => { if (!active || !data.session) return; if (window.location.hash.includes("type=recovery")) setRecoveryMode(true); else navigate("/menu"); });
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => { if (!active || !session) return; if (event === "PASSWORD_RECOVERY") { setRecoveryMode(true); return; } if (authFlowRef.current !== "login-otp" && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) navigate("/menu"); });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [navigate]);
   useEffect(() => { if (!resendIn) return; const timer = window.setInterval(() => setResendIn(value => Math.max(0, value - 1)), 1000); return () => window.clearInterval(timer); }, [resendIn]);
@@ -126,6 +129,36 @@ export default function Auth() {
     authFlowRef.current = "login-otp"; setLoginStep("otp"); setOtp(""); setResendIn(45); toast.success(`${method === "email" ? "Login code" : "Login SMS OTP"} ${identityLabel} par bhej diya gaya.`);
   }
 
+  async function useLoginCode() {
+    if (!validateIdentity()) return;
+    setPending(true);
+    try { await sendLoginOtp(); } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login code nahi bheja ja saka.")); } finally { setPending(false); }
+  }
+
+  async function requestPasswordReset() {
+    if (method !== "email" || !email.trim() || !email.includes("@")) { toast.error("Password reset ke liye pehle apni email enter karein."); return; }
+    setPending(true);
+    try {
+      const { error } = await withTimeout(supabase.auth.resetPasswordForEmail(identity, { redirectTo: authRedirectUrl() }), "Password reset request is taking too long.");
+      if (error) throw error;
+      toast.success("Password reset link email par bhej diya gaya.");
+    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Password reset nahi ho saka.")); } finally { setPending(false); }
+  }
+
+  async function updateRecoveredPassword(event: React.FormEvent) {
+    event.preventDefault();
+    if (!validPassword(recoveryPassword)) { toast.error(`Password rules missing: ${missingPasswordRules(recoveryPassword).join(", ")}.`); return; }
+    if (recoveryPassword !== recoveryConfirm) { toast.error("Passwords match nahi karte."); return; }
+    setPending(true);
+    try {
+      const { error } = await withTimeout(supabase.auth.updateUser({ password: recoveryPassword }), "Password update is taking too long.");
+      if (error) throw error;
+      toast.success("Password update ho gaya. Welcome back to HKW.");
+      setRecoveryMode(false);
+      navigate("/menu");
+    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Password update nahi ho saka.")); } finally { setPending(false); }
+  }
+
   async function submitLogin(event: React.FormEvent) {
     event.preventDefault();
     if (!validateIdentity()) return;
@@ -135,8 +168,9 @@ export default function Auth() {
       const request = method === "email" ? supabase.auth.signInWithPassword({ email: identity, password }) : supabase.auth.signInWithPassword({ phone: identity, password });
       const { error } = await withTimeout(request, "Login is taking too long. Check your connection.");
       if (error) throw error;
-      await supabase.auth.signOut();
-      await sendLoginOtp();
+      authFlowRef.current = "idle";
+      toast.success("Welcome back to HKW.");
+      navigate("/menu");
     } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login failed.")); } finally { setPending(false); }
   }
 
@@ -172,7 +206,7 @@ export default function Auth() {
       <div className="pointer-events-none absolute -right-20 -top-20 size-48 animate-pulse rounded-full bg-violet-200/45 blur-3xl" /><div className="pointer-events-none absolute -bottom-24 -left-20 size-48 animate-pulse rounded-full bg-cyan-200/45 blur-3xl" /><div className="pointer-events-none absolute left-1/2 top-0 h-1 w-32 -translate-x-1/2 rounded-full bg-gradient-to-r from-violet-500 via-cyan-400 to-violet-500" />
       <div className="relative mx-auto grid size-20 place-items-center"><div className="absolute inset-0 animate-[spin_7s_linear_infinite] rounded-[28%] border-2 border-violet-300/70" /><div className="absolute -inset-2 animate-pulse rounded-[32%] border border-cyan-300/50" /><div className="relative grid size-16 place-items-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-[0_0_35px_rgba(124,58,237,.35)]"><img src="/brand/hkw-mark.webp" alt="HKW" className="size-full object-cover" /></div></div>
       <h1 className="mt-5 text-center text-2xl font-black text-zinc-950">{mode === "login" ? loginStep === "otp" ? "Verify your login" : "Log in to HKW" : registerStep === "otp" ? `Verify your ${method === "email" ? "email" : "phone"}` : "Create your HKW account"}</h1>
-      <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{otpMode ? <>6-digit code <b>{identityLabel}</b> par bheja gaya hai.</> : mode === "login" ? "Password ke baad email ya SMS OTP se account protect hoga." : "Email ya phone number se secure HKW account banayein."}</p>
+      <p className="mt-2 text-center text-sm leading-6 text-zinc-600">{otpMode ? <>6-digit code <b>{identityLabel}</b> par bheja gaya hai.</> : mode === "login" ? "Password se direct login karein, ya email/SMS code ka option use karein." : "Email ya phone number se secure HKW account banayein."}</p>
       {mode === "register" && <div className="relative mx-auto mt-6 flex max-w-xs items-center justify-between"><span className="absolute left-5 right-5 top-2.5 h-px bg-zinc-200" /><span className={`relative z-10 grid size-5 place-items-center rounded-full text-[10px] font-black ${registerStep === "details" ? "bg-violet-600 text-white" : "bg-emerald-500 text-white"}`}>{registerStep === "details" ? "1" : "✓"}</span><span className={`relative z-10 grid size-5 place-items-center rounded-full text-[10px] font-black ${registerStep === "otp" ? "bg-violet-600 text-white" : "bg-zinc-200 text-zinc-500"}`}>2</span></div>}
       {otpMode ? <form onSubmit={mode === "login" ? verifyLoginOtp : verifySignupOtp} className="mt-7 animate-in space-y-5 duration-500">
         <label className="block"><span className="mb-3 block text-center text-xs font-bold uppercase tracking-wider text-zinc-600">6-digit {method === "email" ? "email" : "SMS"} code</span><div role="group" aria-label="6-digit verification code" onClick={() => otpInputRef.current?.focus()} className="relative mx-auto flex max-w-[290px] cursor-text justify-center gap-2"><Input ref={otpInputRef} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0" aria-label="Enter six digit code" />{Array.from({ length: 6 }, (_, index) => <span key={index} className={`grid size-11 place-items-center rounded-xl border text-lg font-black transition-all duration-200 ${otp[index] ? "border-violet-500 bg-violet-50 text-violet-700 shadow-[0_0_16px_rgba(124,58,237,.18)]" : index === otp.length ? "border-violet-400 bg-white ring-2 ring-violet-100" : "border-zinc-300 bg-zinc-50 text-zinc-300"}`}>{otp[index] || "•"}</span>)}</div></label>
@@ -185,8 +219,10 @@ export default function Auth() {
         {method === "email" ? <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Gmail / Email</span><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><Input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="h-11 border-zinc-300 bg-white pl-10 text-zinc-950" placeholder="you@gmail.com" /></div></label> : <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Phone number</span><div className="flex gap-2"><select aria-label="Country code" value={countryCode} onChange={event => setCountryCode(event.target.value)} className="h-11 w-[43%] rounded-md border border-zinc-300 bg-white px-2 text-sm text-zinc-950 outline-none"><option value="">Country</option>{COUNTRIES.map(item => <option key={item.code} value={item.code}>{item.flag} {item.dial} {item.name}</option>)}</select><Input required type="tel" inputMode="tel" value={phone} onChange={event => setPhone(event.target.value.replace(/[^\d\s()-]/g, ""))} className="h-11 flex-1 border-zinc-300 bg-white text-zinc-950" placeholder="300 1234567" /></div><span className="mt-1.5 block text-xs text-zinc-500">Country code automatically add hoga: {country.dial}</span></label>}
         <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Password</span><div className="relative"><Input required minLength={mode === "register" ? 12 : 1} maxLength={128} type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder={mode === "register" ? "Example: HkwSecure12!" : "Your password"} /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div>{mode === "register" && <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs"><div className="mb-2 flex items-center justify-between font-bold text-zinc-700"><span>Password requirements</span><span className={policy.length ? "text-emerald-600" : "text-zinc-500"}>{policy.characters}/12</span></div><div className="grid grid-cols-2 gap-1.5 text-zinc-500"><span className={policy.length ? "text-emerald-600" : ""}>● 12+ characters</span><span className={policy.uppercase ? "text-emerald-600" : ""}>● Uppercase</span><span className={policy.lowercase ? "text-emerald-600" : ""}>● Lowercase</span><span className={policy.number ? "text-emerald-600" : ""}>● Number</span><span className={policy.special ? "text-emerald-600" : ""}>● Special character</span><span className={policy.spaces ? "text-emerald-600" : ""}>● No outer spaces</span></div></div>}</label>
         {mode === "register" && <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-600">Confirm password</span><div className="relative"><Input required minLength={12} maxLength={128} type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className="h-11 border-zinc-300 bg-white pr-10 text-zinc-950" placeholder="Repeat password" /><button type="button" aria-label={showConfirm ? "Hide password" : "Show password"} onClick={() => setShowConfirm(value => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">{showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div>{confirmPassword && <span className={`mt-1.5 block text-xs ${password === confirmPassword ? "text-emerald-600" : "text-rose-600"}`}>{password === confirmPassword ? "Passwords match" : "Passwords do not match"}</span>}</label>}
-        <Button disabled={pending || (mode === "register" && (!validPassword(password) || password !== confirmPassword))} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Please wait…" : mode === "login" ? <><KeyRound className="mr-2 size-4" />Continue to OTP</> : <><ArrowRight className="mr-2 size-4" />Continue to verification</>}</Button>
+        <Button disabled={pending || (mode === "register" && (!validPassword(password) || password !== confirmPassword))} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white hover:bg-zinc-800">{pending ? "Please wait…" : mode === "login" ? <><KeyRound className="mr-2 size-4" />Log in</> : <><ArrowRight className="mr-2 size-4" />Continue to verification</>}</Button>
       </form>}
+      {mode === "login" && loginStep === "details" && <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold"><button type="button" disabled={pending || method !== "email"} onClick={() => void requestPasswordReset()} className="text-violet-700 hover:text-violet-900 disabled:text-zinc-400">Forgot password?</button><button type="button" disabled={pending} onClick={() => void useLoginCode()} className="text-zinc-600 hover:text-black disabled:text-zinc-400">Use {method === "email" ? "email" : "SMS"} code</button></div>}
+      {recoveryMode && <div className="absolute inset-0 z-20 rounded-[32px] bg-white p-6 sm:p-8"><h2 className="text-xl font-black text-zinc-950">Set a new password</h2><p className="mt-2 text-sm leading-6 text-zinc-600">Apne HKW account ke liye naya secure password set karein.</p><form onSubmit={updateRecoveredPassword} className="mt-6 space-y-4"><Input required minLength={12} maxLength={128} type="password" value={recoveryPassword} onChange={event => setRecoveryPassword(event.target.value)} className="h-11 border-zinc-300 text-zinc-950" placeholder="New password (12+ characters)" /><Input required minLength={12} maxLength={128} type="password" value={recoveryConfirm} onChange={event => setRecoveryConfirm(event.target.value)} className="h-11 border-zinc-300 text-zinc-950" placeholder="Confirm new password" /><Button disabled={pending} type="submit" className="h-11 w-full rounded-full bg-zinc-950 font-bold text-white">{pending ? "Updating…" : "Update password"}</Button></form></div>}
       <button type="button" onClick={() => switchMode(mode === "login" ? "register" : "login")} className="mt-5 w-full text-center text-sm font-semibold text-zinc-700 hover:text-black">{mode === "login" ? "New to HKW? Create an account" : "Already have an account? Log in"}</button>
       <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs leading-5 text-zinc-500"><LockKeyhole className="size-3.5" />Supabase-secured email and phone OTP. No Google sign-in.</p><Link href="/" className="mt-5 block text-center text-xs font-semibold text-zinc-500 hover:text-black">Back to Home</Link>
     </section></div>

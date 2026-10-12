@@ -1026,8 +1026,8 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
   display: grid !important;
   visibility: visible !important;
   z-index: 10000 !important;
-  height: 76px !important;
-  min-height: 76px !important;
+  height: 60px !important;
+  min-height: 60px !important;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch !important;
   background: rgb(11 13 19 / 0.97) !important;
@@ -1037,8 +1037,8 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
 }
 body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a,
 body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button {
-  height: 68px !important;
-  min-height: 68px !important;
+  height: 56px !important;
+  min-height: 56px !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 3px !important;
@@ -1060,6 +1060,24 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
   background: rgb(255 255 255 / 0.16) !important;
   color: #fff !important;
   box-shadow: none !important;
+}
+@media (max-width: 767px) {
+  body:has(.hktube-clips-page) .clips-top-tabs {
+    top: calc(env(safe-area-inset-top) + 0.5rem) !important;
+    width: min(92vw, 360px) !important;
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+  body:has(.hktube-clips-page) .clips-top-tabs button {
+    min-width: 0 !important;
+    min-height: 32px !important;
+    flex: 1 1 0 !important;
+    padding: 4px 6px !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    white-space: nowrap !important;
+  }
 }
 @media (min-width: 768px) {
   body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
