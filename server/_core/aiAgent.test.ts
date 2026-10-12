@@ -87,4 +87,28 @@ describe("bounded HkTube agent", () => {
     expect(failure?.content).not.toContain("provider secret");
   });
 
+
+  it("reports provider environment presence without exposing secret values", async () => {
+    const originalVercelToken = process.env.VERCEL_TOKEN;
+    process.env.VERCEL_TOKEN = "never-return-this-token";
+    invokeLLMMock
+      .mockResolvedValueOnce({ choices: [{ message: { role: "assistant", content: "", tool_calls: [{ id: "readiness-1", type: "function", function: { name: "agent_runtime_readiness", arguments: "{}" } }] } }] })
+      .mockResolvedValueOnce({ model: "openai/gpt-oss-20b", choices: [{ message: { role: "assistant", content: JSON.stringify({ answer: "Readiness checked.", memories: [] }) } }] });
+
+    const { runBoundedAIAgent } = await import("./aiAgent");
+    const result = await runBoundedAIAgent({
+      messages: [{ role: "user", content: "Which provider keys are configured?" }],
+      systemInstruction: "Be accurate.",
+      finalResponseFormat: { type: "json_object" },
+    });
+
+    expect(result.toolNames).toEqual(["agent_runtime_readiness"]);
+    const toolMessage = invokeLLMMock.mock.calls[1][0].messages.find((message: { role: string; tool_call_id?: string }) => message.role === "tool" && message.tool_call_id === "readiness-1");
+    expect(toolMessage?.content).toContain('"environment":"VERCEL_TOKEN"');
+    expect(toolMessage?.content).toContain('"configured":true');
+    expect(toolMessage?.content).not.toContain("never-return-this-token");
+    if (originalVercelToken === undefined) delete process.env.VERCEL_TOKEN;
+    else process.env.VERCEL_TOKEN = originalVercelToken;
+  });
+
 });
