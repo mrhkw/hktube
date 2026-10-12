@@ -7,6 +7,7 @@ import { getDb } from "../db";
 import { desc, eq } from "drizzle-orm";
 import { AgentGitHubError, commitAgentFile, createAgentBranch, getRepositorySecurityOverview, getRepositoryStatus, openAgentPullRequest, readRepositoryFile } from "./agentGitHub";
 import { AgentVercelError, getVercelProjectStatus, listVercelDeployments } from "./agentVercel";
+import { ENV } from "./env";
 
 const WEB_SEARCH_TOOL: Tool = {
   type: "function",
@@ -43,13 +44,14 @@ const HKTUBE_PLAN_TOOL: Tool = { type: "function", function: { name: "hktube_cre
 const HKTUBE_HEALTH_TOOL: Tool = { type: "function", function: { name: "hktube_health_check", description: "Read verified HkTube internal agent health records when the owner asks whether the platform or agents are healthy, online, blocked or failing.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
 const GITHUB_STATUS_TOOL: Tool = { type: "function", function: { name: "github_repo_status", description: "Read the configured HkTube GitHub repository and base-branch commit. Use when repository state or runtime GitHub connection must be verified.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
 const GITHUB_SECURITY_TOOL: Tool = { type: "function", function: { name: "github_security_alerts", description: "Read open GitHub Dependabot and code-scanning alerts for the configured HkTube repository. Report each source's status separately; BLOCKED is not equivalent to zero vulnerabilities. This tool is read-only.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
+const AGENT_READINESS_TOOL: Tool = { type: "function", function: { name: "agent_runtime_readiness", description: "Check which HkTube server-side provider credentials are configured without revealing any secret values. Use when asked what works now or which keys remain to be added. Configured means only that a non-empty key exists, not that the provider has been end-to-end verified.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
 const VERCEL_STATUS_TOOL: Tool = { type: "function", function: { name: "vercel_project_status", description: "Read verified Vercel project configuration using the configured server-side token. This is read-only and does not change deployment settings.", parameters: { type: "object", properties: {}, additionalProperties: false } } };
 const VERCEL_DEPLOYMENTS_TOOL: Tool = { type: "function", function: { name: "vercel_recent_deployments", description: "Read recent deployments for the configured HkTube Vercel project, including production/preview target, state, commit and branch. This is read-only.", parameters: { type: "object", properties: { limit: { type: "number", description: "Number of recent deployments, 1 to 10." } }, additionalProperties: false } } };
 const GITHUB_READ_TOOL: Tool = { type: "function", function: { name: "github_read_file", description: "Read a text source file from the configured HkTube repository. Use for code inspection before proposing or making a fix. Path must be repository-relative; ref defaults to the configured base branch.", parameters: { type: "object", properties: { path: { type: "string" }, ref: { type: "string" } }, required: ["path"], additionalProperties: false } } };
 const GITHUB_BRANCH_TOOL: Tool = { type: "function", function: { name: "github_create_branch", description: "Create a new isolated ai-agent/* branch from the configured base branch for an explicitly requested code change. Never create or write directly to main or production.", parameters: { type: "object", properties: { label: { type: "string" } }, required: ["label"], additionalProperties: false } } };
 const GITHUB_COMMIT_TOOL: Tool = { type: "function", function: { name: "github_commit_file", description: "Commit a complete text file to an existing ai-agent/* branch created by github_create_branch. Only for an explicit owner request to implement/fix code. Never edit production secrets, env files, Vercel config, package manifests/lockfiles, or GitHub workflows. A commit is not a test pass or production deployment.", parameters: { type: "object", properties: { path: { type: "string" }, content: { type: "string" }, branch: { type: "string" }, message: { type: "string" } }, required: ["path", "content", "branch", "message"], additionalProperties: false } } };
 const GITHUB_PR_TOOL: Tool = { type: "function", function: { name: "github_open_pull_request", description: "Open a draft pull request from an ai-agent/* branch after code changes. Never merge it or claim production deployment. Include summary, tests actually run (or explicitly not run), and remaining risks.", parameters: { type: "object", properties: { branch: { type: "string" }, title: { type: "string" }, body: { type: "string" } }, required: ["branch", "title", "body"], additionalProperties: false } } };
-const AGENT_TOOLS = [WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL, GITHUB_STATUS_TOOL, GITHUB_SECURITY_TOOL, GITHUB_READ_TOOL, GITHUB_BRANCH_TOOL, GITHUB_COMMIT_TOOL, GITHUB_PR_TOOL, VERCEL_STATUS_TOOL, VERCEL_DEPLOYMENTS_TOOL];
+const AGENT_TOOLS = [AGENT_READINESS_TOOL, WEB_SEARCH_TOOL, GMAIL_SEARCH_TOOL, GMAIL_THREAD_TOOL, HKTUBE_PLAN_TOOL, HKTUBE_HEALTH_TOOL, GITHUB_STATUS_TOOL, GITHUB_SECURITY_TOOL, GITHUB_READ_TOOL, GITHUB_BRANCH_TOOL, GITHUB_COMMIT_TOOL, GITHUB_PR_TOOL, VERCEL_STATUS_TOOL, VERCEL_DEPLOYMENTS_TOOL];
 const MAX_TOOL_CALLS = 6;
 
 type ToolCall = NonNullable<NonNullable<InvokeResult["choices"][number]["message"]>["tool_calls"]>[number];
@@ -132,6 +134,32 @@ export async function runBoundedAIAgent(input: {
     }
     if (call.function?.name === "github_security_alerts") {
       const result = await getRepositorySecurityOverview();
+      agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+      continue;
+    }
+    if (call.function?.name === "agent_runtime_readiness") {
+      const configured = (value: string | undefined) => Boolean(value?.trim());
+      const integrations = [
+        { id: "groq", configured: configured(ENV.groqApiKey), environment: "GROQ_API_KEY", purpose: "Primary AI model" },
+        { id: "gemini", configured: configured(ENV.geminiApiKey), environment: "GEMINI_API_KEY", purpose: "Alternate AI model" },
+        { id: "openai", configured: configured(ENV.openAiApiKey), environment: "OPENAI_API_KEY", purpose: "Optional alternate AI model" },
+        { id: "github", configured: configured(process.env.GITHUB_TOKEN), environment: "GITHUB_TOKEN", purpose: "Repository inspection and pull requests" },
+        { id: "vercel", configured: configured(process.env.VERCEL_TOKEN), environment: "VERCEL_TOKEN", purpose: "Read-only project and deployment inspection" },
+        { id: "supabase_service_role", configured: configured(ENV.supabaseServiceRoleKey), environment: "SUPABASE_SERVICE_ROLE_KEY", purpose: "Privileged server-side database operations" },
+        { id: "resend", configured: configured(ENV.resendApiKey), environment: "RESEND_API_KEY", purpose: "Transactional email" },
+        { id: "mux", configured: configured(process.env.MUX_TOKEN_ID) && configured(process.env.MUX_TOKEN_SECRET), environment: "MUX_TOKEN_ID + MUX_TOKEN_SECRET", purpose: "Media processing" },
+        { id: "deepgram", configured: configured(process.env.DEEPGRAM_API_KEY), environment: "DEEPGRAM_API_KEY", purpose: "Speech transcription" },
+        { id: "hive", configured: configured(process.env.HIVE_API_KEY), environment: "HIVE_API_KEY", purpose: "Media safety analysis" },
+        { id: "upstash", configured: configured(process.env.UPSTASH_REDIS_REST_URL) && configured(process.env.UPSTASH_REDIS_REST_TOKEN), environment: "UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN", purpose: "Rate limiting and distributed coordination" },
+        { id: "sentry", configured: configured(process.env.SENTRY_DSN), environment: "SENTRY_DSN", purpose: "Runtime error monitoring" },
+      ];
+      const result = {
+        status: "ENVIRONMENT_INSPECTED",
+        configuredCount: integrations.filter(item => item.configured).length,
+        totalCount: integrations.length,
+        note: "Presence is not proof of validity or end-to-end connectivity. No secret values are returned.",
+        integrations,
+      };
       agentMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
       continue;
     }
