@@ -628,11 +628,11 @@ export function HkTubeShell({
         {(compactClipsDock
           ? [
               { label: "Home", href: "/", icon: Home },
-              { label: "Shorts", href: "/clips", icon: MonitorPlay },
+              { label: "Clips", href: "/clips", icon: MonitorPlay },
               { label: "Create", href: "#create", icon: Plus },
-              { label: "Subscriptions", href: "/subscriptions", icon: UserRound },
+              { label: "Library", href: "/library", icon: Library },
               {
-                label: "You",
+                label: "Profile",
                 href: isAuthenticated ? "/profile" : "/auth",
                 icon: ProfileGlyph,
               },
