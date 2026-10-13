@@ -97,9 +97,13 @@ export default function PostUploadPage() {
         moderation_status: "pending",
       });
       if (insertError) throw new Error("Post could not be saved: " + insertError.message);
-      toast.success("Post submitted for moderation.");
+      if (visibility === "private") {
+        toast.success("Private text post saved. It will not appear in the public feed.");
+      } else {
+        toast.success("Post submitted for moderation.");
+        navigate("/posts");
+      }
       setBody(""); setImages([]); setFilter("original");
-      navigate("/posts");
     } catch (cause) {
       if (uploaded.length) await supabase.storage.from("thumbnails").remove(uploaded).catch(() => undefined);
       const message = cause instanceof Error ? cause.message : "Post publish failed.";
