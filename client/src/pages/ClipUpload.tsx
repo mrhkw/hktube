@@ -137,6 +137,46 @@ export default function ClipUploadPage() {
   const [kids, setKids] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const draftKey = "hktube-clip-composer-draft-v1";
+
+  // Save composer metadata locally so a refresh does not erase the creator's
+  // title, caption, tags, and publishing choices. Media files are not stored.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as {
+          channelId?: string; title?: string; description?: string; tags?: string;
+          visibility?: "public" | "unlisted" | "private";
+          comments?: boolean; downloads?: boolean; kids?: boolean;
+        };
+        if (typeof draft.channelId === "string") setChannelId(draft.channelId);
+        if (typeof draft.title === "string") setTitle(draft.title.slice(0, 180));
+        if (typeof draft.description === "string") setDescription(draft.description.slice(0, 5000));
+        if (typeof draft.tags === "string") setTags(draft.tags);
+        if (draft.visibility === "public" || draft.visibility === "unlisted" || draft.visibility === "private") setVisibility(draft.visibility);
+        if (typeof draft.comments === "boolean") setComments(draft.comments);
+        if (typeof draft.downloads === "boolean") setDownloads(draft.downloads);
+        if (typeof draft.kids === "boolean") setKids(draft.kids);
+      }
+    } catch {
+      // Ignore invalid or unavailable local drafts; publishing still works.
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        channelId, title, description, tags, visibility, comments, downloads, kids,
+      }));
+    } catch {
+      // Storage can be unavailable or full on some devices.
+    }
+  }, [draftLoaded, channelId, title, description, tags, visibility, comments, downloads, kids]);
   useEffect(() => {
     if (!isAuthenticated) {
       if (!loading) startLogin();
