@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { canonicalUrl, canonicalUrlFromLocation } from "@shared/site";
 
 interface SeoMetaProps {
   title: string;
@@ -8,7 +9,9 @@ interface SeoMetaProps {
 }
 
 const DEFAULT_DESCRIPTION = "Watch and share high-quality videos on HKW.";
-const DEFAULT_IMAGE = "https://hkw.vercel.app/brand/hkw-mark.webp";
+// Resolved from the shared site origin so the share image can never drift back
+// to a host HkTube no longer serves. See `shared/site.ts`.
+const DEFAULT_IMAGE = canonicalUrl("/brand/hkw-mark.webp");
 
 function setMeta(selector: string, content: string) {
   const element = document.querySelector<HTMLMetaElement>(selector);
@@ -19,7 +22,9 @@ export default function SeoMeta({ title, description, image, url }: SeoMetaProps
   useEffect(() => {
     const resolvedDescription = description || DEFAULT_DESCRIPTION;
     const resolvedImage = image || DEFAULT_IMAGE;
-    const resolvedUrl = url || window.location.href;
+    // Strip the fragment so anchors such as `/watch/123#comments` never reach
+    // `<link rel="canonical">`.
+    const resolvedUrl = canonicalUrlFromLocation(url || window.location.href);
 
     document.title = `${title} - HKW`;
     setMeta('meta[name="description"]', resolvedDescription);

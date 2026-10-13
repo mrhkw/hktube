@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { sanitizeInput } from "@shared/security";
+import { isHandleAvailable, normalizeHandle, validateHandle } from "./channelIdentity";
 
 export type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
@@ -62,11 +63,29 @@ export async function createSupabaseChannel(input: { handle: string; displayName
   return mapChannel(data);
 }
 
-export async function updateSupabaseChannel(id: string, input: { displayName: string; description: string; avatarUrl?: string | null; bannerUrl?: string | null }) {
+export async function updateSupabaseChannel(
+  id: string,
+  input: {
+    displayName: string;
+    description: string;
+    avatarUrl?: string | null;
+    bannerUrl?: string | null;
+    /** Optional new handle; validated and checked for collisions when given. */
+    handle?: string | null;
+  },
+) {
   const user = await requireUser();
+  if (input.handle) {
+    const normalized = normalizeHandle(input.handle);
+    const check = validateHandle(normalized);
+    if (!check.ok) throw new Error(check.reason ?? "That handle is not valid.");
+    const available = await isHandleAvailable(normalized, id);
+    if (!available) throw new Error("That channel handle is already taken.");
+  }
   const { data, error } = await supabase.from("channels").update({
     name: sanitizeInput(input.displayName).slice(0, 255), description: sanitizeInput(input.description).slice(0, 5000) || null,
     avatar_url: input.avatarUrl, banner_url: input.bannerUrl, updated_at: new Date().toISOString(),
+    ...(input.handle ? { handle: normalizeHandle(input.handle) } : {}),
   }).eq("id", id).eq("owner_id", user.id).select(CHANNEL_SELECT).single();
   if (error) throw new Error(error.message);
   return mapChannel(data);

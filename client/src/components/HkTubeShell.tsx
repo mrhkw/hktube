@@ -32,6 +32,7 @@ import {
   Radio,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { UploadActivityBanner } from "@/components/create/UploadProgressCard";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -74,33 +75,8 @@ export function HkTubeShell({
   });
   const [familyMode, setFamilyMode] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<"menu" | "post">(
-    "menu"
-  );
-  const [postBody, setPostBody] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
-  const utils = trpc.useUtils();
-  const createPost = trpc.posts.create.useMutation({
-    onSuccess: () => {
-      setPostBody("");
-      setCreateOpen(false);
-      setCreateMode("menu");
-      void utils.posts.latest.invalidate();
-      navigate("/posts");
-      toast.success("Post published.");
-    },
-    onError: error => {
-      if (
-        error.data?.code === "UNAUTHORIZED" ||
-        /sign in|login|unauthorized|session/i.test(error.message)
-      ) {
-        startLogin();
-        return;
-      }
-      toast.error(error.message);
-    },
-  });
   useEffect(() => {
     setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled");
   }, []);
@@ -125,21 +101,20 @@ export function HkTubeShell({
       startLogin();
       return;
     }
-    setCreateMode("menu");
     setCreateOpen(true);
   }
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
-    navigate(category === "shorts" ? "/clips/create" : "/upload");
+    // YouTube's two upload paths: a long video, or a vertical Short.
+    navigate(category === "shorts" ? "/create?category=shorts" : "/create?category=regular");
   }
   function startLive() {
     setCreateOpen(false);
     navigate("/live");
   }
-  function submitPost(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const body = postBody.trim();
-    if (body) createPost.mutate({ body });
+  function startPost() {
+    setCreateOpen(false);
+    navigate("/posts/new");
   }
   const visiblePrimaryNav = familyMode
     ? primaryNav.filter(item => item.href !== "/clips")
@@ -152,6 +127,7 @@ export function HkTubeShell({
     "/index.html",
     "/app",
     "/upload",
+    "/create",
     "/library",
     "/profile",
   ].includes(location);
@@ -197,6 +173,22 @@ export function HkTubeShell({
               <span className="ml-2 whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">HKW</span>
             </Link>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            {/* The + only exists in the mobile dock, so desktop gets YouTube's
+                own "Create" button in the header. */}
+            <button
+              type="button"
+              onClick={openCreate}
+              aria-label="Create"
+              className={cn(
+                "hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition md:inline-flex",
+                usesPrimaryNavigation
+                  ? "border-black/12 bg-black/[.04] text-neutral-900 hover:bg-black/[.09]"
+                  : "border-white/12 bg-white/[.06] text-white hover:bg-white/[.12]"
+              )}
+            >
+              <Plus className="size-4" strokeWidth={2.6} />
+              Create
+            </button>
             <Link
               href="/notifications"
               className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
@@ -309,16 +301,13 @@ export function HkTubeShell({
         <DialogContent className="max-w-xl border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[2rem]">
           <DialogHeader>
             <DialogTitle className="text-white">
-              {createMode === "menu" ? "Create" : "Create a post"}
+              Create
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              {createMode === "menu"
-                ? "Choose how you want to create on HkTube."
-                : "Share something with your audience."}
+              Choose how you want to create on HkTube.
             </DialogDescription>
           </DialogHeader>
-          {createMode === "menu" ? (
-            <div className="grid gap-3">
+          <div className="grid gap-3">
               <button
                 type="button"
                 onClick={() => startUpload("regular")}
@@ -330,7 +319,7 @@ export function HkTubeShell({
                 <span>
                   <span className="block font-bold text-white">Upload a video</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Upload a long video from your device
+                    Pick a video from your device, then add details and upload
                   </span>
                 </span>
               </button>
@@ -343,24 +332,24 @@ export function HkTubeShell({
                   <MonitorPlay className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Short</span>
+                  <span className="block font-bold text-white">Upload a Short</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Record or upload a vertical Clip
+                    Record or pick a vertical clip, then edit it into a Short
                   </span>
                 </span>
               </button>
               <button
                 type="button"
-                onClick={() => setCreateMode("post")}
+                onClick={startPost}
                 className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left transition hover:border-cyan-300/35 hover:bg-cyan-400/[.06]"
               >
                 <span className="grid size-11 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
                   <FileText className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Post</span>
+                  <span className="block font-bold text-white">Create a post</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Share a text update
+                    Text, images, a sound, plus schedule and expiry
                   </span>
                 </span>
               </button>
@@ -379,35 +368,7 @@ export function HkTubeShell({
                   </span>
                 </span>
               </button>
-            </div>
-          ) : (
-            <form onSubmit={submitPost} className="space-y-4">
-              <Textarea
-                value={postBody}
-                onChange={event => setPostBody(event.target.value)}
-                maxLength={5000}
-                placeholder="Write something..."
-                className="min-h-32 border-white/10 bg-black/20 text-white placeholder:text-slate-500"
-              />
-              <div className="flex items-center justify-between gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setCreateMode("menu")}
-                  className="text-slate-300 hover:bg-white/5 hover:text-white"
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={!postBody.trim() || createPost.isPending}
-                  className="bg-violet-500 text-white hover:bg-violet-400"
-                >
-                  {createPost.isPending ? "Publishing..." : "Publish"}
-                </Button>
-              </div>
-            </form>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -607,6 +568,8 @@ export function HkTubeShell({
           </div>
         </footer>
       </main>
+
+      <UploadActivityBanner />
 
       <nav
         className={cn(

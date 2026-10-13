@@ -794,3 +794,202 @@ body.hktube-clips-document nav[aria-label="Mobile navigation"] {
   .hk-clips-creator-avatar img { animation: none; }
   .hk-clips-vinyl { animation: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Clips control rail — TikTok-style action set.
+
+   The rail, vinyl disc, and sound row above were authored for this design but
+   the stylesheet was never imported, so the live `/clips` route rendered its
+   own Tailwind rail instead. `Clips.tsx` now imports this file and uses these
+   classes. The additions below cover what the original set was missing:
+   button resets, the follow badge, active/filled icon states, and the sound
+   sheet body.
+   --------------------------------------------------------------------------- */
+
+.hk-clips-action,
+.hk-clips-profile-action,
+.hk-clips-vinyl,
+.hk-clips-sound,
+.hk-clips-use-sound {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hk-clips-profile-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.hk-clips-profile-wrap .hk-clips-profile-action {
+  margin-bottom: 0;
+}
+
+/* TikTok's red "+" that sits on the rail avatar until the creator is followed. */
+.hk-clips-follow-badge {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: #fe2c55;
+  color: #fff;
+  cursor: pointer;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 9px rgb(0 0 0 / 45%);
+}
+
+.hk-clips-follow-badge:hover {
+  background: #e62249;
+}
+
+.hk-clips-action-icon svg {
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.9;
+}
+
+/* TikTok renders the comment bubble and a saved bookmark as solid shapes, and
+   the liked heart as a solid brand-red glyph with no stroke. */
+.hk-clips-action.is-filled .hk-clips-action-icon svg,
+.hk-clips-action.is-active .hk-clips-action-icon svg {
+  fill: currentColor;
+  stroke-width: 0;
+}
+
+.hk-clips-action.is-brand.is-active .hk-clips-action-icon {
+  color: #fe2c55;
+  filter: drop-shadow(0 2px 9px rgb(254 44 85 / 45%));
+}
+
+.hk-clips-action.is-active .hk-clips-action-label {
+  font-weight: 850;
+}
+
+.hk-clips-vinyl img {
+  width: 72%;
+  height: 72%;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.hk-clips-vinyl.is-static {
+  animation: none;
+}
+
+.hk-clips-use-sound {
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(0 0 0 / 50%);
+  backdrop-filter: blur(9px);
+}
+
+.hk-clips-use-sound:hover {
+  background: rgb(0 0 0 / 68%);
+}
+
+/* Sound sheet: the panel the vinyl disc and the sound label both open. */
+.hk-clips-sound-sheet {
+  right: auto;
+  left: 50%;
+  width: min(100%, 480px);
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.hk-clips-sound-sheet-body {
+  display: grid;
+  gap: 10px;
+  padding: 18px 19px max(22px, env(safe-area-inset-bottom));
+}
+
+.hk-clips-sound-sheet-track {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 6px;
+}
+
+.hk-clips-sound-sheet-track .hk-clips-vinyl {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.hk-clips-sound-sheet .hk-clips-vinyl img {
+  width: 100%;
+  height: 100%;
+}
+
+.hk-clips-sound-primary {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #fe2c55;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.hk-clips-sound-primary:hover {
+  background: #e62249;
+}
+
+.hk-clips-sound-toggle {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 9%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hk-clips-sound-toggle:hover {
+  background: rgb(255 255 255 / 14%);
+}
+
+.hk-clips-sound-note {
+  color: rgb(255 255 255 / 50%);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hk-clips-follow-badge,
+  .hk-clips-sound-primary,
+  .hk-clips-sound-toggle {
+    transition: none;
+  }
+}
+
+/* The rail gained a profile action and the sound disc, so keep it clear of the
+   top tabs on short phone viewports. */
+@media (max-height: 700px) {
+  .hk-clips-actions .hk-clips-action {
+    min-height: 54px;
+  }
+
+  .hk-clips-actions .hk-clips-profile-action,
+  .hk-clips-actions .hk-clips-vinyl {
+    width: 46px;
+    height: 46px;
+  }
+}

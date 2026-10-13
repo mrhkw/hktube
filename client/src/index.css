@@ -418,33 +418,23 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
 .hktube-clips-page button {
   color: #fff;
 }
-.hktube-clips-page .clips-action {
+/* The rail renders the TikTok-style `.hk-clips-*` control set from
+   `styles/clips.css`. These keep its press/confirm feedback consistent with the
+   rest of the page. */
+.hktube-clips-page .hk-clips-action {
   transition:
     transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
     opacity 180ms ease,
     background-color 180ms ease;
 }
-.hktube-clips-page .clips-action:active {
+.hktube-clips-page .hk-clips-action:active {
   transform: scale(0.9);
 }
-.hktube-clips-page .clips-action:hover {
+.hktube-clips-page .hk-clips-action:hover {
   transform: translateY(-3px) scale(1.04);
 }
-.hktube-clips-page .clips-action-active {
+.hktube-clips-page .hk-clips-action.is-active {
   animation: clips-action-pop 220ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.hktube-clips-page .clips-action > span:first-child,
-.hktube-clips-page .clips-action span:first-child {
-  width: 48px !important;
-  height: 48px !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-.hktube-clips-page .clips-action-active > span:first-child,
-.hktube-clips-page .clips-action-active span:first-child {
-  background: transparent !important;
 }
 @keyframes clips-action-pop {
   0% {
@@ -1343,6 +1333,15 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
     border-radius: 1.5rem;
     box-shadow: 0 24px 80px rgb(0 0 0 / 48%);
   }
+  /* The full-height rule near the top of this file is written as
+     `body:has(.hktube-clips-page) .hktube-clips-viewport`, which outranks the
+     block above. An explicit height always beats `aspect-ratio`, so without
+     this the settled 9:16 card was stretched to the full viewport height and the
+     video was cropped to fill it. Restating it at the same specificity, later in
+     the cascade, lets the aspect ratio stay authoritative. */
+  body:has(.hktube-clips-page) .hktube-clips-viewport {
+    height: auto !important;
+  }
   .hktube-clips-page .hktube-clips-viewport > video,
   .hktube-clips-page .hktube-clips-viewport > img {
     width: 100% !important;
@@ -1387,25 +1386,27 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
     bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
     gap: 0.1rem !important;
   }
-  .hktube-clips-page .clips-action,
-  .hktube-clips-page .clips-sound-action {
-    min-width: 42px !important;
-    min-height: 46px !important;
+  /* Compact rail on phones, including the avatar and the sound disc that the
+     TikTok-style rail adds. */
+  .hktube-clips-page .hk-clips-action {
+    min-width: 46px !important;
+    min-height: 50px !important;
   }
-  .hktube-clips-page .clips-action > span:first-child,
-  .hktube-clips-page .clips-action span:first-child,
-  .hktube-clips-page .clips-sound-action > span:first-child {
-    width: 34px !important;
-    height: 34px !important;
+  .hktube-clips-page .hk-clips-action-icon {
+    width: 40px !important;
+    height: 38px !important;
   }
-  .hktube-clips-page .clips-action > span:first-child svg,
-  .hktube-clips-page .clips-sound-action > span:first-child svg {
-    width: 20px !important;
-    height: 20px !important;
+  .hktube-clips-page .hk-clips-action-icon svg {
+    width: 24px !important;
+    height: 24px !important;
   }
-  .hktube-clips-page .clips-action > span:last-child,
-  .hktube-clips-page .clips-sound-action > span:last-child {
+  .hktube-clips-page .hk-clips-action-label {
     font-size: 10px !important;
     line-height: 12px !important;
+  }
+  .hktube-clips-page .hk-clips-profile-action,
+  .hktube-clips-page .hk-clips-vinyl {
+    width: 46px !important;
+    height: 46px !important;
   }
 }

@@ -1,22 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Bookmark,
   ChevronDown,
   ChevronUp,
   Flag,
+  Forward,
   Heart,
   MessageCircle,
   Music2,
   MoreVertical,
-  Pause,
   Play,
+  Plus,
   Search,
   Send,
   Settings2,
-  Star,
   Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+// The TikTok-style Clips control rail, vinyl sound disc, and bottom sheets live
+// in this stylesheet. Import it here rather than in `main.tsx` so Vite keeps it
+// in the lazy `/clips` chunk instead of the entry bundle.
+import "@/styles/clips.css";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
@@ -146,6 +152,7 @@ export default function ClipsPage() {
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [soundSheetOpen, setSoundSheetOpen] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [lastTap, setLastTap] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -440,6 +447,8 @@ export default function ClipsPage() {
       <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
         <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
+            {/* Player settings live in the More menu, so the top bar keeps a
+                single control the way TikTok's Clips header does. */}
             <button
               onClick={() => {
                 setSearchOpen(v => !v);
@@ -555,9 +564,13 @@ export default function ClipsPage() {
             <button
               type="button"
               onClick={() => void toggleSound()}
+              aria-pressed={soundOn}
               className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"
             >
-              <span>{soundOn ? "Mute sound" : "Use sound"}</span>
+              <span className="inline-flex items-center gap-2">
+                {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+                Clip sound
+              </span>
               <span className="text-xs text-white/55">{soundOn ? "On" : "Off"}</span>
             </button>
           </div>
@@ -581,7 +594,7 @@ export default function ClipsPage() {
               Publish a vertical Clip or follow creators to build the feed.
             </p>
             <Link
-              href="/upload?category=shorts"
+              href="/create?category=shorts"
               className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black"
             >
               Create a Clip
@@ -723,21 +736,10 @@ export default function ClipsPage() {
                         ? "/channel/" + channel.handle
                         : "/watch/" + current.id
                     }
-                    className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white bg-violet-500 font-black"
+                    className="min-w-0 truncate text-[17px] font-black text-white drop-shadow-md"
                   >
-                    {channel?.avatar_url ? (
-                      <img
-                        src={channel.avatar_url}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      "HK"
-                    )}
-                  </Link>
-                  <span className="min-w-0 truncate font-black text-sm text-white drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
                     {channel ? "@" + channel.handle : "HkTube Creator"}
-                  </span>
+                  </Link>
                   <button
                     onClick={() => void follow()}
                     className={
@@ -765,34 +767,86 @@ export default function ClipsPage() {
                     </span>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-white/90 drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
-                  <span className="truncate">
-                    Original Sound · {channel?.name || "HkTube Creator"}
-                  </span>
+                <div className="hk-clips-sound-row">
+                  <button
+                    type="button"
+                    className="hk-clips-sound"
+                    onClick={() => setSoundSheetOpen(true)}
+                    aria-label="Open the sound used in this Clip"
+                  >
+                    <Music2 className="size-4 shrink-0" />
+                    <span>
+                      Original sound · {channel?.name || "HkTube Creator"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="hk-clips-use-sound"
+                    onClick={useCurrentSound}
+                    aria-label="Create a Clip using this sound"
+                  >
+                    <Music2 className="size-4" />
+                    Use sound
+                  </button>
                 </div>
               </div>
-              <div className="clips-action-rail absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-2 z-30 flex flex-col items-center gap-2 sm:bottom-16 sm:right-5">
+              <div className="clips-action-rail hk-clips-actions">
+                <div className="hk-clips-profile-wrap">
+                  <Link
+                    href={
+                      channel
+                        ? "/channel/" + channel.handle
+                        : "/watch/" + current.id
+                    }
+                    className="hk-clips-profile-action"
+                    aria-label={
+                      channel ? "Open " + channel.name : "Open creator profile"
+                    }
+                  >
+                    {channel?.avatar_url ? (
+                      <img src={channel.avatar_url} alt="" />
+                    ) : (
+                      <span className="hk-clips-hk-avatar">
+                        HK
+                      </span>
+                    )}
+                  </Link>
+                  {!followed.has(current.channelId) && (
+                    <button
+                      type="button"
+                      className="hk-clips-follow-badge"
+                      onClick={() => void follow()}
+                      aria-label={
+                        "Follow " + (channel?.name || "this creator")
+                      }
+                    >
+                      <Plus className="size-3.5" strokeWidth={3.2} />
+                    </button>
+                  )}
+                </div>
                 <Action
                   icon={Heart}
                   label={compact(
                     current.likesCount + (liked.has(current.id) ? 1 : 0)
                   )}
                   active={liked.has(current.id)}
+                  variant="brand"
                   onClick={() => void like()}
                 />
                 <Action
                   icon={MessageCircle}
                   label="Comment"
+                  variant="filled"
                   onClick={() => void openComments()}
                 />
                 <Action
-                  icon={Star}
+                  icon={Bookmark}
                   label="Save"
                   active={saved.has(current.id)}
                   onClick={() => void save()}
                 />
                 <Action
-                  icon={Send}
+                  icon={Forward}
                   label="Share"
                   onClick={() => void share()}
                 />
@@ -803,14 +857,16 @@ export default function ClipsPage() {
                 />
                 <button
                   type="button"
-                  onClick={useCurrentSound}
-                  className="clips-sound-action flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold leading-4 text-white drop-shadow-md"
-                  aria-label="Use sound"
+                  className="hk-clips-vinyl"
+                  onClick={() => setSoundSheetOpen(true)}
+                  aria-label="Open the sound used in this Clip"
+                  style={{ animationPlayState: playing ? "running" : "paused" }}
                 >
-                  <span className="grid size-10 place-items-center rounded-full bg-black/35 backdrop-blur-md">
+                  {channel?.avatar_url ? (
+                    <img src={channel.avatar_url} alt="" />
+                  ) : (
                     <Music2 className="size-5" />
-                  </span>
-                  <span>Use sound</span>
+                  )}
                 </button>
               </div>
               <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
@@ -888,6 +944,86 @@ export default function ClipsPage() {
           </div>
         )}
       </div>
+      {soundSheetOpen && current && (
+        <div className="fixed inset-0 z-[85]">
+          <button
+            type="button"
+            className="hk-clips-sheet-backdrop"
+            aria-label="Close sound details"
+            onClick={() => setSoundSheetOpen(false)}
+          />
+          <section
+            role="dialog"
+            aria-label="Sound used in this Clip"
+            className="hk-clips-sheet hk-clips-sound-sheet"
+          >
+            <div className="hk-clips-sheet-header">
+              <span className="font-black">Sound</span>
+              <button
+                type="button"
+                onClick={() => setSoundSheetOpen(false)}
+                aria-label="Close sound details"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="hk-clips-sound-sheet-body">
+              <div className="hk-clips-sound-sheet-track">
+                <span
+                  className="hk-clips-vinyl"
+                  aria-hidden="true"
+                  style={{
+                    animationPlayState: playing ? "running" : "paused",
+                  }}
+                >
+                  {channel?.avatar_url ? (
+                    <img src={channel.avatar_url} alt="" />
+                  ) : (
+                    <Music2 className="size-5" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-black">
+                    Original sound
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-white/55">
+                    {channel ? "@" + channel.handle : "HkTube Creator"} ·{" "}
+                    {current.title}
+                  </span>
+                </span>
+              </div>
+              <button
+                type="button"
+                className="hk-clips-sound-primary"
+                onClick={() => {
+                  setSoundSheetOpen(false);
+                  useCurrentSound();
+                }}
+              >
+                <Music2 className="size-4" />
+                Use this sound
+              </button>
+              <button
+                type="button"
+                className="hk-clips-sound-toggle"
+                aria-pressed={soundOn}
+                onClick={() => void toggleSound()}
+              >
+                {soundOn ? (
+                  <Volume2 className="size-4" />
+                ) : (
+                  <VolumeX className="size-4" />
+                )}
+                {soundOn ? "Clip sound is on" : "Clip sound is off"}
+              </button>
+              <p className="hk-clips-sound-note">
+                Clips you publish with this sound keep it credited to the
+                original creator.
+              </p>
+            </div>
+          </section>
+        </div>
+      )}
       {commentsOpen && (
         <div
           className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
@@ -951,36 +1087,41 @@ export default function ClipsPage() {
     </HkTubeShell>
   );
 }
+/**
+ * One control in the TikTok-style Clips rail. `variant="brand"` paints an
+ * active glyph in the brand red (the liked heart); `variant="filled"` renders a
+ * solid shape like TikTok's comment bubble.
+ */
 function Action({
   icon: Icon,
   label,
   active,
+  variant,
   onClick,
 }: {
   icon: typeof Heart;
   label: string;
   active?: boolean;
+  variant?: "brand" | "filled";
   onClick: () => void;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="clips-action flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-4 text-white drop-shadow-md"
       aria-label={label}
+      aria-pressed={active}
+      className={
+        "hk-clips-action" +
+        (active ? " is-active" : "") +
+        (variant === "brand" ? " is-brand" : "") +
+        (variant === "filled" ? " is-filled" : "")
+      }
     >
-      <span
-        className={
-          "grid size-12 place-items-center rounded-full backdrop-blur-md " +
-          (active ? "clips-action-active bg-fuchsia-500/80" : "bg-black/35")
-        }
-      >
-        <Icon
-          className={
-            "size-6 stroke-[1.8] " + (active && Icon === Heart ? "fill-current" : "")
-          }
-        />
+      <span className="hk-clips-action-icon">
+        <Icon />
       </span>
-      <span>{label}</span>
+      <span className="hk-clips-action-label">{label}</span>
     </button>
   );
 }
