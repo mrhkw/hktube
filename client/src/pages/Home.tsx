@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VideoRecord } from "@/lib/video";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, BookOpen, Compass, FileText, Flame, Loader2, PenLine, Play, Plus, RefreshCw, Search, ShieldCheck, Sparkles, UploadCloud, UsersRound, Video } from "lucide-react";
+import { ArrowRight, BookOpen, Compass, FileText, Flame, Loader2, Play, Plus, RefreshCw, Search, ShieldCheck, Sparkles, UploadCloud, UsersRound, Video } from "lucide-react";
 
 const categories = [
   { label: "All", href: "/" },
@@ -242,19 +242,15 @@ export default function Home() {
           <div className="grid gap-3">
             <button type="button" onClick={() => openUpload("regular")} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left">
               <span className="grid size-11 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><Video className="size-5" /></span>
-              <span><span className="block font-bold text-white">Long Video</span><span className="mt-0.5 block text-sm text-slate-400">Full-length video, 16:9</span></span>
+              <span><span className="block font-bold text-white">Upload a video</span><span className="mt-0.5 block text-sm text-slate-400">Full-length video</span></span>
             </button>
             <button type="button" onClick={() => openUpload("shorts")} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left">
               <span className="grid size-11 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200"><Play className="size-5" /></span>
-              <span><span className="block font-bold text-white">Clips</span><span className="mt-0.5 block text-sm text-slate-400">Vertical short, 9:16</span></span>
+              <span><span className="block font-bold text-white">Create a Short</span><span className="mt-0.5 block text-sm text-slate-400">Vertical Short</span></span>
             </button>
             <button type="button" onClick={() => { setCreateOpen(false); navigate("/posts"); }} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left">
               <span className="grid size-11 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200"><FileText className="size-5" /></span>
               <span><span className="block font-bold text-white">Post</span><span className="mt-0.5 block text-sm text-slate-400">Share an update with the community</span></span>
-            </button>
-            <button type="button" onClick={() => { setCreateOpen(false); navigate("/posts"); }} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left">
-              <span className="grid size-11 place-items-center rounded-xl bg-emerald-400/10 text-emerald-200"><PenLine className="size-5" /></span>
-              <span><span className="block font-bold text-white">Write</span><span className="mt-0.5 block text-sm text-slate-400">Write and publish your thoughts</span></span>
             </button>
           </div>
         </DialogContent>
