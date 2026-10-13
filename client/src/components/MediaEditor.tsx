@@ -51,14 +51,15 @@ async function exportEditedVideo(
   video.preload = "auto";
   video.playsInline = true;
   video.muted = false;
-  video.src = sourceUrl;
 
   let audioContext: AudioContext | null = null;
   let canvasStream: MediaStream | null = null;
   let animationFrame = 0;
 
   try {
-    await once(video, "loadedmetadata");
+    const metadataReady = once(video, "loadedmetadata");
+    video.src = sourceUrl;
+    await metadataReady;
     if (!video.videoWidth || !video.videoHeight || !Number.isFinite(video.duration)) {
       throw new Error("The selected file does not contain readable video metadata.");
     }
