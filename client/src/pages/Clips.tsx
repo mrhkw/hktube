@@ -488,8 +488,8 @@ export default function ClipsPage() {
   }
   return (
     <HkTubeShell immersive minimalHeader>
-      <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
-        <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
+      <div className="hktube-clips-page fixed inset-x-0 top-0 z-10 overflow-hidden bg-black text-white" style={{ height: "100dvh", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-3 pb-2 pt-[max(8px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
@@ -503,7 +503,7 @@ export default function ClipsPage() {
             </button>
           </div>
         </div>
-        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-5 text-white sm:gap-6">
+        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.35rem)] z-40 flex -translate-x-1/2 items-center gap-4 text-white sm:gap-6">
           <button
             type="button"
             aria-pressed={tab === "trending"}
@@ -565,7 +565,7 @@ export default function ClipsPage() {
             Following
           </button>
         </div>
-        <div className="clips-category-strip absolute left-0 right-0 top-[calc(env(safe-area-inset-top)+3.7rem)] z-30 flex gap-2 overflow-x-auto px-4 pb-2 sm:justify-center">
+        <div className="clips-category-strip absolute left-0 right-0 top-[calc(env(safe-area-inset-top)+3.2rem)] z-30 hidden gap-2 overflow-x-auto px-4 pb-2 sm:flex sm:justify-center">
           {["all", ...Array.from(new Set(videos.map(v => String(v.category || "general").toLowerCase()))).slice(0, 6)].map(item => <button key={item} type="button" onClick={() => { setCategory(item); setActive(0); }} className={"shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold capitalize backdrop-blur-md " + (category === item ? "border-white bg-white text-black" : "border-white/20 bg-black/30 text-white")}>{item === "all" ? "All topics" : item}</button>)}
         </div>
         {searchOpen && (
@@ -649,7 +649,7 @@ export default function ClipsPage() {
           </div>
         ) : (
           <div
-            className="hktube-clips-stage h-full"
+            className="hktube-clips-stage absolute inset-x-0 top-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] h-auto"
             onTouchStart={e => {
               const target = e.target as HTMLElement;
               if (target.closest("button, a, input, textarea")) return;
@@ -695,7 +695,7 @@ export default function ClipsPage() {
                 preload="metadata"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300 sm:rounded-3xl"
                 }
                 onPlay={() => {
                   setMediaError(false);
@@ -778,7 +778,7 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 text-white sm:bottom-20 sm:left-6">
+              <div className="absolute bottom-3 left-3 right-[4.4rem] z-20 text-white sm:bottom-20 sm:left-6 sm:right-20">
                 <div className="flex items-center gap-2.5">
                   <Link
                     href={
@@ -834,7 +834,7 @@ export default function ClipsPage() {
                   </span>
                 </div>
               </div>
-              <div className="clips-action-rail absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-2 z-30 flex flex-col items-center gap-2 sm:bottom-16 sm:right-5">
+              <div className="clips-action-rail absolute bottom-3 right-1.5 z-30 flex flex-col items-center gap-1 sm:bottom-16 sm:right-5 sm:gap-2">
                 <Action
                   icon={Heart}
                   label={compact(
