@@ -461,7 +461,7 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
 /* Mobile: prevent cramped controls, keep cards readable and reserve space for the bottom dock. */
 @media (max-width: 767px) {
   body {
-    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
   }
   nav.fixed[aria-label="Mobile navigation"] {
     height: 76px !important;
@@ -505,10 +505,10 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
   body [class*="min-h-[100dvh]"] {
   }
-  body [class*="min-h-[100dvh]"] main {
+  body [class*="min-h-[100dvh]"] > main {
     padding-left: 12px !important;
     padding-right: 12px !important;
-    padding-bottom: 88px !important;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
   }
   body [class*="min-h-[100dvh]"] main section:first-child {
     padding-top: 14px !important;
@@ -575,12 +575,12 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
 }
 @media (min-width: 768px) {
-  body [class*="min-h-[100dvh]"] main {
+  body [class*="min-h-[100dvh]"] > main {
     padding-bottom: 64px !important;
   }
 }
 @media (min-width: 1280px) {
-  body [class*="min-h-[100dvh]"] main {
+  body [class*="min-h-[100dvh]"] > main {
     padding-left: 32px !important;
     padding-right: 32px !important;
   }

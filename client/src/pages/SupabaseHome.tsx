@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import type { RankedVideo } from "@/lib/supabaseDiscovery";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BadgeCheck,
+  Clapperboard,
   ChevronDown,
   Heart,
   Loader2,
@@ -818,8 +819,16 @@ export default function SupabaseHome() {
     [videos, personalizedFeed]
   );
   const recommended = useMemo(() => {
-    const longVideos = feedPool.filter(video => !video.tags.includes("shorts"));
+    const longVideos = feedPool.filter(
+      video => !video.isShort && !video.tags.includes("shorts")
+    );
     return [...new Map(longVideos.map(video => [video.id, video])).values()];
+  }, [feedPool]);
+  const recommendedClips = useMemo(() => {
+    const clips = feedPool.filter(
+      video => video.isShort || video.tags.includes("shorts")
+    );
+    return [...new Map(clips.map(video => [video.id, video])).values()];
   }, [feedPool]);
 
   return (
@@ -846,10 +855,18 @@ export default function SupabaseHome() {
               Retry
             </Button>
           </div>
-        ) : videos.length ? (
+        ) : recommended.length || recommendedClips.length ? (
           <div className="space-y-0">
-            {recommended.map(video => (
-              <HomeVideoPost key={`home-post-${video.id}`} video={video} />
+            {recommended.length < 2 && recommendedClips.length > 0 && (
+              <HomeClipsShelf videos={recommendedClips} />
+            )}
+            {recommended.map((video, index) => (
+              <Fragment key={`home-post-${video.id}`}>
+                <HomeVideoPost video={video} />
+                {index === 1 && recommendedClips.length > 0 && (
+                  <HomeClipsShelf videos={recommendedClips} />
+                )}
+              </Fragment>
             ))}
           </div>
         ) : (
@@ -872,5 +889,53 @@ export default function SupabaseHome() {
         )}
       </main>
     </HkTubeShell>
+  );
+}
+
+function HomeClipsShelf({ videos }: { videos: RankedVideo[] }) {
+  return (
+    <section
+      className="border-y border-slate-200 bg-white px-3 py-5 sm:px-4"
+      aria-label="Recommended clips"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-black text-neutral-950">
+          <Clapperboard className="size-5 text-red-600" /> Clips for you
+        </h2>
+        <Link href="/clips" className="shrink-0 text-xs font-bold text-violet-700">
+          See all
+        </Link>
+      </div>
+      <div className="flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none]">
+        {videos.slice(0, 12).map(video => (
+          <Link
+            key={video.id}
+            href={`/clips?video=${encodeURIComponent(video.id)}`}
+            className="group w-[min(38vw,168px)] shrink-0 snap-start"
+          >
+            <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-neutral-900">
+              {video.thumbnailUrl && (
+                <img
+                  src={video.thumbnailUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="size-full object-cover transition group-hover:scale-[1.03]"
+                />
+              )}
+              <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                Clip
+              </span>
+            </div>
+            <p className="mt-2 line-clamp-2 text-sm font-bold leading-5 text-neutral-950">
+              {video.title}
+            </p>
+            <p className="mt-1 truncate text-xs text-neutral-500">
+              {video.viewCount.toLocaleString()} views
+            </p>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

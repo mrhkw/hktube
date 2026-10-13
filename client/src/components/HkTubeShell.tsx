@@ -130,8 +130,8 @@ export function HkTubeShell({
     <div
       className={cn(
         immersive
-          ? "h-[100dvh] overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
-          : "min-h-[100dvh] bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
+          ? "flex h-[100dvh] flex-col overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
+          : "flex min-h-[100dvh] flex-col bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
         )}
       >
         <header
@@ -470,7 +470,7 @@ export function HkTubeShell({
 
       <main
         className={cn(
-          "relative pb-[94px] md:pb-14 md:pl-60",
+          "relative flex min-h-[calc(100dvh-58px)] flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))] md:min-h-[calc(100dvh-64px)] md:pb-14 md:pl-60",
           immersive && "max-md:p-0 max-md:pb-0"
         )}
       >
@@ -488,7 +488,7 @@ export function HkTubeShell({
         )}
         <div
           className={cn(
-            "px-0 py-0 sm:px-8 sm:py-6 lg:px-10",
+            "w-full flex-1 px-0 py-0 sm:px-8 sm:py-6 lg:px-10",
             immersive && "max-lg:p-0"
           )}
         >

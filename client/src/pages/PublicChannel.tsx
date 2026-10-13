@@ -82,10 +82,10 @@ export default function PublicChannel() {
 
   return (
     <HkTubeShell title={channel.displayName} subtitle={`@${channel.handle}`}>
-      <div className="mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-6xl space-y-4 px-3 py-3 sm:px-6 sm:py-8">
         <section className="rounded-3xl border border-white/10 bg-[#111522] p-5 sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/10 bg-violet-500/30 text-3xl font-black text-white sm:size-28">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:flex sm:items-center sm:gap-5">
+            <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/10 bg-violet-500/30 text-2xl font-black text-white sm:size-28 sm:text-3xl">
               {channel.avatarUrl ? (
                 <img
                   src={channel.avatarUrl}
@@ -111,12 +111,12 @@ export default function PublicChannel() {
                 subscribers
               </p>
               {channel.description && (
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+                <p className="mt-2 line-clamp-2 max-w-2xl text-xs leading-5 text-slate-300 sm:mt-3 sm:text-sm sm:leading-6">
                   {channel.description}
                 </p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="col-span-full flex flex-wrap gap-2 sm:ml-auto sm:justify-end">
               <Button
                 type="button"
                 onClick={() =>
@@ -145,7 +145,7 @@ export default function PublicChannel() {
             </div>
           </div>
         </section>
-        <section className="grid gap-3 sm:grid-cols-3">
+        <section className="grid grid-cols-3 gap-2 sm:gap-3">
           <Metric
             icon={Clapperboard}
             label="Published content"
@@ -223,10 +223,10 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[.025] p-4">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.025] p-3 sm:p-4">
       <Icon className="size-5 text-cyan-200" />
-      <p className="mt-3 text-xl font-black text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{label}</p>
+      <p className="mt-2 truncate text-lg font-black text-white sm:mt-3 sm:text-xl">{value}</p>
+      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500 sm:text-xs">{label}</p>
     </div>
   );
 }

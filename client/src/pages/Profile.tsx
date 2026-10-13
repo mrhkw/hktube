@@ -229,10 +229,10 @@ export default function Profile() {
       title={channel?.displayName || user.name || "Profile"}
       headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}
     >
-      <div className="mx-auto max-w-6xl px-3 py-3 pb-28 sm:px-6 sm:py-7">
+      <div className="mx-auto w-full max-w-6xl px-3 py-3 pb-4 sm:px-6 sm:py-7">
         <section className="rounded-[28px] border border-white/10 bg-[#111522] p-5 shadow-xl shadow-black/10 sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/10 bg-violet-600 text-3xl font-black text-white sm:size-28">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:flex sm:items-center sm:gap-5">
+            <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/10 bg-violet-600 text-2xl font-black text-white sm:size-28 sm:text-3xl">
               {channel?.avatarUrl || user?.avatarUrl ? (
                 <img
                   src={channel?.avatarUrl || user?.avatarUrl || ""}
@@ -276,12 +276,12 @@ export default function Profile() {
                 </span>
                 <span>{posts.length} posts</span>
               </div>
-              <p className="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-400">
+              <p className="mt-2 line-clamp-2 max-w-3xl text-xs leading-5 text-slate-400 sm:mt-3 sm:text-sm sm:leading-6">
                 {channel?.description ||
                   "Add a channel description to tell viewers what you create."}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="col-span-full flex flex-wrap gap-2 sm:ml-auto sm:justify-end">
               <Button
                 type="button"
                 onClick={() => setEditOpen(true)}

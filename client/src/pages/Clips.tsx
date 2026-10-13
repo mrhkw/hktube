@@ -176,6 +176,9 @@ export default function ClipsPage() {
     try {
       const data = await rankPublicVideos({ shorts: true, limit: 48, query: search.trim() || undefined, userId: user?.id == null ? undefined : String(user.id) });
       setVideos(data);
+      const requestedClip = new URLSearchParams(window.location.search).get("video");
+      const requestedIndex = requestedClip ? data.findIndex(video => video.id === requestedClip) : -1;
+      setActive(requestedIndex >= 0 ? requestedIndex : 0);
       const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
       if (ids.length) {
         const { data: rows } = await supabase.from("channels").select("id,owner_id,handle,name,avatar_url,subscriber_count,verification_status").in("id", ids);
