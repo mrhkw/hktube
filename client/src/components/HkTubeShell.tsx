@@ -173,6 +173,22 @@ export function HkTubeShell({
               <span className="ml-2 whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">HKW</span>
             </Link>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            {/* The + only exists in the mobile dock, so desktop gets YouTube's
+                own "Create" button in the header. */}
+            <button
+              type="button"
+              onClick={openCreate}
+              aria-label="Create"
+              className={cn(
+                "hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition md:inline-flex",
+                usesPrimaryNavigation
+                  ? "border-black/12 bg-black/[.04] text-neutral-900 hover:bg-black/[.09]"
+                  : "border-white/12 bg-white/[.06] text-white hover:bg-white/[.12]"
+              )}
+            >
+              <Plus className="size-4" strokeWidth={2.6} />
+              Create
+            </button>
             <Link
               href="/notifications"
               className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
