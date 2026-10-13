@@ -418,7 +418,7 @@ export default function ClipUploadPage() {
                 {coverUrl && (
                   <div className="mt-3 flex items-center gap-3">
                     <img src={coverUrl} alt="Selected cover preview" className="h-20 w-28 rounded-xl border border-white/10 object-cover" />
-                    <button type="button" onClick={() => setCover(null)} className="text-xs font-bold text-slate-400 underline">Regenerate automatic cover</button>
+                    <button type="button" onClick={() => { if (file) void thumb(file).then(t => { if (t) setCover(t); }); }} className="text-xs font-bold text-slate-400 underline">Regenerate automatic cover</button>
                   </div>
                 )}
               </label>
