@@ -242,12 +242,20 @@ export default function ClipsPage() {
     setMediaReady(false);
     v.muted = !soundOn;
     v.load();
-    if (playing) void v.play().catch(() => setPlaying(false));
-    else v.pause();
     watched.current.add(current.id);
     void recordVideoView(current.id, 0).catch(() => undefined);
     return () => v.pause();
-  }, [current?.id, playing]);
+  }, [current?.id]);
+
+  useEffect(() => {
+    const v = media.current;
+    if (!v) return;
+    if (playing) {
+      void v.play().catch(() => setPlaying(false));
+    } else {
+      v.pause();
+    }
+  }, [playing, current?.id]);
   useEffect(() => {
     const v = media.current;
     if (v) v.muted = !soundOn;
