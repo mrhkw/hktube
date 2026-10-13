@@ -137,6 +137,46 @@ export default function ClipUploadPage() {
   const [kids, setKids] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const draftKey = "hktube-clip-composer-draft-v1";
+
+  // Save composer metadata locally so a refresh does not erase the creator's
+  // title, caption, tags, and publishing choices. Media files are not stored.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as {
+          channelId?: string; title?: string; description?: string; tags?: string;
+          visibility?: "public" | "unlisted" | "private";
+          comments?: boolean; downloads?: boolean; kids?: boolean;
+        };
+        if (typeof draft.channelId === "string") setChannelId(draft.channelId);
+        if (typeof draft.title === "string") setTitle(draft.title.slice(0, 180));
+        if (typeof draft.description === "string") setDescription(draft.description.slice(0, 5000));
+        if (typeof draft.tags === "string") setTags(draft.tags);
+        if (draft.visibility === "public" || draft.visibility === "unlisted" || draft.visibility === "private") setVisibility(draft.visibility);
+        if (typeof draft.comments === "boolean") setComments(draft.comments);
+        if (typeof draft.downloads === "boolean") setDownloads(draft.downloads);
+        if (typeof draft.kids === "boolean") setKids(draft.kids);
+      }
+    } catch {
+      // Ignore invalid or unavailable local drafts; publishing still works.
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        channelId, title, description, tags, visibility, comments, downloads, kids,
+      }));
+    } catch {
+      // Storage can be unavailable or full on some devices.
+    }
+  }, [draftLoaded, channelId, title, description, tags, visibility, comments, downloads, kids]);
   useEffect(() => {
     if (!isAuthenticated) {
       if (!loading) startLogin();
@@ -351,6 +391,36 @@ export default function ClipUploadPage() {
                   placeholder="Tell viewers what they are watching…"
                   className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"
                 />
+              </label>
+              <label className="block">
+                <span className="text-sm font-black text-white">Thumbnail / cover image</span>
+                <span className="mt-1 block text-xs text-slate-500">A frame is generated automatically. You can replace it with your own image.</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={e => {
+                    const selected = e.target.files?.[0];
+                    if (!selected) return;
+                    if (!selected.type.startsWith("image/")) {
+                      toast.error("Choose a JPG, PNG, or WebP image.");
+                      e.currentTarget.value = "";
+                      return;
+                    }
+                    if (selected.size > 8 * 1024 * 1024) {
+                      toast.error("Cover image must be 8 MB or smaller.");
+                      e.currentTarget.value = "";
+                      return;
+                    }
+                    setCover(selected);
+                  }}
+                  className="mt-2 block w-full text-sm text-slate-300 file:mr-3 file:rounded-full file:border-0 file:bg-violet-500/15 file:px-4 file:py-2 file:text-xs file:font-black file:text-violet-200"
+                />
+                {coverUrl && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <img src={coverUrl} alt="Selected cover preview" className="h-20 w-28 rounded-xl border border-white/10 object-cover" />
+                    <button type="button" onClick={() => { if (file) void thumb(file).then(t => { if (t) setCover(t); }); }} className="text-xs font-bold text-slate-400 underline">Regenerate automatic cover</button>
+                  </div>
+                )}
               </label>
               <label className="block">
                 <span className="text-sm font-black text-white">Hashtags</span>
