@@ -16,7 +16,7 @@ import {
   Volume2,
   X,
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
@@ -130,6 +130,7 @@ function ClipsLogo({ className = "size-9" }: { className?: string }) {
 
 export default function ClipsPage() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [videos, setVideos] = useState<SupabaseVideo[]>([]);
   const [channels, setChannels] = useState<Record<string, Channel>>({});
   const [active, setActive] = useState(0);
@@ -407,6 +408,15 @@ export default function ClipsPage() {
     window.setTimeout(() => {
       swipeLocked.current = false;
     }, 360);
+  }
+  function useCurrentSound() {
+    if (!current) return;
+    const params = new URLSearchParams({
+      soundVideoId: current.id,
+      soundTitle: current.title + " — " + (channel?.name || "HkTube Creator"),
+      soundUrl: current.videoUrl,
+    });
+    navigate("/clips/create?" + params.toString());
   }
   async function toggleSound() {
     const v = media.current;
@@ -778,8 +788,9 @@ export default function ClipsPage() {
                   aria-pressed={soundOn}
                 >
                   {soundOn ? <Volume2 className="size-4" /> : <Music2 className="size-4" />}
-                  {soundOn ? "Sound on" : "Use sound"}
+                  {soundOn ? "Sound on" : "Listen"}
                 </button>
+                <button type="button" onClick={useCurrentSound} className="mt-2 ml-2 inline-flex w-fit items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/20 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur-md" aria-label="Create a Clip using this sound"><Music2 className="size-4" />Use sound</button>
               </div>
               <div className="clips-action-rail absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-2 z-30 flex flex-col items-center gap-2 sm:bottom-16 sm:right-5">
                 <Action
