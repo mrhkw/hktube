@@ -139,7 +139,13 @@ export default function ClipsPage() {
   const [loading, setLoading] = useState(true);
   const [feedError, setFeedError] = useState("");
   const [commentsLoading, setCommentsLoading] = useState(false);
-  const [autoplayNext, setAutoplayNext] = useState(true);
+  const [autoplayNext, setAutoplayNext] = useState(() => {
+    try {
+      return localStorage.getItem("hktube-clips-autoplay-next") !== "false";
+    } catch {
+      return true;
+    }
+  });
   const [playing, setPlaying] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
   const [liked, setLiked] = useState(new Set<string>());
@@ -151,13 +157,6 @@ export default function ClipsPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [autoAdvance, setAutoAdvance] = useState(() => {
-    try {
-      return localStorage.getItem("hktube-clips-auto-advance") === "true";
-    } catch {
-      return false;
-    }
-  });
   const [lastTap, setLastTap] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -190,9 +189,12 @@ export default function ClipsPage() {
   }
   useEffect(() => { void loadClips(); }, [user?.id]);
   useEffect(() => {
-    const stored = localStorage.getItem("hktube-clips-autoplay-next");
-    if (stored != null) setAutoplayNext(stored !== "false");
-  }, []);
+    try {
+      localStorage.setItem("hktube-clips-autoplay-next", String(autoplayNext));
+    } catch {
+      // Playback remains available when browser storage is disabled.
+    }
+  }, [autoplayNext]);
   useEffect(() => {
     if (!user) return;
     void (async () => {
@@ -252,13 +254,6 @@ export default function ClipsPage() {
     const v = media.current;
     if (v) v.playbackRate = playbackRate;
   }, [playbackRate]);
-  useEffect(() => {
-    try {
-      localStorage.setItem("hktube-clips-auto-advance", String(autoAdvance));
-    } catch {
-      // Storage may be unavailable in private browsing; playback remains functional.
-    }
-  }, [autoAdvance]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (
@@ -392,12 +387,20 @@ export default function ClipsPage() {
       toast.success("Creator hidden from your recommendations");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not hide creator"); }
   }
-  function notInterested() {
+  async function notInterested() {
     if (!current) return;
+    if (user) {
+      try {
+        await setRecommendationFeedback(current.id, "not_interested", current.category);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not save recommendation feedback");
+        return;
+      }
+    }
     setHidden(p => new Set(p).add(current.id));
     setMore(false);
     setActive(i => Math.min(i + 1, Math.max(visible.length - 1, 0)));
-    toast.success("Recommendation adjusted");
+    toast.success(user ? "Recommendation feedback saved" : "Clip hidden for this session");
   }
   function retryMedia() {
     const v = media.current;
@@ -576,7 +579,7 @@ export default function ClipsPage() {
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => { const next = !autoplayNext; setAutoplayNext(next); localStorage.setItem("hktube-clips-autoplay-next", String(next)); }} className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"><span>Auto-next</span><span className="text-xs text-white/55">{autoplayNext ? "On" : "Off"}</span></button>
+            <button type="button" role="switch" aria-checked={autoplayNext} onClick={() => setAutoplayNext(value => !value)} className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"><span>Auto-play next Clip</span><span className={"rounded-full px-2 py-1 text-xs " + (autoplayNext ? "bg-violet-500 text-white" : "bg-white/10 text-white/60")}>{autoplayNext ? "On" : "Off"}</span></button>
             <button
               type="button"
               onClick={() => void toggleSound()}
@@ -584,18 +587,6 @@ export default function ClipsPage() {
             >
               <span>{soundOn ? "Mute sound" : "Use sound"}</span>
               <span className="text-xs text-white/55">{soundOn ? "On" : "Off"}</span>
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={autoAdvance}
-              onClick={() => setAutoAdvance(value => !value)}
-              className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"
-            >
-              <span>Auto-play next Clip</span>
-              <span className={"rounded-full px-2 py-1 text-xs " + (autoAdvance ? "bg-violet-500 text-white" : "bg-white/10 text-white/60")}>
-                {autoAdvance ? "On" : "Off"}
-              </span>
             </button>
           </div>
         )}
@@ -661,7 +652,7 @@ export default function ClipsPage() {
                 muted
                 autoPlay
                 playsInline
-                loop={!autoAdvance}
+                loop={!autoplayNext}
                 preload="metadata"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
@@ -705,7 +696,7 @@ export default function ClipsPage() {
                 }}
                 onEnded={() => {
                   void recordDiscoveryEvent({ eventType: "complete", objectType: "short", objectId: current.id }).catch(() => undefined);
-                  if (autoAdvance) stepClip(1);
+                  if (autoplayNext) stepClip(1);
                 }}
               />
               {mediaError && (
@@ -881,7 +872,7 @@ export default function ClipsPage() {
                   </div>
                   <button onClick={hideCreator} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Hide creator</button>
                   <button
-                    onClick={notInterested}
+                    onClick={() => void notInterested()}
                     className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
                   >
                     Not interested
@@ -964,11 +955,16 @@ export default function ClipsPage() {
             <div className="mt-4 flex gap-2 border-t border-white/10 pt-3">
               <input
                 value={comment}
+                maxLength={2000}
                 onChange={e => setComment(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === "Enter") void postComment();
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void postComment();
+                  }
                 }}
                 placeholder="Add a comment…"
+                aria-label="Add a comment"
                 className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none"
               />
               <button
