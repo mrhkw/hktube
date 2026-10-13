@@ -393,6 +393,36 @@ export default function ClipUploadPage() {
                 />
               </label>
               <label className="block">
+                <span className="text-sm font-black text-white">Thumbnail / cover image</span>
+                <span className="mt-1 block text-xs text-slate-500">A frame is generated automatically. You can replace it with your own image.</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={e => {
+                    const selected = e.target.files?.[0];
+                    if (!selected) return;
+                    if (!selected.type.startsWith("image/")) {
+                      toast.error("Choose a JPG, PNG, or WebP image.");
+                      e.currentTarget.value = "";
+                      return;
+                    }
+                    if (selected.size > 8 * 1024 * 1024) {
+                      toast.error("Cover image must be 8 MB or smaller.");
+                      e.currentTarget.value = "";
+                      return;
+                    }
+                    setCover(selected);
+                  }}
+                  className="mt-2 block w-full text-sm text-slate-300 file:mr-3 file:rounded-full file:border-0 file:bg-violet-500/15 file:px-4 file:py-2 file:text-xs file:font-black file:text-violet-200"
+                />
+                {coverUrl && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <img src={coverUrl} alt="Selected cover preview" className="h-20 w-28 rounded-xl border border-white/10 object-cover" />
+                    <button type="button" onClick={() => setCover(null)} className="text-xs font-bold text-slate-400 underline">Regenerate automatic cover</button>
+                  </div>
+                )}
+              </label>
+              <label className="block">
                 <span className="text-sm font-black text-white">Hashtags</span>
                 <input
                   value={tags}
