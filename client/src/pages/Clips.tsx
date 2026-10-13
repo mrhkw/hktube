@@ -503,67 +503,10 @@ export default function ClipsPage() {
             </button>
           </div>
         </div>
-        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.35rem)] z-40 flex -translate-x-1/2 items-center gap-4 text-white sm:gap-6">
-          <button
-            type="button"
-            aria-pressed={tab === "trending"}
-            onClick={() => { setTab("trending"); setActive(0); }}
-            className={"rounded-full px-1 py-2 text-[17px] transition-colors " + (tab === "trending" ? "border-b-2 border-white font-black text-white" : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")}
-          >Trending</button>
-          <button
-            type="button"
-            aria-pressed={tab === "explore"}
-            onClick={() => { setTab("explore"); setActive(0); }}
-            className={"rounded-full px-1 py-2 text-[17px] transition-colors " + (tab === "explore" ? "border-b-2 border-white font-black text-white" : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")}
-          >Explore</button>
-          <button
-            type="button"
-            aria-pressed={tab === "all"}
-            onClick={() => {
-              setTab("all");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-1 py-2 text-[17px] transition-colors " +
-              (tab === "all"
-                ? "border-b-2 border-white font-black text-white"
-                : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")
-            }
-          >
-            All
-          </button>
-          <button
-            type="button"
-            aria-pressed={tab === "for-you"}
-            onClick={() => {
-              setTab("for-you");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-1 py-2 text-[17px] transition-colors " +
-              (tab === "for-you"
-                ? "border-b-2 border-white font-black text-white"
-                : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")
-            }
-          >
-            For You
-          </button>
-          <button
-            type="button"
-            aria-pressed={tab === "following"}
-            onClick={() => {
-              setTab("following");
-              setActive(0);
-            }}
-            className={
-              "rounded-full px-1 py-2 text-[17px] transition-colors " +
-              (tab === "following"
-                ? "border-b-2 border-white font-black text-white"
-                : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")
-            }
-          >
-            Following
-          </button>
+        <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.25rem)] z-40 flex -translate-x-1/2 items-center gap-5 text-white sm:gap-6">
+          <button type="button" aria-pressed={tab === "for-you"} onClick={() => { setTab("for-you"); setActive(0); }} className={"whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " + (tab === "for-you" ? "border-white text-white" : "border-transparent text-white/70")}>For You</button>
+          <button type="button" aria-pressed={tab === "following"} onClick={() => { setTab("following"); setActive(0); }} className={"whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " + (tab === "following" ? "border-white text-white" : "border-transparent text-white/70")}>Following</button>
+          <button type="button" aria-pressed={tab === "trending"} onClick={() => { setTab("trending"); setActive(0); }} className={"whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " + (tab === "trending" ? "border-white text-white" : "border-transparent text-white/70")}>Trending</button>
         </div>
         <div className="clips-category-strip absolute left-0 right-0 top-[calc(env(safe-area-inset-top)+3.2rem)] z-30 hidden gap-2 overflow-x-auto px-4 pb-2 sm:flex sm:justify-center">
           {["all", ...Array.from(new Set(videos.map(v => String(v.category || "general").toLowerCase()))).slice(0, 6)].map(item => <button key={item} type="button" onClick={() => { setCategory(item); setActive(0); }} className={"shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold capitalize backdrop-blur-md " + (category === item ? "border-white bg-white text-black" : "border-white/20 bg-black/30 text-white")}>{item === "all" ? "All topics" : item}</button>)}
