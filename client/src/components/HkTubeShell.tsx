@@ -106,6 +106,8 @@ export function HkTubeShell({
   }
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
+    const nextMode = category === "shorts" ? "clip" : "video";
+    window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
     navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
   }
   function startLive() {
