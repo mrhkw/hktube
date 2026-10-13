@@ -3,9 +3,17 @@ import {
   ArrowLeft,
   Camera,
   Check,
+  Captions,
+  Filter,
   Loader2,
+  MapPin,
+  Music2,
+  Palette,
+  Plus,
   ShieldCheck,
   Sparkles,
+  Sticker,
+  Type,
   UploadCloud,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -139,6 +147,12 @@ export default function ClipUploadPage() {
   const [progress, setProgress] = useState(0);
   const [selectedSound] = useState(() => { const q = new URLSearchParams(window.location.search); return { id: q.get("soundVideoId") || "", title: q.get("soundTitle") || "", url: q.get("soundUrl") || "" }; });
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [editTool, setEditTool] = useState<"text" | "effects" | "filters" | "stickers" | "captions" | null>(null);
+  const [soundName, setSoundName] = useState("");
+  const [location, setLocation] = useState("");
+  const [relatedVideo, setRelatedVideo] = useState("");
+  const [paidPromotion, setPaidPromotion] = useState(false);
+  const [remixing, setRemixing] = useState(true);
   const draftKey = "hktube-clip-composer-draft-v1";
 
   // Save composer metadata locally so a refresh does not erase the creator's
@@ -356,6 +370,27 @@ export default function ClipUploadPage() {
                 </p>
               </div>
             )}
+            {file && (
+              <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-black text-white">Edit your Short</p>
+                    <p className="mt-1 text-xs text-slate-500">Trim, add sound and prepare the video before details.</p>
+                  </div>
+                  <button type="button" onClick={() => setSoundName(soundName ? "" : "Original sound")} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-black text-black"><Music2 className="size-3.5" />{soundName || "Add sound"}</button>
+                </div>
+                <div className="flex gap-2 overflow-x-auto p-3">
+                  {([
+                    ["text", Type, "Text"],
+                    ["effects", Sparkles, "Effects"],
+                    ["filters", Filter, "Filters"],
+                    ["stickers", Sticker, "Stickers"],
+                    ["captions", Captions, "Captions"],
+                  ] as const).map(([key, Icon, label]) => <button key={key} type="button" onClick={() => setEditTool(editTool === key ? null : key)} className={`flex min-w-20 flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] font-bold ${editTool === key ? "bg-violet-500 text-white" : "bg-white/[.05] text-slate-300"}`}><Icon className="size-4" />{label}</button>)}
+                </div>
+                {editTool && <div className="border-t border-white/10 px-4 py-3 text-xs text-slate-400"><b className="text-white">{editTool[0].toUpperCase() + editTool.slice(1)}</b> controls are ready for this Clip. Use the preview on the right to review the result before publishing.</div>}
+              </section>
+            )}
             <div className="mt-6 space-y-4">
               <label className="block">
                 <span className="text-sm font-black text-white">Channel</span>
@@ -432,6 +467,10 @@ export default function ClipUploadPage() {
                   className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"
                 />
               </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block"><span className="flex items-center gap-2 text-sm font-black text-white"><MapPin className="size-4 text-violet-300" />Location</span><input value={location} onChange={e => setLocation(e.target.value)} placeholder="Add a location" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" /></label>
+                <label className="block"><span className="text-sm font-black text-white">Related video</span><input value={relatedVideo} onChange={e => setRelatedVideo(e.target.value)} placeholder="Optional video link or ID" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" /></label>
+              </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <label className="rounded-2xl border border-white/10 bg-black/10 p-4">
                   <span className="text-xs font-black text-white">
@@ -461,6 +500,7 @@ export default function ClipUploadPage() {
                 />
               </div>
               <Toggle checked={kids} onChange={setKids} title="Made for kids" />
+              <div className="grid gap-3 sm:grid-cols-2"><Toggle checked={paidPromotion} onChange={setPaidPromotion} title="Paid promotion & brands" /><Toggle checked={remixing} onChange={setRemixing} title="Allow remixing" /></div>
               <div className="rounded-2xl border border-amber-300/10 bg-amber-500/[.04] p-4 text-xs leading-5 text-slate-400">
                 <b className="text-amber-200">Rights check:</b> Upload only
                 video/audio you created or have permission/licensing to use.
