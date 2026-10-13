@@ -29,6 +29,7 @@ import {
   Video,
   HelpCircle,
   Camera,
+  Radio,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -73,7 +74,7 @@ export function HkTubeShell({
   });
   const [familyMode, setFamilyMode] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<"menu" | "post" | "story">(
+  const [createMode, setCreateMode] = useState<"menu" | "post">(
     "menu"
   );
   const [postBody, setPostBody] = useState("");
@@ -130,6 +131,10 @@ export function HkTubeShell({
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
     navigate(category === "shorts" ? "/clips/create" : "/upload");
+  }
+  function startLive() {
+    setCreateOpen(false);
+    navigate("/live");
   }
   function submitPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -301,21 +306,15 @@ export function HkTubeShell({
       </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none">
+        <DialogContent className="max-w-xl border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[2rem]">
           <DialogHeader>
             <DialogTitle className="text-white">
-              {createMode === "menu"
-                ? "Create on HkTube"
-                : createMode === "post"
-                  ? "Create a post"
-                  : "Create a story"}
+              {createMode === "menu" ? "Create" : "Create a post"}
             </DialogTitle>
             <DialogDescription className="text-slate-400">
               {createMode === "menu"
-                ? "Choose what you want to publish."
-                : createMode === "post"
-                  ? "Share something with your audience."
-                  : "Share a story that expires after 24 hours."}
+                ? "Choose how you want to create on HkTube."
+                : "Share something with your audience."}
             </DialogDescription>
           </DialogHeader>
           {createMode === "menu" ? (
@@ -329,9 +328,9 @@ export function HkTubeShell({
                   <Video className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Long Video</span>
+                  <span className="block font-bold text-white">Upload a video</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Publish a full-length video
+                    Upload a long video from your device
                   </span>
                 </span>
               </button>
@@ -344,9 +343,9 @@ export function HkTubeShell({
                   <MonitorPlay className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Clips</span>
+                  <span className="block font-bold text-white">Short</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Create a vertical short video in Clips Studio
+                    Record or upload a vertical Clip
                   </span>
                 </span>
               </button>
@@ -367,19 +366,16 @@ export function HkTubeShell({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setCreateOpen(false);
-                  navigate("/stories");
-                }}
-                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left transition hover:border-amber-300/35 hover:bg-amber-400/[.06]"
+                onClick={startLive}
+                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left transition hover:border-rose-300/35 hover:bg-rose-500/[.08]"
               >
-                <span className="grid size-11 place-items-center rounded-xl bg-amber-400/10 text-amber-200">
-                  <Camera className="size-5" />
+                <span className="grid size-11 place-items-center rounded-xl bg-rose-500/15 text-rose-200">
+                  <Radio className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Story</span>
+                  <span className="block font-bold text-white">Live</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Share a 24-hour story
+                    Set up a live stream from your camera
                   </span>
                 </span>
               </button>
