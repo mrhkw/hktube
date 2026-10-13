@@ -247,24 +247,24 @@ export default function UploadStudioPage() {
   }
 
   return (
-    <HkTubeShell title={mode === "clip" ? "Create a Short" : "Upload a video"} subtitle="Upload and publish your video with the same clear creator flow.">
+    <div className="hktube-upload-reference"><HkTubeShell title={mode === "clip" ? "Create a Short" : "Upload a video"} subtitle="Upload and publish your video with the same clear creator flow.">
       <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-5 sm:px-7 lg:px-10">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={() => navigate("/")} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/[.06]"><ArrowLeft className="size-4" />Back</button>
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-400/[.06] px-3 py-2 text-xs font-bold text-emerald-200"><ShieldCheck className="size-4" />Secure upload · account ownership</div>
         </div>
 
-        <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20">
+        <section className="hktube-upload-card overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20">
           <header className="border-b border-white/10 bg-gradient-to-r from-violet-500/15 via-transparent to-cyan-400/[.08] p-5 sm:p-8">
             <p className="text-[11px] font-black uppercase tracking-[.22em] text-cyan-300">ADD DETAILS</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">{mode === "clip" ? "Create a Short" : "Upload a video"}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{mode === "clip" ? "Choose a vertical video, edit it, add sound and publish it as a Short." : "Choose a video from your gallery, set its cover and add publishing details."}</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => switchMode("video")} aria-pressed={mode === "video"} className={"flex items-center gap-4 rounded-2xl border p-4 text-left transition " + (mode === "video" ? "border-violet-300/50 bg-violet-500/15" : "border-white/10 bg-black/15 hover:border-white/20")}>
+              <button type="button" onClick={() => switchMode("video")} aria-pressed={mode === "video"} className={"hktube-upload-mode flex items-center gap-4 rounded-2xl border p-4 text-left transition " + (mode === "video" ? "border-violet-300/50 bg-violet-500/15" : "border-white/10 bg-black/15 hover:border-white/20")}>
                 <span className="grid size-12 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><FileVideo2 className="size-6" /></span>
                 <span><span className="block font-black text-white">Upload a video</span><span className="mt-1 block text-xs text-slate-400">Full video · cover, title and details</span></span>
               </button>
-              <button type="button" onClick={() => switchMode("clip")} aria-pressed={mode === "clip"} className={"flex items-center gap-4 rounded-2xl border p-4 text-left transition " + (mode === "clip" ? "border-fuchsia-300/50 bg-fuchsia-500/10" : "border-white/10 bg-black/15 hover:border-white/20")}>
+              <button type="button" onClick={() => switchMode("clip")} aria-pressed={mode === "clip"} className={"hktube-upload-mode flex items-center gap-4 rounded-2xl border p-4 text-left transition " + (mode === "clip" ? "border-fuchsia-300/50 bg-fuchsia-500/10" : "border-white/10 bg-black/15 hover:border-white/20")}>
                 <span className="grid size-12 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200"><Smartphone className="size-6" /></span>
                 <span><span className="block font-black text-white">Create a Short</span><span className="mt-1 block text-xs text-slate-400">Portrait · camera, trim and edit</span></span>
               </button>
@@ -273,9 +273,9 @@ export default function UploadStudioPage() {
 
           <form onSubmit={event => void publish(event)} className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
             <div className="min-w-0 space-y-5">
-              <section className="rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
+              <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><UploadCloud className="size-5" /></span><div><h2 className="font-black text-white">Select from gallery</h2><p className="mt-1 text-xs text-slate-500">MP4/H.264 or WebM · up to 900 MB · resumable transfer</p></div></div>
-                <label className="mt-4 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[.025] p-5 text-center transition hover:border-violet-300/40 hover:bg-violet-500/[.04]">
+                <label className="hktube-gallery-drop mt-4 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[.025] p-5 text-center transition hover:border-violet-300/40 hover:bg-violet-500/[.04]">
                   <input type="file" accept="video/mp4,video/webm" className="sr-only" disabled={busy} onChange={event => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
                   <span className="grid size-14 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">{file ? <CheckCircle2 className="size-7" /> : <Video className="size-7" />}</span>
                   <span className="mt-3 break-all text-sm font-black text-white">{file ? file.name : "Select a video from your gallery"}</span>
@@ -286,7 +286,7 @@ export default function UploadStudioPage() {
 
               {file && info && <MediaEditor file={file} isShort={mode === "clip"} onApply={edited => { void selectVideo(edited); }} />}
 
-              <section className="rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
+              <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Add details</h2>
                 <div className="mt-4 space-y-4">
                   <label className="block"><span className="flex items-center justify-between gap-3 text-sm font-bold text-white"><span>Title *</span><span className="text-xs text-slate-500">{title.length}/100</span></span><input value={title} onChange={event => setTitle(event.target.value.slice(0,100))} maxLength={100} required className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder={mode === "clip" ? "Caption your Short" : "Create a title (type @ to mention a channel)"} /></label>
@@ -301,7 +301,7 @@ export default function UploadStudioPage() {
             </div>
 
             <aside className="min-w-0 space-y-5">
-              <section className="rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
+              <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Cover</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">A frame is generated from your video. You can replace it with your own image.</p>
                 <div className="mt-4 flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-black/40">
@@ -311,7 +311,7 @@ export default function UploadStudioPage() {
                 {thumbnailSource === "custom" && <button type="button" onClick={() => { if(file) void thumbnailAt(file).then(value => {setThumbnail(value);setThumbnailSource("automatic");}); }} className="mt-2 text-xs font-bold text-violet-200 underline">Regenerate automatic cover</button>}
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
+              <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Publishing settings</h2>
                 <label className="mt-4 block"><span className="text-sm font-bold text-white">Your channel</span><select value={channelId} onChange={event => setChannelId(event.target.value)} disabled={channelsLoading || busy || !channels.length} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-3 py-3 text-sm text-white"><option value="">{channelsLoading ? "Loading channels…" : "Select your channel"}</option>{channels.map(channel => <option key={channel.id} value={channel.id}>@{channel.handle} · {channel.displayName}</option>)}</select></label>
                 <label className="mt-4 block"><span className="text-sm font-bold text-white">Visibility</span><select value={visibility} onChange={event => setVisibility(event.target.value as typeof visibility)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-3 py-3 text-sm text-white"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select></label>
@@ -333,7 +333,7 @@ export default function UploadStudioPage() {
 
               {busy && <div className="rounded-xl border border-violet-300/15 bg-violet-500/[.06] p-4"><div className="flex items-center justify-between gap-3 text-xs font-bold text-white"><span>Uploading and saving</span><span>{progress}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-black/40"><div className="h-full rounded-full bg-violet-400 transition-all" style={{ width: progress + "%" }} /></div><button type="button" onClick={() => abortRef.current?.abort()} className="mt-3 text-xs font-bold text-rose-200 underline">Cancel upload</button></div>}
 
-              <button type="submit" disabled={busy || !file || !info || !title.trim() || !channelId || channelsLoading} className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-6 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="submit" disabled={busy || !file || !info || !title.trim() || !channelId || channelsLoading} className="hktube-sticky-upload inline-flex min-h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-6 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
                 {busy ? <><Loader2 className="mr-2 size-4 animate-spin" />Uploading {progress}%…</> : <><UploadCloud className="mr-2 size-4" />{mode === "clip" ? "Upload Short" : "Upload"}</>}
               </button>
               {!channelsLoading && !channels.length && <button type="button" onClick={() => navigate("/channel/create")} className="w-full rounded-full border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/[.04]">Create HkTube channel first</button>}
@@ -341,6 +341,6 @@ export default function UploadStudioPage() {
           </form>
         </section>
       </main>
-    </HkTubeShell>
+    </HkTubeShell></div>
   );
 }

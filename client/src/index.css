@@ -1409,3 +1409,28 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
     line-height: 12px !important;
   }
 }
+
+/* YouTube-style creator surfaces from the supplied mobile reference. */
+.hktube-create-sheet [data-radix-dialog-close] { color: #6b7280; }
+.hktube-create-sheet svg { color: #7c3aed; }
+.hktube-create-option { min-height: 64px; }
+.hktube-upload-reference { color-scheme: light; }
+@media (max-width: 767px) {
+  .hktube-upload-reference { background: #f8fafc !important; color: #111827 !important; }
+  .hktube-upload-reference > main { padding: 16px 12px 88px !important; }
+  .hktube-upload-reference .hktube-upload-card { border-color: #e5e7eb !important; background: #fff !important; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
+  .hktube-upload-reference .hktube-upload-card h2,
+  .hktube-upload-reference .hktube-upload-card h1,
+  .hktube-upload-reference .hktube-upload-card label,
+  .hktube-upload-reference .hktube-upload-card span { color: #111827; }
+  .hktube-upload-reference .hktube-upload-card p,
+  .hktube-upload-reference .hktube-upload-card .text-slate-500,
+  .hktube-upload-reference .hktube-upload-card .text-slate-400 { color: #6b7280 !important; }
+  .hktube-upload-reference input,
+  .hktube-upload-reference textarea,
+  .hktube-upload-reference select { border-color: #d1d5db !important; background: #fff !important; color: #111827 !important; }
+  .hktube-upload-reference .hktube-upload-mode { border-color: #ddd6fe !important; background: #f5f3ff !important; }
+  .hktube-upload-reference .hktube-upload-mode span { color: #111827 !important; }
+  .hktube-upload-reference .hktube-gallery-drop { min-height: 170px; border-color: #c4b5fd !important; background: #faf5ff !important; }
+  .hktube-upload-reference .hktube-sticky-upload { position: sticky; bottom: 72px; z-index: 10; background: #111827 !important; color: #fff !important; box-shadow: 0 10px 24px rgba(15,23,42,.22); }
+}
