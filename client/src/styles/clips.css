@@ -794,3 +794,12 @@ body.hktube-clips-document nav[aria-label="Mobile navigation"] {
   .hk-clips-creator-avatar img { animation: none; }
   .hk-clips-vinyl { animation: none; }
 }
+
+/* Spec: category discovery stays light and usable without changing the existing Clips icon set. */
+.clips-category-strip { scrollbar-width: none; }
+.clips-category-strip::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .hktube-clips-page *,
+  .hktube-clips-page *::before,
+  .hktube-clips-page *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}

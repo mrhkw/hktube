@@ -21,7 +21,7 @@ import { HkTubeShell } from "@/components/HkTubeShell";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { type SupabaseVideo } from "@/lib/supabaseVideos";
-import { rankPublicVideos, recordDiscoveryEvent } from "@/lib/supabaseDiscovery";
+import { rankPublicVideos, recordDiscoveryEvent, setRecommendationFeedback } from "@/lib/supabaseDiscovery";
 import {
   addVideoComment,
   listVideoComments,
@@ -134,8 +134,12 @@ export default function ClipsPage() {
   const [videos, setVideos] = useState<SupabaseVideo[]>([]);
   const [channels, setChannels] = useState<Record<string, Channel>>({});
   const [active, setActive] = useState(0);
-  const [tab, setTab] = useState<"all" | "for-you" | "following">("for-you");
+  const [tab, setTab] = useState<"all" | "for-you" | "following" | "explore" | "trending">("for-you");
+  const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [feedError, setFeedError] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [autoplayNext, setAutoplayNext] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
   const [liked, setLiked] = useState(new Set<string>());
@@ -165,43 +169,30 @@ export default function ClipsPage() {
   const [mediaError, setMediaError] = useState(false);
   const [mediaReady, setMediaReady] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
-  useEffect(() => {
-    let live = true;
-    void (async () => {
-      try {
-        const data = await rankPublicVideos({
-          shorts: true,
-          limit: 32,
-          userId: user?.id == null ? undefined : String(user.id),
-        });
-        if (!live) return;
-        setVideos(data);
-        const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
-        if (ids.length) {
-          const { data: rows } = await supabase
-            .from("channels")
-            .select(
-              "id,handle,name,avatar_url,subscriber_count,verification_status"
-            )
-            .in("id", ids);
-          if (live)
-            setChannels(
-              Object.fromEntries(
-                (rows ?? []).map(r => [String(r.id), r as Channel])
-              )
-            );
-        }
-      } catch (e) {
-        if (live)
-          toast.error(e instanceof Error ? e.message : "Clips could not load");
-      } finally {
-        if (live) setLoading(false);
+  async function loadClips() {
+    setLoading(true);
+    setFeedError("");
+    try {
+      const data = await rankPublicVideos({ shorts: true, limit: 48, query: search.trim() || undefined, userId: user?.id == null ? undefined : String(user.id) });
+      setVideos(data);
+      const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
+      if (ids.length) {
+        const { data: rows } = await supabase.from("channels").select("id,handle,name,avatar_url,subscriber_count,verification_status").in("id", ids);
+        setChannels(Object.fromEntries((rows ?? []).map(r => [String(r.id), r as Channel])));
       }
-    })();
-    return () => {
-      live = false;
-    };
-  }, [user?.id]);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Clips could not load";
+      setFeedError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => { void loadClips(); }, [user?.id]);
+  useEffect(() => {
+    const stored = localStorage.getItem("hktube-clips-autoplay-next");
+    if (stored != null) setAutoplayNext(stored !== "false");
+  }, []);
   useEffect(() => {
     if (!user) return;
     void (async () => {
@@ -226,23 +217,15 @@ export default function ClipsPage() {
       .sort((a, b) => b.s - a.s)
       .map(x => x.v);
     if (tab === "following") return list.filter(v => followed.has(v.channelId));
-    if (tab === "all") {
-      return [...list].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    }
+    if (tab === "all" || tab === "explore") return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (tab === "trending") return [...list].sort((a, b) => (b.viewCount + b.likesCount * 8) - (a.viewCount + a.likesCount * 8));
     return list;
   }, [videos, liked, saved, followed, hidden, tab]);
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return q
-      ? ranked.filter(v =>
-          (v.title + " " + (v.description || "") + " " + v.tags.join(" "))
-            .toLowerCase()
-            .includes(q)
-        )
-      : ranked;
-  }, [ranked, search]);
+    const filtered = category === "all" ? ranked : ranked.filter(v => String(v.category || "general").toLowerCase() === category);
+    return q ? filtered.filter(v => (v.title + " " + (v.description || "") + " " + v.tags.join(" ")).toLowerCase().includes(q)) : filtered;
+  }, [ranked, search, category]);
   const current = visible[active];
   const channel = current ? channels[current.channelId] : undefined;
   useEffect(() => {
@@ -369,11 +352,14 @@ export default function ClipsPage() {
   async function openComments() {
     if (!current) return;
     try {
-      setComments(await listVideoComments(current.id));
+      setCommentsLoading(true);
       setCommentsOpen(true);
+      setComments(await listVideoComments(current.id));
       void recordDiscoveryEvent({ eventType: "comment_open", objectType: "short", objectId: current.id }).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Comments could not load");
+    } finally {
+      setCommentsLoading(false);
     }
   }
   async function postComment() {
@@ -396,6 +382,15 @@ export default function ClipsPage() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Report failed");
     }
+  }
+  async function hideCreator() {
+    if (!current || !(await auth())) return;
+    try {
+      await setRecommendationFeedback(current.id, "hide_creator");
+      setHidden(p => new Set(p).add(current.id));
+      setMore(false);
+      toast.success("Creator hidden from your recommendations");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not hide creator"); }
   }
   function notInterested() {
     if (!current) return;
@@ -469,6 +464,18 @@ export default function ClipsPage() {
         <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 flex -translate-x-1/2 items-center gap-5 text-white sm:gap-6">
           <button
             type="button"
+            aria-pressed={tab === "trending"}
+            onClick={() => { setTab("trending"); setActive(0); }}
+            className={"rounded-full px-1 py-2 text-[17px] transition-colors " + (tab === "trending" ? "border-b-2 border-white font-black text-white" : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")}
+          >Trending</button>
+          <button
+            type="button"
+            aria-pressed={tab === "explore"}
+            onClick={() => { setTab("explore"); setActive(0); }}
+            className={"rounded-full px-1 py-2 text-[17px] transition-colors " + (tab === "explore" ? "border-b-2 border-white font-black text-white" : "border-b-2 border-transparent font-semibold text-white/75 hover:text-white")}
+          >Explore</button>
+          <button
+            type="button"
             aria-pressed={tab === "all"}
             onClick={() => {
               setTab("all");
@@ -515,6 +522,9 @@ export default function ClipsPage() {
           >
             Following
           </button>
+        </div>
+        <div className="clips-category-strip absolute left-0 right-0 top-[calc(env(safe-area-inset-top)+3.7rem)] z-30 flex gap-2 overflow-x-auto px-4 pb-2 sm:justify-center">
+          {["all", ...Array.from(new Set(videos.map(v => String(v.category || "general").toLowerCase()))).slice(0, 6)].map(item => <button key={item} type="button" onClick={() => { setCategory(item); setActive(0); }} className={"shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold capitalize backdrop-blur-md " + (category === item ? "border-white bg-white text-black" : "border-white/20 bg-black/30 text-white")}>{item === "all" ? "All topics" : item}</button>)}
         </div>
         {searchOpen && (
           <div className="absolute left-4 right-4 top-16 z-50 flex items-center rounded-2xl border border-white/10 bg-black/85 p-2 backdrop-blur-xl">
@@ -566,6 +576,7 @@ export default function ClipsPage() {
                 </button>
               ))}
             </div>
+            <button type="button" onClick={() => { const next = !autoplayNext; setAutoplayNext(next); localStorage.setItem("hktube-clips-autoplay-next", String(next)); }} className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"><span>Auto-next</span><span className="text-xs text-white/55">{autoplayNext ? "On" : "Off"}</span></button>
             <button
               type="button"
               onClick={() => void toggleSound()}
@@ -599,19 +610,12 @@ export default function ClipsPage() {
           <div className="grid h-full place-items-center p-6 text-center">
             <ClipsLogo className="mx-auto size-16" />
             <h2 className="mt-5 text-xl font-black">
-              {tab === "following"
-                ? "No Clips from followed creators"
-                : "No Clips available"}
+              {feedError ? "Clips could not load" : tab === "following" ? "No Clips from followed creators" : "No Clips available"}
             </h2>
             <p className="mt-2 max-w-sm text-sm text-slate-400">
               Publish a vertical Clip or follow creators to build the feed.
             </p>
-            <Link
-              href="/upload?category=shorts"
-              className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black"
-            >
-              Create a Clip
-            </Link>
+            {feedError ? <button type="button" onClick={() => void loadClips()} className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black">Retry</button> : <Link href="/upload?category=shorts" className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black">Create a Clip</Link>}
           </div>
         ) : (
           <div
@@ -875,6 +879,7 @@ export default function ClipsPage() {
                   <div className="px-3 py-2 text-xs font-semibold text-white/60">
                     {compact(current.viewCount)} views · {ago(current.createdAt)}
                   </div>
+                  <button onClick={hideCreator} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Hide creator</button>
                   <button
                     onClick={notInterested}
                     className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
@@ -936,7 +941,7 @@ export default function ClipsPage() {
               </button>
             </div>
             <div className="mt-4 flex-1 overflow-y-auto space-y-4">
-              {comments.length ? (
+              {commentsLoading ? <p className="py-10 text-center text-sm text-slate-500">Loading comments…</p> : comments.length ? (
                 comments.map(c => (
                   <div key={c.id} className="flex gap-3">
                     <div className="grid size-9 shrink-0 place-items-center rounded-full bg-violet-500 font-black">
