@@ -447,17 +447,8 @@ export default function ClipsPage() {
       <div className="hktube-clips-page fixed inset-0 z-10 overflow-hidden bg-black text-white">
         <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-4 pb-10 pt-[max(12px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setSettingsOpen(v => !v);
-                setSearchOpen(false);
-              }}
-              className="grid size-11 place-items-center rounded-full text-white"
-              aria-label="Clips player settings"
-              aria-expanded={settingsOpen}
-            >
-              <Settings2 className="size-6" />
-            </button>
+            {/* Player settings live in the More menu, so the top bar keeps a
+                single control the way TikTok's Clips header does. */}
             <button
               onClick={() => {
                 setSearchOpen(v => !v);
@@ -737,7 +728,7 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-20 sm:left-6">
+              <div className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 text-white sm:bottom-20 sm:left-6">
                 <div className="flex items-center gap-2.5">
                   <Link
                     href={
@@ -936,6 +927,16 @@ export default function ClipsPage() {
                   >
                     <Send className="size-4" />
                     Copy/share link
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMore(false);
+                      setSettingsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
+                  >
+                    <Settings2 className="size-4" />
+                    Player settings
                   </button>
                 </div>
               )}

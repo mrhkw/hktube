@@ -418,33 +418,23 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
 .hktube-clips-page button {
   color: #fff;
 }
-.hktube-clips-page .clips-action {
+/* The rail renders the TikTok-style `.hk-clips-*` control set from
+   `styles/clips.css`. These keep its press/confirm feedback consistent with the
+   rest of the page. */
+.hktube-clips-page .hk-clips-action {
   transition:
     transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
     opacity 180ms ease,
     background-color 180ms ease;
 }
-.hktube-clips-page .clips-action:active {
+.hktube-clips-page .hk-clips-action:active {
   transform: scale(0.9);
 }
-.hktube-clips-page .clips-action:hover {
+.hktube-clips-page .hk-clips-action:hover {
   transform: translateY(-3px) scale(1.04);
 }
-.hktube-clips-page .clips-action-active {
+.hktube-clips-page .hk-clips-action.is-active {
   animation: clips-action-pop 220ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.hktube-clips-page .clips-action > span:first-child,
-.hktube-clips-page .clips-action span:first-child {
-  width: 48px !important;
-  height: 48px !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-.hktube-clips-page .clips-action-active > span:first-child,
-.hktube-clips-page .clips-action-active span:first-child {
-  background: transparent !important;
 }
 @keyframes clips-action-pop {
   0% {
@@ -1347,5 +1337,67 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
   .hktube-clips-page .hktube-clips-viewport > img {
     width: 100% !important;
     height: 100% !important;
+  }
+}
+
+/* One mobile navigation contract for Home, Clips, Library, Profile and settings. */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] {
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    min-height: calc(60px + env(safe-area-inset-bottom)) !important;
+    padding: 0 8px env(safe-area-inset-bottom) !important;
+    align-items: center !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > a,
+  nav.fixed[aria-label="Mobile navigation"] > button {
+    height: 56px !important;
+    min-height: 56px !important;
+    gap: 2px !important;
+    padding: 3px 2px !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > a svg,
+  nav.fixed[aria-label="Mobile navigation"] > button svg {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > button > span:first-child {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
+  nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
+    font-size: 9px !important;
+    line-height: 12px !important;
+  }
+  .hktube-clips-page .clips-action-rail {
+    bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
+    gap: 0.1rem !important;
+  }
+  /* Compact rail on phones, including the avatar and the sound disc that the
+     TikTok-style rail adds. */
+  .hktube-clips-page .hk-clips-action {
+    min-width: 46px !important;
+    min-height: 50px !important;
+  }
+  .hktube-clips-page .hk-clips-action-icon {
+    width: 40px !important;
+    height: 38px !important;
+  }
+  .hktube-clips-page .hk-clips-action-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .hktube-clips-page .hk-clips-action-label {
+    font-size: 10px !important;
+    line-height: 12px !important;
+  }
+  .hktube-clips-page .hk-clips-profile-action,
+  .hktube-clips-page .hk-clips-vinyl {
+    width: 46px !important;
+    height: 46px !important;
   }
 }
