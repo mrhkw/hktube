@@ -9,7 +9,12 @@ export function UgcTermsGate() {
   const [location] = useLocation();
   const [accepted, setAccepted] = useState(() => localStorage.getItem(KEY) === "accepted");
   // Viewing public content must remain friction-free; the gate is only for UGC creation surfaces.
-  const applies = location === "/upload" || location === "/channel/create" || location === "/posts";
+  const applies =
+    location === "/upload" ||
+    location === "/channel/create" ||
+    location === "/posts" ||
+    // The creation studio publishes from /create, so the gate must cover it.
+    location.startsWith("/create");
   useEffect(() => { if (localStorage.getItem(KEY) === "accepted") setAccepted(true); }, [location]);
   if (!applies || accepted) return null;
   return <div className="fixed inset-0 z-[75] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="ugc-terms-title">

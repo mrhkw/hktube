@@ -594,7 +594,7 @@ export default function ClipsPage() {
               Publish a vertical Clip or follow creators to build the feed.
             </p>
             <Link
-              href="/upload?category=shorts"
+              href="/create?category=shorts"
               className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black"
             >
               Create a Clip

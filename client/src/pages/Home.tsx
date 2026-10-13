@@ -20,7 +20,7 @@ const categories = [
 
 const footerGroups = [
   { title: "Explore", links: [["Home", "/"], ["Clips", "/clips"], ["Trending", "/trending"], ["Posts", "/posts"]] },
-  { title: "Create", links: [["Upload video", "/upload"], ["Creator Studio", "/studio"], ["Create channel", "/channel/create"], ["Creator AI", "/studio/ai"]] },
+  { title: "Create", links: [["Upload video", "/create"], ["Creator Studio", "/studio"], ["Create channel", "/channel/create"], ["Creator AI", "/studio/ai"]] },
   { title: "HkTube", links: [["About", "/about"], ["Contact", "/contact"], ["Settings", "/settings"], ["Advertising", "/advertising"]] },
   { title: "Policies", links: [["Privacy Policy", "/privacy"], ["Terms of Use", "/terms"], ["Cookie Notice", "/cookies"], ["Community Guidelines", "/community"]] },
 ];
@@ -48,7 +48,8 @@ export default function Home() {
   const isLoading = latestQuery.isLoading && !loadingTimedOut;
   const openUpload = (category: "regular" | "shorts") => {
     setCreateOpen(false);
-    navigate(`/upload?category=${category}`);
+    // One creation flow for the whole site: the studio handles both framings.
+    navigate(`/create?category=${category}`);
   };
 
   return (
@@ -159,7 +160,7 @@ export default function Home() {
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-neutral-500 md:text-slate-400">
                   There are no public videos yet. Upload an original video and it will appear here after publishing.
                 </p>
-                <Link href="/upload" className="mt-5 inline-flex items-center rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white md:bg-white md:text-slate-950">
+                <Link href="/create" className="mt-5 inline-flex items-center rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white md:bg-white md:text-slate-950">
                   Upload a video
                 </Link>
               </div>
@@ -197,7 +198,7 @@ export default function Home() {
                 <h2 className="mt-1.5 text-2xl font-black text-white">Have a video worth sharing?</h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">Publish your own original video and start building a HkTube audience.</p>
               </div>
-              <Link href="/upload" className="inline-flex shrink-0 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-950">
+              <Link href="/create" className="inline-flex shrink-0 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-950">
                 Upload video <ArrowRight className="ml-2 size-4" />
               </Link>
             </div>

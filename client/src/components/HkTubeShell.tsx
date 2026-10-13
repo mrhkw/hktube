@@ -127,6 +127,7 @@ export function HkTubeShell({
     "/index.html",
     "/app",
     "/upload",
+    "/create",
     "/library",
     "/profile",
   ].includes(location);
