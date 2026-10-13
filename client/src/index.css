@@ -1349,3 +1349,63 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
     height: 100% !important;
   }
 }
+
+/* One mobile navigation contract for Home, Clips, Library, Profile and settings. */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] {
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    min-height: calc(60px + env(safe-area-inset-bottom)) !important;
+    padding: 0 8px env(safe-area-inset-bottom) !important;
+    align-items: center !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > a,
+  nav.fixed[aria-label="Mobile navigation"] > button {
+    height: 56px !important;
+    min-height: 56px !important;
+    gap: 2px !important;
+    padding: 3px 2px !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > a svg,
+  nav.fixed[aria-label="Mobile navigation"] > button svg {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > button > span:first-child {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
+  nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
+    font-size: 9px !important;
+    line-height: 12px !important;
+  }
+  .hktube-clips-page .clips-action-rail {
+    bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
+    gap: 0.1rem !important;
+  }
+  .hktube-clips-page .clips-action,
+  .hktube-clips-page .clips-sound-action {
+    min-width: 42px !important;
+    min-height: 46px !important;
+  }
+  .hktube-clips-page .clips-action > span:first-child,
+  .hktube-clips-page .clips-action span:first-child,
+  .hktube-clips-page .clips-sound-action > span:first-child {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .hktube-clips-page .clips-action > span:first-child svg,
+  .hktube-clips-page .clips-sound-action > span:first-child svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .hktube-clips-page .clips-action > span:last-child,
+  .hktube-clips-page .clips-sound-action > span:last-child {
+    font-size: 10px !important;
+    line-height: 12px !important;
+  }
+}

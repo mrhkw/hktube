@@ -442,17 +442,6 @@ export default function ClipsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                setSettingsOpen(v => !v);
-                setSearchOpen(false);
-              }}
-              className="grid size-11 place-items-center rounded-full text-white"
-              aria-label="Clips player settings"
-              aria-expanded={settingsOpen}
-            >
-              <Settings2 className="size-6" />
-            </button>
-            <button
-              onClick={() => {
                 setSearchOpen(v => !v);
                 setSettingsOpen(false);
               }}
@@ -726,7 +715,7 @@ export default function ClipsPage() {
                   <Play className="ml-1 size-7 fill-current" />
                 </button>
               )}
-              <div className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 sm:bottom-20 sm:left-6">
+              <div className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] left-4 right-20 z-20 text-white sm:bottom-20 sm:left-6">
                 <div className="flex items-center gap-2.5">
                   <Link
                     href={
@@ -746,7 +735,7 @@ export default function ClipsPage() {
                       "HK"
                     )}
                   </Link>
-                  <span className="min-w-0 truncate font-black text-sm">
+                  <span className="min-w-0 truncate font-black text-sm text-white drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
                     {channel ? "@" + channel.handle : "HkTube Creator"}
                   </span>
                   <button
@@ -776,21 +765,11 @@ export default function ClipsPage() {
                     </span>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-white/90">
+                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-white/90 drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
                   <span className="truncate">
                     Original Sound · {channel?.name || "HkTube Creator"}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void toggleSound()}
-                  className="mt-2 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur-md transition active:scale-95"
-                  aria-pressed={soundOn}
-                >
-                  {soundOn ? <Volume2 className="size-4" /> : <Music2 className="size-4" />}
-                  {soundOn ? "Sound on" : "Listen"}
-                </button>
-                <button type="button" onClick={useCurrentSound} className="mt-2 ml-2 inline-flex w-fit items-center gap-2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/20 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur-md" aria-label="Create a Clip using this sound"><Music2 className="size-4" />Use sound</button>
               </div>
               <div className="clips-action-rail absolute bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-2 z-30 flex flex-col items-center gap-2 sm:bottom-16 sm:right-5">
                 <Action
@@ -822,6 +801,17 @@ export default function ClipsPage() {
                   label="More"
                   onClick={() => setMore(v => !v)}
                 />
+                <button
+                  type="button"
+                  onClick={useCurrentSound}
+                  className="clips-sound-action flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold leading-4 text-white drop-shadow-md"
+                  aria-label="Use sound"
+                >
+                  <span className="grid size-10 place-items-center rounded-full bg-black/35 backdrop-blur-md">
+                    <Music2 className="size-5" />
+                  </span>
+                  <span>Use sound</span>
+                </button>
               </div>
               <div className="absolute left-0 right-0 top-0 z-20 h-1 bg-white/10">
                 <div
@@ -881,6 +871,16 @@ export default function ClipsPage() {
                   >
                     <Send className="size-4" />
                     Copy/share link
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMore(false);
+                      setSettingsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
+                  >
+                    <Settings2 className="size-4" />
+                    Player settings
                   </button>
                 </div>
               )}

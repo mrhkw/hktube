@@ -15,8 +15,8 @@ body.hktube-clips-document [aria-label="HkTube loading"] {
 /* The shared HkTube dock stays available on Clips, but should feel like a
    light control rail rather than a second full-height panel. */
 body.hktube-clips-document nav[aria-label="Mobile navigation"] {
-  height: 58px !important;
-  min-height: 58px !important;
+  height: 60px !important;
+  min-height: 60px !important;
 }
 
 .hk-clips-root {
