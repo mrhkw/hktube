@@ -62,7 +62,7 @@ const routePrefetchers: Record<string, () => Promise<unknown>> = {
   "/explore": () => import("./pages/HkTubeExplore"),
   "/clips": () => import("./pages/Clips"),
   "/ai": () => import("./pages/AIChat"),
-  "/upload": () => import("./pages/Upload"),
+  "/upload": () => import("./pages/UploadStudio"),
   "/studio": () => import("./pages/CreatorStudio"),
 };
 const prefetchedRoutes = new Set<string>();

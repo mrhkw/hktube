@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+
 import { cn } from "@/lib/utils";
 import {
   Bell,
@@ -32,7 +32,7 @@ import {
   Radio,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -74,33 +74,9 @@ export function HkTubeShell({
   });
   const [familyMode, setFamilyMode] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<"menu" | "post">(
-    "menu"
-  );
-  const [postBody, setPostBody] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
-  const utils = trpc.useUtils();
-  const createPost = trpc.posts.create.useMutation({
-    onSuccess: () => {
-      setPostBody("");
-      setCreateOpen(false);
-      setCreateMode("menu");
-      void utils.posts.latest.invalidate();
-      navigate("/posts");
-      toast.success("Post published.");
-    },
-    onError: error => {
-      if (
-        error.data?.code === "UNAUTHORIZED" ||
-        /sign in|login|unauthorized|session/i.test(error.message)
-      ) {
-        startLogin();
-        return;
-      }
-      toast.error(error.message);
-    },
-  });
+
   useEffect(() => {
     setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled");
   }, []);
@@ -125,22 +101,20 @@ export function HkTubeShell({
       startLogin();
       return;
     }
-    setCreateMode("menu");
+
     setCreateOpen(true);
   }
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
-    navigate(category === "shorts" ? "/clips/create" : "/upload");
+    const nextMode = category === "shorts" ? "clip" : "video";
+    window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
+    navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
   }
   function startLive() {
     setCreateOpen(false);
     navigate("/live");
   }
-  function submitPost(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const body = postBody.trim();
-    if (body) createPost.mutate({ body });
-  }
+
   const visiblePrimaryNav = familyMode
     ? primaryNav.filter(item => item.href !== "/clips")
     : primaryNav;
@@ -308,17 +282,12 @@ export function HkTubeShell({
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-xl border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-white">
-              {createMode === "menu" ? "Create" : "Create a post"}
-            </DialogTitle>
+            <DialogTitle className="text-white">Create</DialogTitle>
             <DialogDescription className="text-slate-400">
-              {createMode === "menu"
-                ? "Choose how you want to create on HkTube."
-                : "Share something with your audience."}
+              Choose how you want to create on HkTube.
             </DialogDescription>
           </DialogHeader>
-          {createMode === "menu" ? (
-            <div className="grid gap-3">
+          <div className="grid gap-3">
               <button
                 type="button"
                 onClick={() => startUpload("regular")}
@@ -351,7 +320,7 @@ export function HkTubeShell({
               </button>
               <button
                 type="button"
-                onClick={() => setCreateMode("post")}
+                onClick={() => { setCreateOpen(false); navigate("/upload/post"); }}
                 className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left transition hover:border-cyan-300/35 hover:bg-cyan-400/[.06]"
               >
                 <span className="grid size-11 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
@@ -360,7 +329,7 @@ export function HkTubeShell({
                 <span>
                   <span className="block font-bold text-white">Post</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Share a text update
+                    Share text and images from your device gallery
                   </span>
                 </span>
               </button>
@@ -380,34 +349,6 @@ export function HkTubeShell({
                 </span>
               </button>
             </div>
-          ) : (
-            <form onSubmit={submitPost} className="space-y-4">
-              <Textarea
-                value={postBody}
-                onChange={event => setPostBody(event.target.value)}
-                maxLength={5000}
-                placeholder="Write something..."
-                className="min-h-32 border-white/10 bg-black/20 text-white placeholder:text-slate-500"
-              />
-              <div className="flex items-center justify-between gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setCreateMode("menu")}
-                  className="text-slate-300 hover:bg-white/5 hover:text-white"
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={!postBody.trim() || createPost.isPending}
-                  className="bg-violet-500 text-white hover:bg-violet-400"
-                >
-                  {createPost.isPending ? "Publishing..." : "Publish"}
-                </Button>
-              </div>
-            </form>
-          )}
         </DialogContent>
       </Dialog>
 
