@@ -11,6 +11,7 @@ import {
 } from "@/lib/supabaseChannels";
 import { listMySupabaseVideos, type SupabaseVideo } from "@/lib/supabaseVideos";
 import { supabase } from "@/lib/supabase";
+import { uploadProfileImage } from "@/lib/profileMedia";
 import { Link, useLocation } from "wouter";
 import {
   Bookmark,
@@ -20,10 +21,12 @@ import {
   ImageOff,
   Loader2,
   Play,
-  Settings2,
   Share2,
   X,
   ListVideo,
+  ImagePlus,
+  Users,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -40,7 +43,9 @@ export default function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [posts, setPosts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("videos");
 
@@ -48,12 +53,22 @@ export default function Profile() {
     if (!user) return;
     setDataLoading(true);
     try {
-      const [channels, ownVideos] = await Promise.all([
+      const [channels, ownVideos, ownPosts] = await Promise.all([
         listMySupabaseChannels(),
         listMySupabaseVideos(String(user.id)),
+        supabase
+          .from("posts")
+          .select("id,content,media_paths,media_path,created_at,likes_count")
+          .eq("creator_id", user.id)
+          .eq("visibility", "public")
+          .eq("status", "published")
+          .eq("moderation_status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(50),
       ]);
       setChannel(channels[0] ?? null);
       setVideos(ownVideos);
+      setPosts(ownPosts.data ?? []);
       const { data: saves } = await supabase
         .from("saves")
         .select("video_id,created_at")
@@ -119,25 +134,22 @@ export default function Profile() {
     if (channel) {
       setDisplayName(channel.displayName);
       setDescription(channel.description || "");
-      setBannerUrl(channel.bannerUrl || "");
+      setAvatarFile(null);
+      setAvatarPreview("");
     }
-  }, [
-    channel?.id,
-    channel?.displayName,
-    channel?.description,
-    channel?.bannerUrl,
-  ]);
+  }, [channel?.id, channel?.displayName, channel?.description]);
 
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
     if (!channel) return;
     try {
       setSaving(true);
+      const avatar = avatarFile ? await uploadProfileImage(avatarFile) : null;
       setChannel(
         await updateSupabaseChannel(channel.id, {
           displayName: displayName.trim(),
           description: description.trim(),
-          bannerUrl: bannerUrl.trim() || null,
+          avatarUrl: avatar?.url ?? channel.avatarUrl,
         })
       );
       setEditOpen(false);
@@ -193,10 +205,7 @@ export default function Profile() {
     );
   if (!user)
     return (
-      <HkTubeShell
-        title="Profile"
-        headerAvatarUrl={channel?.avatarUrl}
-      >
+      <HkTubeShell title="Profile" headerAvatarUrl={channel?.avatarUrl}>
         <section className="mx-auto max-w-md px-5 pt-12 text-center">
           <CircleUserRound className="mx-auto size-12 text-violet-400" />
           <h1 className="mt-4 text-2xl font-black text-white">
@@ -221,70 +230,88 @@ export default function Profile() {
       headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}
     >
       <div className="mx-auto max-w-6xl px-3 py-3 pb-28 sm:px-6 sm:py-7">
-        <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[#111522] shadow-xl shadow-black/10">
-          <div className="relative h-36 overflow-hidden bg-gradient-to-r from-violet-900 via-[#252b4b] to-fuchsia-900 sm:h-52">
-            {channel?.bannerUrl ? (
-              <img
-                src={channel.bannerUrl}
-                alt=""
-                className="size-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(139,92,246,.65),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(217,70,239,.4),transparent_38%)]" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#111522]/80 to-transparent" />
-          </div>
-          <div className="px-4 pb-6 sm:px-8">
-            <div className="relative -mt-10 flex flex-wrap items-end gap-4 sm:-mt-14">
-              <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-[#111522] bg-violet-600 text-3xl font-black text-white shadow-xl sm:size-32">
-                {channel?.avatarUrl || user?.avatarUrl ? (
-                  <img
-                    src={channel?.avatarUrl || user?.avatarUrl || ""}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  (channel?.displayName || user.name || "H")
-                    .slice(0, 1)
-                    .toUpperCase()
-                )}
+        <section className="rounded-[28px] border border-white/10 bg-[#111522] p-5 shadow-xl shadow-black/10 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/10 bg-violet-600 text-3xl font-black text-white sm:size-28">
+              {channel?.avatarUrl || user?.avatarUrl ? (
+                <img
+                  src={channel?.avatarUrl || user?.avatarUrl || ""}
+                  alt="Channel logo"
+                  className="size-full object-cover"
+                />
+              ) : (
+                (channel?.displayName || user.name || "H")
+                  .slice(0, 1)
+                  .toUpperCase()
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-violet-300">
+                Your channel
+              </p>
+              <h1 className="mt-1 truncate text-2xl font-black text-white sm:text-3xl">
+                {channel?.displayName || user.name || "HkTube Creator"}
+              </h1>
+              <p className="mt-0.5 text-sm text-slate-400">
+                @{channel?.handle || "creator"}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                <span className="inline-flex items-center gap-1">
+                  <Users className="size-3.5" />
+                  {(channel?.subscriberCount ?? 0).toLocaleString()} subscribers
+                </span>
+                <span>
+                  {
+                    videos.filter(v => !v.isShort && !v.tags.includes("shorts"))
+                      .length
+                  }{" "}
+                  long videos
+                </span>
+                <span>
+                  {
+                    videos.filter(v => v.isShort || v.tags.includes("shorts"))
+                      .length
+                  }{" "}
+                  clips
+                </span>
+                <span>{posts.length} posts</span>
               </div>
-              <div className="min-w-0 flex-1 pb-1">
-                <h1 className="truncate text-2xl font-black text-white sm:text-3xl">
-                  {channel?.displayName || user.name || "HkTube Creator"}
-                </h1>
-                <p className="mt-0.5 text-sm text-slate-400">
-                  @{channel?.handle || "creator"}
-                </p>
-                <p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-400">
-                  {channel?.description ||
-                    "Add a channel description to tell viewers what you create."}
-                </p>
-              </div>
-              <div className="flex gap-2 pb-1">
-                <Button
-                  type="button"
-                  onClick={() => setEditOpen(true)}
-                  disabled={!channel}
-                  className="rounded-full bg-white px-4 font-bold text-black"
+              <p className="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-400">
+                {channel?.description ||
+                  "Add a channel description to tell viewers what you create."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                disabled={!channel}
+                className="rounded-full bg-white px-4 font-bold text-black"
+              >
+                <Edit3 className="mr-1.5 size-4" />
+                Edit channel
+              </Button>
+              {channel && (
+                <Link
+                  href={`/channel/${channel.handle}`}
+                  className="inline-flex h-10 items-center rounded-full border border-white/10 bg-white/[.04] px-4 text-sm font-bold text-white"
                 >
-                  <Edit3 className="mr-1.5 size-4" />
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => void shareChannel()}
-                  variant="outline"
-                  className="rounded-full border-white/10 bg-white/[.04] text-white"
-                >
-                  <Share2 className="mr-1.5 size-4" />
-                  Share
-                </Button>
-              </div>
+                  <ExternalLink className="mr-1.5 size-4" />
+                  View channel
+                </Link>
+              )}
+              <Button
+                type="button"
+                onClick={() => void shareChannel()}
+                variant="outline"
+                className="rounded-full border-white/10 bg-white/[.04] text-white"
+              >
+                <Share2 className="mr-1.5 size-4" />
+                Share
+              </Button>
             </div>
           </div>
         </section>
-
         <section className="mt-4 overflow-hidden rounded-[24px] border border-white/10 bg-[#111522]">
           <div className="flex gap-1 overflow-x-auto border-b border-white/10 px-2 pt-2 [scrollbar-width:none]">
             {(
@@ -312,13 +339,68 @@ export default function Profile() {
                 <Loader2 className="size-7 animate-spin text-violet-500" />
               </div>
             ) : tab === "posts" ? (
-              <EmptyState
-                icon={FileText}
-                title="Your posts"
-                text="Published community posts will appear here."
-                href="/posts"
-                button="Open Posts"
-              />
+              posts.length ? (
+                <div className="mx-auto max-w-2xl space-y-4">
+                  {posts.map(post => {
+                    const media = Array.isArray(post.media_paths)
+                      ? post.media_paths
+                      : post.media_path
+                        ? [post.media_path]
+                        : [];
+                    return (
+                      <article
+                        key={post.id}
+                        className="rounded-2xl border border-white/10 bg-white/[.03] p-4 sm:p-5"
+                      >
+                        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-200">
+                          {post.content}
+                        </p>
+                        {media.length > 0 && (
+                          <div
+                            className={`mt-4 grid gap-2 ${media.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+                          >
+                            {media
+                              .slice(0, 4)
+                              .map((path: string, index: number) => (
+                                <img
+                                  key={`${path}-${index}`}
+                                  src={
+                                    path.startsWith("http")
+                                      ? path
+                                      : supabase.storage
+                                          .from("thumbnails")
+                                          .getPublicUrl(path).data.publicUrl
+                                  }
+                                  alt="Post attachment"
+                                  className="max-h-96 w-full rounded-xl object-cover"
+                                  loading="lazy"
+                                />
+                              ))}
+                          </div>
+                        )}
+                        <p className="mt-3 text-xs text-slate-500">
+                          {Number(post.likes_count || 0).toLocaleString()} likes
+                          · {new Date(post.created_at).toLocaleDateString()}
+                        </p>
+                      </article>
+                    );
+                  })}
+                  <Link
+                    href="/upload/post"
+                    className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-bold text-black"
+                  >
+                    Write a post
+                  </Link>
+                </div>
+              ) : (
+                <EmptyState
+                  icon={FileText}
+                  title="No public posts yet"
+                  text="Create a post to share updates with your audience."
+                  href="/upload/post"
+                  button="Create a post"
+                />
+              )
             ) : tab === "favorites" && !favorites.length ? (
               <EmptyState
                 icon={Bookmark}
@@ -373,6 +455,43 @@ export default function Profile() {
               </button>
             </div>
             <div className="mt-5 space-y-4">
+              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.03] p-4">
+                <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/20 text-xl font-black">
+                  {avatarPreview || channel?.avatarUrl ? (
+                    <img
+                      src={avatarPreview || channel?.avatarUrl || ""}
+                      alt="Channel logo preview"
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <ImagePlus className="size-6" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Channel logo</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Square image · JPG, PNG, WebP, AVIF or GIF · max 12 MB
+                  </p>
+                  <label className="mt-2 inline-flex cursor-pointer rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black">
+                    {avatarFile ? "Change logo" : "Upload logo"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 12 * 1024 * 1024)
+                          return void toast.error(
+                            "Image must be 12 MB or smaller."
+                          );
+                        setAvatarFile(file);
+                        setAvatarPreview(URL.createObjectURL(file));
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
               <div>
                 <label className="text-xs font-bold text-slate-300">
                   Channel name
@@ -383,17 +502,6 @@ export default function Profile() {
                   maxLength={255}
                   className="mt-1 border-white/10 bg-black/20 text-white"
                   required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-300">
-                  Banner image URL
-                </label>
-                <Input
-                  value={bannerUrl}
-                  onChange={e => setBannerUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="mt-1 border-white/10 bg-black/20 text-white"
                 />
               </div>
               <div>
