@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { MediaEditor } from "@/components/MediaEditor";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   listMySupabaseChannels,
@@ -263,12 +262,7 @@ export default function UploadPage() {
   const [channelError, setChannelError] = useState("");
   const [channelId, setChannelId] = useState("");
 
-  const [mode, setMode] = useState<UploadMode>(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("category") === "shorts" || params.get("mode") === "clip") return "clip";
-    if (params.get("mode") === "video") return "video";
-    return "auto";
-  });
+  const [mode, setMode] = useState<UploadMode>("auto");
   const [step, setStep] = useState<Step>("media");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1252,9 +1246,6 @@ export default function UploadPage() {
                 </div>
 
                 <div className="mt-6 space-y-5">
-                  {file && videoInfo && (
-                    <MediaEditor file={file} isShort={isClip} onApply={edited => void chooseVideo(edited)} />
-                  )}
                   <label className="block">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-black text-white">
