@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { toast } from "sonner";
+import SoundLibrarySheet from "@/components/create/SoundLibrarySheet";
+import { soundLabel, type PlatformSound } from "@/lib/musicLibrary";
 import {
   clampOverlayPosition,
   EFFECT_PRESETS,
@@ -36,6 +38,8 @@ import {
 const SPEED_CHOICES = [0.3, 0.5, 1, 1.5, 2, 3] as const;
 
 type ToolId = "text" | "filters" | "effects" | "stickers" | "captions" | "sound" | "save";
+
+/** The sheet is opened from the Sound tab; kept next to it for clarity. */
 
 /**
  * A patch for one overlay. Written as a union rather than a `Partial` of an
@@ -113,6 +117,7 @@ export default function EditStage({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [captionDraft, setCaptionDraft] = useState(caption);
   const [recordingVoice, setRecordingVoice] = useState(false);
+  const [soundLibraryOpen, setSoundLibraryOpen] = useState(false);
 
   const previewRef = useRef<HTMLVideoElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -610,10 +615,20 @@ export default function EditStage({
           <>
             <div className="hkc-panel-head">
               <span className="hkc-panel-title">Sound</span>
-              <button type="button" className="hkc-pill" onClick={() => audioInputRef.current?.click()}>
-                <Music2 className="size-4" />
-                Add sound
-              </button>
+              <span style={{ display: "flex", gap: 6 }}>
+                <button
+                  type="button"
+                  className="hkc-pill hkc-pill--ghost"
+                  onClick={() => audioInputRef.current?.click()}
+                >
+                  <Music2 className="size-4" />
+                  Import
+                </button>
+                <button type="button" className="hkc-pill" onClick={() => setSoundLibraryOpen(true)}>
+                  <Music2 className="size-4" />
+                  Sound library
+                </button>
+              </span>
             </div>
             <input
               ref={audioInputRef}
@@ -706,6 +721,22 @@ export default function EditStage({
               <p className="hkc-note">This browser does not expose a microphone to record a voiceover.</p>
             )}
           </>
+        )}
+
+        {soundLibraryOpen && (
+          <SoundLibrarySheet
+            open={soundLibraryOpen}
+            onClose={() => setSoundLibraryOpen(false)}
+            onUse={(picked: PlatformSound, url: string) => {
+              const entry: AddedAudio = {
+                id: `sound-${Date.now()}`,
+                name: soundLabel(picked),
+                url,
+                volume: 0.6,
+              };
+              onAddedAudioChange([...addedAudio, entry]);
+            }}
+          />
         )}
 
         {tool === "save" && (

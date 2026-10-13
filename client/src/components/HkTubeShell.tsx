@@ -32,6 +32,7 @@ import {
   Radio,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { UploadActivityBanner } from "@/components/create/UploadProgressCard";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -104,8 +105,7 @@ export function HkTubeShell({
   }
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
-    // Both paths open the TikTok-style creation studio; the category picks the
-    // framing (16:9 long video vs 9:16 Clip) and the publish defaults.
+    // YouTube's two upload paths: a long video, or a vertical Short.
     navigate(category === "shorts" ? "/create?category=shorts" : "/create?category=regular");
   }
   function startLive() {
@@ -114,7 +114,7 @@ export function HkTubeShell({
   }
   function startPost() {
     setCreateOpen(false);
-    navigate("/create?category=post");
+    navigate("/posts/new");
   }
   const visiblePrimaryNav = familyMode
     ? primaryNav.filter(item => item.href !== "/clips")
@@ -301,9 +301,9 @@ export function HkTubeShell({
                   <Video className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Long video</span>
+                  <span className="block font-bold text-white">Upload a video</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Landscape 16:9 · camera, gallery and the full editor
+                    Pick a video from your device, then add details and upload
                   </span>
                 </span>
               </button>
@@ -316,9 +316,9 @@ export function HkTubeShell({
                   <MonitorPlay className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Clip</span>
+                  <span className="block font-bold text-white">Upload a Short</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Vertical 9:16 · record with timer, speed and filters
+                    Record or pick a vertical clip, then edit it into a Short
                   </span>
                 </span>
               </button>
@@ -331,9 +331,9 @@ export function HkTubeShell({
                   <FileText className="size-5" />
                 </span>
                 <span>
-                  <span className="block font-bold text-white">Post</span>
+                  <span className="block font-bold text-white">Create a post</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Photo or text update
+                    Text, images, a sound, plus schedule and expiry
                   </span>
                 </span>
               </button>
@@ -552,6 +552,8 @@ export function HkTubeShell({
           </div>
         </footer>
       </main>
+
+      <UploadActivityBanner />
 
       <nav
         className={cn(

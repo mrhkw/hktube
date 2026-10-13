@@ -1,6 +1,7 @@
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { UploadProgressCard, useUploadJobs } from "@/components/create/UploadProgressCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,22 @@ import { useEffect, useState } from "react";
 
 type ProfileTab = "videos" | "clips" | "posts" | "favorites";
 
+/**
+ * Uploads that are preparing, sending or just finished, shown on the channel the
+ * way the YouTube app shows them there.
+ */
+function UploadsInProgress() {
+  const jobs = useUploadJobs();
+  if (jobs.length === 0) return null;
+  return (
+    <section className="mb-5 space-y-3" aria-label="Uploads">
+      {jobs.slice(0, 3).map(job => (
+        <UploadProgressCard key={job.id} job={job} />
+      ))}
+    </section>
+  );
+}
+
 export default function Profile() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
@@ -37,11 +54,6 @@ export default function Profile() {
   const [videos, setVideos] = useState<SupabaseVideo[]>([]);
   const [favorites, setFavorites] = useState<SupabaseVideo[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
-  const [editOpen, setEditOpen] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [description, setDescription] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
-  const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("videos");
 
   async function loadProfile() {
@@ -115,41 +127,6 @@ export default function Profile() {
     if (user) void loadProfile();
     else setDataLoading(false);
   }, [user?.id]);
-  useEffect(() => {
-    if (channel) {
-      setDisplayName(channel.displayName);
-      setDescription(channel.description || "");
-      setBannerUrl(channel.bannerUrl || "");
-    }
-  }, [
-    channel?.id,
-    channel?.displayName,
-    channel?.description,
-    channel?.bannerUrl,
-  ]);
-
-  async function saveProfile(event: React.FormEvent) {
-    event.preventDefault();
-    if (!channel) return;
-    try {
-      setSaving(true);
-      setChannel(
-        await updateSupabaseChannel(channel.id, {
-          displayName: displayName.trim(),
-          description: description.trim(),
-          bannerUrl: bannerUrl.trim() || null,
-        })
-      );
-      setEditOpen(false);
-      toast.success("Profile updated.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not update profile."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
   async function shareChannel() {
     const url = channel
       ? `${window.location.origin}/channel/${channel.handle}`
@@ -262,15 +239,17 @@ export default function Profile() {
                 </p>
               </div>
               <div className="flex gap-2 pb-1">
-                <Button
-                  type="button"
-                  onClick={() => setEditOpen(true)}
-                  disabled={!channel}
-                  className="rounded-full bg-white px-4 font-bold text-black"
+                <Link
+                  href="/channel/edit"
+                  aria-disabled={!channel}
+                  className={
+                    "inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-bold text-black transition " +
+                    (channel ? "hover:bg-white/90" : "pointer-events-none opacity-50")
+                  }
                 >
                   <Edit3 className="mr-1.5 size-4" />
-                  Edit
-                </Button>
+                  Edit channel
+                </Link>
                 <Button
                   type="button"
                   onClick={() => void shareChannel()}
@@ -351,88 +330,6 @@ export default function Profile() {
         </section>
       </div>
 
-      {editOpen && (
-        <div
-          className="fixed inset-0 z-[90] grid place-items-center bg-black/70 p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <form
-            onSubmit={saveProfile}
-            className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111522] p-5 text-white shadow-2xl"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black">Edit channel</h2>
-              <button
-                type="button"
-                onClick={() => setEditOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-white/[.06] text-slate-300"
-                aria-label="Close"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-300">
-                  Channel name
-                </label>
-                <Input
-                  value={displayName}
-                  onChange={e => setDisplayName(e.target.value)}
-                  maxLength={255}
-                  className="mt-1 border-white/10 bg-black/20 text-white"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-300">
-                  Banner image URL
-                </label>
-                <Input
-                  value={bannerUrl}
-                  onChange={e => setBannerUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="mt-1 border-white/10 bg-black/20 text-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-300">
-                  Description
-                </label>
-                <Textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  maxLength={5000}
-                  rows={4}
-                  className="mt-1 border-white/10 bg-black/20 text-white"
-                  placeholder="Tell viewers about your channel"
-                />
-              </div>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditOpen(false)}
-                className="border-white/10 text-white"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-violet-600 text-white"
-              >
-                {saving ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : null}
-                Save changes
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
     </HkTubeShell>
   );
 }

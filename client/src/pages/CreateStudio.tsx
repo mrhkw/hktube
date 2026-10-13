@@ -1,13 +1,11 @@
-import { ArrowLeft, Images, Loader2, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { ArrowLeft, Image as ImageIcon, Loader2, Scissors, X } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
-import { HkTubeShell } from "@/components/HkTubeShell";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseVideo } from "@/lib/supabaseVideos";
-import { trpc } from "@/lib/trpc";
 import {
   captureEditedFrame,
   clampTrim,
@@ -23,54 +21,61 @@ import {
   type TrimRange,
   type Voiceover,
 } from "@/lib/videoEditor";
+import { searchMentionCandidates, type MentionCandidate } from "@/lib/channelIdentity";
+import { EMPTY_PUBLISH_DETAILS, validatePublishDetails, type PublishDetails } from "@/lib/publishOptions";
+import { addVideoToPlaylist, saveVideoExtras } from "@/lib/videoPublishExtras";
+import {
+  estimateRemainingFromPercent,
+  failJob,
+  finishJob,
+  startJob,
+  updateJob,
+} from "@/lib/uploadActivity";
 import CameraStage, { type CameraClip } from "@/components/create/CameraStage";
 import GalleryStage from "@/components/create/GalleryStage";
-import PostStage from "@/components/create/PostStage";
-import type { MediaEntry } from "@/lib/mediaLibrary";
 import TrimStage from "@/components/create/TrimStage";
 import EditStage from "@/components/create/EditStage";
-import DetailsStage, { EMPTY_DETAILS, type PublishDetails } from "@/components/create/DetailsStage";
+import UploadDetailsPage from "@/components/create/UploadDetailsPage";
 import DiscardDialog from "@/components/create/DiscardDialog";
+import type { PlaylistChoice } from "@/components/create/PlaylistPicker";
+import type { MediaEntry } from "@/lib/mediaLibrary";
 import "@/styles/create.css";
 
-type Stage = "source" | "camera" | "gallery" | "trim" | "edit" | "details" | "post";
+type Stage = "gallery" | "camera" | "selected" | "trim" | "edit" | "details";
 type Kind = "video" | "short";
 
+/** Uploads are capped at twelve hours by the platform. */
 const MAX_LONG_SECONDS = 12 * 60 * 60;
+/** A Clip is capped at three minutes. */
 const MAX_SHORT_SECONDS = 180;
 
 /**
- * HkTube's creation studio.
+ * HkTube's creation studio, built to follow YouTube's upload flow.
  *
- * One flow for long videos and Clips, laid out like TikTok's composer: choose or
- * record media, trim it, edit it, then add details and publish. The editing
- * tools are real — everything switched on here is baked into the file that gets
- * uploaded, and "Save to device" runs the same exporter.
+ * Long video: gallery → the picked clip → "Edit into a Short" or "Next" → Add
+ * details → Upload.
+ * Short: the Shorts camera (Flip, Timer, Speed, Flash and a gallery button) →
+ * trim, "Drag to adjust video" → the editor → Add details → Upload Short.
+ *
+ * The editor is real: filters, effects, text, stickers, captions, sound and the
+ * chosen speed are baked into the file that is uploaded, and the upload carries
+ * the same Prepare/Send progress lines the YouTube app shows.
  */
 export default function CreateStudio() {
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const query = useMemo(() => new URLSearchParams(window.location.search), []);
-  const soundFromQuery = useMemo(
-    () => ({
-      id: query.get("soundVideoId") || "",
-      title: query.get("soundTitle") || "",
-      url: query.get("soundUrl") || "",
-    }),
-    [query]
-  );
+  const category = query.get("category") ?? "regular";
+  const initialKind: Kind = category === "shorts" ? "short" : "video";
 
-  const [stage, setStage] = useState<Stage>(
-    query.get("category") === "post" ? "gallery" : "source"
-  );
-  const [kind, setKind] = useState<Kind>(query.get("category") === "shorts" ? "short" : "video");
+  const [stage, setStage] = useState<Stage>(category === "shorts" ? "camera" : "gallery");
+  const [kind, setKind] = useState<Kind>(initialKind);
 
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState(0);
   const [fileUrl, setFileUrl] = useState("");
-  const [isVertical, setIsVertical] = useState(false);
-  /** Source width / height, used to keep the exported frame legal. */
   const [sourceRatio, setSourceRatio] = useState(0);
+  const [resolution, setResolution] = useState<{ width: number; height: number } | null>(null);
 
   const [trim, setTrim] = useState<TrimRange>({ start: 0, end: 0 });
   const [speed, setSpeed] = useState(1);
@@ -81,43 +86,38 @@ export default function CreateStudio() {
   const [addedAudio, setAddedAudio] = useState<AddedAudio[]>([]);
   const [voiceover, setVoiceover] = useState<Voiceover>({ stream: null, volume: 0.5 });
 
-  const [details, setDetails] = useState<PublishDetails>(EMPTY_DETAILS);
+  const [details, setDetails] = useState<PublishDetails>(EMPTY_PUBLISH_DETAILS);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [coverAt, setCoverAt] = useState(0);
-  const [editingCover, setEditingCover] = useState(false);
-  const [playlists, setPlaylists] = useState<string[]>([]);
+  const [coverPicking, setCoverPicking] = useState(false);
+  const [playlists, setPlaylists] = useState<PlaylistChoice[]>([]);
+  const [mentionCandidates, setMentionCandidates] = useState<MentionCandidate[]>([]);
   const [channelId, setChannelId] = useState("");
   const [channelError, setChannelError] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState("");
   const [busyHint, setBusyHint] = useState("");
-  const [busyFraction, setBusyFraction] = useState(0);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPhase, setUploadPhase] = useState("");
-
-  const [postPhoto, setPostPhoto] = useState<MediaEntry | null>(null);
-  const [postCaption, setPostCaption] = useState("");
-  const [postLink, setPostLink] = useState("");
-  const [postPublishing, setPostPublishing] = useState(false);
-  const [postProgress, setPostProgress] = useState("");
   const [discardOpen, setDiscardOpen] = useState(false);
+
+  const galleryRef = useRef<HTMLInputElement | null>(null);
+  const thumbInputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const publishedRef = useRef(false);
+  const autoPickRef = useRef(false);
   const studioUrlRef = useRef(typeof window === "undefined" ? "" : window.location.href);
 
-  const createPost = trpc.posts.create.useMutation();
-  const postThumbnail = useMemo(
-    () => (postPhoto?.thumbnail ? postPhoto.thumbnail : ""),
-    [postPhoto]
-  );
-
-  // Once media is loaded the creator has work to lose, on every step including
-  // the publish page. A post with a photo or caption counts the same way.
-  const dirty = Boolean(file) || (stage === "post" && Boolean(postPhoto || postCaption.trim()));
+  const dirty = Boolean(file) && !publishedRef.current;
 
   /* ------------------------------------------------------------------ setup */
+
+  // The post composer is its own page; /create?category=post is an alias for it.
+  useEffect(() => {
+    if (category === "post") navigate("/posts/new", { replace: true });
+  }, [category, navigate]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -136,21 +136,53 @@ export default function CreateStudio() {
         setChannelError("Your channel could not be loaded. Refresh and try again.");
         return;
       }
-      if (!data || data.length === 0) {
+      const channel = (data ?? [])[0] as { id: string | number } | undefined;
+      if (!channel) {
         setChannelError("Create a channel before publishing.");
         return;
       }
-      setChannelId(String(data[0].id));
+      setChannelId(String(channel.id));
       setChannelError("");
     })();
 
     void (async () => {
-      const { data } = await supabase.from("playlists").select("title").order("created_at", { ascending: false }).limit(50);
-      setPlaylists(((data as Array<{ title?: string }> | null) ?? []).map(row => row.title ?? "").filter(Boolean));
+      const { data } = await supabase
+        .from("playlists")
+        .select("id,title")
+        .eq("owner_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(60);
+      setPlaylists(
+        ((data ?? []) as Array<{ id: string | number; title: string | null }>).map(row => ({
+          id: String(row.id),
+          title: row.title ?? "Playlist",
+        }))
+      );
     })();
+
+    void searchMentionCandidates("").then(rows => setMentionCandidates(rows));
   }, [authLoading, user]);
 
-  // A typed-out Studio with unsaved work should not vanish on a stray reload.
+  // Opening the studio for a long video lands on the gallery, the way tapping
+  // "Upload a video" opens the phone's gallery. The browser only allows the
+  // system picker inside a user gesture, so it is attempted once and the folder
+  // grid stays there when a browser refuses.
+  useEffect(() => {
+    if (category !== "regular" || autoPickRef.current) return;
+    autoPickRef.current = true;
+    const timer = window.setTimeout(() => {
+      if (stage !== "gallery" || file) return;
+      try {
+        galleryRef.current?.click();
+      } catch {
+        // The gallery stage is the fallback.
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+    // Once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!dirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -161,12 +193,9 @@ export default function CreateStudio() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  // The browser's own back button must ask too, not just the in-app arrow.
   useEffect(() => {
     if (!dirty) return;
     const onPopState = () => {
-      // The browser has already stepped back by the time this fires, so put the
-      // studio's URL back and ask the creator what they want.
       history.pushState({ hkcStudio: true }, "", studioUrlRef.current);
       setDiscardOpen(true);
     };
@@ -177,13 +206,22 @@ export default function CreateStudio() {
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
-      if (coverPreview) URL.revokeObjectURL(coverPreview);
       voiceover.stream?.getTracks().forEach(track => track.stop());
     };
-    // Intentionally unmount-only: re-running would revoke a URL still in use.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (fileUrl) URL.revokeObjectURL(fileUrl);
+    };
+  }, [fileUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (coverPreview) URL.revokeObjectURL(coverPreview);
+    };
+  }, [coverPreview]);
 
   /* ------------------------------------------------------------- media input */
 
@@ -194,86 +232,70 @@ export default function CreateStudio() {
         return;
       }
       const seconds = await mediaDuration(picked);
-      const nextKind: Kind = forcedKind ?? kind;
-
+      if (!Number.isFinite(seconds) || seconds <= 0) {
+        toast.error("That file could not be read as a video. Try re-exporting it as MP4.");
+        return;
+      }
       if (seconds > MAX_LONG_SECONDS) {
         toast.error("Videos must be under 12 hours.");
         return;
       }
 
-      // Measure the frame once: the ratio decides the framing, and the export
-      // needs it to know whether the picture has to be reshaped.
-      const probeResult = await new Promise<{ vertical: boolean; ratio: number }>(resolve => {
-        const probe = document.createElement("video");
-        probe.preload = "metadata";
+      const probe = await new Promise<{ horizontal: boolean; ratio: number; width: number; height: number }>(resolve => {
+        const element = document.createElement("video");
+        element.preload = "metadata";
         const url = URL.createObjectURL(picked);
-        const done = (value: { vertical: boolean; ratio: number }) => {
-          probe.removeAttribute("src");
+        const done = (value: { horizontal: boolean; ratio: number; width: number; height: number }) => {
+          element.removeAttribute("src");
           URL.revokeObjectURL(url);
           resolve(value);
         };
-        probe.addEventListener(
+        element.addEventListener(
           "loadedmetadata",
           () =>
             done({
-              vertical: probe.videoHeight >= probe.videoWidth,
-              ratio: probe.videoWidth / Math.max(probe.videoHeight, 1),
+              horizontal: element.videoWidth >= element.videoHeight,
+              ratio: element.videoWidth / Math.max(element.videoHeight, 1),
+              width: element.videoWidth,
+              height: element.videoHeight,
             }),
           { once: true }
         );
-        probe.addEventListener("error", () => done({ vertical: false, ratio: 0 }), { once: true });
-        probe.src = url;
+        element.addEventListener("error", () => done({ horizontal: true, ratio: 0, width: 0, height: 0 }), {
+          once: true,
+        });
+        element.src = url;
       });
-      const vertical = probeResult.vertical;
 
-      // A vertical file cannot be a landscape long video, and the upload API
-      // would reject it, so switch the flow rather than dead-ending the creator.
-      let resolvedKind = nextKind;
-      if (resolvedKind === "video" && vertical) {
+      let resolvedKind: Kind = forcedKind ?? kind;
+      // A vertical file cannot be a landscape long video, so the flow switches
+      // rather than dead-ending on the upload API's ratio check.
+      if (resolvedKind === "video" && !probe.horizontal) {
         resolvedKind = "short";
         toast.info("This video is vertical, so it is set up as a Clip.");
       }
-      if (resolvedKind === "short" && probeResult.ratio >= 1) {
-        toast.info("This video is landscape: the frame is fitted into 9:16 with bars, nothing is cut off.");
+      if (resolvedKind === "short" && probe.horizontal) {
+        toast.info("A landscape video is fitted into 9:16 with bars for a Clip, so nothing is cut off.");
       }
 
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
       const url = URL.createObjectURL(picked);
       setFile(picked);
       setFileUrl(url);
       setDuration(seconds);
-      setIsVertical(vertical);
-      setSourceRatio(probeResult.ratio);
+      setSourceRatio(probe.ratio);
+      setResolution({ width: probe.width, height: probe.height });
       setKind(resolvedKind);
-      // A Clip is capped at three minutes. A longer pick is accepted and the
-      // selection opens on the first three minutes, the way TikTok's editor
-      // starts inside the allowed length instead of refusing the file.
       const initialEnd = resolvedKind === "short" ? Math.min(seconds, MAX_SHORT_SECONDS) : seconds;
       if (resolvedKind === "short" && seconds > MAX_SHORT_SECONDS) {
-        toast.info("Clips run up to 3 minutes — your selection starts inside the first 3 minutes. Drag to adjust.");
+        toast.info("Clips run up to 3 minutes — the selection starts inside the first 3 minutes. Drag to adjust.");
       }
       setTrim(clampTrim({ start: 0, end: initialEnd }, seconds));
       setCoverAt(Math.min(1, seconds * 0.15));
-      setStage("trim");
+      // A long video stops on the "Edit into a Short / Next" step first.
+      setStage(resolvedKind === "video" ? "selected" : "trim");
     },
-    [details.title, fileUrl, kind]
+    [kind]
   );
-
-  useEffect(() => {
-    if (!soundFromQuery.url) return;
-    setAddedAudio(current =>
-      current.length > 0
-        ? current
-        : [
-            {
-              id: "picked-sound",
-              name: soundFromQuery.title || "Selected sound",
-              url: soundFromQuery.url,
-              volume: 0.6,
-            },
-          ]
-    );
-  }, [soundFromQuery]);
 
   /* -------------------------------------------------------- cover frame picker */
 
@@ -283,17 +305,22 @@ export default function CreateStudio() {
       setBusy(true);
       setBusyLabel("Rendering cover frame");
       setBusyHint("Applying your filter and layers to the selected frame.");
-      const frame = await captureEditedFrame(file, atSeconds, { filter, effects, overlays, vertical: isVertical });
+      const frame = await captureEditedFrame(file, atSeconds, {
+        filter,
+        effects,
+        overlays,
+        caption,
+        vertical: kind === "short",
+      });
       setBusy(false);
       if (!frame) {
         toast.error("That frame could not be rendered. Try another moment.");
         return;
       }
-      if (coverPreview) URL.revokeObjectURL(coverPreview);
       setCoverFile(frame);
       setCoverPreview(URL.createObjectURL(frame));
     },
-    [file, filter, effects, overlays, isVertical, coverPreview]
+    [file, filter, effects, overlays, caption, kind]
   );
 
   useEffect(() => {
@@ -303,17 +330,45 @@ export default function CreateStudio() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, file]);
 
-  /* -------------------------------------------------------------- exporting */
+  /* ------------------------------------------------------------------ publish */
 
-  const runExport = useCallback(
-    async (reason: "upload" | "download") => {
-      if (!file) return null;
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setBusy(true);
-      setBusyFraction(0);
-      setBusyLabel(reason === "download" ? "Saving to device" : "Rendering your Clip");
-      setBusyHint(
+  const validation = useMemo(
+    () =>
+      validatePublishDetails(details, {
+        isShort: kind === "short",
+        durationSeconds: trim.end - trim.start,
+        hasCover: Boolean(coverFile),
+      }),
+    [details, kind, trim.end, trim.start, coverFile]
+  );
+
+  const canUpload = Boolean(file && channelId && validation.ok && !uploading);
+  const blocker = channelError
+    ? channelError
+    : !channelId
+      ? "Preparing your channel…"
+      : validation.blockers[0] ?? "";
+
+  async function publish() {
+    if (!file || !canUpload || !user) return;
+    const title = details.title.trim();
+    const jobId = `upload-${Date.now()}`;
+    startJob({
+      id: jobId,
+      title: title || (kind === "short" ? "Your Short" : "Your video"),
+      isShort: kind === "short",
+      href: "/profile",
+      thumbnail: coverPreview || null,
+    });
+
+    setUploading(true);
+    setUploadPhase("Preparing 0%");
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      // 1. Prepare: bake the trim, filters, effects, layers and audio.
+      const needsBake =
         needsReEncode({
           trim,
           duration,
@@ -323,179 +378,99 @@ export default function CreateStudio() {
           addedAudio,
           hasVoiceover: Boolean(voiceover.stream),
           speed,
-        })
-          ? "Applying trim, filter, effects, layers and audio. This runs in real time."
-          : "Nothing was changed, so the original file is used. No quality is lost."
-      );
-      try {
-        const result = await exportEditedVideo({
-          file,
-          trim,
-          filter,
-          effects,
-          caption,
-          speed,
-          overlays,
-          addedAudio,
-          voiceover: voiceover.stream,
-          vertical: isVertical,
-          forceReEncode: needsReframe(sourceRatio, isVertical),
-          signal: controller.signal,
-          onProgress: progress => {
-            setBusyFraction(progress.fraction);
-            if (progress.secondsRemaining >= 0) {
-              setBusyHint(`About ${Math.ceil(progress.secondsRemaining)}s remaining. Keep this tab open.`);
-            }
-          },
-        });
-        return result.file;
-      } catch (caught) {
-        toast.error(caught instanceof Error ? caught.message : "The edit could not be rendered.");
-        return null;
-      } finally {
-        setBusy(false);
-        abortRef.current = null;
-      }
-    },
-    [
-      file,
-      trim,
-      duration,
-      filter,
-      effects,
-      caption,
-      speed,
-      overlays,
-      addedAudio,
-      voiceover.stream,
-      isVertical,
-      sourceRatio,
-    ]
-  );
+          hasCaption: Boolean(caption.trim()),
+        }) || needsReframe(sourceRatio, kind === "short");
 
-  async function saveToDevice() {
-    const output = await runExport("download");
-    if (!output) return;
-    const url = URL.createObjectURL(output);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = output.name;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast.success("Saved to your device.");
-  }
+      const prepared = await exportEditedVideo({
+        file,
+        trim,
+        filter,
+        effects,
+        caption,
+        speed,
+        overlays,
+        addedAudio,
+        voiceover: voiceover.stream,
+        vertical: kind === "short",
+        forceReEncode: needsReframe(sourceRatio, kind === "short"),
+        signal: controller.signal,
+        onProgress: progress => {
+          const percent = Math.round(progress.fraction * 100);
+          setUploadPhase(`Preparing ${percent}%`);
+          updateJob(jobId, { stage: "preparing", progress: percent, secondsRemaining: null });
+        },
+      });
+      updateJob(jobId, { stage: "preparing", progress: 100 });
+      setUploadPhase("Preparing 100%");
 
-  /* ---------------------------------------------------------------- uploading */
-
-  const canUpload = Boolean(file && details.title.trim() && channelId && !uploading);
-  const blocker = channelError
-    ? channelError
-    : !channelId
-      ? "Preparing your channel…"
-      : !details.title.trim()
-        ? "Add a title or caption to continue."
-        : "";
-
-  async function publish() {
-    if (!file || !canUpload) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      setUploadPhase("Rendering edits…");
-      const output = await runExport("upload");
-      if (!output) {
-        setUploadPhase("");
-        return;
-      }
-
-      setUploadPhase("Uploading…");
-      await createSupabaseVideo({
+      // 2. Send: upload the finished file and report the same countdown YouTube does.
+      const sendingStartedAt = Date.now();
+      updateJob(jobId, { stage: "sending", progress: 0, secondsRemaining: null });
+      const created = await createSupabaseVideo({
         channelId,
-        title: details.title.trim(),
+        title,
         description: details.description.trim(),
-        file: output,
+        file: prepared.file,
         thumbnail: coverFile,
         isShort: kind === "short",
         durationSeconds: Math.max(1, Math.round((trim.end - trim.start) / speed)),
-        category: kind === "short" ? "clips" : "regular",
+        category: kind === "short" ? "shorts" : "regular",
         language: "auto",
         visibility: details.visibility,
-        allowComments: details.allowComments,
+        allowComments: details.allowComments && !details.madeForKids,
         allowDownload: details.allowDownload,
         madeForKids: details.madeForKids,
-        tags: details.tags
-          .split(/[,#\s]+/)
-          .map(tag => tag.trim().toLowerCase())
-          .filter(Boolean)
-          .slice(0, 30),
-        onProgress: setUploadProgress,
+        tags: details.tags,
+        signal: controller.signal,
+        onProgress: percent => {
+          const rounded = Math.round(percent);
+          setUploadPhase(`Sending file ${rounded}%`);
+          updateJob(jobId, {
+            stage: "sending",
+            progress: rounded,
+            secondsRemaining: estimateRemainingFromPercent(rounded, sendingStartedAt),
+          });
+        },
       });
 
-      if (details.location || details.aiGenerated || details.paidPromotion || details.ageRestricted) {
-        // Surface the extra publish flags the upload already stored so the watch
-        // page can honour them; failures here must not lose a published video.
-        await supabase
-          .from("videos")
-          .update({
-            ai_generated: details.aiGenerated,
-            age_restricted: details.ageRestricted,
-            paid_promotion: details.paidPromotion,
-            brand_name: details.paidPromotion ? details.brandName.trim() || null : null,
-          })
-          .eq("title", details.title.trim())
-          .eq("channel_id", channelId)
-          .then(
-            () => undefined,
-            () => undefined
-          );
+      // 3. Processing: the row is in, the extras and playlist follow.
+      updateJob(jobId, { stage: "processing", progress: 10, secondsRemaining: null });
+      setUploadPhase("Processing");
+
+      const videoId = String((created as { id?: string | number } | null)?.id ?? "");
+      const notes: string[] = [];
+      if (videoId) {
+        notes.push(
+          ...(await saveVideoExtras(videoId, {
+            location: details.location,
+            aiGenerated: details.aiGenerated,
+            ageRestricted: details.ageRestricted,
+            paidPromotion: details.paidPromotion,
+            brandName: details.brandName,
+            remix: details.remix,
+          }))
+        );
+        if (details.playlistId) {
+          const playlistError = await addVideoToPlaylist(details.playlistId, videoId);
+          if (playlistError) notes.push(playlistError);
+        }
       }
 
-      toast.success(kind === "short" ? "Short published" : "Video published");
-      navigate(kind === "short" ? "/clips" : "/");
+      const href = videoId ? `/watch/${videoId}` : "/profile";
+      publishedRef.current = true;
+      finishJob(jobId, { href, detail: notes[0] ?? null });
+      for (const note of notes) toast.info(note);
+      toast.success(kind === "short" ? "Short published." : "Video published.");
+      navigate("/profile");
     } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : "Upload failed.");
-      setUploadPhase("");
+      publishedRef.current = false;
+      const message = caught instanceof Error ? caught.message : "The upload failed.";
+      failJob(jobId, message);
+      toast.error(message);
     } finally {
       setUploading(false);
-    }
-  }
-
-  /* ------------------------------------------------------------ publish post */
-
-  async function publishPost() {
-    if (postPublishing) return;
-    if (!postPhoto && !postCaption.trim()) return;
-    setPostPublishing(true);
-    try {
-      let mediaUrl: string | undefined;
-      if (postPhoto) {
-        setPostProgress("Uploading your photo…");
-        const extension = (postPhoto.name.split(".").pop() || "jpg").toLowerCase();
-        const path = `posts/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-        const { error } = await supabase.storage.from("thumbnails").upload(path, postPhoto.blob, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: postPhoto.mimeType || "image/jpeg",
-        });
-        if (error) throw new Error(`The photo could not be uploaded: ${error.message}`);
-        mediaUrl = supabase.storage.from("thumbnails").getPublicUrl(path).data.publicUrl;
-      }
-
-      setPostProgress("Publishing…");
-      await createPost.mutateAsync({
-        body: postCaption.trim() || " ",
-        ...(mediaUrl ? { mediaUrl } : {}),
-        ...(postLink.trim() ? { linkUrl: postLink.trim() } : {}),
-      });
-      toast.success("Post published");
-      navigate("/posts");
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : "The post could not be published.");
-    } finally {
-      setPostProgress("");
-      setPostPublishing(false);
+      setUploadPhase("");
+      abortRef.current = null;
     }
   }
 
@@ -509,36 +484,37 @@ export default function CreateStudio() {
   function goBack() {
     if (stage === "details") return setStage("edit");
     if (stage === "edit") return setStage("trim");
-    if (stage === "trim") return setStage("source");
-    if (stage === "camera" || stage === "gallery") return setStage("source");
-    if (stage === "post") return setStage("gallery");
+    if (stage === "trim") return setStage(file ? "selected" : "gallery");
+    if (stage === "selected") return setStage("gallery");
+    if (stage === "camera") return setStage("gallery");
     requestClose();
   }
 
   const stageTitle =
-    stage === "source"
-      ? "Create"
+    stage === "gallery"
+      ? "Select a video"
       : stage === "camera"
-        ? kind === "short"
-          ? "Record a Clip"
-          : "Record a video"
-        : stage === "gallery"
-          ? "Gallery"
-          : stage === "post"
-            ? "New post"
+        ? "Record a Short"
+        : stage === "selected"
+          ? "Upload a video"
           : stage === "trim"
-            ? "Trim"
-          : stage === "edit"
-            ? "Edit"
-            : "Add details";
+            ? kind === "short"
+              ? "Trim your Short"
+              : "Trim"
+            : stage === "edit"
+              ? "Edit"
+              : "Add details";
+
+  const durationLabel = `${(trim.end - trim.start).toFixed(1)}s`;
+  const resolutionLabel = resolution ? `${resolution.width}×${resolution.height}` : "unknown size";
 
   if (authLoading || !user) {
     return (
-      <HkTubeShell title="Create">
-        <div className="grid min-h-[55vh] place-items-center">
+      <div className="hkc-root">
+        <div className="grid min-h-[60vh] place-items-center">
           <Loader2 className="size-7 animate-spin text-fuchsia-300" />
         </div>
-      </HkTubeShell>
+      </div>
     );
   }
 
@@ -549,7 +525,9 @@ export default function CreateStudio() {
           <ArrowLeft />
         </button>
         <span className="hkc-title">{stageTitle}</span>
-        {stage === "trim" || stage === "edit" ? (
+        {stage === "camera" ? (
+          <span style={{ width: 40 }} />
+        ) : stage === "trim" || stage === "edit" ? (
           <button
             type="button"
             className="hkc-pill"
@@ -557,108 +535,12 @@ export default function CreateStudio() {
           >
             Next
           </button>
-        ) : stage === "source" || stage === "details" || stage === "post" ? (
-          <button type="button" className="hkc-icon-btn" onClick={requestClose} aria-label="Close create studio">
+        ) : (
+          <button type="button" className="hkc-icon-btn" onClick={requestClose} aria-label="Close upload">
             <X />
           </button>
-        ) : (
-          <span style={{ width: 40 }} />
         )}
       </header>
-
-      {stage === "source" && (
-        <div className="hkc-stage" style={{ alignItems: "flex-start", placeItems: "stretch" }}>
-          <div style={{ width: "100%", padding: "8px 16px 24px", overflowY: "auto" }}>
-            <p className="hkc-row-hint" style={{ marginBottom: 14 }}>
-              Pick what you want to create. Long videos are landscape 16:9, Clips are vertical 9:16.
-            </p>
-
-            {channelError && (
-              <div className="hkc-note" style={{ borderColor: "rgba(254,44,85,.35)", color: "#ffb3c1" }}>
-                {channelError}{" "}
-                <button
-                  type="button"
-                  style={{ textDecoration: "underline", background: "none", border: 0, color: "inherit", cursor: "pointer" }}
-                  onClick={() => navigate("/channel/create")}
-                >
-                  Create a channel
-                </button>
-              </div>
-            )}
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-              {(
-                [
-                  { id: "video" as Kind, label: "Long video", hint: "16:9 landscape", ratio: "16 / 9" },
-                  { id: "short" as Kind, label: "Clip", hint: "9:16 vertical", ratio: "9 / 16" },
-                ] as const
-              ).map(option => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => {
-                    setKind(option.id);
-                    setStage("gallery");
-                  }}
-                  style={{
-                    display: "grid",
-                    gap: 8,
-                    padding: 14,
-                    border: `1px solid ${kind === option.id ? "#fe2c55" : "rgba(255,255,255,.12)"}`,
-                    borderRadius: 14,
-                    background: "rgba(255,255,255,.04)",
-                    color: "#fff",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "grid",
-                      width: 54,
-                      aspectRatio: option.ratio,
-                      placeItems: "center",
-                      border: "1px solid rgba(255,255,255,.25)",
-                      borderRadius: 7,
-                      margin: "0 auto",
-                    }}
-                  >
-                    <Images className="size-4" />
-                  </span>
-                  <span style={{ fontWeight: 800, fontSize: 14 }}>{option.label}</span>
-                  <span style={{ fontSize: 11.5, opacity: 0.62 }}>{option.hint}</span>
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setKind("short");
-                  setStage("camera");
-                }}
-                style={sourceButtonStyle}
-              >
-                <Sparkles className="size-5" />
-                <span style={{ fontWeight: 800, fontSize: 14 }}>Record</span>
-                <span style={{ fontSize: 11.5, opacity: 0.62 }}>
-                  {isRecordingSupported() ? "Camera, timer, speed, filters" : "Camera not supported here"}
-                </span>
-              </button>
-
-              <button type="button" onClick={() => setStage("gallery")} style={sourceButtonStyle}>
-                <Images className="size-5" />
-                <span style={{ fontWeight: 800, fontSize: 14 }}>Gallery</span>
-                <span style={{ fontSize: 11.5, opacity: 0.62 }}>Folders and imported media</span>
-              </button>
-            </div>
-
-            <p className="hkc-note">
-              The gallery step keeps the media you import on this device and shows it in folders, so
-              trimming and editing work on the real file before anything is uploaded.
-            </p>
-          </div>
-        </div>
-      )}
 
       {stage === "gallery" && (
         <GalleryStage
@@ -666,21 +548,18 @@ export default function CreateStudio() {
             const picked = new File([entry.blob], entry.name, { type: entry.mimeType || "video/mp4" });
             void acceptFile(picked, kind);
           }}
-          onPhotoPicked={(entry: MediaEntry) => {
-            // A photo cannot be trimmed or retimed like video, so it goes down
-            // the Post path — the real composer, with the photo already picked.
-            setPostPhoto(entry);
-            setStage("post");
+          onPhotoPicked={() => {
+            toast.info("Photos go to the Post composer, where you can post up to ten images.");
+            navigate("/posts/new");
           }}
-          onCancel={() => setStage("source")}
-          photosOnly={query.get("category") === "post"}
+          onCancel={() => navigate("/")}
         />
       )}
 
       {stage === "camera" && (
         <div className="hkc-stage">
           <CameraStage
-            vertical={kind === "short"}
+            vertical
             filter={filter}
             onFilterChange={setFilter}
             onRecorded={(clip: CameraClip) => {
@@ -688,20 +567,52 @@ export default function CreateStudio() {
               setSpeed(clip.speed);
               void acceptFile(clip.file, "short");
             }}
-            onClose={() => setStage("source")}
+            onClose={() => setStage("gallery")}
             onOpenGallery={() => setStage("gallery")}
             galleryThumb={coverPreview || null}
           />
         </div>
       )}
 
+      {stage === "selected" && file && (
+        <div className="hkc-stage">
+          <div className="hkc-frame hkc-frame--landscape" style={{ width: "100%", aspectRatio: "16 / 9" }}>
+            <video src={fileUrl} controls playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          </div>
+
+          <div style={{ width: "100%", padding: "0 16px 20px", display: "grid", gap: 10, marginTop: 14 }}>
+            <p className="hkc-row-hint" style={{ textAlign: "center" }}>
+              {file.name} · {duration.toFixed(1)}s · {resolutionLabel}
+            </p>
+            <button
+              type="button"
+              className="hkc-pill hkc-pill--ghost"
+              style={{ width: "100%", minHeight: 46, justifyContent: "center" }}
+              onClick={() => {
+                setKind("short");
+                setTrim(current => clampTrim({ start: 0, end: Math.min(current.end, MAX_SHORT_SECONDS) }, duration));
+                setStage("trim");
+              }}
+            >
+              <Scissors className="size-4" /> Edit into a Short
+            </button>
+            <button
+              type="button"
+              className="hkc-pill"
+              style={{ width: "100%", minHeight: 46, justifyContent: "center" }}
+              onClick={() => setStage("details")}
+            >
+              Next
+            </button>
+            <p className="hkc-row-hint" style={{ textAlign: "center" }}>
+              Edit into a Short makes a vertical Clip from this video. Next takes you straight to Add details.
+            </p>
+          </div>
+        </div>
+      )}
+
       {stage === "trim" && file && (
-        <TrimStage
-          src={fileUrl}
-          duration={duration}
-          trim={trim}
-          onTrimChange={setTrim}
-        />
+        <TrimStage src={fileUrl} duration={duration} trim={trim} onTrimChange={setTrim} />
       )}
 
       {stage === "edit" && file && (
@@ -711,69 +622,126 @@ export default function CreateStudio() {
           effects={effects}
           overlays={overlays}
           caption={caption}
+          speed={speed}
           addedAudio={addedAudio}
           voiceover={voiceover}
           voiceoverAvailable={Boolean(navigator.mediaDevices?.getUserMedia)}
           busy={busy}
           busyLabel={busyLabel}
           busyHint={busyHint}
-          busyFraction={busyFraction}
+          busyFraction={0}
           onFilterChange={setFilter}
           onEffectsChange={setEffects}
           onOverlaysChange={setOverlays}
           onCaptionChange={setCaption}
+          onSpeedChange={setSpeed}
           onAddedAudioChange={setAddedAudio}
           onVoiceoverChange={setVoiceover}
-          speed={speed}
-          onSpeedChange={setSpeed}
-          onSaveToDevice={() => void saveToDevice()}
+          onSaveToDevice={() => {
+            void (async () => {
+              if (!file) return;
+              setBusy(true);
+              setBusyLabel("Saving to your device");
+              setBusyHint("Baking the edit locally. This runs in real time.");
+              try {
+                const exported = await exportEditedVideo({
+                  file,
+                  trim,
+                  filter,
+                  effects,
+                  caption,
+                  speed,
+                  overlays,
+                  addedAudio,
+                  voiceover: voiceover.stream,
+                  vertical: kind === "short",
+                  forceReEncode: needsReframe(sourceRatio, kind === "short"),
+                });
+                const url = URL.createObjectURL(exported.file);
+                const anchor = document.createElement("a");
+                anchor.href = url;
+                anchor.download = exported.file.name;
+                anchor.click();
+                window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+                toast.success("Saved to your device.");
+              } catch (caught) {
+                toast.error(caught instanceof Error ? caught.message : "The edit could not be saved.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
         />
       )}
 
       {stage === "details" && file && (
-        <DetailsStage
+        <UploadDetailsPage
           details={details}
           onChange={patch => setDetails(current => ({ ...current, ...patch }))}
-          coverUrl={coverPreview || null}
-          isShort={kind === "short"}
-          hasCustomCover={Boolean(coverFile)}
-          onEditCover={() => setEditingCover(true)}
-          playlists={playlists}
           onUpload={() => void publish()}
+          isShort={kind === "short"}
+          coverUrl={coverPreview || null}
+          hasCustomCover={Boolean(coverFile)}
+          onPickCover={() => setCoverPicking(true)}
+          onUploadFrame={() => thumbInputRef.current?.click()}
+          playlists={playlists}
+          onPlaylistsChange={setPlaylists}
           uploading={uploading}
-          uploadProgress={uploadProgress}
-          uploadPhase={uploadPhase}
           canUpload={canUpload}
           blocker={blocker}
+          progressLabel={uploadPhase || "Uploading…"}
+          durationLabel={durationLabel}
+          resolutionLabel={resolutionLabel}
+          mentionCandidates={mentionCandidates}
         />
       )}
 
-      {stage === "post" && (
-        <PostStage
-          photo={postPhoto}
-          thumbnailSrc={postThumbnail}
-          caption={postCaption}
-          link={postLink}
-          publishing={postPublishing}
-          progressLabel={postProgress || "Working…"}
-          onCaptionChange={setPostCaption}
-          onLinkChange={setPostLink}
-          onOpenGallery={() => setStage("gallery")}
-          onClearPhoto={() => setPostPhoto(null)}
-          onPublish={() => void publishPost()}
-        />
-      )}
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={event => {
+          const picked = event.target.files?.[0];
+          event.target.value = "";
+          if (picked) void acceptFile(picked);
+        }}
+      />
 
-      {editingCover && (
+      {/* "Change photo": a custom thumbnail straight from the device gallery. */}
+      <input
+        ref={thumbInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={event => {
+          const picked = event.target.files?.[0];
+          event.target.value = "";
+          if (!picked) return;
+          if (!picked.type.startsWith("image/")) {
+            toast.error("Choose an image for the thumbnail.");
+            return;
+          }
+          if (picked.size > 12 * 1024 * 1024) {
+            toast.error("Thumbnails must be under 12 MB.");
+            return;
+          }
+          setCoverFile(picked);
+          setCoverPreview(URL.createObjectURL(picked));
+          toast.success("Custom thumbnail selected.");
+        }}
+      />
+
+      {coverPicking && (
         <CoverPicker
           file={file}
           at={coverAt}
           duration={duration}
-          onCancel={() => setEditingCover(false)}
+          onCancel={() => setCoverPicking(false)}
           onPick={seconds => {
             setCoverAt(seconds);
             void refreshCover(seconds);
-            setEditingCover(false);
+            setCoverPicking(false);
           }}
         />
       )}
@@ -790,20 +758,10 @@ export default function CreateStudio() {
   );
 }
 
-const sourceButtonStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 8,
-  placeItems: "center",
-  padding: 18,
-  border: "1px solid rgba(255,255,255,.12)",
-  borderRadius: 14,
-  background: "rgba(255,255,255,.04)",
-  color: "#fff",
-  cursor: "pointer",
-  textAlign: "center",
-};
-
-/** Frame-accurate cover picker over the trimmed range. */
+/**
+ * Frame-accurate cover picker over the trimmed range. The chosen frame is baked
+ * with the active filter and layers, so the thumbnail matches the upload.
+ */
 function CoverPicker({
   file,
   at,
@@ -829,7 +787,7 @@ function CoverPicker({
     video.muted = true;
     const onSeeked = () => {
       const canvas = document.createElement("canvas");
-      const width = 180;
+      const width = 200;
       canvas.width = width;
       canvas.height = Math.max(1, Math.round((video.videoHeight / Math.max(video.videoWidth, 1)) * width));
       const ctx = canvas.getContext("2d");
@@ -849,21 +807,18 @@ function CoverPicker({
   }, [file, value, duration]);
 
   return (
-    <div className="hkc-overlay" role="dialog" aria-modal="true" aria-label="Choose a cover">
-      <div className="hkc-dialog" style={{ width: "min(440px, 100%)" }}>
-        <h2 className="hkc-dialog-title">Choose a cover</h2>
-        <p className="hkc-dialog-body">Drag the slider to pick the frame viewers see first.</p>
-        <div
-          style={{
-            display: "grid",
-            placeItems: "center",
-            marginBottom: 14,
-            overflow: "hidden",
-            borderRadius: 12,
-            background: "#000",
-          }}
-        >
-          {preview ? <img src={preview} alt="Cover preview" style={{ maxHeight: 220, objectFit: "contain" }} /> : null}
+    <div className="hkc-overlay" role="dialog" aria-modal="true" aria-label="Select a cover frame">
+      <div className="hkc-dialog" style={{ width: "min(460px, 100%)" }}>
+        <h2 className="hkc-dialog-title">Select a cover frame</h2>
+        <p className="hkc-dialog-body">
+          Drag to choose the frame viewers see first. Use Change photo to upload your own thumbnail instead.
+        </p>
+        <div style={{ display: "grid", placeItems: "center", margin: "12px 0", background: "#000", borderRadius: 12, overflow: "hidden" }}>
+          {preview ? (
+            <img src={preview} alt="Cover preview" style={{ maxHeight: 230, objectFit: "contain" }} />
+          ) : (
+            <ImageIcon className="size-6" style={{ margin: 24 }} />
+          )}
         </div>
         <input
           type="range"
@@ -883,10 +838,13 @@ function CoverPicker({
             Cancel
           </button>
           <button type="button" className="hkc-pill" onClick={() => onPick(value)}>
-            Use this frame
+            Save this frame
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+/** True when this browser can record a Short with the camera. */
+export const studioSupportsRecording = isRecordingSupported;

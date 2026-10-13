@@ -946,3 +946,130 @@
   .hkc-rec-dot,
   .hkc-shutter-core { animation: none; transition: none; }
 }
+
+/* ------------------------------------------------------ upload activity */
+
+/* The floating stack of upload cards, above the bottom navigation. */
+.hkc-upload-stack {
+  position: fixed;
+  left: 50%;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  z-index: 120;
+  display: grid;
+  gap: 8px;
+  width: min(420px, calc(100vw - 24px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hkc-upload-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 14px;
+  background: rgb(24 26 32 / 97%);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 45%);
+  pointer-events: auto;
+}
+
+.hkc-upload-card[data-stage="done"] {
+  border-color: rgb(52 211 153 / 35%);
+}
+
+.hkc-upload-card[data-stage="failed"] {
+  border-color: rgb(248 113 113 / 40%);
+}
+
+.hkc-upload-thumb {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 55%);
+}
+
+.hkc-upload-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hkc-upload-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hkc-upload-title {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hkc-upload-close {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+}
+
+.hkc-upload-status {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 3px 0 6px;
+  font-size: 11.5px;
+  color: rgb(255 255 255 / 70%);
+}
+
+.hkc-upload-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff8fa3;
+  text-decoration: none;
+}
+
+.hkc-upload-link:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------- editor + post extras */
+
+/* A scrollable body that still lets the action row stay pinned. */
+.hkc-scroll-fill {
+  flex: 1;
+  min-height: 0;
+}
+
+/* One row of the sound library or the playlist picker. */
+.hkc-record-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 8px;
+  border-radius: 10px;
+}
+
+.hkc-record-row:hover {
+  background: rgb(255 255 255 / 6%);
+}
+
+/* The sound preview strip inside the post composer. */
+.hkc-post-audio {
+  width: 100%;
+  height: 34px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 6%);
+}
