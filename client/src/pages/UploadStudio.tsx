@@ -97,6 +97,8 @@ export default function UploadStudioPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [stage, setStage] = useState<"select" | "preview" | "details">("select");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<StudioMode>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("category") === "shorts" || params.get("mode") === "clip" ? "clip" : "video";
@@ -139,6 +141,8 @@ export default function UploadStudioPage() {
       setThumbnailSource("automatic");
       setError("");
       setResultMessage("");
+      setPickerOpen(false);
+      setStage("select");
     };
     window.addEventListener("hktube-upload-mode", handler);
     return () => window.removeEventListener("hktube-upload-mode", handler);
@@ -179,6 +183,7 @@ export default function UploadStudioPage() {
       if (!tags.trim()) setTags(suggestedTags(next.name).join(", "));
       setThumbnailSource("automatic");
       setThumbnail(await thumbnailAt(next));
+      setPickerOpen(false);
       setStage("preview");
       setResultMessage("");
     } catch (cause) {
@@ -191,7 +196,7 @@ export default function UploadStudioPage() {
     if (busy || mode === next) return;
     setMode(next);
     setFile(null); setInfo(null); setThumbnail(null); setThumbnailSource("automatic");
-    setError(""); setResultMessage("");
+    setError(""); setResultMessage(""); setPickerOpen(false); setStage("select");
   }
 
   function selectThumbnail(event: ChangeEvent<HTMLInputElement>) {
@@ -236,7 +241,7 @@ export default function UploadStudioPage() {
         : "Upload saved successfully.";
       setResultMessage(message);
       toast.success(waitingForChecks ? "Upload received; processing is pending." : "Upload saved.");
-      setFile(null); setInfo(null); setThumbnail(null); setTitle(""); setDescription(""); setTags("");
+      setFile(null); setInfo(null); setThumbnail(null); setTitle(""); setDescription(""); setTags(""); setStage("select");
       if (!waitingForChecks) navigate("/studio");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Upload failed. Try again.";
@@ -256,7 +261,7 @@ export default function UploadStudioPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-400/[.06] px-3 py-2 text-xs font-bold text-emerald-200"><ShieldCheck className="size-4" />Secure upload · account ownership</div>
         </div>
 
-        <section className="hktube-upload-card overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20">
+        <section className={`hktube-upload-card hktube-upload-stage-${stage} overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20`}>
           <header className="border-b border-white/10 bg-gradient-to-r from-violet-500/15 via-transparent to-cyan-400/[.08] p-5 sm:p-8">
             <p className="text-[11px] font-black uppercase tracking-[.22em] text-cyan-300">ADD DETAILS</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">{mode === "clip" ? "Create a Short" : "Upload a video"}</h1>
@@ -273,17 +278,38 @@ export default function UploadStudioPage() {
             </div>
           </header>
 
+          {pickerOpen && <div className="hktube-gallery-picker fixed inset-0 z-[120] bg-white text-slate-900" role="dialog" aria-modal="true" aria-label="Select a video">
+            <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4 shadow-sm">
+              <button type="button" onClick={() => setPickerOpen(false)} className="text-sm font-semibold text-slate-500">Cancel</button>
+              <h2 className="text-base font-semibold">Select a video</h2>
+              <button type="button" onClick={() => setPickerOpen(false)} className="text-sm font-bold text-slate-900">Done</button>
+            </div>
+            <div className="mx-auto flex max-w-xl flex-col px-4 py-5">
+              <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => galleryInputRef.current?.click()} className="hktube-picker-source flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+                  <span className="grid size-10 place-items-center rounded-full bg-violet-100 text-violet-700"><Video className="size-5" /></span><span><b className="block text-sm">Camera</b><small className="text-xs text-slate-500">Record a video</small></span>
+                </button>
+                <button type="button" onClick={() => galleryInputRef.current?.click()} className="hktube-picker-source flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 p-4 text-left">
+                  <span className="grid size-10 place-items-center rounded-full bg-violet-600 text-white"><UploadCloud className="size-5" /></span><span><b className="block text-sm">Browse</b><small className="text-xs text-slate-500">Choose from device</small></span>
+                </button>
+              </div>
+              <div className="mt-6 grid grid-cols-3 gap-1.5">
+                {Array.from({ length: 15 }).map((_, index) => <button key={index} type="button" onClick={() => galleryInputRef.current?.click()} className="hktube-picker-tile aspect-square rounded-md bg-slate-100" aria-label={`Gallery item ${index + 1}`} />)}
+              </div>
+              <p className="mt-6 text-center text-xs text-slate-400">Your recent videos will appear here. Select Browse to choose a video from your device.</p>
+            </div>
+          </div>}
           <form onSubmit={event => void publish(event)} className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
             <div className="min-w-0 space-y-5">
               <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><UploadCloud className="size-5" /></span><div><h2 className="font-black text-white">Select from gallery</h2><p className="mt-1 text-xs text-slate-500">MP4/H.264 or WebM · up to 900 MB · resumable transfer</p></div></div>
-                <label className="hktube-gallery-drop mt-4 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[.025] p-5 text-center transition hover:border-violet-300/40 hover:bg-violet-500/[.04]">
-                  <input type="file" accept="video/mp4,video/webm" className="sr-only" disabled={busy} onChange={event => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+                <button type="button" disabled={busy} onClick={() => setPickerOpen(true)} className="hktube-gallery-drop mt-4 flex min-h-40 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[.025] p-5 text-center transition hover:border-violet-300/40 hover:bg-violet-500/[.04]">
                   <span className="grid size-14 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">{file ? <CheckCircle2 className="size-7" /> : <Video className="size-7" />}</span>
                   <span className="mt-3 break-all text-sm font-black text-white">{file ? file.name : "Select a video from your gallery"}</span>
                   <span className="mt-1 text-xs text-slate-500">Choose from Recent, Camera, Videos or Albums</span>
-                </label>
-                {file && info && <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{info.width} × {info.height}</span><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{durationLabel(info.duration)}</span><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{bytesLabel(file.size)}</span><button type="button" disabled={busy} onClick={() => {setFile(null);setInfo(null);setThumbnail(null);}} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1.5 text-slate-300"><X className="size-3.5" />Replace</button></div>}
+                </button>
+                <input ref={galleryInputRef} type="file" accept="video/mp4,video/webm" className="sr-only" disabled={busy} onChange={event => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+                {file && info && <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{info.width} × {info.height}</span><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{durationLabel(info.duration)}</span><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{bytesLabel(file.size)}</span><button type="button" disabled={busy} onClick={() => {setFile(null);setInfo(null);setThumbnail(null);setStage("select");}} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1.5 text-slate-300"><X className="size-3.5" />Replace</button></div>}
               </section>
 
               {file && info && stage === "preview" && <section className="hktube-upload-card overflow-hidden rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">

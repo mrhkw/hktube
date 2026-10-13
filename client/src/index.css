@@ -1434,3 +1434,12 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
   .hktube-upload-reference .hktube-gallery-drop { min-height: 170px; border-color: #c4b5fd !important; background: #faf5ff !important; }
   .hktube-upload-reference .hktube-sticky-upload { position: sticky; bottom: 72px; z-index: 10; background: #111827 !important; color: #fff !important; box-shadow: 0 10px 24px rgba(15,23,42,.22); }
 }
+
+/* Upload reference interaction: white gallery picker and short staged transitions. */
+.hktube-gallery-picker { animation: hktube-picker-in .22s ease-out both; }
+.hktube-picker-source, .hktube-picker-tile { transition: transform .18s ease, background-color .18s ease, border-color .18s ease; }
+.hktube-picker-source:active, .hktube-picker-tile:active { transform: scale(.97); }
+.hktube-upload-stage-preview, .hktube-upload-stage-details { animation: hktube-upload-stage-in .24s ease-out both; }
+@keyframes hktube-picker-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hktube-upload-stage-in { from { opacity: .35; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .hktube-gallery-picker, .hktube-upload-stage-preview, .hktube-upload-stage-details { animation: none; } }
