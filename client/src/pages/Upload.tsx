@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { MediaEditor } from "@/components/MediaEditor";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   listMySupabaseChannels,
@@ -262,7 +263,12 @@ export default function UploadPage() {
   const [channelError, setChannelError] = useState("");
   const [channelId, setChannelId] = useState("");
 
-  const [mode, setMode] = useState<UploadMode>("auto");
+  const [mode, setMode] = useState<UploadMode>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("category") === "shorts" || params.get("mode") === "clip") return "clip";
+    if (params.get("mode") === "video") return "video";
+    return "auto";
+  });
   const [step, setStep] = useState<Step>("media");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1227,6 +1233,9 @@ export default function UploadPage() {
                       </div>
                     </div>
                   </div>
+                )}
+                {file && videoInfo && (
+                  <MediaEditor file={file} isShort={isClip} onApply={edited => void chooseVideo(edited)} />
                 )}
               </section>
             ) : (
