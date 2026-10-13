@@ -128,6 +128,22 @@ export default function UploadStudioPage() {
   useEffect(() => () => { if (videoUrl) URL.revokeObjectURL(videoUrl); }, [videoUrl]);
   useEffect(() => () => { if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl); }, [thumbnailUrl]);
   useEffect(() => {
+    const handler = (event: Event) => {
+      const mode = (event as CustomEvent<unknown>).detail;
+      if (mode !== "video" && mode !== "clip") return;
+      setMode(mode);
+      setFile(null);
+      setInfo(null);
+      setThumbnail(null);
+      setThumbnailSource("automatic");
+      setError("");
+      setResultMessage("");
+    };
+    window.addEventListener("hktube-upload-mode", handler);
+    return () => window.removeEventListener("hktube-upload-mode", handler);
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       if (!authLoading) startLogin();
       return;
