@@ -120,7 +120,8 @@ async function exportEditedVideo(
         }
       }
       if (video.currentTime >= options.end || video.ended) {
-        if (video.currentTime >= options.end && !video.paused) video.pause();
+        if (recorder.state !== "inactive") recorder.stop();
+        if (!video.paused) video.pause();
         return;
       }
       animationFrame = window.requestAnimationFrame(drawFrame);
@@ -266,7 +267,7 @@ export function MediaEditor({ file, isShort, onApply }: MediaEditorProps) {
 
       <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_240px]">
         <div className={isShort ? "mx-auto w-full max-w-[300px]" : "w-full"}>
-          <div className={isShort ? "aspect-[9/16] overflow-hidden rounded-xl bg-black" : "aspect-video overflow-hidden rounded-xl bg-black"}>
+          <div className={"relative " + (isShort ? "aspect-[9/16] overflow-hidden rounded-xl bg-black" : "aspect-video overflow-hidden rounded-xl bg-black")}>
             <video
               ref={videoRef}
               src={previewUrl}
@@ -278,7 +279,7 @@ export function MediaEditor({ file, isShort, onApply }: MediaEditorProps) {
             />
           </div>
           {overlay.trim() && (
-            <p className="mt-2 rounded-lg bg-black/60 px-3 py-2 text-center text-sm font-black text-white">{overlay.slice(0, 120)}</p>
+            <div className="pointer-events-none absolute inset-x-3 bottom-[20%] rounded-lg bg-black/60 px-3 py-2 text-center text-sm font-black text-white">{overlay.slice(0, 120)}</div>
           )}
         </div>
 
