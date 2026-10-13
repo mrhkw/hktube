@@ -1234,9 +1234,6 @@ export default function UploadPage() {
                     </div>
                   </div>
                 )}
-                {file && videoInfo && (
-                  <MediaEditor file={file} isShort={isClip} onApply={edited => void chooseVideo(edited)} />
-                )}
               </section>
             ) : (
               <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5 transition-all duration-300 sm:p-7">
@@ -1255,6 +1252,9 @@ export default function UploadPage() {
                 </div>
 
                 <div className="mt-6 space-y-5">
+                  {file && videoInfo && (
+                    <MediaEditor file={file} isShort={isClip} onApply={edited => void chooseVideo(edited)} />
+                  )}
                   <label className="block">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-black text-white">
