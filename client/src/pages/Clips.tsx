@@ -641,7 +641,7 @@ export default function ClipsPage() {
                 preload="metadata"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
-                  " relative z-10 size-full min-h-0 object-contain bg-black transition-opacity duration-300 sm:rounded-3xl"
+                  " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
                 }
                 onPlay={() => {
                   setMediaError(false);
