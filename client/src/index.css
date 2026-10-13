@@ -1333,6 +1333,15 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
     border-radius: 1.5rem;
     box-shadow: 0 24px 80px rgb(0 0 0 / 48%);
   }
+  /* The full-height rule near the top of this file is written as
+     `body:has(.hktube-clips-page) .hktube-clips-viewport`, which outranks the
+     block above. An explicit height always beats `aspect-ratio`, so without
+     this the settled 9:16 card was stretched to the full viewport height and the
+     video was cropped to fill it. Restating it at the same specificity, later in
+     the cascade, lets the aspect ratio stay authoritative. */
+  body:has(.hktube-clips-page) .hktube-clips-viewport {
+    height: auto !important;
+  }
   .hktube-clips-page .hktube-clips-viewport > video,
   .hktube-clips-page .hktube-clips-viewport > img {
     width: 100% !important;

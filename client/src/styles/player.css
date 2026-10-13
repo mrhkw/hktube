@@ -1,0 +1,656 @@
+/* ---------------------------------------------------------------------------
+   YouTube-style player chrome for the long-form watch page.
+
+   Loaded from `YouTubePlayer.tsx`, so Vite keeps it in the watch route's lazy
+   chunk. Everything is scoped under `.ytp-*` so it cannot leak into the rest of
+   the app.
+   --------------------------------------------------------------------------- */
+
+.ytp-shell {
+  position: relative;
+  width: 100%;
+}
+
+.ytp-shell [data-ytp-frame] {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  background: #000;
+}
+
+.ytp-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+/* Interaction surface. Sits above the video but below every control, so a click
+   on a button never also reaches the play/pause handler. */
+.ytp-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------- big play button */
+
+.ytp-big-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 62%);
+  color: #fff;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.ytp-big-play:hover {
+  background: #f00;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.ytp-big-play svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+  stroke: none;
+  margin-left: 3px;
+}
+
+/* --------------------------------------------------------------- buffering */
+
+.ytp-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  width: 60px;
+  height: 60px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  transform: translate(-50%, -50%);
+}
+
+.ytp-spinner svg {
+  width: 30px;
+  height: 30px;
+  animation: ytp-spin 900ms linear infinite;
+}
+
+@keyframes ytp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ------------------------------------------------------- double-tap seek flash */
+
+.ytp-seek-flash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  width: 26%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ytp-seek-flash--left { left: 0; }
+.ytp-seek-flash--right { right: 0; }
+
+.ytp-seek-flash svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+
+.ytp-seek-flash span {
+  text-shadow: 0 1px 6px rgb(0 0 0 / 80%);
+}
+
+.ytp-seek-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 22%);
+  transform: translate(-50%, -50%);
+  animation: ytp-ripple 620ms ease-out forwards;
+}
+
+@keyframes ytp-ripple {
+  to {
+    width: 420px;
+    height: 420px;
+    opacity: 0;
+  }
+}
+
+/* -------------------------------------------------------------- autoplay next */
+
+.ytp-next-overlay {
+  position: absolute;
+  right: 14px;
+  bottom: 74px;
+  left: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: rgb(15 15 15 / 94%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.ytp-next-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ytp-next-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.ytp-next-play {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f0f0f;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ytp-next-countdown {
+  color: rgb(255 255 255 / 62%);
+  font-size: 12px;
+}
+
+.ytp-next-cancel {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 11%);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------- overlay + stats */
+
+.ytp-overlay-top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  padding: 12px 14px;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 62%), transparent);
+  pointer-events: none;
+}
+
+.ytp-overlay-top > * {
+  pointer-events: auto;
+}
+
+.ytp-stats {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 4;
+  width: min(340px, calc(100% - 24px));
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgb(10 10 10 / 94%);
+  color: #e9e9e9;
+  font-size: 12px;
+  line-height: 1.55;
+  box-shadow: 0 12px 34px rgb(0 0 0 / 50%);
+}
+
+.ytp-stats-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.ytp-stats-head button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.ytp-stats dl {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.ytp-stats dl > div {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.ytp-stats dt {
+  color: rgb(255 255 255 / 55%);
+}
+
+.ytp-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ytp-stats-source {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ controls */
+
+.ytp-controls {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  padding: 0 12px 8px;
+  background: linear-gradient(to top, rgb(0 0 0 / 78%) 0%, rgb(0 0 0 / 42%) 55%, transparent 100%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+}
+
+.ytp-shell.is-controls-visible .ytp-controls,
+.ytp-controls:focus-within {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Progress bar: a tall invisible hit area around a thin visible track. */
+.ytp-progress {
+  position: relative;
+  display: flex;
+  height: 17px;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+
+.ytp-progress-track {
+  position: relative;
+  width: 100%;
+  height: 3.5px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 26%);
+  transition: height 100ms ease;
+}
+
+.ytp-progress:hover .ytp-progress-track,
+.ytp-progress:focus-visible .ytp-progress-track {
+  height: 6px;
+}
+
+.ytp-progress-buffered,
+.ytp-progress-played {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 999px;
+}
+
+.ytp-progress-buffered { background: rgb(255 255 255 / 42%); }
+
+.ytp-progress-played {
+  background: #f00;
+  z-index: 1;
+}
+
+.ytp-progress-knob {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #f00;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 120ms ease;
+}
+
+.ytp-progress:hover .ytp-progress-knob,
+.ytp-progress:focus-visible .ytp-progress-knob {
+  opacity: 1;
+}
+
+.ytp-progress-hoverline {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  z-index: 2;
+  width: 1px;
+  background: rgb(255 255 255 / 55%);
+  pointer-events: none;
+}
+
+.ytp-progress-tip {
+  position: absolute;
+  bottom: 22px;
+  z-index: 3;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: rgb(0 0 0 / 82%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ytp-buttons {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  gap: 1px;
+  color: #fff;
+}
+
+.ytp-spacer {
+  flex: 1;
+}
+
+.ytp-btn {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+.ytp-btn:hover { background: rgb(255 255 255 / 14%); }
+
+.ytp-btn:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.ytp-btn:disabled:hover { background: none; }
+
+.ytp-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ytp-btn.is-on { color: #fff; }
+
+.ytp-btn.is-on::after {
+  position: absolute;
+  margin-top: 26px;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: #f00;
+  content: "";
+}
+
+.ytp-btn.is-on { position: relative; }
+
+/* Volume: the slider only reveals itself on hover, like YouTube. */
+.ytp-volume {
+  display: flex;
+  align-items: center;
+}
+
+.ytp-volume-slider {
+  width: 0;
+  height: 3.5px;
+  margin-left: 0;
+  opacity: 0;
+  cursor: pointer;
+  accent-color: #fff;
+  transition: width 160ms ease, opacity 160ms ease, margin-left 160ms ease;
+}
+
+.ytp-volume:hover .ytp-volume-slider,
+.ytp-volume-slider:focus-visible {
+  width: 62px;
+  margin-left: 6px;
+  opacity: 1;
+}
+
+.ytp-time {
+  margin-left: 10px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+}
+
+.ytp-time-sep { opacity: 0.6; }
+.ytp-time-remaining { opacity: 0.62; }
+
+/* --------------------------------------------------------------------- menu */
+
+.ytp-settings-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ytp-menu {
+  position: absolute;
+  right: 0;
+  bottom: 46px;
+  z-index: 5;
+  width: 250px;
+  padding: 6px;
+  border-radius: 10px;
+  background: rgb(18 18 18 / 97%);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 55%);
+  color: #fff;
+}
+
+.ytp-menu-row,
+.ytp-menu-back {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: #fff;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ytp-menu-row:hover,
+.ytp-menu-back:hover { background: rgb(255 255 255 / 12%); }
+
+.ytp-menu-row.is-selected { color: #fff; }
+
+.ytp-menu-row.is-selected svg { color: #f00; }
+
+.ytp-menu-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: rgb(255 255 255 / 58%);
+  font-size: 12px;
+}
+
+.ytp-menu-back {
+  justify-content: flex-start;
+  gap: 8px;
+  color: rgb(255 255 255 / 82%);
+  font-weight: 600;
+}
+
+.ytp-menu-back-icon { transform: rotate(180deg); }
+
+.ytp-menu-note {
+  margin: 4px 8px 8px;
+  color: rgb(255 255 255 / 55%);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* Progress hairline shown while the controls are hidden, like YouTube. */
+.ytp-hidden-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 2px;
+  background: rgb(255 255 255 / 22%);
+  pointer-events: none;
+}
+
+.ytp-hidden-progress > div {
+  height: 100%;
+  background: #f00;
+}
+
+/* --------------------------------------------------------- theater + fullscreen */
+
+.ytp-shell--theater {
+  max-width: none;
+}
+
+.ytp-shell:fullscreen,
+.ytp-shell:-webkit-full-screen {
+  display: grid;
+  width: 100vw;
+  height: 100dvh;
+  place-items: center;
+  background: #000;
+}
+
+.ytp-shell:fullscreen [data-ytp-frame] {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
+.ytp-shell:fullscreen .ytp-video { object-fit: contain; }
+
+/* Vertical Clips played through the watch route keep their portrait frame. */
+.ytp-shell--short [data-ytp-frame] { background: #000; }
+
+/* ------------------------------------------------------------------ responsive */
+
+@media (max-width: 767px) {
+  .ytp-btn--desktop { display: none; }
+  .ytp-btn { width: 38px; height: 38px; }
+  .ytp-btn svg { width: 21px; height: 21px; }
+  .ytp-time-remaining { display: none; }
+  .ytp-time { font-size: 12px; }
+  .ytp-controls { padding: 0 8px 6px; }
+  .ytp-next-overlay { right: 8px; bottom: 60px; left: 8px; }
+  .ytp-menu { width: 220px; }
+  .ytp-volume-slider { display: none; }
+  .ytp-seek-flash { width: 30%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ytp-controls,
+  .ytp-volume-slider,
+  .ytp-progress-track,
+  .ytp-progress-knob,
+  .ytp-big-play {
+    transition: none;
+  }
+
+  .ytp-seek-ripple { display: none; }
+  .ytp-spinner svg { animation-duration: 2s; }
+}
+
+/* --------------------------------------------------------------- theater mode */
+
+/* Theater mode keeps the sidebar, but drops it below a full-width player. */
+.hktube-watch-layout--theater {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hktube-watch-layout--theater > section {
+  width: 100%;
+  max-width: none;
+}
+
+.hktube-watch-layout--theater .hktube-watch-frame {
+  border-radius: 0;
+}
+
+@media (min-width: 1280px) {
+  .hktube-watch-layout--theater .hktube-watch-frame {
+    border-radius: 1rem;
+  }
+}

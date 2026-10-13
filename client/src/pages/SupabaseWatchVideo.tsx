@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import YouTubePlayer from "@/components/YouTubePlayer";
 import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -56,6 +57,7 @@ function mediaUrl(bucket: string, path: string | null) {
 
 export default function SupabaseWatchVideo() {
   const [, params] = useRoute("/watch/:id");
+  const [, navigate] = useLocation();
   const id = params?.id || "";
   const { user } = useAuth();
   const [video, setVideo] = useState<Video | null>(null);
@@ -79,6 +81,8 @@ export default function SupabaseWatchVideo() {
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  /** Wide layout: the player takes the full row and the sidebar drops below. */
+  const [theater, setTheater] = useState(false);
   const playerRef = useRef<HTMLVideoElement | null>(null);
   const viewed = useRef(false);
   const lastSavedSecond = useRef(0);
@@ -147,34 +151,18 @@ export default function SupabaseWatchVideo() {
       objectId: video.id,
     }).catch(() => undefined);
   }, [video?.id]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (
-        !playerRef.current ||
-        (event.target as HTMLElement)?.tagName === "INPUT" ||
-        (event.target as HTMLElement)?.tagName === "TEXTAREA"
-      )
-        return;
-      const el = playerRef.current;
-      if (event.key === " ") {
-        event.preventDefault();
-        if (el.paused) void el.play();
-        else el.pause();
-      }
-      if (event.key.toLowerCase() === "f") {
-        event.preventDefault();
-        if (document.fullscreenElement) void document.exitFullscreen();
-        else void el.requestFullscreen?.();
-      }
-      if (event.key === "ArrowLeft")
-        el.currentTime = Math.max(0, el.currentTime - 5);
-      if (event.key === "ArrowRight")
-        el.currentTime = Math.min(el.duration || Infinity, el.currentTime + 5);
-      if (event.key.toLowerCase() === "m") el.muted = !el.muted;
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  // Keyboard shortcuts are owned by `YouTubePlayer`, which implements the full
+  // YouTube set (space/k, j, l, arrows, m, f, t, c, i, 0-9, shift+,/shift+.).
+  // A handler here would double-fire every one of them — space would play and
+  // immediately pause again — so the page deliberately keeps none.
+  /**
+   * Advances to the top related video. Used by the player's next button and by
+   * the autoplay-next countdown, both of which the player owns.
+   */
+  function playUpNext() {
+    const upNext = related[0];
+    if (upNext) navigate(`/watch/${upNext.id}`);
+  }
   const videoUrl = useMemo(() => video?.videoUrl || null, [video?.videoUrl]);
   const thumbnailUrl = useMemo(
     () => video?.thumbnailUrl || null,
@@ -362,7 +350,14 @@ export default function SupabaseWatchVideo() {
   const isShort = Boolean(video.isShort || video.tags?.includes("shorts"));
   return (
     <HkTubeShell immersive>
-      <main className="hktube-watch-layout mx-auto grid w-full max-w-[1500px] gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <main
+        className={
+          "hktube-watch-layout mx-auto grid w-full max-w-[1500px] gap-7 " +
+          (theater
+            ? "hktube-watch-layout--theater"
+            : "lg:grid-cols-[minmax(0,1fr)_360px]")
+        }
+      >
         <section className="min-w-0">
           {mediaError && (
             <div className="mb-3 rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">
@@ -370,137 +365,138 @@ export default function SupabaseWatchVideo() {
               is preserved and you can retry/open the source.
             </div>
           )}
-          <div className={`hktube-watch-frame ${isShort ? "hktube-watch-frame--short" : "hktube-watch-frame--long"}`}>
-            <video
-              ref={playerRef}
-              src={videoUrl}
-              poster={thumbnailUrl || undefined}
-              controls
-              playsInline
-              preload="metadata"
-              className="hktube-watch-video"
-              onLoadedData={() => setMediaError(false)}
-              onLoadedMetadata={e => {
-                if (
-                  resumePosition > 0 &&
-                  resumePosition < e.currentTarget.duration - 2
-                ) {
-                  e.currentTarget.currentTime = resumePosition;
-                  toast.info(
-                    `Resuming at ${Math.floor(resumePosition / 60)}:${String(Math.floor(resumePosition % 60)).padStart(2, "0")}`
+          <YouTubePlayer
+            frameClassName={`hktube-watch-frame ${isShort ? "hktube-watch-frame--short" : "hktube-watch-frame--long"}`}
+            isShort={isShort}
+            videoRef={playerRef}
+            src={videoUrl}
+            poster={thumbnailUrl || undefined}
+            title={video.title}
+            hasNext={related.length > 0}
+            nextLabel={related[0]?.title}
+            onNext={playUpNext}
+            onTheaterChange={setTheater}
+            onLoadedData={() => setMediaError(false)}
+            onLoadedMetadata={e => {
+              if (
+                resumePosition > 0 &&
+                resumePosition < e.currentTarget.duration - 2
+              ) {
+                e.currentTarget.currentTime = resumePosition;
+                toast.info(
+                  `Resuming at ${Math.floor(resumePosition / 60)}:${String(Math.floor(resumePosition % 60)).padStart(2, "0")}`
+                );
+              }
+            }}
+            onPlay={() => {
+              if (!viewed.current) {
+                viewed.current = true;
+                void recordVideoView(video.id)
+                  .then(result =>
+                    setVideo(current =>
+                      current
+                        ? { ...current, viewCount: Number(result.views) }
+                        : current
+                    )
+                  )
+                  .catch(() => undefined);
+              }
+              void recordDiscoveryEvent({
+                eventType: "play_start",
+                objectType: isShort ? "short" : "video",
+                objectId: video.id,
+              }).catch(() => undefined);
+            }}
+            onTimeUpdate={e => {
+              const el = e.currentTarget;
+              const seconds = Math.floor(el.currentTime);
+              if (
+                user &&
+                seconds > 0 &&
+                seconds - lastSavedSecond.current >= 15
+              ) {
+                lastSavedSecond.current = seconds;
+                void supabase
+                  .from("watch_history")
+                  .upsert(
+                    {
+                      user_id: user.id,
+                      video_id: video.id,
+                      progress_seconds: seconds,
+                      watched_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    },
+                    { onConflict: "user_id,video_id" }
+                  )
+                  .then(
+                    () => undefined,
+                    () => undefined
                   );
+              }
+              if (el.duration > 0) {
+                const pct = el.currentTime / el.duration;
+                const bucket =
+                  pct >= 0.9
+                    ? "watch_90_percent"
+                    : pct >= 0.75
+                      ? "watch_75_percent"
+                      : pct >= 0.5
+                        ? "watch_50_percent"
+                        : pct >= 0.25
+                          ? "watch_25_percent"
+                          : pct >= 0.1
+                            ? "watch_10_percent"
+                            : null;
+                if (bucket && bucket !== lastBucket.current) {
+                  lastBucket.current = bucket;
+                  void recordDiscoveryEvent({
+                    eventType: bucket,
+                    objectType: isShort ? "short" : "video",
+                    objectId: video.id,
+                    watchSeconds: seconds,
+                    positionSeconds: seconds,
+                  }).catch(() => undefined);
                 }
-              }}
-              onPlay={() => {
-                if (!viewed.current) {
-                  viewed.current = true;
-                  void recordVideoView(video.id)
-                    .then(result =>
-                      setVideo(current =>
-                        current
-                          ? { ...current, viewCount: Number(result.views) }
-                          : current
-                      )
-                    )
-                    .catch(() => undefined);
-                }
-                void recordDiscoveryEvent({
-                  eventType: "play_start",
-                  objectType: isShort ? "short" : "video",
-                  objectId: video.id,
-                }).catch(() => undefined);
-              }}
-              onTimeUpdate={e => {
-                const el = e.currentTarget;
-                const seconds = Math.floor(el.currentTime);
-                if (
-                  user &&
-                  seconds > 0 &&
-                  seconds - lastSavedSecond.current >= 15
-                ) {
-                  lastSavedSecond.current = seconds;
-                  void supabase
-                    .from("watch_history")
-                    .upsert(
-                      {
-                        user_id: user.id,
-                        video_id: video.id,
-                        progress_seconds: seconds,
-                        watched_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                      },
-                      { onConflict: "user_id,video_id" }
-                    )
-                    .then(
-                      () => undefined,
-                      () => undefined
-                    );
-                }
-                if (el.duration > 0) {
-                  const pct = el.currentTime / el.duration;
-                  const bucket =
-                    pct >= 0.9
-                      ? "watch_90_percent"
-                      : pct >= 0.75
-                        ? "watch_75_percent"
-                        : pct >= 0.5
-                          ? "watch_50_percent"
-                          : pct >= 0.25
-                            ? "watch_25_percent"
-                            : pct >= 0.1
-                              ? "watch_10_percent"
-                              : null;
-                  if (bucket && bucket !== lastBucket.current) {
-                    lastBucket.current = bucket;
-                    void recordDiscoveryEvent({
-                      eventType: bucket,
-                      objectType: isShort ? "short" : "video",
-                      objectId: video.id,
-                      watchSeconds: seconds,
-                      positionSeconds: seconds,
-                    }).catch(() => undefined);
-                  }
-                }
-              }}
-              onEnded={() => {
-                if (user?.id)
-                  void supabase
-                    .from("watch_history")
-                    .upsert(
-                      {
-                        user_id: user.id,
-                        video_id: video.id,
-                        progress_seconds: Math.floor(
-                          video.durationSeconds || 0
-                        ),
-                        watched_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                      },
-                      { onConflict: "user_id,video_id" }
-                    )
-                    .then(
-                      () => undefined,
-                      () => undefined
-                    );
-                void recordDiscoveryEvent({
-                  eventType: "complete",
-                  objectType: isShort ? "short" : "video",
-                  objectId: video.id,
-                }).catch(() => undefined);
-              }}
-              onError={e => {
-                setMediaError(true);
-                void recordDiscoveryEvent({
-                  eventType: "playback_error",
-                  objectType: isShort ? "short" : "video",
-                  objectId: video.id,
-                  context: {
-                    media_error_code: e.currentTarget.error?.code ?? null,
-                  },
-                }).catch(() => undefined);
-              }}
-            />
-          </div>
+              }
+            }}
+            onEnded={() => {
+              if (user?.id)
+                void supabase
+                  .from("watch_history")
+                  .upsert(
+                    {
+                      user_id: user.id,
+                      video_id: video.id,
+                      progress_seconds: Math.floor(
+                        video.durationSeconds || 0
+                      ),
+                      watched_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    },
+                    { onConflict: "user_id,video_id" }
+                  )
+                  .then(
+                    () => undefined,
+                    () => undefined
+                  );
+              void recordDiscoveryEvent({
+                eventType: "complete",
+                objectType: isShort ? "short" : "video",
+                objectId: video.id,
+              }).catch(() => undefined);
+            }}
+            onError={e => {
+              setMediaError(true);
+              void recordDiscoveryEvent({
+                eventType: "playback_error",
+                objectType: isShort ? "short" : "video",
+                objectId: video.id,
+                context: {
+                  media_error_code: e.currentTarget.error?.code ?? null,
+                },
+              }).catch(() => undefined);
+            }}
+          />
           <div className="border-b border-white/10 py-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
