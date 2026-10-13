@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 type Channel = {
   id: string;
+  owner_id: string;
   handle: string;
   name: string;
   avatar_url: string | null;
@@ -161,6 +162,7 @@ export default function ClipsPage() {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const media = useRef<HTMLVideoElement | null>(null);
   const swipeStart = useRef<{ y: number; time: number } | null>(null);
   const swipeLocked = useRef(false);
@@ -176,7 +178,7 @@ export default function ClipsPage() {
       setVideos(data);
       const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
       if (ids.length) {
-        const { data: rows } = await supabase.from("channels").select("id,handle,name,avatar_url,subscriber_count,verification_status").in("id", ids);
+        const { data: rows } = await supabase.from("channels").select("id,owner_id,handle,name,avatar_url,subscriber_count,verification_status").in("id", ids);
         setChannels(Object.fromEntries((rows ?? []).map(r => [String(r.id), r as Channel])));
       }
     } catch (e) {
@@ -360,9 +362,10 @@ export default function ClipsPage() {
   async function postComment() {
     if (!current || !(await auth()) || !comment.trim()) return;
     try {
-      await addVideoComment(current.id, comment.trim());
-      void recordDiscoveryEvent({ eventType: "comment", objectType: "short", objectId: current.id }).catch(() => undefined);
+      await addVideoComment(current.id, comment.trim(), replyTo?.id ?? null);
+      void recordDiscoveryEvent({ eventType: replyTo ? "comment_reply" : "comment", objectType: "short", objectId: current.id }).catch(() => undefined);
       setComment("");
+      setReplyTo(null);
       setComments(await listVideoComments(current.id));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Comment failed");
@@ -386,6 +389,34 @@ export default function ClipsPage() {
       setMore(false);
       toast.success("Creator hidden from your recommendations");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not hide creator"); }
+  }
+  async function blockCreator() {
+    if (!current || !(await auth())) return;
+    const creator = channels[current.channelId];
+    if (!creator?.owner_id) {
+      toast.error("Creator account information is unavailable.");
+      return;
+    }
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData.user) throw new Error("Your session expired. Please sign in again.");
+      if (creator.owner_id === authData.user.id) {
+        toast.error("You cannot block your own account.");
+        return;
+      }
+      const { error } = await supabase.from("user_blocks").upsert(
+        { blocker_id: authData.user.id, blocked_id: creator.owner_id },
+        { onConflict: "blocker_id,blocked_id", ignoreDuplicates: true }
+      );
+      if (error) throw new Error(error.message);
+      const blockedChannelIds = new Set(Object.values(channels).filter(item => item.owner_id === creator.owner_id).map(item => item.id));
+      setHidden(previous => new Set([...previous, ...videos.filter(video => blockedChannelIds.has(video.channelId)).map(video => video.id)]));
+      setMore(false);
+      setActive(index => Math.min(index + 1, Math.max(visible.length - 1, 0)));
+      toast.success("Creator blocked and removed from your recommendations.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not block creator");
+    }
   }
   async function notInterested() {
     if (!current) return;
@@ -870,7 +901,8 @@ export default function ClipsPage() {
                   <div className="px-3 py-2 text-xs font-semibold text-white/60">
                     {compact(current.viewCount)} views · {ago(current.createdAt)}
                   </div>
-                  <button onClick={hideCreator} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Hide creator</button>
+                  <button onClick={hideCreator} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Hide creator from recommendations</button>
+                  <button onClick={() => void blockCreator()} className="w-full rounded-xl px-3 py-2.5 text-left text-rose-300 hover:bg-white/10">Block creator</button>
                   <button
                     onClick={() => void notInterested()}
                     className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
@@ -890,6 +922,9 @@ export default function ClipsPage() {
                   >
                     Copyright concern
                   </button>
+                  <button onClick={() => void report("Harassment or bullying")} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Harassment or bullying</button>
+                  <button onClick={() => void report("Privacy violation")} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Privacy violation</button>
+                  <button onClick={() => void report("Child safety concern")} className="w-full rounded-xl px-3 py-2.5 text-left text-rose-300 hover:bg-white/10">Child safety concern</button>
                   <button
                     onClick={() => void share()}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
@@ -916,7 +951,7 @@ export default function ClipsPage() {
       {commentsOpen && (
         <div
           className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
-          onClick={() => setCommentsOpen(false)}
+          onClick={() => { setCommentsOpen(false); setReplyTo(null); }}
         >
           <section
             className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[75dvh] w-full max-w-2xl flex-col rounded-t-3xl border border-white/10 bg-[#10131b] p-4"
@@ -931,6 +966,12 @@ export default function ClipsPage() {
                 <X />
               </button>
             </div>
+            {replyTo && (
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-violet-500/10 px-3 py-2 text-xs">
+                <span>Replying to @{replyTo.profiles?.[0]?.username ?? "user"}</span>
+                <button type="button" onClick={() => setReplyTo(null)} className="rounded-full p-1" aria-label="Cancel reply"><X className="size-4" /></button>
+              </div>
+            )}
             <div className="mt-4 flex-1 overflow-y-auto space-y-4">
               {commentsLoading ? <p className="py-10 text-center text-sm text-slate-500">Loading comments…</p> : comments.length ? (
                 comments.map(c => (
@@ -943,6 +984,7 @@ export default function ClipsPage() {
                         @{c.profiles?.[0]?.username ?? "user"}
                       </p>
                       <p className="mt-1 text-sm text-white">{c.body}</p>
+                      <button type="button" onClick={() => setReplyTo(c)} className="mt-1 text-xs font-semibold text-violet-300 hover:text-violet-200">Reply</button>
                     </div>
                   </div>
                 ))
