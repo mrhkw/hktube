@@ -147,6 +147,13 @@ export default function ClipsPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [autoAdvance, setAutoAdvance] = useState(() => {
+    try {
+      return localStorage.getItem("hktube-clips-auto-advance") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [lastTap, setLastTap] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -262,6 +269,13 @@ export default function ClipsPage() {
     const v = media.current;
     if (v) v.playbackRate = playbackRate;
   }, [playbackRate]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("hktube-clips-auto-advance", String(autoAdvance));
+    } catch {
+      // Storage may be unavailable in private browsing; playback remains functional.
+    }
+  }, [autoAdvance]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (
@@ -560,6 +574,18 @@ export default function ClipsPage() {
               <span>{soundOn ? "Mute sound" : "Use sound"}</span>
               <span className="text-xs text-white/55">{soundOn ? "On" : "Off"}</span>
             </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoAdvance}
+              onClick={() => setAutoAdvance(value => !value)}
+              className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"
+            >
+              <span>Auto-play next Clip</span>
+              <span className={"rounded-full px-2 py-1 text-xs " + (autoAdvance ? "bg-violet-500 text-white" : "bg-white/10 text-white/60")}>
+                {autoAdvance ? "On" : "Off"}
+              </span>
+            </button>
           </div>
         )}
         {loading ? (
@@ -631,8 +657,8 @@ export default function ClipsPage() {
                 muted
                 autoPlay
                 playsInline
-                loop
-                preload="auto"
+                loop={!autoAdvance}
+                preload="metadata"
                 className={
                   (mediaReady ? "opacity-100" : "opacity-0") +
                   " relative z-10 size-full min-h-0 object-cover bg-black transition-opacity duration-300 sm:rounded-3xl"
@@ -673,7 +699,10 @@ export default function ClipsPage() {
                     if (eventType) void recordDiscoveryEvent({ eventType, objectType: "short", objectId: current.id, watchSeconds: v.currentTime, positionSeconds: v.currentTime }).catch(() => undefined);
                   }
                 }}
-                onEnded={() => void recordDiscoveryEvent({ eventType: "complete", objectType: "short", objectId: current.id }).catch(() => undefined)}
+                onEnded={() => {
+                  void recordDiscoveryEvent({ eventType: "complete", objectType: "short", objectId: current.id }).catch(() => undefined);
+                  if (autoAdvance) stepClip(1);
+                }}
               />
               {mediaError && (
                 <div className="absolute inset-0 z-30 grid place-items-center bg-black/90 p-6 text-center">
