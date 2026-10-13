@@ -130,7 +130,7 @@ export function HkTubeShell({
   }
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
-    navigate(category === "shorts" ? "/clips/create" : "/upload");
+    navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
   }
   function startLive() {
     setCreateOpen(false);
@@ -351,7 +351,7 @@ export function HkTubeShell({
               </button>
               <button
                 type="button"
-                onClick={() => setCreateMode("post")}
+                onClick={() => { setCreateOpen(false); navigate("/upload/post"); }}
                 className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[.035] p-4 text-left transition hover:border-cyan-300/35 hover:bg-cyan-400/[.06]"
               >
                 <span className="grid size-11 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
@@ -360,7 +360,7 @@ export function HkTubeShell({
                 <span>
                   <span className="block font-bold text-white">Post</span>
                   <span className="mt-0.5 block text-sm text-slate-400">
-                    Share a text update
+                    Share text and images from your device gallery
                   </span>
                 </span>
               </button>
