@@ -137,6 +137,7 @@ export default function ClipUploadPage() {
   const [kids, setKids] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [selectedSound] = useState(() => { const q = new URLSearchParams(window.location.search); return { id: q.get("soundVideoId") || "", title: q.get("soundTitle") || "", url: q.get("soundUrl") || "" }; });
   const [draftLoaded, setDraftLoaded] = useState(false);
   const draftKey = "hktube-clip-composer-draft-v1";
 
@@ -513,6 +514,15 @@ export default function ClipUploadPage() {
                 </p>
               </div>
             </section>
+            {selectedSound.url && (
+              <section className="rounded-3xl border border-fuchsia-300/20 bg-fuchsia-500/[.07] p-5">
+                <div className="flex items-center gap-2"><Sparkles className="size-4 text-fuchsia-200" /><p className="text-sm font-black text-white">Selected sound</p></div>
+                <p className="mt-2 break-words text-sm text-fuchsia-100">{selectedSound.title || "Original Clip sound"}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">Preview the source Clip below. Sound selection is carried into this composer; the source audio is not automatically mixed into your uploaded video.</p>
+                <video src={selectedSound.url} controls playsInline preload="metadata" className="mt-3 aspect-video w-full rounded-xl bg-black" />
+                <button type="button" onClick={() => { window.history.replaceState({}, "", window.location.pathname); window.location.reload(); }} className="mt-3 rounded-full border border-white/15 px-3 py-2 text-xs font-bold text-white">Remove selected sound</button>
+              </section>
+            )}
             <section className="rounded-3xl border border-white/10 bg-white/[.03] p-5">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4 text-emerald-300" />
