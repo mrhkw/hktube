@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, Check, FlipHorizontal, GalleryHorizontal, LoaderCircle, RotateCcw, Sparkles, Timer, Video, X } from "lucide-react";
+import { CameraOff, FlipHorizontal, GalleryHorizontal, RotateCcw, Sparkles, Timer, Video, X } from "lucide-react";
 
 type Filter = { name: string; css: string };
 const FILTERS: Filter[] = [
@@ -24,6 +24,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   const recorderRef = useRef<MediaRecorder | null>(null);
   const animationRef = useRef<number>(0);
   const chunksRef = useRef<Blob[]>([]);
+  const recordNowRef = useRef<() => Promise<void>>(async () => undefined);
   const startedAtRef = useRef(0);
   const stopTimerRef = useRef<number | null>(null);
   const countdownTimerRef = useRef<number | null>(null);
@@ -100,9 +101,9 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
     }
     const sourceWidth = video.videoWidth || 720;
     const sourceHeight = video.videoHeight || 1280;
-    if (canvas.width !== sourceWidth || canvas.height !== sourceHeight) {
-      canvas.width = Math.min(sourceWidth, 1080);
-      canvas.height = Math.round(canvas.width * sourceHeight / sourceWidth);
+    if (canvas.width !== 720 || canvas.height !== 1280) {
+      canvas.width = 720;
+      canvas.height = 1280;
     }
     context.save();
     context.filter = filter.css;
@@ -140,7 +141,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
           if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current);
           countdownTimerRef.current = null;
           setCountdown(null);
-          void recordNow();
+          void recordNowRef.current();
         } else {
           setCountdown(remaining);
         }
@@ -208,6 +209,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
       setBusy(false);
     }
   }, [duration, onSelectFile]);
+  recordNowRef.current = recordNow;
 
   const stopRecording = () => {
     if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
