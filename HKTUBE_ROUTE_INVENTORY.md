@@ -1,0 +1,129 @@
+# HkTube route inventory (source-derived)
+
+Git commit at audit start: `1006663c87261c75de4b51c453fcb3c04739cb69`
+
+Routes parsed from `client/src/App.tsx` (64):
+
+- `/` — Home
+- `/home` — Home
+- `/index.html` — Home
+- `/app` — Home
+- `/embed/:id` — EmbedVideo
+- `/explore` — HkTubeExplore
+- `/shorts` — Clips
+- `/clips` — Clips
+- `/clips/create` — LegacyClipUploadRedirect
+- `/trending` — render/function route; inspect App.tsx
+- `/subscriptions` — render/function route; inspect App.tsx
+- `/library` — render/function route; inspect App.tsx
+- `/posts` — render/function route; inspect App.tsx
+- `/messages` — Messages
+- `/stories` — Stories
+- `/studio/tools` — CreatorTools
+- `/studio/schedule` — CreatorSchedule
+- `/studio/comments` — CreatorComments
+- `/studio/captions` — CreatorCaptions
+- `/studio/copyright` — CreatorCopyright
+- `/notifications` — render/function route; inspect App.tsx
+- `/playlists` — render/function route; inspect App.tsx
+- `/playlist/:id` — Playlist
+- `/history` — render/function route; inspect App.tsx
+- `/studio` — CreatorStudio
+- `/studio/analytics` — CreatorAnalytics
+- `/ai` — AIChat
+- `/verification` — Verification
+- `/studio/ai` — CreatorAI
+- `/algorithm` — AlgorithmDashboard
+- `/admin` — AdminDashboard
+- `/admin/controls` — AdminControls
+- `/admin/moderation` — AdminModeration
+- `/admin/ai` — AdminAICenter
+- `/admin-agent` — AdminAgent
+- `/admin-agent/manager` — AdminAgentManager
+- `/admin-agent/apps` — AdminAgentApps
+- `/profile` — Profile
+- `/channel/create` — CreateChannel
+- `/channel/:handle` — PublicChannel
+- `/auth` — Auth
+- `/watch/:id` — WatchVideo
+- `/search` — SearchResults
+- `/upload/post` — PostUpload
+- `/upload` — Upload
+- `/menu` — Menu
+- `/settings` — Settings
+- `/studio/settings` — Settings
+- `/settings/privacy` — PrivacyCenter
+- `/settings/security` — SecurityCenter
+- `/settings/ads` — AdSettings
+- `/wallet` — Wallet
+- `/monetization` — Monetization
+- `/help` — Help
+- `/delete-account` — DeleteAccount
+- `/privacy` — render/function route; inspect App.tsx
+- `/terms` — render/function route; inspect App.tsx
+- `/cookies` — render/function route; inspect App.tsx
+- `/community` — render/function route; inspect App.tsx
+- `/advertising` — render/function route; inspect App.tsx
+- `/impressum` — Impressum
+- `/contact` — Contact
+- `/about` — About
+- `/404` — NotFound
+
+Page modules in `client/src/pages`:
+
+- `AIChat.tsx`
+- `About.tsx`
+- `AdSettings.tsx`
+- `AdminAICenter.tsx`
+- `AdminAgent.tsx`
+- `AdminAgentApps.tsx`
+- `AdminAgentManager.tsx`
+- `AdminControls.tsx`
+- `AdminDashboard.tsx`
+- `AdminModeration.tsx`
+- `AlgorithmDashboard.tsx`
+- `Auth.tsx`
+- `Clips.tsx`
+- `Contact.tsx`
+- `CreateChannel.tsx`
+- `CreatorAI.tsx`
+- `CreatorAnalytics.tsx`
+- `CreatorCaptions.tsx`
+- `CreatorComments.tsx`
+- `CreatorCopyright.tsx`
+- `CreatorSchedule.tsx`
+- `CreatorStudio.tsx`
+- `CreatorTools.tsx`
+- `DeleteAccount.tsx`
+- `EmbedVideo.tsx`
+- `Help.tsx`
+- `HkTubeExplore.tsx`
+- `HkTubeUI.tsx`
+- `Home.tsx`
+- `Impressum.tsx`
+- `Legal.tsx`
+- `Menu.tsx`
+- `Messages.tsx`
+- `Monetization.tsx`
+- `NotFound.tsx`
+- `PlatformSection.tsx`
+- `Playlist.tsx`
+- `PostUpload.tsx`
+- `PrivacyCenter.tsx`
+- `Profile.tsx`
+- `PublicChannel.tsx`
+- `SearchResults.tsx`
+- `SecurityCenter.tsx`
+- `Settings.tsx`
+- `Shorts.tsx`
+- `Stories.tsx`
+- `SupabaseCollections.tsx`
+- `SupabaseHome.tsx`
+- `SupabasePlatform.tsx`
+- `SupabaseSearch.tsx`
+- `SupabaseWatchVideo.tsx`
+- `UploadStudio.tsx`
+- `Verification.tsx`
+- `VideoCollection.tsx`
+- `Wallet.tsx`
+- `WatchVideo.tsx`

@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight, CircleHelp, Flag, LockKeyhole, ShieldCheck, Trash2, UploadCloud, UserRound } from "lucide-react";
 
 const topics = [
-  { title: "Account & login", text: "Google sign-in, email login, sessions and account settings.", href: "/settings", icon: UserRound },
+  { title: "Account & login", text: "Email or phone sign-in, sessions and account settings.", href: "/settings", icon: UserRound },
   { title: "Channel & uploads", text: "Create a channel, upload videos or Clips, and use Creator Studio.", href: "/upload", icon: UploadCloud },
   { title: "Safety & reporting", text: "Report videos, posts or comments and use HkTube's moderation flow.", href: "/community", icon: Flag },
   { title: "Privacy & data", text: "Review privacy, cookies, advertising choices and data controls.", href: "/privacy", icon: LockKeyhole },
