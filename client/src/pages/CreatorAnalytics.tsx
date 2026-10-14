@@ -12,12 +12,23 @@ export default function CreatorAnalytics(){
  async function load(){
   if(!user) return; setLoading(true);
   const since=new Date(Date.now()-range*86400000).toISOString();
-  const [{data:v},{data:e},{data:c}]=await Promise.all([
+  const [{data:v, error:videoError},{data:channelRows,error:channelError}]=await Promise.all([
    supabase.from("videos").select("id,title,views,likes_count,duration_seconds,published_at,category").eq("creator_id",user.id).order("published_at",{ascending:false}),
-   supabase.from("content_events").select("event_type,object_id,watch_seconds,created_at,context").eq("object_type","video").gte("created_at",since).order("created_at",{ascending:false}).limit(10000),
    supabase.from("channels").select("subscriber_count").eq("owner_id",user.id)
   ]);
-  setVideos((v??[]) as Video[]); setEvents((e??[]) as Event[]); setSubs((c??[]).reduce((n,row)=>n+Number(row.subscriber_count||0),0)); setLoading(false);
+  if(videoError || channelError){
+   console.error("[HkTube analytics] Could not load creator-owned records", videoError || channelError);
+   setVideos([]); setEvents([]); setSubs(0); setLoading(false); return;
+  }
+  const ownedVideos=(v??[]) as Video[];
+  const ownedIds=ownedVideos.map(item=>String(item.id));
+  let ownedEvents:Event[]=[];
+  if(ownedIds.length){
+   const {data:e,error:eventError}=await supabase.from("content_events").select("event_type,object_id,watch_seconds,created_at,context").eq("object_type","video").in("object_id",ownedIds).gte("created_at",since).order("created_at",{ascending:false}).limit(10000);
+   if(eventError) console.error("[HkTube analytics] Event metrics unavailable",eventError);
+   else ownedEvents=(e??[]) as Event[];
+  }
+  setVideos(ownedVideos); setEvents(ownedEvents); setSubs((channelRows??[]).reduce((n,row)=>n+Number(row.subscriber_count||0),0)); setLoading(false);
  }
  useEffect(()=>{void load()},[user,range]);
  const metrics=useMemo(()=>{
