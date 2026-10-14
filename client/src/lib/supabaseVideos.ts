@@ -436,6 +436,7 @@ export async function createSupabaseVideo(input: {
         category: input.category ? sanitizeInput(input.category).slice(0, 80) : null,
         language: input.language ? sanitizeInput(input.language).slice(0, 32) : null,
         visibility: "private",
+        requested_visibility: input.visibility ?? "public",
         status: "processing",
         is_short: isShort,
         moderation_status: "pending",
