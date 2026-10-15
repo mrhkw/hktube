@@ -34,6 +34,8 @@ import { trpc } from "@/lib/trpc";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
+import { HkTubeCreateGallery, type CreateMediaMode } from "@/components/HkTubeCreateGallery";
+import { setPendingCreateMedia } from "@/lib/pendingCreateMedia";
 
 type HkTubeShellProps = {
   children: ReactNode;
@@ -275,60 +277,21 @@ export function HkTubeShell({
       </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="hktube-create-sheet max-w-xl border-slate-200 bg-white text-slate-900 shadow-2xl max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[24px]">
-          <DialogHeader>
-            <DialogTitle className="text-center text-slate-950">Create</DialogTitle>
-            <DialogDescription className="text-center text-slate-500">
-              Choose how you want to create on HkTube.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3">
-              <button
-                type="button"
-                onClick={() => startUpload("regular")}
-                className="hktube-create-option flex items-center gap-4 rounded-xl border border-violet-200 bg-violet-50 p-4 text-left transition hover:border-violet-400 hover:bg-violet-100"
-              >
-                <span className="grid size-11 place-items-center rounded-xl bg-violet-500/15 text-violet-200">
-                  <Video className="size-5" />
-                </span>
-                <span>
-                  <span className="block font-bold text-slate-950">Upload a video</span>
-                  <span className="mt-0.5 block text-sm text-slate-500">
-                    Upload a long video from your device
-                  </span>
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => startUpload("shorts")}
-                className="hktube-create-option flex items-center gap-4 rounded-xl border border-violet-200 bg-violet-50 p-4 text-left transition hover:border-violet-400 hover:bg-violet-100"
-              >
-                <span className="grid size-11 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200">
-                  <MonitorPlay className="size-5" />
-                </span>
-                <span>
-                  <span className="block font-bold text-slate-950">Short</span>
-                  <span className="mt-0.5 block text-sm text-slate-400">
-                    Record or upload a vertical Clip
-                  </span>
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setCreateOpen(false); navigate("/upload/post"); }}
-                className="hktube-create-option flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-violet-300 hover:bg-violet-50"
-              >
-                <span className="grid size-11 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
-                  <FileText className="size-5" />
-                </span>
-                <span>
-                  <span className="block font-bold text-slate-950">Post</span>
-                  <span className="mt-0.5 block text-sm text-slate-400">
-                    Share text and images from your device gallery
-                  </span>
-                </span>
-              </button>
-            </div>
+        <DialogContent className="hktube-create-gallery-dialog max-w-4xl overflow-hidden border-white/10 bg-[#0d1019] p-0 text-white shadow-2xl max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[24px]">
+          <HkTubeCreateGallery
+            onCancel={() => setCreateOpen(false)}
+            onSelect={(mode: CreateMediaMode, file: File) => {
+              setPendingCreateMedia(mode, file);
+              setCreateOpen(false);
+              if (mode === "post") navigate("/upload/post");
+              else {
+                const category = mode === "clip" ? "shorts" : "regular";
+                const nextMode = mode === "clip" ? "clip" : "video";
+                window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
+                navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
+              }
+            }}
+          />
         </DialogContent>
       </Dialog>
 
