@@ -9,6 +9,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { listMySupabaseChannels, type SupabaseChannel } from "@/lib/supabaseChannels";
 import { createSupabaseVideo } from "@/lib/supabaseVideos";
+import { takePendingCreateMedia } from "@/lib/pendingCreateMedia";
 
 type StudioMode = "video" | "clip";
 type VideoInfo = { width: number; height: number; duration: number };
@@ -191,6 +192,14 @@ export default function UploadStudioPage() {
       setError(cause instanceof Error ? cause.message : "The selected video could not be read.");
     }
   }
+
+  useEffect(() => {
+    const pending = takePendingCreateMedia();
+    if (!pending || pending.mode === "post") return;
+    const expectedMode: StudioMode = pending.mode === "clip" ? "clip" : "video";
+    setMode(expectedMode);
+    void selectVideo(pending.file);
+  }, []);
 
   function switchMode(next: StudioMode) {
     if (busy || mode === next) return;
