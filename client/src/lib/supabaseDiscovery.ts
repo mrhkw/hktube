@@ -148,7 +148,9 @@ export async function rankPublicVideos(input: { shorts?: boolean; limit?: number
   const limit = Math.min(60, Math.max(1, input.limit ?? 24));
   const candidates = await candidateRows(Boolean(input.shorts), Math.max(48, limit * 3));
   if (!candidates.length) return [];
-  const userId = input.userId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+  const personalizationEnabled = typeof localStorage === "undefined" || localStorage.getItem("hktube-personalized-feed") !== "disabled";
+  const freshnessMode = typeof localStorage === "undefined" ? "balanced" : (localStorage.getItem("hktube-feed-freshness") || "balanced");
+  const userId = personalizationEnabled ? (input.userId ?? (await supabase.auth.getUser()).data.user?.id ?? null) : null;
 
   let followed = new Set<string>(); let watched = new Set<string>(); let saved = new Set<string>(); let feedback = new Map<string, string>(); let hiddenCreators = new Set<string>(); let hiddenTopics = new Set<string>(); let blocked = new Set<string>(); let signals = new Map<string, WatchSignal>(); let searchTerms: string[] = []; let topicPreferences = new Map<string, number>();
   if (userId) ({ followed, watched, saved, feedback, hiddenCreators, hiddenTopics, blocked, signals, searchTerms, topicPreferences } = await loadPersonalSignals(userId));
@@ -177,12 +179,14 @@ export async function rankPublicVideos(input: { shorts?: boolean; limit?: number
     const inferredRelevance = queryTokens.length ? queryRelevance : overlap(searchTerms, contentTokens);
     const popularityScore = popularity(Number(v.viewCount || 0), Number(v.likesCount || 0));
     const freshnessScore = freshness(v.publishedAt);
+    const freshnessWeight = freshnessMode === "fresh" ? 0.20 : freshnessMode === "familiar" ? 0.04 : RECOMMENDATION_CONFIG.freshness;
+    const familiarContentBoost = freshnessMode === "familiar" ? 0.08 * popularityScore : 0;
     const owner = ownerByChannel.get(v.channelId);
     const timeContext = ((v.category || "").toLowerCase() === "news" || v.tags.some(tag => tag.toLowerCase() === "news")) && (nowHour < 11 || nowHour > 17) ? 0.35 : 0;
     const underexposed = Number(v.viewCount || 0) < 1000 ? RECOMMENDATION_CONFIG.explorationBoost : 0;
     const negative = feedback.get(v.id);
     const positiveFeedback = negative === "more_like_this" ? 0.22 : 0;
-    const base = RECOMMENDATION_CONFIG.interest * interest + positiveFeedback + RECOMMENDATION_CONFIG.watchQuality * watchQuality + RECOMMENDATION_CONFIG.completion * completion + RECOMMENDATION_CONFIG.freshness * freshnessScore + RECOMMENDATION_CONFIG.engagement * engagement + RECOMMENDATION_CONFIG.creatorAffinity * follow + RECOMMENDATION_CONFIG.searchRelevance * inferredRelevance + RECOMMENDATION_CONFIG.saveShare * saveShareValue + RECOMMENDATION_CONFIG.novelty * novelty + RECOMMENDATION_CONFIG.popularity * popularityScore + RECOMMENDATION_CONFIG.context * timeContext + underexposed;
+    const base = RECOMMENDATION_CONFIG.interest * interest + positiveFeedback + RECOMMENDATION_CONFIG.watchQuality * watchQuality + RECOMMENDATION_CONFIG.completion * completion + freshnessWeight * freshnessScore + familiarContentBoost + RECOMMENDATION_CONFIG.engagement * engagement + RECOMMENDATION_CONFIG.creatorAffinity * follow + RECOMMENDATION_CONFIG.searchRelevance * inferredRelevance + RECOMMENDATION_CONFIG.saveShare * saveShareValue + RECOMMENDATION_CONFIG.novelty * novelty + RECOMMENDATION_CONFIG.popularity * popularityScore + RECOMMENDATION_CONFIG.context * timeContext + underexposed;
     const topicHidden = [v.category, ...v.tags].filter(Boolean).some(topic => hiddenTopics.has(String(topic).toLowerCase()));
     const ownerBlocked = owner ? blocked.has(owner) : false;
     const creatorHidden = owner ? hiddenCreators.has(owner) : false;

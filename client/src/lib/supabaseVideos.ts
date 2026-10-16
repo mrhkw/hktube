@@ -195,6 +195,28 @@ function uploadFingerprint(file: File) {
   return `${file.name}:${file.size}:${file.lastModified}`;
 }
 
+function uploadStorageKey(file: File) {
+  return "hktube-upload:" + uploadFingerprint(file);
+}
+
+function resumablePathFor(file: File, userId: string, extension: string) {
+  try {
+    const stored = localStorage.getItem(uploadStorageKey(file));
+    if (!stored) return null;
+    const saved = JSON.parse(stored) as { path?: unknown };
+    if (
+      typeof saved.path === "string" &&
+      saved.path.startsWith(userId + "/") &&
+      saved.path.endsWith("." + extension)
+    ) {
+      return saved.path;
+    }
+  } catch {
+    // A stale or unavailable local session must never block a fresh upload.
+  }
+  return null;
+}
+
 async function getAccessToken() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Your session expired. Please sign in again.");
@@ -215,7 +237,7 @@ async function startMuxProcessing(videoId: string) {
 }
 
 async function tusCreate(bucket: string, path: string, file: File, accessToken: string) {
-  const key = `hktube-upload:${uploadFingerprint(file)}`;
+  const key = uploadStorageKey(file);
   const stored = localStorage.getItem(key);
   const headers = {
     Authorization: `Bearer ${accessToken}`,
@@ -233,7 +255,7 @@ async function tusCreate(bucket: string, path: string, file: File, accessToken: 
   if (stored) {
     try {
       const saved = JSON.parse(stored) as { url?: string; path?: string };
-      if (saved.url && saved.path === path) {
+      if (saved.url && saved.path === path && new URL(saved.url).origin === new URL(resumableEndpoint()).origin) {
         const head = await fetch(saved.url, {
           method: "HEAD",
           headers: { Authorization: `Bearer ${accessToken}`, "Tus-Resumable": "1.0.0" },
@@ -265,7 +287,10 @@ async function resumableUpload(
 ) {
   const accessToken = await getAccessToken();
   const { url, offset: initialOffset } = await tusCreate(bucket, path, file, accessToken);
-  let offset = Math.min(Math.max(initialOffset, 0), file.size);
+  if (!Number.isFinite(initialOffset) || initialOffset < 0 || initialOffset > file.size) {
+    throw new Error("Upload server returned an invalid resume offset.");
+  }
+  let offset = initialOffset;
   onProgress?.(offset / Math.max(file.size, 1));
 
   while (offset < file.size) {
@@ -299,14 +324,16 @@ async function resumableUpload(
 
     if (!response?.ok) throw lastError instanceof Error ? lastError : new Error("Upload interrupted.");
     const nextOffset = Number(response.headers.get("Upload-Offset") || 0);
-    if (!Number.isFinite(nextOffset) || nextOffset <= offset) throw new Error("Upload server returned an invalid offset.");
-    offset = Math.min(nextOffset, file.size);
-    const key = `hktube-upload:${uploadFingerprint(file)}`;
+    if (!Number.isFinite(nextOffset) || nextOffset <= offset || nextOffset > file.size) {
+      throw new Error("Upload server returned an invalid offset.");
+    }
+    offset = nextOffset;
+    const key = uploadStorageKey(file);
     localStorage.setItem(key, JSON.stringify({ url, path }));
     onProgress?.(offset / Math.max(file.size, 1));
   }
 
-  localStorage.removeItem(`hktube-upload:${uploadFingerprint(file)}`);
+  localStorage.removeItem(uploadStorageKey(file));
 }
 
 export async function createSupabaseVideo(input: {
@@ -382,7 +409,7 @@ export async function createSupabaseVideo(input: {
   }
 
   const extension = contentType === "video/webm" ? "webm" : "mp4";
-  const videoPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+  const videoPath = resumablePathFor(input.file, user.id, extension) ?? `${user.id}/${crypto.randomUUID()}.${extension}`;
   const suppliedDuration = Math.floor(Number(input.durationSeconds ?? 0));
   const duration =
     suppliedDuration > 0 ? suppliedDuration : await readDuration(input.file);

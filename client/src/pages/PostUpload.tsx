@@ -7,6 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { supabase } from "@/lib/supabase";
 import { sanitizeInput } from "@shared/security";
+import { takePendingCreateMedia } from "@/lib/pendingCreateMedia";
 
 type ImageFilter = "original" | "warm" | "mono" | "vivid";
 const FILTERS: Record<ImageFilter, { label: string; css: string }> = {
@@ -51,6 +52,20 @@ export default function PostUploadPage() {
   const previews = useMemo(() => images.map(file => URL.createObjectURL(file)), [images]);
 
   useEffect(() => { if (!isAuthenticated && !loading) startLogin(); }, [isAuthenticated, loading]);
+  useEffect(() => {
+    const pending = takePendingCreateMedia();
+    if (pending?.mode !== "post") return;
+    const file = pending.file;
+    if (!TYPES.has(file.type.toLowerCase()) || file.size <= 0 || file.size > MAX_FILE) {
+      toast.error("The selected gallery image must be JPG, PNG or WebP under 8 MB.");
+      return;
+    }
+    if (file.size > MAX_TOTAL) {
+      toast.error("The selected image exceeds the 40 MB post limit.");
+      return;
+    }
+    setImages(current => current.length >= 10 ? current : [...current, file]);
+  }, []);
   useEffect(() => () => previews.forEach(url => URL.revokeObjectURL(url)), [previews]);
 
   function selectImages(files: FileList | null) {
