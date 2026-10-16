@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { AdaptiveVideoPlayer } from "@/components/AdaptiveVideoPlayer";
 import { Button } from "@/components/ui/button";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -370,14 +371,14 @@ export default function SupabaseWatchVideo() {
               is preserved and you can retry/open the source.
             </div>
           )}
-          <div className={`hktube-watch-frame ${isShort ? "hktube-watch-frame--short" : "hktube-watch-frame--long"}`}>
-            <video
+          <div
+            className={`hktube-watch-frame ${isShort ? "hktube-watch-frame--short" : "hktube-watch-frame--long"}`}
+          >
+            <AdaptiveVideoPlayer
               ref={playerRef}
-              src={videoUrl}
+              src={videoUrl || ""}
+              muxPlaybackId={video.muxPlaybackId}
               poster={thumbnailUrl || undefined}
-              controls
-              playsInline
-              preload="metadata"
               className="hktube-watch-video"
               onLoadedData={() => setMediaError(false)}
               onLoadedMetadata={e => {
