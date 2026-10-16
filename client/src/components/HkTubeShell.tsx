@@ -142,7 +142,7 @@ export function HkTubeShell({
           immersive && "max-lg:hidden"
         )}
         >
-          <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
+          <div className="hktube-shell-header-inner mx-auto flex h-14 w-full items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
             {location === "/" && (
               <button
                 type="button"
@@ -332,7 +332,7 @@ export function HkTubeShell({
         </DialogContent>
       </Dialog>
 
-      <aside className="fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
+      <aside className="hktube-shell-sidebar fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
         <nav className="space-y-1" aria-label="Primary navigation">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-slate-600">
             Discover
@@ -470,7 +470,7 @@ export function HkTubeShell({
 
       <main
         className={cn(
-          "relative flex min-h-[calc(100dvh-58px)] flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))] md:min-h-[calc(100dvh-64px)] md:pb-14 md:pl-60",
+          "hktube-shell-main relative flex min-h-[calc(100dvh-58px)] flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))] md:min-h-[calc(100dvh-64px)] md:pb-14 md:pl-60",
           immersive && "max-md:p-0 max-md:pb-0"
         )}
       >
@@ -488,7 +488,7 @@ export function HkTubeShell({
         )}
         <div
           className={cn(
-            "w-full flex-1 px-0 py-0 sm:px-8 sm:py-6 lg:px-10",
+            "hktube-shell-content w-full flex-1 px-0 py-0 sm:px-8 sm:py-6 lg:px-10",
             immersive && "max-lg:p-0"
           )}
         >

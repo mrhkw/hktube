@@ -1443,3 +1443,101 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
 @keyframes hktube-picker-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes hktube-upload-stage-in { from { opacity: .35; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .hktube-gallery-picker, .hktube-upload-stage-preview, .hktube-upload-stage-details { animation: none; } }
+
+/* Large-screen layout polish: use 4K space without stretching cards or controls. */
+.hktube-wide-container {
+  width: min(100%, 1480px);
+}
+
+@media (min-width: 1920px) {
+  .hktube-shell-header-inner,
+  .hktube-shell-content,
+  .hktube-wide-container {
+    max-width: 2240px;
+  }
+
+  .hktube-shell-header-inner {
+    padding-inline: 2.5rem;
+  }
+
+  .hktube-shell-sidebar {
+    width: 280px;
+    padding-inline: 1.25rem;
+    padding-top: 1.75rem;
+  }
+
+  .hktube-shell-main {
+    padding-left: 280px;
+  }
+
+  .hktube-shell-content {
+    margin-inline: auto;
+  }
+
+  .hktube-wide-container {
+    width: min(100%, 2240px);
+  }
+
+  .hktube-home-grid {
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 3000px) {
+  .hktube-shell-header-inner,
+  .hktube-shell-content,
+  .hktube-wide-container {
+    max-width: 3360px;
+  }
+
+  .hktube-shell-header-inner {
+    height: 5rem;
+    padding-inline: 3.5rem;
+  }
+
+  .hktube-shell-sidebar {
+    width: 320px;
+    padding-inline: 1.5rem;
+    padding-top: 2.25rem;
+  }
+
+  .hktube-shell-main {
+    padding-left: 320px;
+  }
+
+  .hktube-shell-content {
+    padding-inline: 3.5rem;
+    padding-top: 2.25rem;
+  }
+
+  .hktube-wide-container {
+    width: min(100%, 3360px);
+  }
+
+  .hktube-home-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1.75rem;
+  }
+}
+
+@media (min-width: 3800px) {
+  .hktube-shell-content {
+    padding-inline: 5rem;
+  }
+
+  .hktube-home-grid {
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  .hktube-home-feed {
+    max-width: 1320px !important;
+  }
+}
+
+@media (min-width: 3000px) {
+  .hktube-home-feed {
+    max-width: 1680px !important;
+  }
+}
