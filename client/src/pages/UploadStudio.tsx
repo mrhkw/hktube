@@ -123,6 +123,7 @@ export default function UploadStudioPage() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [draggingFile, setDraggingFile] = useState(false);
   const [error, setError] = useState("");
   const [resultMessage, setResultMessage] = useState("");
   const abortRef = useRef<AbortController | null>(null);
@@ -299,7 +300,7 @@ export default function UploadStudioPage() {
               ) : (
                 <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                   <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><UploadCloud className="size-5" /></span><div><h2 className="font-black text-white">Select from gallery</h2><p className="mt-1 text-xs text-slate-500">MP4/H.264 or WebM · up to 900 MB · resumable transfer</p></div></div>
-                  <button type="button" disabled={busy} onClick={() => galleryInputRef.current?.click()} className="hktube-gallery-drop mt-4 flex min-h-40 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/[.025] p-5 text-center transition hover:border-violet-300/40 hover:bg-violet-500/[.04]">
+                  <button type="button" disabled={busy} onClick={() => galleryInputRef.current?.click()} onDragOver={event => { event.preventDefault(); if (!busy) setDraggingFile(true); }} onDragLeave={() => setDraggingFile(false)} onDrop={event => { event.preventDefault(); setDraggingFile(false); if (!busy) void selectVideo(event.dataTransfer.files?.[0]); }} className={"hktube-gallery-drop mt-4 flex min-h-40 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition " + (draggingFile ? "border-violet-300 bg-violet-500/10" : "border-white/15 bg-white/[.025] hover:border-violet-300/40 hover:bg-violet-500/[.04]")}>
                     <span className="grid size-14 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">{file ? <CheckCircle2 className="size-7" /> : <Video className="size-7" />}</span>
                     <span className="mt-3 break-all text-sm font-black text-white">{file ? file.name : "Select a video from your gallery"}</span>
                     <span className="mt-1 text-xs text-slate-500">Opens your device's real media picker</span>
