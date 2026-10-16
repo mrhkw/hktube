@@ -25,6 +25,31 @@ function fileTitle(filename: string) {
 function suggestedTags(filename: string) {
   return Array.from(new Set(fileTitle(filename).toLowerCase().split(/[^a-z0-9]+/).filter(word => word.length >= 3))).slice(0, 10);
 }
+function inferCategory(text: string) {
+  const value = text.toLowerCase();
+  if (/game|gaming|minecraft|roblox|pubg|free fire|fortnite|playstation|xbox/.test(value)) return "Gaming";
+  if (/learn|tutorial|how to|lesson|study|science|math|education/.test(value)) return "Education";
+  if (/song|music|cover|sing|dance|beat|remix/.test(value)) return "Music";
+  if (/football|cricket|basketball|match|sports|goal|fitness/.test(value)) return "Sports";
+  if (/news|update|breaking|politics|weather/.test(value)) return "News";
+  if (/tech|phone|android|iphone|ai tools|software|review|app/.test(value)) return "Technology";
+  if (/travel|trip|vlog|food|recipe|daily life/.test(value)) return "Lifestyle";
+  if (/funny|comedy|prank|meme|reaction/.test(value)) return "Comedy";
+  return "Entertainment";
+}
+function buildDescription(titleValue: string) {
+  const clean = titleValue.trim();
+  return clean ? `${clean}\n\nWatch, enjoy and share more on HkTube. Subscribe for more videos and leave your thoughts in the comments.` : "";
+}
+function qualityLabel(info: VideoInfo | null) {
+  if (!info) return "Waiting for video";
+  if (info.height >= 4320 || info.width >= 7680) return "8K source";
+  if (info.height >= 2160 || info.width >= 3840) return "4K source";
+  if (info.height >= 1440 || info.width >= 2560) return "1440p source";
+  if (info.height >= 1080 || info.width >= 1920) return "Full HD source";
+  if (info.height >= 720 || info.width >= 1280) return "HD source";
+  return "Standard source";
+}
 function bytesLabel(bytes: number) {
   if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
@@ -113,6 +138,7 @@ export default function UploadStudioPage() {
   const [thumbnailSource, setThumbnailSource] = useState<"automatic" | "custom">("automatic");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [descriptionEdited, setDescriptionEdited] = useState(false);
   const [category, setCategory] = useState("Entertainment");
   const [language, setLanguage] = useState("English");
   const [tags, setTags] = useState("");
@@ -181,8 +207,11 @@ export default function UploadStudioPage() {
       if (mode === "video" && nextInfo.width / Math.max(nextInfo.height, 1) < 1.25) throw new Error("Long Video mode requires a landscape video.");
       setFile(next);
       setInfo(nextInfo);
-      if (!title.trim()) setTitle(fileTitle(next.name));
-      if (!tags.trim()) setTags(suggestedTags(next.name).join(", "));
+      const suggestedTitle = fileTitle(next.name);
+      if (!title.trim()) setTitle(suggestedTitle);
+      if (!tags.trim()) setTags(suggestedTags(suggestedTitle).join(", "));
+      if (!description.trim() && !descriptionEdited) setDescription(buildDescription(suggestedTitle));
+      if (!title.trim()) setCategory(inferCategory(suggestedTitle));
       setThumbnailSource("automatic");
       setThumbnail(await thumbnailAt(next));
       
@@ -251,7 +280,7 @@ export default function UploadStudioPage() {
         : "Upload saved successfully.";
       setResultMessage(message);
       toast.success(waitingForChecks ? "Upload received; processing is pending." : "Upload saved.");
-      setFile(null); setInfo(null); setThumbnail(null); setTitle(""); setDescription(""); setTags(""); setStage("select");
+      setFile(null); setInfo(null); setThumbnail(null); setTitle(""); setDescription(""); setDescriptionEdited(false); setTags(""); setStage("select");
       if (!waitingForChecks) navigate("/studio");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Upload failed. Try again.";
@@ -328,13 +357,14 @@ export default function UploadStudioPage() {
               {stage === "details" && <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Add details</h2>
                 <div className="mt-4 space-y-4">
-                  <label className="block"><span className="flex items-center justify-between gap-3 text-sm font-bold text-white"><span>Title *</span><span className="text-xs text-slate-500">{title.length}/100</span></span><input value={title} onChange={event => setTitle(event.target.value.slice(0,100))} maxLength={100} required className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder={mode === "clip" ? "Caption your Short" : "Create a title (type @ to mention a channel)"} /></label>
-                  <label className="block"><span className="text-sm font-bold text-white">Description / caption</span><textarea value={description} onChange={event => setDescription(event.target.value.slice(0,5000))} maxLength={5000} rows={4} className="mt-2 w-full resize-y rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white outline-none focus:border-violet-300/50" placeholder="Tell viewers what this video is about…" /></label>
+                  <label className="block"><span className="flex items-center justify-between gap-3 text-sm font-bold text-white"><span>Title *</span><span className="text-xs text-slate-500">{title.length}/100</span></span><input value={title} onChange={event => { const value = event.target.value.slice(0,100); setTitle(value); setTags(suggestedTags(value).join(", ")); setCategory(inferCategory(value)); if (!descriptionEdited) setDescription(buildDescription(value)); }} maxLength={100} required className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder={mode === "clip" ? "Caption your Short" : "Create a title (type @ to mention a channel)"} /></label>
+                  <label className="block"><span className="text-sm font-bold text-white">Description / caption</span><textarea value={description} onChange={event => { setDescription(event.target.value.slice(0,5000)); setDescriptionEdited(true); }} maxLength={5000} rows={4} className="mt-2 w-full resize-y rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white outline-none focus:border-violet-300/50" placeholder="Tell viewers what this video is about…" /></label>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className="block"><span className="text-sm font-bold text-white">Category</span><select value={category} onChange={event => setCategory(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-3 py-3 text-sm text-white">{CATEGORIES.map(item => <option key={item}>{item}</option>)}</select></label>
                     <label className="block"><span className="text-sm font-bold text-white">Language</span><input value={language} onChange={event => setLanguage(event.target.value.slice(0,32))} maxLength={32} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white" placeholder="English" /></label>
                   </div>
-                  <label className="block"><span className="text-sm font-bold text-white">Tags / hashtags</span><input value={tags} onChange={event => setTags(event.target.value.slice(0,1000))} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white" placeholder="#gaming, tutorial, funny" /><span className="mt-1 block text-xs text-slate-500">Suggestions are based on the selected filename. Edit them before publishing.</span></label>
+                  <label className="block"><span className="text-sm font-bold text-white">Tags / hashtags</span><input value={tags} onChange={event => setTags(event.target.value.slice(0,1000))} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white" placeholder="#gaming, tutorial, funny" /><span className="mt-1 block text-xs text-slate-500">Tags update from your title as a starting point. Review them for accuracy before publishing.</span></label>
+                  <div className="rounded-2xl border border-violet-300/15 bg-violet-500/[.06] p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-violet-200">Smart creator assist</p><p className="mt-1 text-sm font-bold text-white">Suggested category: {inferCategory(title || file?.name || "")}</p><p className="mt-1 text-xs leading-5 text-slate-400">Local keyword suggestions, not live trend analytics. Check tags against the actual video topic.</p></div><button type="button" onClick={() => { const seed = title.trim() || (file ? fileTitle(file.name) : ""); setTags(suggestedTags(seed).join(", ")); setCategory(inferCategory(seed)); if (!descriptionEdited) setDescription(buildDescription(seed)); toast.success("Metadata suggestions updated. Review them before publishing."); }} className="rounded-full border border-violet-300/25 px-3 py-2 text-xs font-black text-violet-100 hover:bg-violet-300/10">Refresh suggestions</button></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"><div className="rounded-xl bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wider text-slate-500">Source quality</p><p className="mt-1 text-sm font-black text-white">{qualityLabel(info)}</p></div><div className="rounded-xl bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wider text-slate-500">Resolution</p><p className="mt-1 text-sm font-black text-white">{info ? `${info.width} × ${info.height}` : "Not detected"}</p></div><div className="col-span-2 rounded-xl bg-black/20 p-3 sm:col-span-1"><p className="text-[10px] uppercase tracking-wider text-slate-500">Metadata check</p><p className="mt-1 text-sm font-black text-white">{title.trim().length >= 20 && description.trim().length >= 40 && tags.trim() ? "Ready to review" : "Add useful details"}</p></div></div><p className="mt-3 text-[11px] leading-5 text-slate-500">HkTube reports the file’s detected source resolution. It does not upscale or convert a file to 4K/8K during this step.</p></div>
                 </div>
               </section>}
             </div>
