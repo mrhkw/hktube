@@ -55,7 +55,7 @@ export function HkTubeCreateGallery({ onCancel, onSelect }: Props) {
   function toggleFavorite(id: string) { setItems(current => current.map(item => item.id === id ? { ...item, favorite: !item.favorite } : item)); }
   function removeItem(id: string) { setItems(current => { const item = current.find(x => x.id === id); if (item) { URL.revokeObjectURL(item.url); objectUrlsRef.current.delete(item.url); } return current.filter(x => x.id !== id); }); setSelected(current => current === id ? "" : current); }
   const chosen = items.find(item => item.id === selected);
-  const accept = mode === "post" ? "image/*" : "video/*";
+  const accept = mode === "post" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm";
   return <div className="hktube-own-gallery flex max-h-[88dvh] min-h-[70dvh] flex-col overflow-hidden rounded-2xl bg-[#0d1019] text-white">
     <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 sm:px-6">
       <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-violet-300">HKTUBE MEDIA LIBRARY</p><h2 className="mt-1 text-xl font-black">Your Gallery</h2><p className="mt-1 text-xs text-slate-400">Import media into this in-app library, then select it for creation.</p></div>
