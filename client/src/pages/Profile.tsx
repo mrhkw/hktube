@@ -27,6 +27,10 @@ import {
   ImagePlus,
   Users,
   ExternalLink,
+  UploadCloud,
+  BarChart3,
+  Settings2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -310,6 +314,25 @@ export default function Profile() {
                 Share
               </Button>
             </div>
+          </div>
+        </section>
+        <section aria-label="Creator shortcuts" className="mt-4">
+          <div className="mb-3 flex items-end justify-between gap-3 px-1">
+            <div><h2 className="text-base font-black text-white sm:text-lg">Creator shortcuts</h2><p className="mt-1 text-xs text-slate-500">Your main tools, without digging through menus.</p></div>
+            <Link href="/studio" className="text-xs font-bold text-violet-200 hover:text-white">Open Studio</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { href: "/upload", title: "Upload", detail: "Publish a video or Clip", icon: UploadCloud, accent: "text-violet-200 bg-violet-500/15" },
+              { href: "/studio", title: "Creator Studio", detail: "Manage your content", icon: Sparkles, accent: "text-cyan-200 bg-cyan-500/10" },
+              { href: "/studio/analytics", title: "Analytics", detail: "Review channel performance", icon: BarChart3, accent: "text-emerald-200 bg-emerald-500/10" },
+              { href: "/settings", title: "Preferences", detail: "Text size, playback and feed", icon: Settings2, accent: "text-fuchsia-200 bg-fuchsia-500/10" },
+            ].map(item => (
+              <Link key={item.href} href={item.href} className="group flex min-h-[112px] items-start gap-3 rounded-2xl border border-white/10 bg-[#111522] p-3 transition hover:-translate-y-0.5 hover:border-violet-300/30 hover:bg-white/[.045] sm:min-h-[124px] sm:p-4">
+                <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${item.accent}`}><item.icon className="size-5" strokeWidth={2.2} /></span>
+                <span className="min-w-0"><span className="block text-sm font-black text-white">{item.title}</span><span className="mt-1 block text-[11px] leading-4 text-slate-500 sm:text-xs">{item.detail}</span><span className="mt-2 block text-[10px] font-bold text-violet-200 opacity-80 group-hover:opacity-100">Open →</span></span>
+              </Link>
+            ))}
           </div>
         </section>
         <section className="mt-4 overflow-hidden rounded-[24px] border border-white/10 bg-[#111522]">
