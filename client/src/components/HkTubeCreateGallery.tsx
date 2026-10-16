@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { Album, Check, FileImage, Film, Heart, ImagePlus, Search, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +16,11 @@ const durationFor = (file: File) => new Promise<string>(resolve => {
 });
 export function HkTubeCreateGallery({ onCancel, onSelect }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+  useEffect(() => () => {
+    for (const url of objectUrlsRef.current) URL.revokeObjectURL(url);
+    objectUrlsRef.current.clear();
+  }, []);
   const [mode, setMode] = useState<CreateMediaMode>("video");
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [selected, setSelected] = useState<string>("");
@@ -37,14 +42,18 @@ export function HkTubeCreateGallery({ onCancel, onSelect }: Props) {
     if (!accepted.length) { setError("Select supported video or image files."); return; }
     setBusy(true);
     try {
-      const next: GalleryItem[] = accepted.map(file => ({ id: crypto.randomUUID(), file, url: URL.createObjectURL(file), kind: file.type.startsWith("video/") ? "video" : "image", favorite: false, addedAt: Date.now() }));
+      const next: GalleryItem[] = accepted.map(file => {
+        const url = URL.createObjectURL(file);
+        objectUrlsRef.current.add(url);
+        return { id: crypto.randomUUID(), file, url, kind: file.type.startsWith("video/") ? "video" : "image", favorite: false, addedAt: Date.now() };
+      });
       setItems(current => [...next, ...current]);
       setSelected(next[0].id);
       setFilter("all");
     } finally { setBusy(false); }
   }
   function toggleFavorite(id: string) { setItems(current => current.map(item => item.id === id ? { ...item, favorite: !item.favorite } : item)); }
-  function removeItem(id: string) { setItems(current => { const item = current.find(x => x.id === id); if (item) URL.revokeObjectURL(item.url); return current.filter(x => x.id !== id); }); setSelected(current => current === id ? "" : current); }
+  function removeItem(id: string) { setItems(current => { const item = current.find(x => x.id === id); if (item) { URL.revokeObjectURL(item.url); objectUrlsRef.current.delete(item.url); } return current.filter(x => x.id !== id); }); setSelected(current => current === id ? "" : current); }
   const chosen = items.find(item => item.id === selected);
   const accept = mode === "post" ? "image/*" : "video/*";
   return <div className="hktube-own-gallery flex max-h-[88dvh] min-h-[70dvh] flex-col overflow-hidden rounded-2xl bg-[#0d1019] text-white">
