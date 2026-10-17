@@ -312,7 +312,7 @@ export default function UploadStudioPage() {
   }
 
   return (
-    <div className="hktube-upload-reference"><HkTubeShell title={mode === "clip" ? "Create a Short" : "Upload a video"} subtitle="Upload and publish your video with the same clear creator flow.">
+    <div className="hktube-upload-reference"><HkTubeShell title={mode === "clip" ? "Create a Clip" : "Upload a video"} subtitle="Upload and publish your video with the same clear creator flow.">
       <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-5 sm:px-7 lg:px-10">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={() => navigate("/")} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-white/[.06]"><ArrowLeft className="size-4" />Back</button>
@@ -322,8 +322,8 @@ export default function UploadStudioPage() {
         <section className={`hktube-upload-card hktube-upload-stage-${stage} overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20`}>
           <header className="border-b border-white/10 bg-gradient-to-r from-violet-500/15 via-transparent to-cyan-400/[.08] p-4 sm:p-6">
             <p className="text-[11px] font-black uppercase tracking-[.22em] text-cyan-300">STEP {stage === "select" ? "1 OF 3 · CAPTURE" : stage === "edit" ? "2 OF 3 · EDIT" : "3 OF 3 · DETAILS & PUBLISH"}</p>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{mode === "clip" ? "Create a Short" : "Upload a video"}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{mode === "clip" ? "Choose a vertical video, edit it, add sound and publish it as a Short." : "Choose a video from your gallery, set its cover and add publishing details."}</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{mode === "clip" ? "Create a Clip" : "Upload a video"}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{mode === "clip" ? "Choose a vertical video, edit it, add sound and publish it as a Clip." : "Choose a video from your gallery, set its cover and add publishing details."}</p>
             <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Upload steps">
               {([{key:"select",label:"1. Capture",done:stage!=="select"},{key:"edit",label:"2. Edit",done:stage==="details"},{key:"details",label:"3. Publish",done:false}] as const).map(item => <div key={item.key} className={"rounded-xl border px-3 py-2.5 text-center text-xs font-bold " + (stage===item.key ? "border-violet-300/40 bg-violet-500/15 text-white" : item.done ? "border-emerald-300/20 bg-emerald-500/[.06] text-emerald-200" : "border-white/10 bg-black/10 text-slate-500")}>{item.label}</div>)}
             </div>
@@ -358,7 +358,7 @@ export default function UploadStudioPage() {
               {stage === "details" && <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Add details</h2>
                 <div className="mt-4 space-y-4">
-                  <label className="block"><span className="flex items-center justify-between gap-3 text-sm font-bold text-white"><span>Title *</span><span className="text-xs text-slate-500">{title.length}/100</span></span><input value={title} onChange={event => { const value = event.target.value.slice(0,100); setTitle(value); setTags(suggestedTags(value).join(", ")); setCategory(inferCategory(value)); if (!descriptionEdited) setDescription(buildDescription(value)); }} maxLength={100} required className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder={mode === "clip" ? "Caption your Short" : "Create a title (type @ to mention a channel)"} /></label>
+                  <label className="block"><span className="flex items-center justify-between gap-3 text-sm font-bold text-white"><span>Title *</span><span className="text-xs text-slate-500">{title.length}/100</span></span><input value={title} onChange={event => { const value = event.target.value.slice(0,100); setTitle(value); setTags(suggestedTags(value).join(", ")); setCategory(inferCategory(value)); if (!descriptionEdited) setDescription(buildDescription(value)); }} maxLength={100} required className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50" placeholder={mode === "clip" ? "Caption your Clip" : "Create a title (type @ to mention a channel)"} /></label>
                   <label className="block"><span className="text-sm font-bold text-white">Description / caption</span><textarea value={description} onChange={event => { setDescription(event.target.value.slice(0,5000)); setDescriptionEdited(true); }} maxLength={5000} rows={4} className="mt-2 w-full resize-y rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-6 text-white outline-none focus:border-violet-300/50" placeholder="Tell viewers what this video is about…" /></label>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className="block"><span className="text-sm font-bold text-white">Category</span><select value={category} onChange={event => setCategory(event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#151a25] px-3 py-3 text-sm text-white">{CATEGORIES.map(item => <option key={item}>{item}</option>)}</select></label>
@@ -404,7 +404,7 @@ export default function UploadStudioPage() {
               {busy && <div className="rounded-xl border border-violet-300/15 bg-violet-500/[.06] p-4"><div className="flex items-center justify-between gap-3 text-xs font-bold text-white"><span>Uploading and saving</span><span>{progress}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-black/40"><div className="h-full rounded-full bg-violet-400 transition-all" style={{ width: progress + "%" }} /></div><button type="button" onClick={() => abortRef.current?.abort()} className="mt-3 text-xs font-bold text-rose-200 underline">Cancel upload</button></div>}
 
               <button type="submit" disabled={stage !== "details" || busy || !file || !info || !title.trim() || !channelId || channelsLoading} className="hktube-sticky-upload inline-flex min-h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-6 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
-                {busy ? <><Loader2 className="mr-2 size-4 animate-spin" />Uploading {progress}%…</> : <><UploadCloud className="mr-2 size-4" />{mode === "clip" ? "Upload Short" : "Upload"}</>}
+                {busy ? <><Loader2 className="mr-2 size-4 animate-spin" />Uploading {progress}%…</> : <><UploadCloud className="mr-2 size-4" />{mode === "clip" ? "Publish Clip" : "Upload"}</>}
               </button>
               {!channelsLoading && !channels.length && <button type="button" onClick={() => navigate("/channel/create")} className="w-full rounded-full border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/[.04]">Create HkTube channel first</button>}
             </aside>
