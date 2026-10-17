@@ -89,12 +89,12 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   }, [isShort]);
 
   useEffect(() => {
-    void startCamera(facing);
+    if (!disabled) void startCamera(facing);
     return () => {
       if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
       stopCamera();
     };
-  }, [facing, startCamera, stopCamera]);
+  }, [disabled, facing, startCamera, stopCamera]);
 
   const drawFrames = useCallback(() => {
     const video = videoRef.current;
