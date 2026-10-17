@@ -147,7 +147,20 @@ export default function ClipsPage() {
       return true;
     }
   });
-  const [playing, setPlaying] = useState(true);
+  const [autoplayEnabled] = useState(() => {
+    try {
+      return localStorage.getItem("hktube-autoplay") !== "disabled";
+    } catch {
+      return true;
+    }
+  });
+  const [playing, setPlaying] = useState(() => {
+    try {
+      return localStorage.getItem("hktube-autoplay") !== "disabled";
+    } catch {
+      return true;
+    }
+  });
   const [soundOn, setSoundOn] = useState(false);
   const [liked, setLiked] = useState(new Set<string>());
   const [saved, setSaved] = useState(new Set<string>());
@@ -635,7 +648,7 @@ export default function ClipsPage() {
                 src={current.videoUrl}
                 poster={current.thumbnailUrl ?? undefined}
                 muted
-                autoPlay
+                autoPlay={autoplayEnabled}
                 playsInline
                 loop={!autoplayNext}
                 preload="metadata"
