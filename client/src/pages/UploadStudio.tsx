@@ -10,7 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { listMySupabaseChannels, type SupabaseChannel } from "@/lib/supabaseChannels";
 import { createSupabaseVideo } from "@/lib/supabaseVideos";
-import { takePendingCreateMedia } from "@/lib/pendingCreateMedia";
+import { setPendingCreateMedia, takePendingCreateMedia } from "@/lib/pendingCreateMedia";
 
 type StudioMode = "video" | "clip";
 type VideoInfo = { width: number; height: number; duration: number };
@@ -410,6 +410,6 @@ export default function UploadStudioPage() {
         </section>
       </main>
     </HkTubeShell></div>
-      {galleryOpen && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"><div className="mx-auto my-2 max-w-5xl"><HkTubeCreateGallery onCancel={() => setGalleryOpen(false)} onSelect={(selectedMode, selectedFile) => { setGalleryOpen(false); if (selectedMode === "video" || selectedMode === "clip") { setMode(selectedMode); void selectVideo(selectedFile); } }} /></div></div>}
+      {galleryOpen && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"><div className="mx-auto my-2 max-w-5xl"><HkTubeCreateGallery initialMode={mode} onCancel={() => setGalleryOpen(false)} onSelect={(selectedMode, selectedFile) => { setGalleryOpen(false); if (selectedMode === "post") { setPendingCreateMedia("post", selectedFile); navigate("/upload/post"); } else { setMode(selectedMode); void selectVideo(selectedFile); } }} /></div></div>}
   );
 }
