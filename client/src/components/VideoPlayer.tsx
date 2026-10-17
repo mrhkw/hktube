@@ -4,14 +4,28 @@ import { AlertTriangle, Captions, Home, Loader2, Maximize, Pause, PictureInPictu
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
-export function VideoPlayer({ video, autoPlay = false, onProgress }: { video: VideoRecord; autoPlay?: boolean; onProgress?: (seconds: number) => void }) {
+export function VideoPlayer({ video, autoPlay: autoPlayOverride, onProgress }: { video: VideoRecord; autoPlay?: boolean; onProgress?: (seconds: number) => void }) {
+  const [autoPlayEnabled] = useState(() => {
+    if (typeof autoPlayOverride === "boolean") return autoPlayOverride;
+    try {
+      return localStorage.getItem("hktube-long-autoplay") !== "disabled";
+    } catch {
+      return false;
+    }
+  });
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(video.durationSeconds || 0);
   const [volume, setVolume] = useState(0.9);
-  const [captionsOn, setCaptionsOn] = useState(false);
+  const [captionsOn, setCaptionsOn] = useState(() => {
+    try {
+      return localStorage.getItem("hktube-captions") === "enabled";
+    } catch {
+      return false;
+    }
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -65,7 +79,13 @@ export function VideoPlayer({ video, autoPlay = false, onProgress }: { video: Vi
     <div ref={containerRef} className={`relative overflow-hidden border border-violet-400/20 bg-black shadow-[0_0_45px_rgba(139,92,246,.13)] transition-[max-width,border-radius] duration-300 ${isShort ? "mx-auto w-full max-w-[720px] rounded-none lg:rounded-2xl" : theater ? "mx-auto w-full max-w-[1500px] rounded-xl" : "rounded-2xl"}`}>
       <div className={isShort ? "relative aspect-[9/16] max-lg:h-[100dvh] max-lg:w-full max-lg:aspect-auto bg-[#05050a]" : "relative aspect-video bg-[#05050a]"}>
         <Link href="/" className="absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-black/65 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-black/85" aria-label="Back to Home"><Home className="size-4" />Home</Link>
-        <video ref={videoRef} src={video.videoUrl} poster={video.thumbnailUrl || undefined} autoPlay={autoPlay} playsInline preload="metadata" loop={loop} onClick={togglePlayback} onLoadStart={() => setIsLoading(true)} onCanPlay={() => setIsLoading(false)} onWaiting={() => setIsLoading(true)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => { setIsPlaying(false); onProgress?.(video.durationSeconds || duration); }} onError={() => { setIsLoading(false); setPlaybackError("This media could not be loaded. The source may be unavailable or unsupported."); }} onLoadedMetadata={event => setDuration(event.currentTarget.duration || video.durationSeconds || 0)} onTimeUpdate={event => { const seconds = event.currentTarget.currentTime; setCurrentTime(seconds); onProgress?.(seconds); }} className={`${isShort ? "size-full object-cover" : "size-full object-contain"} cursor-pointer`}>
+        <video ref={videoRef} src={video.videoUrl} poster={video.thumbnailUrl || undefined} autoPlay={autoPlayEnabled} playsInline preload="metadata" loop={loop} onClick={togglePlayback} onLoadStart={() => setIsLoading(true)} onCanPlay={() => setIsLoading(false)} onWaiting={() => setIsLoading(true)} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => { setIsPlaying(false); onProgress?.(video.durationSeconds || duration); }} onError={() => { setIsLoading(false); setPlaybackError("This media could not be loaded. The source may be unavailable or unsupported."); }} onLoadedMetadata={event => {
+          setDuration(event.currentTarget.duration || video.durationSeconds || 0);
+          const track = event.currentTarget.textTracks[0];
+          const enabled = localStorage.getItem("hktube-captions") === "enabled";
+          if (track) track.mode = enabled ? "showing" : "hidden";
+          setCaptionsOn(enabled && Boolean(track));
+        }} onTimeUpdate={event => { const seconds = event.currentTarget.currentTime; setCurrentTime(seconds); onProgress?.(seconds); }} className={`${isShort ? "size-full object-cover" : "size-full object-contain"} cursor-pointer`}>
           {video.captionUrl && <track kind="captions" src={video.captionUrl} srcLang="en" label="English captions" />}
           Your browser does not support HTML5 video playback.
         </video>
