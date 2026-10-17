@@ -6,9 +6,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { toggleVideoLike, toggleVideoSave } from "@/lib/supabaseEngagement";
 import { toast } from "sonner";
+import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 
 type ShortItem = { id: string; title: string; description: string | null; video_path: string | null; thumbnail_path: string | null; views: number; likes_count: number; channel_id: string | null; tags: string[] | null };
-type Channel = { id: string; handle: string; name: string; avatar_url: string | null };
+type Channel = { id: string; handle: string; name: string; avatar_url: string | null; verification_status?: string };
 
 function mediaUrl(bucket: string, path: string | null) {
   return path ? (/^https?:\/\//i.test(path) ? path : supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl) : null;
@@ -24,7 +25,7 @@ export function ShortsSwipeFeed({ items }: { items: ShortItem[] }) {
   useState(() => {
     const ids = [...new Set(items.map(item => item.channel_id).filter(Boolean))] as string[];
     if (!ids.length) return;
-    void supabase.from("channels").select("id,handle,name,avatar_url").in("id", ids).then(({ data }) => {
+    void supabase.from("channels").select("id,handle,name,avatar_url,verification_status").in("id", ids).then(({ data }) => {
       setChannels(Object.fromEntries((data ?? []).map(channel => [String(channel.id), channel as Channel])));
     });
   });
@@ -79,7 +80,7 @@ export function ShortsSwipeFeed({ items }: { items: ShortItem[] }) {
             {channel?.avatar_url ? <img src={channel.avatar_url} alt="" className="mt-0.5 size-7 shrink-0 rounded-full object-cover" /> : <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-violet-100 text-[10px] font-black text-violet-700">{channel?.name?.slice(0, 1) || "H"}</span>}
             <div className="min-w-0 flex-1">
               <Link href={`/watch/${item.id}`} className="line-clamp-2 text-sm font-bold leading-5 text-slate-900 hover:text-violet-700">{item.title}</Link>
-              {channel ? <Link href={`/channel/${channel.handle}`} className="mt-0.5 block truncate text-xs text-slate-500 hover:text-violet-700">@{channel.handle}</Link> : null}
+              {channel ? <Link href={`/channel/${channel.handle}`} className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500 hover:text-violet-700">@{channel.handle}{channel.verification_status === "verified" && <VerifiedChannelBadge />}</Link> : null}
             </div>
           </div>
           <div className="mt-2 flex items-center gap-1">

@@ -484,7 +484,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
               <span className="truncate">{creator}</span>
             )}
             {creatorVerified && (
-              <BadgeCheck className="size-4 shrink-0 fill-sky-500 text-white" />
+              <BadgeCheck className="size-4 shrink-0 fill-[#F5B301] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.35)]" />
             )}
           </div>
           <p className="truncate text-[11px] leading-4 text-slate-500">
@@ -766,7 +766,7 @@ function HomeVideoPost({ video }: { video: RankedVideo }) {
             <p className="hktube-channel-name flex items-center gap-1 text-sm font-semibold text-[#8f1d1d]">
               <span className="truncate">{creator}</span>
               {creatorVerified && (
-                <BadgeCheck className="size-4 shrink-0 fill-sky-500 text-white" />
+                <BadgeCheck className="size-4 shrink-0 fill-[#F5B301] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.35)]" />
               )}
             </p>
             <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">

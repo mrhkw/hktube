@@ -49869,7 +49869,8 @@ async function listVideos(options) {
   }
   const where = filters.length ? and(...filters) : void 0;
   const score = sql`(${videos.viewCount} * 2) - (timestampdiff(hour, ${videos.uploadedAt}, now()) / 24)`;
-  return db.select().from(videos).where(where).orderBy(...options.mode === "trending" ? [desc(score), desc(videos.viewCount), desc(videos.uploadedAt)] : [desc(videos.uploadedAt)]).limit(Math.min(options.limit ?? 24, 60));
+  const rows = await db.select({ video: videos, channelName: channels.displayName, channelAvatarUrl: channels.avatarUrl, channelVerified: channels.verificationStatus }).from(videos).leftJoin(channels, eq(videos.channelId, channels.id)).where(where).orderBy(...options.mode === "trending" ? [desc(score), desc(videos.viewCount), desc(videos.uploadedAt)] : [desc(videos.uploadedAt)]).limit(Math.min(options.limit ?? 24, 60));
+  return rows.map((row) => ({ ...row.video, channelName: row.channelName, channelAvatarUrl: row.channelAvatarUrl, channelVerified: row.channelVerified === "verified" }));
 }
 async function getVideoById(id) {
   const db = await getDb();
@@ -49895,7 +49896,8 @@ async function incrementVideoView(id) {
 async function getRelatedVideos(videoId, category) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(videos).where(and(eq(videos.category, category), sql`${videos.id} <> ${videoId}`)).orderBy(desc(videos.uploadedAt)).limit(8);
+  const rows = await db.select({ video: videos, channelName: channels.displayName, channelAvatarUrl: channels.avatarUrl, channelVerified: channels.verificationStatus }).from(videos).leftJoin(channels, eq(videos.channelId, channels.id)).where(and(eq(videos.category, category), sql`${videos.id} <> ${videoId}`)).orderBy(desc(videos.uploadedAt)).limit(8);
+  return rows.map((row) => ({ ...row.video, channelName: row.channelName, channelAvatarUrl: row.channelAvatarUrl, channelVerified: row.channelVerified === "verified" }));
 }
 async function listAdminVideos() {
   const db = await getDb();
@@ -131726,5 +131728,3 @@ long/umd/index.js:
 @trpc/server/dist/resolveResponse-DngSgha6.mjs:
   (* istanbul ignore if -- @preserve *)
 */
-
-module.exports = module.exports.default;

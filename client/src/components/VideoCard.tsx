@@ -1,6 +1,5 @@
 import { formatDate, formatDuration, formatViews, VideoRecord } from "@/lib/video";
 import {
-  CheckCircle2,
   Heart,
   Inbox,
   Maximize2,
@@ -13,6 +12,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 
@@ -136,7 +136,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
             <span className="truncate text-[15px] font-bold text-neutral-950">
               {video.channelName || "HkTube Creator"}
             </span>
-            <CheckCircle2 className="size-4 shrink-0 fill-sky-500 text-white" aria-label="Verified creator" />
+            {video.channelVerified && <VerifiedChannelBadge label="Verified creator" />}
           </div>
         </div>
 
@@ -341,7 +341,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
               <p className="text-[15px] font-bold text-neutral-900">
                 {video.channelName || "HkTube Creator"}
               </p>
-              <CheckCircle2 className="size-4 shrink-0 fill-sky-500 text-white" aria-hidden="true" />
+              {video.channelVerified && <VerifiedChannelBadge label="Verified creator" />}
             </div>
             <p className="mt-0.5 text-xs text-neutral-500">
               {formatViews(video.viewCount)} · {formatDate(video.uploadedAt)}

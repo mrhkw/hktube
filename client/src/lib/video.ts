@@ -15,6 +15,7 @@ export type VideoRecord = {
   channelId?: number | string | null;
   channelName?: string | null;
   channelAvatarUrl?: string | null;
+  channelVerified?: boolean;
 };
 
 export function formatDuration(seconds: number) {

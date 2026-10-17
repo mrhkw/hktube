@@ -34,6 +34,10 @@ export function getSubscriberBadge(subscriberCount: number): BadgeTier | null {
   return [...BADGE_TIERS].reverse().find(tier => subscriberCount >= tier.threshold) ?? null;
 }
 
+export function VerifiedChannelBadge({ label = "Verified HkTube channel" }: { label?: string }) {
+  return <span className="inline-flex shrink-0 items-center" title={label} aria-label={label}><BadgeCheck className="size-[1.05em] fill-[#F5B301] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.35)]" aria-hidden="true" /></span>;
+}
+
 export function ChannelBadge({ subscriberCount, verified = false, compact = false, verifiedColor = "#F5B301" }: { subscriberCount: number; verified?: boolean; compact?: boolean; verifiedColor?: string }) {
   const tier = getSubscriberBadge(Math.max(0, subscriberCount));
   if (!tier && !verified) return null;

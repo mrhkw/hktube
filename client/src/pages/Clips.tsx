@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { type SupabaseVideo } from "@/lib/supabaseVideos";
@@ -757,8 +758,9 @@ export default function ClipsPage() {
                       "HK"
                     )}
                   </Link>
-                  <span className="min-w-0 truncate font-black text-sm text-white drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
+                  <span className="flex min-w-0 items-center gap-1 truncate font-black text-sm text-white drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
                     {channel ? "@" + channel.handle : "HkTube Creator"}
+                    {channel?.verification_status === "verified" && <VerifiedChannelBadge label="Verified creator" />}
                   </span>
                   <button
                     onClick={() => void follow()}

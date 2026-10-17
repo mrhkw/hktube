@@ -1,6 +1,7 @@
 import { MoreVertical, Play, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
+import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 
 export type FeedbackType =
   | "not_interested"
@@ -18,6 +19,7 @@ export type SupabaseVideoCardData = {
   isShort?: boolean;
   channelName?: string | null;
   channelHandle?: string | null;
+  channelVerified?: boolean;
   reason?: string | null;
   onNotInterested?: () => void;
   onFeedback?: (type: FeedbackType) => void;
@@ -104,11 +106,12 @@ export function SupabaseVideoCard({ video }: { video: SupabaseVideoCardData }) {
             <h3 className="line-clamp-2 text-[15px] font-bold leading-5 text-white">
               {video.title}
             </h3>
-            <p className="mt-1 truncate text-xs text-slate-500">
+            <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-500">
               {video.channelName ||
                 (video.channelHandle
                   ? `@${video.channelHandle}`
                   : "HkTube creator")}
+              {video.channelVerified && <VerifiedChannelBadge label="Verified creator" />}
             </p>
             <p className="mt-0.5 text-xs text-slate-500">
               {Number(video.views).toLocaleString()} views ·{" "}

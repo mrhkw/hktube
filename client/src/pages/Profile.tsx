@@ -1,6 +1,7 @@
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -253,8 +254,9 @@ export default function Profile() {
               <p className="text-xs font-bold uppercase tracking-[.16em] text-violet-300">
                 Your channel
               </p>
-              <h1 className="mt-1 truncate text-2xl font-black text-white sm:text-3xl">
-                {channel?.displayName || user.name || "HkTube Creator"}
+              <h1 className="mt-1 flex items-center gap-2 truncate text-2xl font-black text-white sm:text-3xl">
+                <span className="truncate">{channel?.displayName || user.name || "HkTube Creator"}</span>
+                {channel?.verificationStatus === "verified" && <VerifiedChannelBadge />}
               </h1>
               <p className="mt-0.5 text-sm text-slate-400">
                 @{channel?.handle || "creator"}
