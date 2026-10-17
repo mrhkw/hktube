@@ -3,6 +3,7 @@ import { AlertCircle, ArrowLeft, CheckCircle2, FileVideo2, ImagePlus, Loader2, S
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { HkTubeCreateGallery } from "@/components/HkTubeCreateGallery";
 import { MediaEditor } from "@/components/MediaEditor";
 import { ShortCameraStudio } from "@/components/ShortCameraStudio";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -123,7 +124,8 @@ async function thumbnailAt(file: File, fraction = 0.12): Promise<File | null> {
 export default function UploadStudioPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
-  const [stage, setStage] = useState<"select" | "preview" | "details">("select");
+  const [stage, setStage] = useState<"select" | "edit" | "details">("select");
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<StudioMode>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -215,7 +217,7 @@ export default function UploadStudioPage() {
       setThumbnailSource("automatic");
       setThumbnail(await thumbnailAt(next));
       
-      setStage("preview");
+      setStage("edit");
       setResultMessage("");
     } catch (cause) {
       setFile(null); setInfo(null);
@@ -230,6 +232,21 @@ export default function UploadStudioPage() {
     setMode(expectedMode);
     void selectVideo(pending.file);
   }, []);
+
+  async function applyEditedVideo(next: File) {
+    try {
+      const nextInfo = await readVideoInfo(next);
+      setFile(next);
+      setInfo(nextInfo);
+      setThumbnail(await thumbnailAt(next));
+      setThumbnailSource("automatic");
+      setStage("details");
+      setError("");
+      toast.success("Edits applied. Review details before publishing.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not read the edited video.");
+    }
+  }
 
   function switchMode(next: StudioMode) {
     if (busy || mode === next) return;
@@ -301,58 +318,40 @@ export default function UploadStudioPage() {
         </div>
 
         <section className={`hktube-upload-card hktube-upload-stage-${stage} overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20`}>
-          <header className="border-b border-white/10 bg-gradient-to-r from-violet-500/15 via-transparent to-cyan-400/[.08] p-5 sm:p-8">
-            <p className="text-[11px] font-black uppercase tracking-[.22em] text-cyan-300">ADD DETAILS</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">{mode === "clip" ? "Create a Short" : "Upload a video"}</h1>
+          <header className="border-b border-white/10 bg-gradient-to-r from-violet-500/15 via-transparent to-cyan-400/[.08] p-4 sm:p-6">
+            <p className="text-[11px] font-black uppercase tracking-[.22em] text-cyan-300">STEP {stage === "select" ? "1 OF 3 · CAPTURE" : stage === "edit" ? "2 OF 3 · EDIT" : "3 OF 3 · DETAILS & PUBLISH"}</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{mode === "clip" ? "Create a Short" : "Upload a video"}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{mode === "clip" ? "Choose a vertical video, edit it, add sound and publish it as a Short." : "Choose a video from your gallery, set its cover and add publishing details."}</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => switchMode("video")} aria-pressed={mode === "video"} className={"hktube-upload-mode flex items-center gap-4 rounded-2xl border p-4 text-left transition " + (mode === "video" ? "border-violet-300/50 bg-violet-500/15" : "border-white/10 bg-black/15 hover:border-white/20")}>
-                <span className="grid size-12 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><FileVideo2 className="size-6" /></span>
-                <span><span className="block font-black text-white">Upload a video</span><span className="mt-1 block text-xs text-slate-400">Full video · cover, title and details</span></span>
-              </button>
-              <button type="button" onClick={() => switchMode("clip")} aria-pressed={mode === "clip"} className={"hktube-upload-mode flex items-center gap-4 rounded-2xl border p-4 text-left transition " + (mode === "clip" ? "border-fuchsia-300/50 bg-fuchsia-500/10" : "border-white/10 bg-black/15 hover:border-white/20")}>
-                <span className="grid size-12 place-items-center rounded-xl bg-fuchsia-500/15 text-fuchsia-200"><Smartphone className="size-6" /></span>
-                <span><span className="block font-black text-white">Create a Short</span><span className="mt-1 block text-xs text-slate-400">Portrait · camera, trim and edit</span></span>
-              </button>
+            <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Upload steps">
+              {([{key:"select",label:"1. Capture",done:stage!=="select"},{key:"edit",label:"2. Edit",done:stage==="details"},{key:"details",label:"3. Publish",done:false}] as const).map(item => <div key={item.key} className={"rounded-xl border px-3 py-2.5 text-center text-xs font-bold " + (stage===item.key ? "border-violet-300/40 bg-violet-500/15 text-white" : item.done ? "border-emerald-300/20 bg-emerald-500/[.06] text-emerald-200" : "border-white/10 bg-black/10 text-slate-500")}>{item.label}</div>)}
             </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={() => switchMode("video")} aria-pressed={mode === "video"} className={"inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-black transition " + (mode === "video" ? "border-violet-300/50 bg-violet-500/15 text-white" : "border-white/10 bg-black/15 text-slate-400 hover:text-white")}><FileVideo2 className="size-4"/>Long Video</button>
+              <button type="button" onClick={() => switchMode("clip")} aria-pressed={mode === "clip"} className={"inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-black transition " + (mode === "clip" ? "border-fuchsia-300/50 bg-fuchsia-500/10 text-white" : "border-white/10 bg-black/15 text-slate-400 hover:text-white")}><Smartphone className="size-4"/>Clips</button>
+            </div>            </div>
           </header>
 
-          <form onSubmit={event => void publish(event)} className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
+          <form onSubmit={event => void publish(event)} className={"grid gap-6 p-4 sm:p-6 " + (stage === "details" ? "lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]" : "grid-cols-1")}>
             <div className="min-w-0 space-y-5">
               <input ref={galleryInputRef} type="file" accept="video/mp4,video/webm" className="sr-only" disabled={busy} onChange={event => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
-              {mode === "clip" && stage === "select" ? (
-                <ShortCameraStudio
-                  disabled={busy || channelsLoading || !isAuthenticated}
-                  onSelectFile={next => { void selectVideo(next); }}
-                  onChooseGallery={() => galleryInputRef.current?.click()}
-                />
-              ) : (
-                <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
-                  <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><UploadCloud className="size-5" /></span><div><h2 className="font-black text-white">Select from gallery</h2><p className="mt-1 text-xs text-slate-500">MP4/H.264 or WebM · up to 900 MB · resumable transfer</p></div></div>
-                  <button type="button" disabled={busy} onClick={() => galleryInputRef.current?.click()} onDragOver={event => { event.preventDefault(); if (!busy) setDraggingFile(true); }} onDragLeave={() => setDraggingFile(false)} onDrop={event => { event.preventDefault(); setDraggingFile(false); if (!busy) void selectVideo(event.dataTransfer.files?.[0]); }} className={"hktube-gallery-drop mt-4 flex min-h-40 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition " + (draggingFile ? "border-violet-300 bg-violet-500/10" : "border-white/15 bg-white/[.025] hover:border-violet-300/40 hover:bg-violet-500/[.04]")}>
-                    <span className="grid size-14 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">{file ? <CheckCircle2 className="size-7" /> : <Video className="size-7" />}</span>
-                    <span className="mt-3 break-all text-sm font-black text-white">{file ? file.name : "Select a video from your gallery"}</span>
-                    <span className="mt-1 text-xs text-slate-500">Opens your device's real media picker</span>
-                  </button>
-                  {file && info && <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{info.width} × {info.height}</span><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{durationLabel(info.duration)}</span><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-slate-300">{bytesLabel(file.size)}</span><button type="button" disabled={busy} onClick={() => {setFile(null);setInfo(null);setThumbnail(null);setStage("select");}} className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1.5 text-slate-300"><X className="size-3.5" />Replace</button></div>}
-                </section>
-              )}
+              {stage === "select" && <ShortCameraStudio
+                isShort={mode === "clip"}
+                disabled={busy || channelsLoading || !isAuthenticated}
+                onSelectFile={next => { void selectVideo(next); }}
+                onChooseGallery={() => setGalleryOpen(true)}
+              />}
 
-              {file && info && stage === "preview" && <section className="hktube-upload-card overflow-hidden rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
-                <div className={mode === "clip" ? "mx-auto max-w-[300px]" : "w-full"}>
-                  <div className={mode === "clip" ? "aspect-[9/16] overflow-hidden rounded-xl bg-black" : "aspect-video overflow-hidden rounded-xl bg-black"}>
-                    <video src={videoUrl} controls playsInline className="size-full object-contain" />
-                  </div>
+              {stage === "edit" && file && info && <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0"><p className="text-sm font-black text-white">Review and edit your video</p><p className="mt-1 truncate text-xs text-slate-500">{file.name} · {info.width} × {info.height} · {durationLabel(info.duration)}</p></div>
+                  <button type="button" disabled={busy} onClick={() => setStage("select")} className="rounded-full border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/[.05]">Replace video</button>
                 </div>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <button type="button" onClick={() => { setFile(null); setInfo(null); setThumbnail(null); setStage("select"); }} className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold text-slate-300">Replace</button>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => { setMode("clip"); setStage("details"); }} className="rounded-full border border-violet-300/40 px-4 py-2 text-sm font-bold text-violet-200">Edit into a Short</button>
-                    <button type="button" onClick={() => setStage("details")} className="rounded-full bg-violet-600 px-5 py-2 text-sm font-bold text-white">Next</button>
-                  </div>
+                <MediaEditor file={file} isShort={mode === "clip"} onApply={edited => { void applyEditedVideo(edited); }} />
+                <div className="flex flex-wrap justify-end gap-2 rounded-2xl border border-white/10 bg-black/15 p-4">
+                  <button type="button" disabled={busy} onClick={() => setStage("details")} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-bold text-slate-300 hover:bg-white/[.05]">Skip editing</button>
+                  <button type="button" disabled={busy} onClick={() => setStage("details")} className="min-h-11 rounded-full bg-violet-600 px-5 text-sm font-black text-white hover:bg-violet-500">Continue to details <span aria-hidden="true">→</span></button>
                 </div>
-              </section>}
-              {file && info && stage === "details" && <MediaEditor file={file} isShort={mode === "clip"} onApply={edited => { void selectVideo(edited); }} />}
+              </div>
 
               {stage === "details" && <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Add details</h2>
@@ -369,7 +368,7 @@ export default function UploadStudioPage() {
               </section>}
             </div>
 
-            <aside className="min-w-0 space-y-5">
+            <aside className={"min-w-0 space-y-5 " + (stage !== "details" ? "hidden" : "")}>
               <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Cover</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">A frame is generated from your video. You can replace it with your own image.</p>
@@ -411,5 +410,6 @@ export default function UploadStudioPage() {
         </section>
       </main>
     </HkTubeShell></div>
+      {galleryOpen && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"><div className="mx-auto my-2 max-w-5xl"><HkTubeCreateGallery onCancel={() => setGalleryOpen(false)} onSelect={(selectedMode, selectedFile) => { setGalleryOpen(false); if (selectedMode === "video" || selectedMode === "clip") { setMode(selectedMode); void selectVideo(selectedFile); } }} /></div></div>}
   );
 }
