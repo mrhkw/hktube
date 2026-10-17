@@ -409,7 +409,8 @@ export default function UploadStudioPage() {
           </form>
         </section>
       </main>
-    </HkTubeShell></div>
+    </HkTubeShell>
       {galleryOpen && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"><div className="mx-auto my-2 max-w-5xl"><HkTubeCreateGallery initialMode={mode} onCancel={() => setGalleryOpen(false)} onSelect={(selectedMode, selectedFile) => { setGalleryOpen(false); if (selectedMode === "post") { setPendingCreateMedia("post", selectedFile); navigate("/upload/post"); } else { setMode(selectedMode); void selectVideo(selectedFile); } }} /></div></div>}
+    </div>
   );
 }
