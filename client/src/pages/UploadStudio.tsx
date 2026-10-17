@@ -231,8 +231,7 @@ export default function UploadStudioPage() {
     const pending = takePendingCreateMedia();
     if (!pending || pending.mode === "post") return;
     const expectedMode: StudioMode = pending.mode === "clip" ? "clip" : "video";
-    setMode(expectedMode);
-    void selectVideo(pending.file);
+    void selectVideo(pending.file, expectedMode);
   }, []);
 
   async function applyEditedVideo(next: File) {
