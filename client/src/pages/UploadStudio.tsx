@@ -328,7 +328,7 @@ export default function UploadStudioPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" onClick={() => switchMode("video")} aria-pressed={mode === "video"} className={"inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-black transition " + (mode === "video" ? "border-violet-300/50 bg-violet-500/15 text-white" : "border-white/10 bg-black/15 text-slate-400 hover:text-white")}><FileVideo2 className="size-4"/>Long Video</button>
               <button type="button" onClick={() => switchMode("clip")} aria-pressed={mode === "clip"} className={"inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-black transition " + (mode === "clip" ? "border-fuchsia-300/50 bg-fuchsia-500/10 text-white" : "border-white/10 bg-black/15 text-slate-400 hover:text-white")}><Smartphone className="size-4"/>Clips</button>
-            </div>            </div>
+            </div>
           </header>
 
           <form onSubmit={event => void publish(event)} className={"grid gap-6 p-4 sm:p-6 " + (stage === "details" ? "lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]" : "grid-cols-1")}>
@@ -351,7 +351,7 @@ export default function UploadStudioPage() {
                   <button type="button" disabled={busy} onClick={() => setStage("details")} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-bold text-slate-300 hover:bg-white/[.05]">Skip editing</button>
                   <button type="button" disabled={busy} onClick={() => setStage("details")} className="min-h-11 rounded-full bg-violet-600 px-5 text-sm font-black text-white hover:bg-violet-500">Continue to details <span aria-hidden="true">→</span></button>
                 </div>
-              </div>
+              </div>}
 
               {stage === "details" && <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                 <h2 className="font-black text-white">Add details</h2>
