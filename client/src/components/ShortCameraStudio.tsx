@@ -15,9 +15,10 @@ type ShortCameraStudioProps = {
   onSelectFile: (file: File) => void;
   onChooseGallery: () => void;
   disabled?: boolean;
+  isShort?: boolean;
 };
 
-export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = false }: ShortCameraStudioProps) {
+export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = false, isShort = true }: ShortCameraStudioProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -33,7 +34,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   const [facing, setFacing] = useState<"user" | "environment">("environment");
   const [filter, setFilter] = useState(FILTERS[0]);
   const [filterMenu, setFilterMenu] = useState(false);
-  const [duration, setDuration] = useState<15 | 60 | 180>(15);
+  const [duration, setDuration] = useState<number | null>(isShort ? 15 : null);
   const [timerSeconds, setTimerSeconds] = useState<0 | 3 | 10>(0);
   const [recording, setRecording] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -65,8 +66,8 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
         audio: true,
         video: {
           facingMode: { ideal: nextFacing },
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
+          width: { ideal: isShort ? 1080 : 1920 },
+          height: { ideal: isShort ? 1920 : 1080 },
         },
       });
       streamRef.current = stream;
@@ -81,7 +82,11 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
         ? "Camera or microphone permission was denied. Allow access in browser settings, or choose a video from your gallery."
         : "Camera could not start on this device. Use Add to choose a video from your gallery.");
     }
-  }, []);
+  }, [isShort]);
+
+  useEffect(() => {
+    setDuration(isShort ? 15 : null);
+  }, [isShort]);
 
   useEffect(() => {
     void startCamera(facing);
@@ -99,11 +104,13 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
       animationRef.current = window.requestAnimationFrame(drawFrames);
       return;
     }
-    const sourceWidth = video.videoWidth || 720;
-    const sourceHeight = video.videoHeight || 1280;
-    if (canvas.width !== 720 || canvas.height !== 1280) {
-      canvas.width = 720;
-      canvas.height = 1280;
+    const targetWidth = isShort ? 720 : 1280;
+    const targetHeight = isShort ? 1280 : 720;
+    const sourceWidth = video.videoWidth || targetWidth;
+    const sourceHeight = video.videoHeight || targetHeight;
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
     }
     context.save();
     context.filter = filter.css;
@@ -118,7 +125,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
     context.drawImage(video, (canvas.width - drawWidth) / 2, (canvas.height - drawHeight) / 2, drawWidth, drawHeight);
     context.restore();
     animationRef.current = window.requestAnimationFrame(drawFrames);
-  }, [facing, filter]);
+  }, [facing, filter, isShort]);
 
   useEffect(() => {
     window.cancelAnimationFrame(animationRef.current);
@@ -188,7 +195,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
           return;
         }
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "video/webm" });
-        const file = new File([blob], "hktube-short-" + Date.now() + ".webm", { type: "video/webm", lastModified: Date.now() });
+        const file = new File([blob], (isShort ? "hktube-clip-" : "hktube-video-") + Date.now() + ".webm", { type: "video/webm", lastModified: Date.now() });
         onSelectFile(file);
       };
       recorder.start(250);
@@ -199,7 +206,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
       stopTimerRef.current = window.setInterval(() => {
         const seconds = (Date.now() - startedAtRef.current) / 1000;
         setElapsed(seconds);
-        if (seconds >= duration) {
+        if (duration !== null && seconds >= duration) {
           if (recorder.state !== "inactive") recorder.stop();
         }
       }, 100);
@@ -208,7 +215,7 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
       setRecording(false);
       setBusy(false);
     }
-  }, [duration, onSelectFile]);
+  }, [duration, isShort, onSelectFile]);
   recordNowRef.current = recordNow;
 
   const stopRecording = () => {
@@ -216,19 +223,19 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   };
 
   return (
-    <section className="mx-auto w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-2xl">
-      <div className="relative aspect-[9/16] max-h-[72dvh] min-h-[420px] overflow-hidden bg-[#171820]">
+    <section className={"mx-auto w-full overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-2xl " + (isShort ? "max-w-md" : "max-w-4xl")}>
+      <div className={"relative overflow-hidden bg-[#171820] " + (isShort ? "mx-auto aspect-[9/16] max-h-[72dvh] min-h-[420px] max-w-md" : "aspect-video max-h-[72dvh] min-h-[300px]")}>
         <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 size-full object-cover" style={{ transform: facing === "user" ? "scaleX(-1)" : undefined, filter: filter.css }} />
         <canvas ref={canvasRef} className="pointer-events-none absolute -left-[10000px] top-0" aria-hidden="true" />
         <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
           <button type="button" disabled={disabled || recording} onClick={stopCamera} className="grid size-11 place-items-center rounded-full bg-black/55 text-2xl text-white disabled:opacity-50" aria-label="Turn camera off"><X className="size-5" /></button>
-          <span className="rounded-full bg-black/55 px-4 py-2 text-sm font-bold">HkTube <span className="text-violet-300">Shorts</span></span>
+          <span className="rounded-full bg-black/55 px-4 py-2 text-sm font-bold">HkTube <span className="text-violet-300">{isShort ? "Clips" : "Video"}</span></span>
           <button type="button" disabled={disabled || recording} onClick={() => setFacing(value => value === "user" ? "environment" : "user")} className="grid size-11 place-items-center rounded-full bg-black/55 disabled:opacity-50" aria-label="Flip camera"><FlipHorizontal className="size-5" /></button>
         </div>
 
         <div className="absolute right-3 top-[25%] flex flex-col gap-1 rounded-full bg-black/55 p-1.5">
           <button type="button" disabled={recording} onClick={() => setTimerSeconds(value => value === 0 ? 3 : value === 3 ? 10 : 0)} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50" aria-label="Recording countdown"><Timer className="size-5" /><span>{timerSeconds ? timerSeconds + "s" : "Timer"}</span></button>
-          <button type="button" disabled={recording} onClick={() => setDuration(value => value === 15 ? 60 : value === 60 ? 180 : 15)} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"><Video className="size-5" /><span>{duration === 180 ? "3 min" : duration + "s"}</span></button>
+          <button type="button" disabled={recording} onClick={() => setDuration(value => isShort ? (value === 15 ? 60 : value === 60 ? 180 : 15) : (value === null ? 60 : value === 60 ? 180 : null))} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"><Video className="size-5" /><span>{duration === null ? "Manual" : duration === 180 ? "3 min" : duration + "s"}</span></button>
           <button type="button" disabled={recording} onClick={() => setFilterMenu(value => !value)} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"><Sparkles className="size-5" /><span>Filters</span></button>
         </div>
 
@@ -248,13 +255,10 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
           <button type="button" disabled={!cameraReady || disabled || busy || countdown !== null} onClick={() => recording ? stopRecording() : void startRecording()} className={"grid size-[78px] place-items-center rounded-full border-[5px] border-white p-1 disabled:opacity-50 " + (recording ? "bg-red-600" : "bg-white")} aria-label={recording ? "Stop recording" : "Start recording"}>
             <span className={"block size-full bg-red-600 " + (recording ? "scale-50 rounded-lg" : "rounded-full")} />
           </button>
-          <div className="flex min-w-20 flex-col items-center gap-1 text-xs text-slate-400"><span className="text-base font-bold text-white">{Math.min(duration, Math.floor(elapsed))}s</span><span>{recording ? "Recording" : "Max length"}</span></div>
+          <div className="flex min-w-20 flex-col items-center gap-1 text-xs text-slate-400"><span className="text-base font-bold text-white">{Math.floor(elapsed)}s</span><span>{recording ? "Recording" : duration === null ? "Manual stop" : `Max ${duration}s`}</span></div>
         </div>
-        <div className="mt-4 flex justify-center gap-2">
-          <span className="rounded-full bg-white/15 px-5 py-2.5 text-sm font-bold text-white">Short</span>
-          <button type="button" disabled={disabled || recording} onClick={onChooseGallery} className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-400">Video</button>
-        </div>
-        <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">Camera filters are rendered into the recorded video. Gallery videos can be trimmed and exported with filters in the editor.</p>
+        <div className="mt-4 flex justify-center gap-2"><span className="rounded-full bg-white/15 px-5 py-2.5 text-sm font-bold text-white">{isShort ? "Clips camera" : "Long Video camera"}</span></div>
+        <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">Camera filters are rendered into the recorded file. Use the gallery button to choose an existing video, then review it in the editor.</p>
         {cameraError && <p className="mt-2 text-center text-xs text-amber-200">{cameraError}</p>}
       </div>
     </section>
