@@ -25,6 +25,7 @@ const COUNTRIES: Country[] = [
 
 function readableAuthError(message: string) {
   const value = message.toLowerCase();
+  if (value.includes("unexpected status code returned from hook") || value.includes("unexpected_failure") || value.includes("email provider rejected") || value.includes("email provider is not configured")) return "HkTube ka email verification provider abhi sahi configure nahi. Account verification complete nahi ho saki; administrator ko verified sending domain set karna hoga.";
   if (value.includes("invalid login credentials")) return "Email/phone ya password ghalat hai.";
   if (value.includes("user already registered") || value.includes("already been registered")) return "Is email/phone par HKW account pehle se mojood hai. Login karein.";
   if (value.includes("email not confirmed")) return "Pehle apni email verify karein.";
