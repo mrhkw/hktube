@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export type CreateMediaMode = "video" | "clip" | "post";
 type GalleryItem = { id: string; file: File; url: string; kind: "video" | "image"; favorite: boolean; addedAt: number };
-type Props = { onCancel: () => void; onSelect: (mode: CreateMediaMode, file: File) => void };
+type Props = { onCancel: () => void; onSelect: (mode: CreateMediaMode, file: File) => void; initialMode?: CreateMediaMode };
 type Filter = "all" | "videos" | "photos" | "recent" | "favorites";
 type StoredGalleryItem = { id: string; file: File; kind: "video" | "image"; favorite: boolean; addedAt: number };
 const GALLERY_DB = "hktube-media-library";
@@ -70,7 +70,7 @@ const durationFor = (file: File) => new Promise<string>(resolve => {
   const done = () => { const value = Number.isFinite(video.duration) ? video.duration : 0; URL.revokeObjectURL(url); resolve(Math.floor(value / 60) + ":" + String(Math.floor(value % 60)).padStart(2, "0")); };
   video.onloadedmetadata = done; video.onerror = () => { URL.revokeObjectURL(url); resolve(""); }; video.src = url;
 });
-export function HkTubeCreateGallery({ onCancel, onSelect }: Props) {
+export function HkTubeCreateGallery({ onCancel, onSelect, initialMode = "video" }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -92,7 +92,7 @@ export function HkTubeCreateGallery({ onCancel, onSelect }: Props) {
     for (const url of objectUrlsRef.current) URL.revokeObjectURL(url);
     objectUrlsRef.current.clear();
   }, []);
-  const [mode, setMode] = useState<CreateMediaMode>("video");
+  const [mode, setMode] = useState<CreateMediaMode>(initialMode);
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [filter, setFilter] = useState<Filter>("all");
