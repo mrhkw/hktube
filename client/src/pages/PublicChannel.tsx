@@ -1,7 +1,7 @@
 import { EmptyVideos, VideoCard } from "@/components/VideoCard";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import { Button } from "@/components/ui/button";
-import { ChannelBadge } from "@/components/ChannelBadge";
+import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { VideoRecord } from "@/lib/video";
@@ -101,10 +101,7 @@ export default function PublicChannel() {
                 <h1 className="truncate text-2xl font-black text-white sm:text-3xl">
                   {channel.displayName}
                 </h1>
-                <ChannelBadge
-                  subscriberCount={channel.subscriberCount}
-                  verified={channel.verificationStatus === "verified"}
-                />
+                {channel.verificationStatus === "verified" && <VerifiedChannelBadge />}
               </div>
               <p className="mt-1 text-sm text-slate-400">
                 @{channel.handle} · {channel.subscriberCount.toLocaleString()}{" "}
@@ -188,7 +185,7 @@ export default function PublicChannel() {
             {shownVideos.length ? (
               <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
                 {shownVideos.map(video => (
-                  <VideoCard key={video.id} video={video} />
+                  <VideoCard key={video.id} video={{ ...video, channelName: video.channelName || channel.displayName, channelAvatarUrl: video.channelAvatarUrl || channel.avatarUrl, channelVerified: channel.verificationStatus === "verified" }} />
                 ))}
               </div>
             ) : (
