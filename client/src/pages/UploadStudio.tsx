@@ -196,17 +196,19 @@ export default function UploadStudioPage() {
     return () => { active = false; };
   }, [isAuthenticated, authLoading]);
 
-  async function selectVideo(next: File | undefined) {
+  async function selectVideo(next: File | undefined, modeOverride?: StudioMode) {
     if (!next || busy) return;
+    const selectedMode = modeOverride ?? mode;
+    if (modeOverride) setMode(modeOverride);
     setError(""); setResultMessage("");
     const type = next.type.toLowerCase().split(";", 1)[0];
     if (!VIDEO_TYPES.has(type)) { setError("Choose an MP4/H.264 or WebM video."); return; }
     if (next.size <= 0 || next.size > MAX_VIDEO_BYTES) { setError("Video must be between 1 byte and 900 MB."); return; }
     try {
       const nextInfo = await readVideoInfo(next);
-      if (mode === "clip" && nextInfo.width > nextInfo.height) throw new Error("Clips require a vertical portrait video.");
-      if (mode === "clip" && nextInfo.duration > 180) throw new Error("Clips cannot exceed 180 seconds.");
-      if (mode === "video" && nextInfo.width / Math.max(nextInfo.height, 1) < 1.25) throw new Error("Long Video mode requires a landscape video.");
+      if (selectedMode === "clip" && nextInfo.width > nextInfo.height) throw new Error("Clips require a vertical portrait video.");
+      if (selectedMode === "clip" && nextInfo.duration > 180) throw new Error("Clips cannot exceed 180 seconds.");
+      if (selectedMode === "video" && nextInfo.width / Math.max(nextInfo.height, 1) < 1.25) throw new Error("Long Video mode requires a landscape video.");
       setFile(next);
       setInfo(nextInfo);
       const suggestedTitle = fileTitle(next.name);
@@ -410,7 +412,7 @@ export default function UploadStudioPage() {
         </section>
       </main>
     </HkTubeShell>
-      {galleryOpen && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"><div className="mx-auto my-2 max-w-5xl"><HkTubeCreateGallery initialMode={mode} onCancel={() => setGalleryOpen(false)} onSelect={(selectedMode, selectedFile) => { setGalleryOpen(false); if (selectedMode === "post") { setPendingCreateMedia("post", selectedFile); navigate("/upload/post"); } else { setMode(selectedMode); void selectVideo(selectedFile); } }} /></div></div>}
+      {galleryOpen && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"><div className="mx-auto my-2 max-w-5xl"><HkTubeCreateGallery initialMode={mode} onCancel={() => setGalleryOpen(false)} onSelect={(selectedMode, selectedFile) => { setGalleryOpen(false); if (selectedMode === "post") { setPendingCreateMedia("post", selectedFile); navigate("/upload/post"); } else { void selectVideo(selectedFile, selectedMode); } }} /></div></div>}
     </div>
   );
 }
