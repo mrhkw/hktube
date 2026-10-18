@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.SslErrorHandler;
+import android.net.http.SslError;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -44,6 +46,12 @@ public final class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return false;
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // Never bypass certificate validation, even when the page fails to load.
+                handler.cancel();
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
