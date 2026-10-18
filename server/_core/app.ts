@@ -12,6 +12,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
 import { captureSentryException, providerStatus, upstashFixedWindow } from "../providerIntegrations";
+import { rateLimitDecision, shouldFailClosedOnRateLimitStoreFailure } from "./securityPolicy";
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -30,6 +31,19 @@ const MAX_RATE_BUCKETS = 5000;
 
 function clientIp(req: express.Request) {
   return req.ip || req.socket.remoteAddress || "unknown";
+}
+
+function logSecurityBlock(req: express.Request, res: express.Response, reason: string) {
+  // Request IDs and route categories are useful for triage without persisting
+  // raw IP addresses, cookies, bearer tokens, or request bodies in logs.
+  console.warn(JSON.stringify({
+    event: "hktube.security.decision",
+    decision: "BLOCK",
+    reason,
+    requestId: res.get("X-Request-Id") || "unknown",
+    method: req.method,
+    route: req.path,
+  }));
 }
 
 function hasSessionCookie(req: express.Request) {
@@ -79,7 +93,8 @@ function isAllowedCorsOrigin(req: express.Request, origin: string) {
 function securityGate(req: express.Request, res: express.Response) {
   const rawPath = req.originalUrl || req.url;
   if (/\0|\.\.(?:\/|\\)|%2e%2e|%00/i.test(rawPath)) {
-    console.warn(`[Security] blocked path traversal ip=${clientIp(req)}`);
+    logSecurityBlock(req, res, "invalid_path");
+    res.set("X-HkTube-Security-Decision", "BLOCK");
     res.status(400).json({ error: { message: "Invalid request path." } });
     return false;
   }
@@ -91,14 +106,16 @@ function securityGate(req: express.Request, res: express.Response) {
     // identify a same-origin source. This closes the CSRF gap created by the
     // OAuth-compatible SameSite=None session cookie.
     if (!origin || !isTrustedOrigin(req, origin)) {
-      console.warn(`[Security] blocked unauthenticated-origin mutation ip=${clientIp(req)}`);
+      logSecurityBlock(req, res, "csrf_origin_check");
+      res.set("X-HkTube-Security-Decision", "BLOCK");
       res.status(403).json({ error: { message: "Cross-origin request blocked." } });
       return false;
     }
   } else if (mutating) {
     const origin = req.get("origin");
     if (origin && !isTrustedOrigin(req, origin)) {
-      console.warn(`[Security] blocked cross-origin mutation ip=${clientIp(req)}`);
+      logSecurityBlock(req, res, "cross_origin_mutation");
+      res.set("X-HkTube-Security-Decision", "BLOCK");
       res.status(403).json({ error: { message: "Cross-origin request blocked." } });
       return false;
     }
@@ -120,12 +137,18 @@ async function rateLimit(req: express.Request, res: express.Response) {
       const remote = await upstashFixedWindow(key, limit, Math.ceil(windowMs / 1000));
       if (!remote.allowed) {
         res.set("Retry-After", String(Math.ceil(windowMs / 1000)));
+        res.set("X-HkTube-Security-Decision", rateLimitDecision(false));
         res.status(429).json({ error: { message: "Too many requests. Please slow down and try again shortly." } });
         return false;
       }
       return true;
     } catch (error) {
       void captureSentryException(error, { provider: "upstash", operation: "rate_limit", bucket });
+      if (shouldFailClosedOnRateLimitStoreFailure(bucket, true)) {
+        res.set({ "Retry-After": "30", "X-HkTube-Security-Decision": "TEMPORARILY_LIMIT" });
+        res.status(503).json({ error: { message: "Security protection is temporarily unavailable. Please retry shortly." } });
+        return false;
+      }
     }
   }
   const now = Date.now();
@@ -136,6 +159,7 @@ async function rateLimit(req: express.Request, res: express.Response) {
   if (rateBuckets.size > MAX_RATE_BUCKETS) rateBuckets.forEach((entry, entryKey) => { if (entry.resetAt <= now) rateBuckets.delete(entryKey); });
   if (current.count > limit) {
     res.set("Retry-After", String(Math.max(1, Math.ceil((current.resetAt - now) / 1000))));
+    res.set("X-HkTube-Security-Decision", rateLimitDecision(false));
     res.status(429).json({ error: { message: "Too many requests. Please slow down and try again shortly." } });
     return false;
   }
