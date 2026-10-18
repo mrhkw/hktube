@@ -15,7 +15,9 @@ const HEALTH_SECURITY_HEADERS = {
 };
 
 module.exports = function healthHandler(_req, res) {
-  res.set(HEALTH_SECURITY_HEADERS);
+  for (const [name, value] of Object.entries(HEALTH_SECURITY_HEADERS)) {
+    res.setHeader(name, value);
+  }
   res.status(200).json({
     ok: true,
     service: "hktube",

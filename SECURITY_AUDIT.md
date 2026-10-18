@@ -39,7 +39,7 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 - Live production `GET /api/providers/health` — HTTP 200; Upstash readiness reported true with successful recorded operations on 2026-10-18. This confirms availability at check time, not future uptime.
 - Local production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`.
 - Local CORS preflight — allowed configured origin returned 204 with credentials-safe headers; unknown origin returned 403.
-- GitHub secret-scan workflow is configured but its hosted run still needs to complete after this branch is pushed.
+- GitHub PR CI includes the production dependency audit and Gitleaks secret scan, followed by typecheck, unit tests, and production build; require the latest PR head to remain green before merge.
 
 ## Remaining production risks / follow-up
 
@@ -51,5 +51,6 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 6. The response CSP should be validated against every intentionally enabled third-party feature in production (especially optional advertising and embedded media) before enabling those integrations broadly.
 7. Current direct-upload flow validates declared MIME, extension, and declared size; it still does not inspect file signatures or prove malware scanning/quarantine before publish. A safe scanner/processing pipeline must be verified before claiming those controls.
 8. No supported challenge provider is wired into this pass, so `CHALLENGE`/CAPTCHA, MFA/passkey, revocable device sessions, and two-account live authorization tests remain follow-up work.
+9. This was not a full OWASP ASVS 5.0.0 / OWASP Top 10 / API Top 10 assessment; no two-account IDOR/BOLA matrix or privileged-role escalation test was run.
 
 The live Supabase RLS state, user-account isolation, and full upload-processing pipeline still require authorized staging credentials and non-destructive integration tests. A successful source build does not establish that a website is impossible to hack.
