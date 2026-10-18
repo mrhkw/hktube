@@ -16,7 +16,7 @@ This checklist is intentionally honest: repository edits and a passing CI run do
 5. Review every RLS-enabled public table with no policies. Tables with no client grants may intentionally be service-role-only; do not add generic policies to them. Confirm grants and intended access before changes.
 6. Configure and verify the server-only `SUPABASE_SERVICE_ROLE_KEY` in Vercel if the app's server-side account deletion/admin features require it. Never place this key in `VITE_*` variables or browser code.
 7. Finish real account deletion: the current `/delete-account` UI opens a mail draft and does not itself delete the account. Test a server-side, identity-verified deletion workflow and its dependent data retention rules before Play submission.
-8. Run a full-history secret scan (e.g. Gitleaks) and remediate any findings by rotating exposed credentials. Never paste secret values into issues or logs.
+8. Review the new Secret History Scan workflow result. If it finds any secrets, rotate the affected credentials first; never paste secret values into issues or logs. The workflow uses full Git history and disables PR comments/artifact upload.
 9. Create the release upload key locally or in an approved secret manager; never commit the keystore or its passwords.
 10. On a real Android device, verify signup/login, upload/file picker, playback, Clips, HTTPS/deep links, account deletion, and back navigation.
 11. Build and inspect the signed AAB, archive `mapping.txt`, record the signing certificate fingerprint, and complete Play Console Data Safety, content rating, UGC/reporting, privacy policy, account deletion URL, and tester requirements.
