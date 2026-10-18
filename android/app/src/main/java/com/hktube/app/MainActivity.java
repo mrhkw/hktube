@@ -1,11 +1,14 @@
 package com.hktube.app;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.SslErrorHandler;
+import android.net.http.SslError;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -13,7 +16,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private static final int FILE_CHOOSER = 4101;
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
@@ -23,6 +26,14 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         webView = new WebView(this);
         setContentView(webView);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) webView.goBack();
+                else finish();
+            }
+        });
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -44,6 +55,12 @@ public final class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return false;
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // Never bypass certificate validation, even when the page fails to load.
+                handler.cancel();
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -76,12 +93,6 @@ public final class MainActivity extends Activity {
         Uri[] result = resultCode == RESULT_OK && data != null ? new Uri[]{data.getData()} : null;
         fileCallback.onReceiveValue(result);
         fileCallback = null;
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
     }
 
     @Override

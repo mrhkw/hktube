@@ -1,0 +1,55 @@
+name: Android Security Verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-security.yml"
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-security.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: "12266719"
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Verify release and debug builds
+        run: gradle -p android assembleDebug assembleRelease lintRelease
+
+      - name: Verify Android manifest security settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'targetSdk 36' android/app/build.gradle
+          grep -q 'minifyEnabled true' android/app/build.gradle
+          grep -q 'shrinkResources true' android/app/build.gradle
+          grep -q 'cleartextTrafficPermitted="false"' android/app/src/main/res/xml/network_security_config.xml
+          ! grep -R --include='*.java' --include='*.kt' -n 'addJavascriptInterface' android/app/src/main
+          grep -q 'handler.cancel();' android/app/src/main/java/com/hktube/app/MainActivity.java
