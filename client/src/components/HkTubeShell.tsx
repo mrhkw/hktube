@@ -162,12 +162,21 @@ export function HkTubeShell({
             <Link
               href="/"
               className="hktube-reference-logo flex min-w-0 shrink-0 items-center"
-                aria-label="Go to HKW homepage"
+                aria-label="Go to HkTube homepage"
             >
               <img src="/brand/hkw-mark.webp" alt="HKW" className="size-8 rounded-lg object-cover shadow-sm" />
-              <span className="ml-2 whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">HKW</span>
+              <span className="ml-2 whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950 md:text-white">HkTube</span>
             </Link>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={openCreate}
+              className="hidden h-10 items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 text-sm font-bold text-white shadow-lg shadow-violet-950/25 transition hover:-translate-y-0.5 hover:from-violet-500 hover:to-fuchsia-500 md:inline-flex"
+              aria-label="Create content"
+            >
+              <Plus className="size-4" strokeWidth={2.5} />
+              Create
+            </button>
             <Link
               href="/notifications"
               className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
