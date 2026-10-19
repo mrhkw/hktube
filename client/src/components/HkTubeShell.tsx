@@ -209,24 +209,33 @@ export function HkTubeShell({
                     aria-label="HkTube settings"
                     className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
                   >
+                    <div className="mb-2 flex items-center gap-3 rounded-xl border border-white/8 bg-white/[.035] p-3">
+                      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-500/20 text-sm font-black text-white">
+                        {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : (user?.name || user?.email || "H").slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-white">{user?.name || "HkTube member"}</span>
+                        <span className="block truncate text-xs text-slate-400">{user?.email || "Account preferences"}</span>
+                      </span>
+                    </div>
                     <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
                       Account & settings
                     </p>
-                    {[
-                      ["Notifications", "/notifications"],
-                      ["Settings", "/settings"],
-                      ["Account security", "/settings/security"],
-                    ].map(([label, href]) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        role="menuitem"
-                        onClick={() => setProfileSettingsOpen(false)}
-                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
-                      >
-                        {label}
-                      </Link>
-                    ))}
+                    <Link href="/notifications" role="menuitem" onClick={() => setProfileSettingsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white">
+                      <Bell className="size-4 text-violet-300" /> Notifications
+                    </Link>
+                    <Link href="/settings" role="menuitem" onClick={() => setProfileSettingsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white">
+                      <Settings2 className="size-4 text-violet-300" /> All settings
+                    </Link>
+                    <Link href="/settings/security" role="menuitem" onClick={() => setProfileSettingsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white">
+                      <ShieldCheck className="size-4 text-violet-300" /> Security & sessions
+                    </Link>
+                    <Link href="/library" role="menuitem" onClick={() => setProfileSettingsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white">
+                      <BookOpen className="size-4 text-violet-300" /> History & Library
+                    </Link>
+                    <Link href="/studio" role="menuitem" onClick={() => setProfileSettingsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white">
+                      <MonitorPlay className="size-4 text-violet-300" /> Creator Studio
+                    </Link>
                     <button
                       type="button"
                       role="menuitem"
