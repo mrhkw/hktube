@@ -17,7 +17,7 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 | Transport policy | Added HSTS preload to the production Express and Vercel header policies. |
 | Shared-rate-limit outage | Sensitive auth, upload, social, report, AI, provider-job, and admin buckets now return a short `503` when configured Upstash protection fails; public browsing retains the bounded local fallback. |
 | Security decision logging | CSRF/path blocks and rate-limit outcomes are machine-readable; security block logs use request IDs and omit raw IPs, cookies, bearer tokens, and bodies. |
-| Dependency/CI hardening | Updated vulnerable production dependencies, pinned patched Express transitive packages, and added a high/critical production audit plus repository secret scan to CI. |
+| Dependency/CI hardening | Patched the production and development/build dependency graph, including the Vite/Vitest/pnpm toolchain, and pinned audited transitive versions. CI now audits the full graph at every severity threshold and runs a repository secret scan. |
 
 ## Existing controls confirmed
 
@@ -35,12 +35,12 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 - `pnpm check` — passed.
 - `pnpm test -- --reporter=dot` — **25 test files, 95 tests passed**, including admin-identity regression cases and Express-level forwarded-header spoofing/CORS tests.
 - `pnpm build` — passed; Vite produced route chunks and the server/API bundles.
-- `pnpm audit --prod` — passed; no known production dependency advisories after the patched transitive versions were applied.
+- `pnpm audit --audit-level low` — passed; **no known vulnerabilities in the full production and development dependency graph** on 2026-10-19.
 - `vercel.json` and `package.json` JSON parse — passed.
 - Live production `GET /api/providers/health` — HTTP 200; Upstash readiness reported true with successful recorded operations on 2026-10-18. This confirms availability at check time, not future uptime.
 - Local production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`.
 - Express origin tests — configured preflight returned 204; unknown origin returned 403; forged forwarded-host/proto on a cookie-authenticated mutation returned 403.
-- GitHub PR CI includes the production dependency audit and Gitleaks secret scan, followed by typecheck, unit tests, and production build; require the latest PR head to remain green before merge.
+- GitHub PR CI includes a full dependency audit and Gitleaks secret scan, followed by typecheck, unit tests, and production build; require the latest PR head to remain green before merge.
 
 ## Remaining production risks / follow-up
 
@@ -55,6 +55,7 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 9. This is not a full OWASP ASVS 5.0.0 / OWASP Top 10 / API Top 10 assessment. A focused admin-role escalation regression is now covered, but no complete two-account IDOR/BOLA matrix or external penetration test was performed.
 10. Vercel production environment metadata did not list `OWNER_OPEN_ID`. If the owner signs in through the custom/Manus OAuth session rather than a verified Supabase identity, admin access will intentionally fail closed until the exact trusted subject is configured as `OWNER_OPEN_ID`.
 11. Vercel marks the legacy `SUPABASE_KEY` variable with a `readable-secret` security issue; the repository code does not reference that variable and its Vercel comment says it is deprecated. It was not deleted because external build/deployment consumers were not independently verified; review and remove/rotate it in Vercel.
+12. GitHub's push response reported **158 vulnerability alerts on the default branch** (6 critical, 54 high, 85 moderate, 13 low). The current GitHub token cannot enumerate alert details; the security PR branch's full `pnpm audit` is clean. Recheck GitHub's alert dashboard after merge because the default-branch inventory will not reflect these fixes until the dependency graph updates.
 
 ## Rollout status
 
