@@ -40,7 +40,8 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 - Live production `GET /api/providers/health` — HTTP 200; Upstash readiness reported true with successful recorded operations on 2026-10-18. This confirms availability at check time, not future uptime.
 - Local production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`.
 - Express origin tests — configured preflight returned 204; unknown origin returned 403; forged forwarded-host/proto on a cookie-authenticated mutation returned 403.
-- GitHub PR CI includes a full dependency audit and Gitleaks secret scan, followed by typecheck, unit tests, and production build; require the latest PR head to remain green before merge.
+- Latest Vercel preview for commit `042417c` — `/api/health` returned 200 with CSP/HSTS/security headers; trusted-origin preflight returned 204; a forged cross-origin POST with spoofed `X-Forwarded-Host` returned 403.
+- [GitHub Actions run](https://github.com/mrhkw/hktube/actions/runs/39190396110) — `verify` succeeded on commit `042417c`, including full dependency audit, Gitleaks, typecheck, tests, and build.
 
 ## Remaining production risks / follow-up
 
@@ -59,6 +60,6 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 
 ## Rollout status
 
-The hardening branch is submitted in [PR #42](https://github.com/mrhkw/hktube/pull/42), which remains open. These latest auth and origin fixes are not in the production `main` branch until the PR is merged and the resulting production deployment is confirmed healthy. Production must therefore not yet be described as protected by these changes.
+The hardening branch is submitted in [PR #42](https://github.com/mrhkw/hktube/pull/42), which remains open. Security code commit `042417c` has a [ready Vercel preview](https://hktube-9t3fuwli1-hktube.vercel.app) that passed the checks above. None of these changes are in production `main` until the PR is merged and the resulting production deployment is confirmed healthy. Production must therefore not yet be described as protected by these changes.
 
 The live Supabase RLS state, user-account isolation, and full upload-processing pipeline still require authorized staging credentials and non-destructive integration tests. A successful source build does not establish that a website is impossible to hack or guarantee 100% attack prevention.
