@@ -235,7 +235,13 @@ export default function Profile() {
       headerAvatarUrl={channel?.avatarUrl || user?.avatarUrl}
     >
       <div className="mx-auto w-full max-w-6xl px-3 py-3 pb-4 sm:px-6 sm:py-7">
-        <section className="rounded-[28px] border border-white/10 bg-[#111522] p-5 shadow-xl shadow-black/10 sm:p-8">
+        <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[#111522] shadow-xl shadow-black/10">
+          <div className="relative isolate flex h-28 items-end overflow-hidden border-b border-white/10 bg-gradient-to-r from-violet-950 via-indigo-950 to-fuchsia-950 px-5 pb-4 sm:h-44 sm:px-8 sm:pb-6">
+            <div aria-hidden="true" className="absolute -right-8 -top-24 -z-10 size-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
+            <div aria-hidden="true" className="absolute left-1/3 -top-20 -z-10 size-56 rounded-full bg-violet-400/20 blur-3xl" />
+            <span className="text-[10px] font-black uppercase tracking-[.22em] text-violet-100/80 sm:text-xs">HkTube Creator Channel</span>
+          </div>
+          <div className="p-5 sm:p-8">
           <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:flex sm:items-center sm:gap-5">
             <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/10 bg-violet-600 text-2xl font-black text-white sm:size-28 sm:text-3xl">
               {channel?.avatarUrl || user?.avatarUrl ? (
@@ -316,6 +322,7 @@ export default function Profile() {
                 Share
               </Button>
             </div>
+          </div>
           </div>
         </section>
         <section aria-label="Creator shortcuts" className="mt-4">
