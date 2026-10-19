@@ -37,11 +37,11 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 - `pnpm build` — passed; Vite produced route chunks and the server/API bundles.
 - `pnpm audit --audit-level low` — passed; **no known vulnerabilities in the full production and development dependency graph** on 2026-10-19.
 - `vercel.json` and `package.json` JSON parse — passed.
-- Live production `GET /api/providers/health` — HTTP 200; Upstash readiness reported true with successful recorded operations on 2026-10-18. This confirms availability at check time, not future uptime.
-- Local production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`.
+- Live production `GET /api/providers/health` — HTTP 200 at 2026-10-19 09:02 UTC; response reported Upstash `HEALTHY`, circuit `CLOSED`, and zero failures (last successful operation recorded on 2026-10-18).
+- Live production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`, permissions policy, and strict referrer policy.
 - Express origin tests — configured preflight returned 204; unknown origin returned 403; forged forwarded-host/proto on a cookie-authenticated mutation returned 403.
-- Latest Vercel preview for commit `042417c` — `/api/health` returned 200 with CSP/HSTS/security headers; trusted-origin preflight returned 204; a forged cross-origin POST with spoofed `X-Forwarded-Host` returned 403.
-- [GitHub Actions run](https://github.com/mrhkw/hktube/actions/runs/39190396110) — `verify` succeeded on commit `042417c`, including full dependency audit, Gitleaks, typecheck, tests, and build.
+- Live production smoke test after merge — `/api/health` 200; trusted-origin preflight 204; forged cross-origin POST with spoofed `X-Forwarded-Host` 403; `/api/providers/health` 200.
+- [GitHub Actions main run](https://github.com/mrhkw/hktube/actions/runs/39226878275) — succeeded on merge commit `f840e38`, including full dependency audit, Gitleaks, typecheck, tests, and production build.
 
 ## Remaining production risks / follow-up
 
@@ -56,10 +56,10 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 9. This is not a full OWASP ASVS 5.0.0 / OWASP Top 10 / API Top 10 assessment. A focused admin-role escalation regression is now covered, but no complete two-account IDOR/BOLA matrix or external penetration test was performed.
 10. Vercel production environment metadata did not list `OWNER_OPEN_ID`. If the owner signs in through the custom/Manus OAuth session rather than a verified Supabase identity, admin access will intentionally fail closed until the exact trusted subject is configured as `OWNER_OPEN_ID`.
 11. Vercel marks the legacy `SUPABASE_KEY` variable with a `readable-secret` security issue; the repository code does not reference that variable and its Vercel comment says it is deprecated. It was not deleted because external build/deployment consumers were not independently verified; review and remove/rotate it in Vercel.
-12. GitHub's push response reported **158 vulnerability alerts on the default branch** (6 critical, 54 high, 85 moderate, 13 low). The current GitHub token cannot enumerate alert details; the security PR branch's full `pnpm audit` is clean. Recheck GitHub's alert dashboard after merge because the default-branch inventory will not reflect these fixes until the dependency graph updates.
+12. A GitHub push response before merge reported **158 vulnerability alerts on the default branch** (6 critical, 54 high, 85 moderate, 13 low). The current GitHub token cannot enumerate alert details. The merged dependency graph passed the full `pnpm audit` in CI, but recheck the GitHub alert dashboard now that the default branch has updated to confirm its alert inventory refreshed.
 
 ## Rollout status
 
-The hardening branch is submitted in [PR #42](https://github.com/mrhkw/hktube/pull/42), which remains open. Security code commit `042417c` has a [ready Vercel preview](https://hktube-9t3fuwli1-hktube.vercel.app) that passed the checks above. None of these changes are in production `main` until the PR is merged and the resulting production deployment is confirmed healthy. Production must therefore not yet be described as protected by these changes.
+PR #42 was squash-merged into `main` on 2026-10-19 at merge commit `f840e38a6b49f065a8751e4ec00578418f79c314`. The [Vercel production deployment](https://hktube-7lkorctc4-hktube.vercel.app) is `READY` and includes the `hktube.vercel.app` alias. The live health, response-header, trusted-preflight, and forged-origin smoke checks above passed. These checks confirm the deployed controls responded as expected; they do not prove the site is impossible to hack or provide 100% attack prevention.
 
 The live Supabase RLS state, user-account isolation, and full upload-processing pipeline still require authorized staging credentials and non-destructive integration tests. A successful source build does not establish that a website is impossible to hack or guarantee 100% attack prevention.
