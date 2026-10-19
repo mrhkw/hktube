@@ -10,8 +10,9 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 |---|---|
 | Settings access | The existing Settings, Privacy, Security, policy, help, and About pages remain intact. The temporary global header menu added during this review was removed from the header as requested; no settings or policy page was deleted. |
 | DOM performance | Debounced the global language translation observer and disconnects it while translating, preventing repeated full-document scans during every route mutation. |
-| CORS | Added an explicit origin allowlist (`ALLOWED_ORIGINS`, defaulting to `https://hktube.vercel.app` plus the current request origin), credential-safe response headers, and rejected unknown preflight origins. |
-| CSRF/origin checks | Preserved the existing fail-closed mutation origin gate and kept forwarded-origin behavior bounded by same-origin checks and the explicit CORS policy. |
+| CORS | Uses an exact server-controlled origin allowlist: configured `ALLOWED_ORIGINS`, the canonical production origin, and Vercel deployment host metadata. Incoming `Host` and `X-Forwarded-*` values can no longer make an arbitrary origin trusted. |
+| CSRF/origin checks | Cookie-authenticated mutations fail closed on untrusted origins; an Express integration test confirms spoofed `X-Forwarded-Host`/`Proto` headers do not bypass the check. |
+| Admin privilege escalation | Public local sign-up now always creates a normal user. Owner-email admin promotion requires a verified Supabase email claim; unverified owner-email syncs are downgraded, and legacy local-account admin roles are denied at the admin middleware. |
 | Abuse protection | Added a dedicated 6-attempt / 15-minute local login/register bucket while retaining existing endpoint-specific limits for general, upload, AI, and admin-agent traffic. |
 | Transport policy | Added HSTS preload to the production Express and Vercel header policies. |
 | Shared-rate-limit outage | Sensitive auth, upload, social, report, AI, provider-job, and admin buckets now return a short `503` when configured Upstash protection fails; public browsing retains the bounded local fallback. |
@@ -32,13 +33,13 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 ## Verification completed
 
 - `pnpm check` — passed.
-- `pnpm test -- --reporter=dot` — **22 test files, 87 tests passed**.
+- `pnpm test -- --reporter=dot` — **25 test files, 95 tests passed**, including admin-identity regression cases and Express-level forwarded-header spoofing/CORS tests.
 - `pnpm build` — passed; Vite produced route chunks and the server/API bundles.
 - `pnpm audit --prod` — passed; no known production dependency advisories after the patched transitive versions were applied.
 - `vercel.json` and `package.json` JSON parse — passed.
 - Live production `GET /api/providers/health` — HTTP 200; Upstash readiness reported true with successful recorded operations on 2026-10-18. This confirms availability at check time, not future uptime.
 - Local production `GET /api/health` — HTTP 200 with CSP, HSTS preload, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`.
-- Local CORS preflight — allowed configured origin returned 204 with credentials-safe headers; unknown origin returned 403.
+- Express origin tests — configured preflight returned 204; unknown origin returned 403; forged forwarded-host/proto on a cookie-authenticated mutation returned 403.
 - GitHub PR CI includes the production dependency audit and Gitleaks secret scan, followed by typecheck, unit tests, and production build; require the latest PR head to remain green before merge.
 
 ## Remaining production risks / follow-up
@@ -51,6 +52,12 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 6. The response CSP should be validated against every intentionally enabled third-party feature in production (especially optional advertising and embedded media) before enabling those integrations broadly.
 7. Current direct-upload flow validates declared MIME, extension, and declared size; it still does not inspect file signatures or prove malware scanning/quarantine before publish. A safe scanner/processing pipeline must be verified before claiming those controls.
 8. No supported challenge provider is wired into this pass, so `CHALLENGE`/CAPTCHA, MFA/passkey, revocable device sessions, and two-account live authorization tests remain follow-up work.
-9. This was not a full OWASP ASVS 5.0.0 / OWASP Top 10 / API Top 10 assessment; no two-account IDOR/BOLA matrix or privileged-role escalation test was run.
+9. This is not a full OWASP ASVS 5.0.0 / OWASP Top 10 / API Top 10 assessment. A focused admin-role escalation regression is now covered, but no complete two-account IDOR/BOLA matrix or external penetration test was performed.
+10. Vercel production environment metadata did not list `OWNER_OPEN_ID`. If the owner signs in through the custom/Manus OAuth session rather than a verified Supabase identity, admin access will intentionally fail closed until the exact trusted subject is configured as `OWNER_OPEN_ID`.
+11. Vercel marks the legacy `SUPABASE_KEY` variable with a `readable-secret` security issue; the repository code does not reference that variable and its Vercel comment says it is deprecated. It was not deleted because external build/deployment consumers were not independently verified; review and remove/rotate it in Vercel.
 
-The live Supabase RLS state, user-account isolation, and full upload-processing pipeline still require authorized staging credentials and non-destructive integration tests. A successful source build does not establish that a website is impossible to hack.
+## Rollout status
+
+The hardening branch is submitted in [PR #42](https://github.com/mrhkw/hktube/pull/42), which remains open. These latest auth and origin fixes are not in the production `main` branch until the PR is merged and the resulting production deployment is confirmed healthy. Production must therefore not yet be described as protected by these changes.
+
+The live Supabase RLS state, user-account isolation, and full upload-processing pipeline still require authorized staging credentials and non-destructive integration tests. A successful source build does not establish that a website is impossible to hack or guarantee 100% attack prevention.

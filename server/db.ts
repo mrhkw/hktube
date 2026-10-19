@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import { InsertChannel, InsertUser, InsertVideo, auditLogs, channels, comments, localAccounts, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
 import { ENV, isOwnerEmail } from './_core/env';
+import { isTrustedAdminIdentity } from "./_core/adminIdentity";
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: ReturnType<typeof mysql.createPool> | null = null;
 export async function getDb() {
@@ -14,15 +15,17 @@ export async function getDb() {
   }
   return _db;
 }
-export async function upsertUser(user: InsertUser): Promise<void> {
+type UserUpsertInput = InsertUser & { emailVerified?: boolean };
+export async function upsertUser(user: UserUpsertInput): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb(); if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
   const values: InsertUser = { openId: user.openId }; const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod", "avatarUrl", "bio"] as const;
   for (const field of textFields) { const value = user[field]; if (value !== undefined) { values[field] = value ?? null; updateSet[field] = value ?? null; } }
   if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
-  const isOwner = isOwnerEmail(user.email) || (Boolean(ENV.ownerOpenId) && user.openId === ENV.ownerOpenId);
+  const isOwner = isTrustedAdminIdentity({ source: user.loginMethod === "hktube-local" ? "local" : "external", openId: user.openId, email: user.email, emailVerified: user.emailVerified }, ENV.ownerOpenId);
   if (isOwner) { values.role = 'admin'; updateSet.role = 'admin'; }
+  else if (isOwnerEmail(user.email)) { values.role = 'user'; updateSet.role = 'user'; }
   else if (user.role !== undefined && user.role !== 'admin') { values.role = user.role; updateSet.role = user.role; }
   if (user.language !== undefined) { values.language = user.language; updateSet.language = user.language; }
   if (!values.lastSignedIn) values.lastSignedIn = new Date(); if (!Object.keys(updateSet).length) updateSet.lastSignedIn = new Date();
@@ -30,7 +33,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1); return result[0]; }
 export async function getLocalAccount(identifier: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select({ account: localAccounts, user: users }).from(localAccounts).innerJoin(users, eq(localAccounts.userId, users.id)).where(eq(localAccounts.identifier, identifier)).limit(1); return result[0]; }
-export async function createLocalAccount(input: { openId: string; name: string; email: string; identifier: string; passwordHash: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); return db.transaction(async tx => { const userResult = await tx.insert(users).values({ openId: input.openId, name: input.name, email: input.email, loginMethod: "hktube-local", role: isOwnerEmail(input.email) ? "admin" : "user" }); const userId = Number(userResult[0].insertId); await tx.insert(localAccounts).values({ userId, identifier: input.identifier, passwordHash: input.passwordHash }); const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1); return rows[0]; }); }
+export async function createLocalAccount(input: { openId: string; name: string; email: string; identifier: string; passwordHash: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); return db.transaction(async tx => { const userResult = await tx.insert(users).values({ openId: input.openId, name: input.name, email: input.email, loginMethod: "hktube-local", role: "user" }); const userId = Number(userResult[0].insertId); await tx.insert(localAccounts).values({ userId, identifier: input.identifier, passwordHash: input.passwordHash }); const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1); return rows[0]; }); }
 export async function listChannelsByOwner(ownerId: number) { const db = await getDb(); if (!db) return []; return db.select().from(channels).where(eq(channels.ownerId, ownerId)).orderBy(desc(channels.createdAt)); }
 export async function createChannel(channel: InsertChannel) {
   const db = await getDb();

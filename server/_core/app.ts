@@ -13,6 +13,7 @@ import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
 import { captureSentryException, providerStatus, upstashFixedWindow } from "../providerIntegrations";
 import { rateLimitDecision, shouldFailClosedOnRateLimitStoreFailure } from "./securityPolicy";
+import { isAllowedSecurityOrigin } from "./securityOrigins";
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -58,36 +59,12 @@ function requestOrigin(req: express.Request) {
   try { return new URL(referer).origin; } catch { return ""; }
 }
 
-function targetOrigin(req: express.Request) {
-  const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
-  const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim();
-  return host ? `${proto}://${host}` : "";
+function isTrustedOrigin(origin: string) {
+  return isAllowedSecurityOrigin(origin);
 }
 
-function isTrustedOrigin(req: express.Request, origin: string) {
-  try {
-    const parsed = new URL(origin);
-    const target = targetOrigin(req);
-    if (target) return parsed.origin === target;
-    const requestHost = req.get("host")?.split(":")[0];
-    if (parsed.protocol === "https:") return parsed.hostname === requestHost;
-    return parsed.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
-  } catch { return false; }
-}
-
-function isAllowedCorsOrigin(req: express.Request, origin: string) {
-  try {
-    const parsed = new URL(origin);
-    const target = targetOrigin(req);
-    if (target && parsed.origin === target) return true;
-    const configured = (process.env.ALLOWED_ORIGINS || "https://hktube.vercel.app")
-      .split(",")
-      .map(value => value.trim().replace(/\/$/, ""))
-      .filter(Boolean);
-    return configured.includes(parsed.origin);
-  } catch {
-    return false;
-  }
+function isAllowedCorsOrigin(origin: string) {
+  return isAllowedSecurityOrigin(origin);
 }
 
 function securityGate(req: express.Request, res: express.Response) {
@@ -105,7 +82,7 @@ function securityGate(req: express.Request, res: express.Response) {
     // Cookie-authenticated mutations fail closed when the browser does not
     // identify a same-origin source. This closes the CSRF gap created by the
     // OAuth-compatible SameSite=None session cookie.
-    if (!origin || !isTrustedOrigin(req, origin)) {
+    if (!origin || !isTrustedOrigin(origin)) {
       logSecurityBlock(req, res, "csrf_origin_check");
       res.set("X-HkTube-Security-Decision", "BLOCK");
       res.status(403).json({ error: { message: "Cross-origin request blocked." } });
@@ -113,7 +90,7 @@ function securityGate(req: express.Request, res: express.Response) {
     }
   } else if (mutating) {
     const origin = req.get("origin");
-    if (origin && !isTrustedOrigin(req, origin)) {
+    if (origin && !isTrustedOrigin(origin)) {
       logSecurityBlock(req, res, "cross_origin_mutation");
       res.set("X-HkTube-Security-Decision", "BLOCK");
       res.status(403).json({ error: { message: "Cross-origin request blocked." } });
@@ -180,7 +157,7 @@ export function createApiApp(): Express {
     });
     const origin = req.get("origin")?.trim();
     if (origin) {
-      if (!isAllowedCorsOrigin(req, origin)) {
+      if (!isAllowedCorsOrigin(origin)) {
         if (req.method === "OPTIONS") {
           res.status(403).json({ error: { message: "Cross-origin request blocked." } });
           return;
