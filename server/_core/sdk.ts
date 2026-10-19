@@ -14,11 +14,11 @@ const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 const GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
 const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
 const supabaseJwks = createRemoteJWKSet(new URL(`${ENV.supabaseUrl}/auth/v1/.well-known/jwks.json`));
-async function syncSupabaseIdentity(identity: { subject: string; email: string | null; metadata?: Record<string, unknown> }): Promise<User | null> {
+async function syncSupabaseIdentity(identity: { subject: string; email: string | null; emailVerified?: boolean; metadata?: Record<string, unknown> }): Promise<User | null> {
   const displayName = typeof identity.metadata?.display_name === "string" ? identity.metadata.display_name : typeof identity.metadata?.full_name === "string" ? identity.metadata.full_name : identity.email?.split("@")[0] ?? "HkTube creator";
   const avatarUrl = typeof identity.metadata?.avatar_url === "string" ? identity.metadata.avatar_url : undefined;
   const openId = `supabase:${identity.subject}`;
-  await db.upsertUser({ openId, name: displayName, email: identity.email, avatarUrl, loginMethod: "supabase-email", lastSignedIn: new Date() });
+  await db.upsertUser({ openId, name: displayName, email: identity.email, emailVerified: identity.emailVerified === true, avatarUrl, loginMethod: "supabase-email", lastSignedIn: new Date() });
   return (await db.getUserByOpenId(openId)) ?? null;
 }
 async function authenticateSupabaseToken(token: string): Promise<User | null> {
@@ -27,8 +27,8 @@ async function authenticateSupabaseToken(token: string): Promise<User | null> {
     try {
       const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` } });
       if (response.ok) {
-        const data = await response.json() as { id?: string; email?: string; user_metadata?: Record<string, unknown> };
-        if (data.id) return syncSupabaseIdentity({ subject: data.id, email: data.email ?? null, metadata: data.user_metadata });
+        const data = await response.json() as { id?: string; email?: string; email_confirmed_at?: string | null; confirmed_at?: string | null; user_metadata?: Record<string, unknown> };
+        if (data.id) return syncSupabaseIdentity({ subject: data.id, email: data.email ?? null, emailVerified: Boolean(data.email_confirmed_at || data.confirmed_at), metadata: data.user_metadata });
       }
     } catch { /* use JWT fallback */ }
   }
@@ -38,7 +38,7 @@ async function authenticateSupabaseToken(token: string): Promise<User | null> {
     if (!subject) return null;
     const email = typeof payload.email === "string" ? payload.email : null;
     const metadata = payload.user_metadata && typeof payload.user_metadata === "object" ? payload.user_metadata as Record<string, unknown> : undefined;
-    return syncSupabaseIdentity({ subject, email, metadata });
+    return syncSupabaseIdentity({ subject, email, emailVerified: payload.email_verified === true, metadata });
   } catch { return null; }
 }
 class OAuthService {
@@ -71,9 +71,10 @@ class SDKServer {
     if (!session) throw ForbiddenError("Invalid session cookie");
     if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) { const userInfo = await this.getUserInfoWithJwt(sessionToken ?? ""); const taskUid = userInfo.taskUid ?? null; if (!taskUid) throw ForbiddenError("Cron session missing task_uid"); return buildCronUser(userInfo); }
     const signedInAt = new Date(); let user = await db.getUserByOpenId(session.openId);
-    if (!user) { try { const userInfo = await this.getUserInfoWithJwt(sessionToken ?? ""); await db.upsertUser({ openId: userInfo.openId, name: userInfo.name || null, email: userInfo.email ?? null, loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null, lastSignedIn: signedInAt }); user = await db.getUserByOpenId(userInfo.openId); } catch { throw ForbiddenError("Failed to sync user info"); } }
+    if (!user) { try { const userInfo = await this.getUserInfoWithJwt(sessionToken ?? ""); await db.upsertUser({ openId: userInfo.openId, name: userInfo.name || null, email: userInfo.email ?? null, emailVerified: false, loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null, lastSignedIn: signedInAt }); user = await db.getUserByOpenId(userInfo.openId); } catch { throw ForbiddenError("Failed to sync user info"); } }
     if (!user) throw ForbiddenError("User not found");
-    await db.upsertUser({ openId: user.openId, lastSignedIn: signedInAt }); return user;
+    await db.upsertUser({ openId: user.openId, email: user.email, emailVerified: false, loginMethod: user.loginMethod, lastSignedIn: signedInAt });
+    return (await db.getUserByOpenId(user.openId)) ?? user;
   }
 }
 const CRON_OPEN_ID_PREFIX = "cron_";
