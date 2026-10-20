@@ -2049,3 +2049,61 @@ html[data-theme="light"] body [role="menu"] [class*="text-white"],
 html[data-theme="light"] body [role="listbox"] [class*="text-white"] {
   color: #111827 !important;
 }
+
+
+/* Explicit Dark mode wins over legacy light-default selectors from earlier UI passes. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #090c14;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
+  --secondary: #1f2937;
+  --secondary-foreground: #f3f4f6;
+  --muted: #1f2937;
+  --muted-foreground: #a8b3c7;
+  --border: #293244;
+  --input: #374151;
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] body #root,
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] {
+  background-color: #090c14 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] :is(header, aside, main, section, article) {
+  color: #f8fafc;
+  border-color: #293244;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] :is(header, aside) {
+  background-color: #0d111b !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main,
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main :is(h1,h2,h3,h4,h5,h6,label,strong) {
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main p,
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main [class*="text-slate-500"],
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main [class*="text-gray-500"] {
+  color: #a8b3c7 !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] :is(input,textarea,select) {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border-color: #374151 !important;
+}
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] {
+  background: #090d16 !important;
+  color: #f8fafc !important;
+  border-color: #30394a !important;
+}
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > a,
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > button {
+  color: #cbd5e1 !important;
+}
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
+  color: #c4b5fd !important;
+}
