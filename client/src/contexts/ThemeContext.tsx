@@ -28,8 +28,8 @@ function safeGetThemeMode(): ThemeMode {
 }
 
 function getSystemTheme(): ResolvedTheme {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "dark";
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  // HkTube default behavior: "Use device theme" automatically resolves to Light.
+  return "light";
 }
 
 export function ThemeProvider({
@@ -42,17 +42,8 @@ export function ThemeProvider({
   switchable?: boolean;
 }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => switchable ? safeGetThemeMode() : defaultTheme);
-  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
+  const [systemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const theme: ResolvedTheme = themeMode === "system" ? systemTheme : themeMode;
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(prefers-color-scheme: light)");
-    const update = () => setSystemTheme(media.matches ? "light" : "dark");
-    update();
-    media.addEventListener?.("change", update);
-    return () => media.removeEventListener?.("change", update);
-  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
