@@ -1722,3 +1722,64 @@ body [class*="min-h-[100dvh]"] footer a { border-color: #273144 !important; colo
   body [class*="min-h-[100dvh]"] main [class*="rounded-3xl"],
   body [class*="min-h-[100dvh]"] main [class*="rounded-[28px]"] { transition: none !important; }
 }
+
+
+/* Reference-design correction: preserve the dark HkTube look and keep text crisp/readable. */
+html, body, #root {
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+body [class*="min-h-[100dvh]"] main .text-black,
+body [class*="min-h-[100dvh]"] main .text-neutral-900,
+body [class*="min-h-[100dvh]"] main .text-neutral-800,
+body [class*="min-h-[100dvh]"] main .text-gray-900,
+body [class*="min-h-[100dvh]"] main .text-zinc-900 {
+  color: #f5f7fb !important;
+}
+body [class*="min-h-[100dvh]"] main .text-neutral-700,
+body [class*="min-h-[100dvh]"] main .text-gray-700,
+body [class*="min-h-[100dvh]"] main .text-zinc-700 {
+  color: #c4cddd !important;
+}
+body [class*="min-h-[100dvh]"] main input,
+body [class*="min-h-[100dvh]"] main textarea,
+body [class*="min-h-[100dvh]"] main select {
+  color: #f5f7fb;
+  background-color: #111723;
+  border-color: #354158;
+}
+body [class*="min-h-[100dvh]"] main input::placeholder,
+body [class*="min-h-[100dvh]"] main textarea::placeholder {
+  color: #94a0b4;
+  opacity: 1;
+}
+body [class*="min-h-[100dvh]"] [role="menu"],
+body [class*="min-h-[100dvh]"] [role="listbox"],
+body [class*="min-h-[100dvh]"] [data-radix-popper-content-wrapper] > * {
+  color: #f5f7fb;
+}
+body [class*="min-h-[100dvh]"] main button:focus-visible,
+body [class*="min-h-[100dvh]"] main a:focus-visible,
+body [class*="min-h-[100dvh]"] header button:focus-visible,
+body [class*="min-h-[100dvh]"] aside a:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+}
+@media (max-width: 767px) {
+  body [class*="min-h-[100dvh]"] main {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  body [class*="min-h-[100dvh]"] main video {
+    max-width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
