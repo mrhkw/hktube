@@ -1821,3 +1821,89 @@ body [class*="min-h-[100dvh]"] aside a:focus-visible {
 :is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(button,a,[role="button"]):is([class*="bg-violet-"],[class*="bg-purple-"],[class*="bg-indigo-"],[class*="bg-blue-"],[class*="bg-red-"],[class*="bg-emerald-"],[class*="bg-fuchsia-"]) {
   color: #ffffff !important;
 }
+
+
+/* Screenshot-driven Home corrections: each surface gets a matching text/icon contrast.
+   Keep the toolbar light with dark icons; keep feed and mobile dock dark with light labels. */
+.hktube-reference-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #dbe2ec !important;
+  color: #111827 !important;
+}
+.hktube-reference-header .hktube-reference-logo > span:last-child {
+  color: #111827 !important;
+}
+.hktube-reference-header > div > button:first-child {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d9e5 !important;
+}
+.hktube-reference-header > div > button:first-child span span {
+  background: #111827 !important;
+}
+.hktube-reference-header .hktube-header-action {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d9e5 !important;
+}
+.hktube-reference-header .hktube-header-action svg {
+  color: #111827 !important;
+  stroke: #111827 !important;
+  opacity: 1 !important;
+}
+.hktube-reference-header .hktube-header-action:hover {
+  background: #eef2f7 !important;
+}
+.hktube-reference-header .hktube-reference-logo img {
+  background: #111827;
+}
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] {
+  background: #090d16 !important;
+  border-top: 1px solid #30394a !important;
+  color: #f8fafc !important;
+}
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > a,
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > button {
+  color: #cbd5e1 !important;
+  background: transparent !important;
+}
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
+  color: #c4b5fd !important;
+}
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > a[aria-current="page"] svg {
+  color: #c4b5fd !important;
+  stroke: #c4b5fd !important;
+}
+body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > button[aria-label="Create content"] > span {
+  background: linear-gradient(135deg,#8b5cf6,#c026d3) !important;
+  color: #fff !important;
+}
+body:has(.hktube-home-feed) .hktube-home-feed {
+  background: #0d111b !important;
+  color: #f8fafc !important;
+}
+body:has(.hktube-home-feed) .hktube-home-feed h1,
+body:has(.hktube-home-feed) .hktube-home-feed h2,
+body:has(.hktube-home-feed) .hktube-home-feed h3,
+body:has(.hktube-home-feed) .hktube-home-feed a,
+body:has(.hktube-home-feed) .hktube-home-feed p {
+  text-shadow: none !important;
+}
+body:has(.hktube-home-feed) .hktube-home-feed .text-slate-400,
+body:has(.hktube-home-feed) .hktube-home-feed .text-slate-500,
+body:has(.hktube-home-feed) .hktube-home-feed .text-gray-500 {
+  color: #a8b3c7 !important;
+}
+body:has(.hktube-home-feed) .hktube-home-feed .hktube-video-card-follow,
+body:has(.hktube-home-feed) .hktube-home-feed button[aria-pressed] {
+  color: #ffffff;
+}
+@media (max-width: 767px) {
+  .hktube-reference-header > div {
+    min-height: 64px;
+  }
+  .hktube-reference-header .hktube-header-action {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
