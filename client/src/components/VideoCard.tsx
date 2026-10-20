@@ -143,7 +143,7 @@ export function VideoCard({ video, compact = false }: { video: VideoRecord; comp
         <button
           type="button"
           onClick={() => setFollowed(value => !value)}
-          className={`shrink-0 rounded-md px-3.5 py-1.5 text-xs font-bold transition md:rounded-full md:bg-violet-600 md:text-white md:hover:bg-violet-700 ${
+          className={`shrink-0 rounded-full bg-violet-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-violet-700 active:scale-[.98] md:rounded-full md:bg-violet-600 md:text-white md:hover:bg-violet-700 ${
             followed
               ? "bg-neutral-100 text-neutral-700"
               : "bg-neutral-950 text-white"
