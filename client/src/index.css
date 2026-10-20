@@ -1907,3 +1907,145 @@ body:has(.hktube-home-feed) .hktube-home-feed button[aria-pressed] {
     min-height: 40px;
   }
 }
+
+
+/* Global display theme. Keep media pixels untouched; normalize application surfaces and controls. */
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #4b5563;
+  --border: #e5e7eb;
+  --input: #d1d5db;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+html[data-theme="light"] body,
+html[data-theme="light"] #root {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] body [class*="min-h-[100dvh]"] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] body [class*="min-h-[100dvh]"] :is(header, aside, main, section, article, dialog, [role="dialog"], [role="menu"], [role="listbox"]) {
+  border-color: #e5e7eb;
+}
+html[data-theme="light"] body [class*="min-h-[100dvh]"] :is(aside, main, section, article) {
+  color: #111827;
+}
+html[data-theme="light"] body [class*="bg-[#090c14]"],
+html[data-theme="light"] body [class*="bg-[#0b0d13]"],
+html[data-theme="light"] body [class*="bg-[#0b0d13]/"],
+html[data-theme="light"] body [class*="bg-[#0d111a]"],
+html[data-theme="light"] body [class*="bg-[#0d111b]"],
+html[data-theme="light"] body [class*="bg-[#10141d]"],
+html[data-theme="light"] body [class*="bg-[#111723]"],
+html[data-theme="light"] body [class*="bg-[#151a25]"],
+html[data-theme="light"] body [class*="bg-black"],
+html[data-theme="light"] body [class*="bg-slate-950"],
+html[data-theme="light"] body [class*="bg-slate-900"],
+html[data-theme="light"] body [class*="bg-gray-950"],
+html[data-theme="light"] body [class*="bg-gray-900"],
+html[data-theme="light"] body [class*="bg-zinc-950"],
+html[data-theme="light"] body [class*="bg-zinc-900"],
+html[data-theme="light"] body [class*="bg-neutral-950"],
+html[data-theme="light"] body [class*="bg-neutral-900"] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html[data-theme="light"] body [class*="bg-white/"],
+html[data-theme="light"] body [class*="bg-slate-800"],
+html[data-theme="light"] body [class*="bg-slate-900/"],
+html[data-theme="light"] body [class*="bg-gray-800"],
+html[data-theme="light"] body [class*="bg-zinc-800"],
+html[data-theme="light"] body [class*="bg-neutral-800"] {
+  background-color: #f8fafc !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html[data-theme="light"] body [class*="text-white"],
+html[data-theme="light"] body [class*="text-slate-100"],
+html[data-theme="light"] body [class*="text-slate-200"],
+html[data-theme="light"] body [class*="text-slate-300"],
+html[data-theme="light"] body [class*="text-gray-100"],
+html[data-theme="light"] body [class*="text-gray-200"],
+html[data-theme="light"] body [class*="text-gray-300"],
+html[data-theme="light"] body [class*="text-zinc-100"],
+html[data-theme="light"] body [class*="text-zinc-200"],
+html[data-theme="light"] body [class*="text-neutral-100"],
+html[data-theme="light"] body [class*="text-neutral-200"] {
+  color: #111827 !important;
+}
+html[data-theme="light"] body [class*="text-slate-400"],
+html[data-theme="light"] body [class*="text-slate-500"],
+html[data-theme="light"] body [class*="text-gray-400"],
+html[data-theme="light"] body [class*="text-gray-500"],
+html[data-theme="light"] body [class*="text-zinc-400"],
+html[data-theme="light"] body [class*="text-zinc-500"],
+html[data-theme="light"] body [class*="text-neutral-400"],
+html[data-theme="light"] body [class*="text-neutral-500"] {
+  color: #4b5563 !important;
+}
+html[data-theme="light"] body [class*="bg-violet-500"],
+html[data-theme="light"] body [class*="bg-violet-600"],
+html[data-theme="light"] body [class*="bg-purple-500"],
+html[data-theme="light"] body [class*="bg-purple-600"],
+html[data-theme="light"] body [class*="bg-fuchsia-500"],
+html[data-theme="light"] body [class*="bg-indigo-600"],
+html[data-theme="light"] body [class*="bg-blue-600"],
+html[data-theme="light"] body [class*="bg-emerald-600"],
+html[data-theme="light"] body [class*="bg-red-600"] {
+  color: #ffffff !important;
+}
+html[data-theme="light"] body :is(input, textarea, select) {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #cbd5e1 !important;
+}
+html[data-theme="light"] body :is(input, textarea)::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+html[data-theme="light"] body :is(button, a, [role="button"]):focus-visible {
+  outline-color: #6d28d9 !important;
+}
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] > a,
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] > button {
+  color: #374151 !important;
+}
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
+  color: #6d28d9 !important;
+}
+html[data-theme="light"] body :is(.hktube-clips-view, [data-hktube-player="clips"], video) {
+  color-scheme: dark;
+}
+html[data-theme="light"] body video {
+  background: #000000;
+}
+html[data-theme="light"] body [role="dialog"],
+html[data-theme="light"] body [role="menu"],
+html[data-theme="light"] body [role="listbox"] {
+  background-color: #ffffff;
+  color: #111827;
+}
+html[data-theme="light"] body [role="dialog"] [class*="text-white"],
+html[data-theme="light"] body [role="menu"] [class*="text-white"],
+html[data-theme="light"] body [role="listbox"] [class*="text-white"] {
+  color: #111827 !important;
+}
