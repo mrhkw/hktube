@@ -140,7 +140,7 @@ export function HkTubeShell({
         className={cn(
           "hktube-reference-header sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
           referenceHeader &&
-            "max-md:border-black/10 max-md:bg-white max-md:text-neutral-950",
+            "max-md:border-white/10 max-md:bg-[#0d111a]/98 max-md:text-white",
           immersive && "max-lg:hidden"
         )}
         >
@@ -149,7 +149,7 @@ export function HkTubeShell({
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
-                className="group grid size-10 shrink-0 place-items-center rounded-full text-neutral-950 transition hover:bg-black/[.06] active:scale-95"
+                className="group grid size-10 shrink-0 place-items-center rounded-full bg-white text-neutral-950 transition hover:bg-slate-100 active:scale-95"
                 aria-label="Open HkTube menu"
               >
                 <span className="grid w-6 gap-[4px]" aria-hidden="true">
@@ -179,7 +179,7 @@ export function HkTubeShell({
             </button>
             <Link
               href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full bg-white text-slate-900 transition hover:bg-slate-100 hover:text-black md:bg-white/[.06] md:text-slate-200 md:hover:bg-white/[.12] md:hover:text-white"
               aria-label="Notifications"
             >
               <Bell className={SHELL_ICON_CLASS} strokeWidth={2.35} />
@@ -195,7 +195,7 @@ export function HkTubeShell({
                 <button
                   type="button"
                   onClick={() => setProfileSettingsOpen(value => !value)}
-                  className="hktube-header-action grid size-11 place-items-center rounded-full text-neutral-900 transition hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                  className="hktube-header-action grid size-11 place-items-center rounded-full bg-white text-neutral-900 transition hover:bg-slate-100 md:bg-white/[.06] md:text-slate-200 md:hover:bg-white/[.12] md:hover:text-white"
                   aria-label="Open profile settings"
                   aria-expanded={profileSettingsOpen}
                   aria-haspopup="menu"
@@ -244,7 +244,7 @@ export function HkTubeShell({
             ) : (
               <Link
                 href="/search"
-                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
+                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full bg-white text-neutral-900 hover:bg-slate-100 md:bg-white/[.06] md:text-slate-200 md:hover:bg-white/[.12] md:hover:text-white"
                 aria-label="Open search"
               >
                 <Search className={SHELL_ICON_CLASS} strokeWidth={2.35} />
@@ -505,7 +505,7 @@ export function HkTubeShell({
         className={cn(
           "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 text-white backdrop-blur-xl md:hidden",
           compactClipsDock && "!h-[60px] !px-2 !pb-[max(0.2rem,env(safe-area-inset-bottom))] !pt-0.5",
-          usesPrimaryNavigation && "border-black/10 bg-white text-neutral-950",
+          usesPrimaryNavigation && "border-white/10 bg-[#0b0d13]/98 text-white",
           immersive &&
             !location.startsWith("/clips") &&
             !location.startsWith("/shorts") &&
@@ -555,10 +555,10 @@ export function HkTubeShell({
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
+                  "grid size-9 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_5px_18px_rgba(139,92,246,.32)]",
                   compactClipsDock && "!size-8",
                   usesPrimaryNavigation &&
-                    "rounded-full bg-red-50 text-red-700 shadow-none"
+                    "rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_5px_18px_rgba(139,92,246,.32)]"
                 )}
               >
                 <Plus className={cn(SHELL_ICON_CLASS, compactClipsDock && "!size-4")} />
