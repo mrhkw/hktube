@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <HkTubeShell>
-      <main className="min-h-[calc(100dvh-56px)] w-full overflow-hidden bg-white text-neutral-950 md:min-h-0 md:bg-transparent md:text-white">
+      <main className="hktube-home-feed min-h-[calc(100dvh-56px)] w-full overflow-hidden bg-[#0d111b] text-slate-100 md:min-h-0 md:bg-transparent md:text-white">
         <div className="mx-auto hidden w-full max-w-[1480px] px-3 pb-16 sm:px-6 lg:px-10 md:block">
           <section className="pt-4 sm:pt-7">
             <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#101522]/90 p-5 shadow-[0_24px_90px_rgba(0,0,0,.28)] backdrop-blur-xl sm:p-8 lg:p-10">
