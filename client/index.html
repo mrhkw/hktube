@@ -4,7 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#090c14" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem("hktube-display-theme") || localStorage.getItem("theme") || "system";
+          var systemLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+          var resolved = mode === "light" || (mode === "system" && systemLight) ? "light" : "dark";
+          document.documentElement.dataset.themeMode = mode;
+          document.documentElement.dataset.theme = resolved;
+          document.documentElement.classList.toggle("dark", resolved === "dark");
+          document.documentElement.style.colorScheme = resolved;
+        } catch (_) {
+          document.documentElement.dataset.themeMode = "system";
+          document.documentElement.dataset.theme = "dark";
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
