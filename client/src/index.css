@@ -1783,3 +1783,70 @@ body [class*="min-h-[100dvh]"] aside a:focus-visible {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Permanent readability guard: normalize light-mode surfaces left by individual pages. */
+body [class*="min-h-[100dvh]"] main {
+  background-color: #080b12 !important;
+  color: #f5f7fb !important;
+}
+body [class*="min-h-[100dvh]"] main [class*="bg-purple-50"],
+body [class*="min-h-[100dvh]"] main [class*="bg-purple-100"],
+body [class*="min-h-[100dvh]"] main [class*="bg-violet-50"],
+body [class*="min-h-[100dvh]"] main [class*="bg-violet-100"],
+body [class*="min-h-[100dvh]"] main [class*="bg-indigo-50"],
+body [class*="min-h-[100dvh]"] main [class*="bg-indigo-100"],
+body [class*="min-h-[100dvh]"] main [class*="bg-fuchsia-50"],
+body [class*="min-h-[100dvh]"] main [class*="bg-pink-50"],
+body [class*="min-h-[100dvh]"] main [class*="bg-[#f3e8ff]"],
+body [class*="min-h-[100dvh]"] main [class*="bg-[#faf5ff]"],
+body [class*="min-h-[100dvh]"] main [class*="bg-[#f5f3ff]"],
+body [class*="min-h-[100dvh]"] main [class*="bg-[#ede9fe]"] {
+  background-color: #111723 !important;
+  color: #f5f7fb !important;
+}
+body [class*="min-h-[100dvh]"] main [class*="text-purple-900"],
+body [class*="min-h-[100dvh]"] main [class*="text-violet-900"],
+body [class*="min-h-[100dvh]"] main [class*="text-indigo-900"],
+body [class*="min-h-[100dvh]"] main [class*="text-purple-800"],
+body [class*="min-h-[100dvh]"] main [class*="text-violet-800"],
+body [class*="min-h-[100dvh]"] main [class*="text-indigo-800"] {
+  color: #e2e8f0 !important;
+}
+body [class*="min-h-[100dvh]"] aside nav a,
+body [class*="min-h-[100dvh]"] aside > div a {
+  background-color: transparent !important;
+  color: #aeb9cb !important;
+  box-shadow: none !important;
+}
+body [class*="min-h-[100dvh]"] aside nav a[aria-current="page"],
+body [class*="min-h-[100dvh]"] aside nav a[class*="bg-violet"],
+body [class*="min-h-[100dvh]"] aside nav a[class*="bg-purple"] {
+  background: rgba(139,92,246,.18) !important;
+  color: #f5f3ff !important;
+}
+body [class*="min-h-[100dvh]"] aside nav a:hover,
+body [class*="min-h-[100dvh]"] aside > div a:hover {
+  background: rgba(255,255,255,.05) !important;
+  color: #fff !important;
+}
+body [class*="min-h-[100dvh]"] main h1,
+body [class*="min-h-[100dvh]"] main h2,
+body [class*="min-h-[100dvh]"] main h3,
+body [class*="min-h-[100dvh]"] main h4,
+body [class*="min-h-[100dvh]"] main label,
+body [class*="min-h-[100dvh]"] main [class*="text-gray-900"],
+body [class*="min-h-[100dvh]"] main [class*="text-slate-900"],
+body [class*="min-h-[100dvh]"] main [class*="text-zinc-900"] {
+  color: #f5f7fb !important;
+}
+body [class*="min-h-[100dvh]"] main [class*="text-gray-500"],
+body [class*="min-h-[100dvh]"] main [class*="text-slate-500"],
+body [class*="min-h-[100dvh]"] main [class*="text-zinc-500"],
+body [class*="min-h-[100dvh]"] main [class*="text-purple-500"],
+body [class*="min-h-[100dvh]"] main [class*="text-violet-500"] {
+  color: #aeb9cb !important;
+}
+body [class*="min-h-[100dvh]"] main [class*="bg-white"] {
+  color: #f5f7fb !important;
+}
