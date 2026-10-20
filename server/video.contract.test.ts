@@ -22,6 +22,8 @@ function contextFor(role: "user" | "admin" | null): TrpcContext {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
+      authProvider: "supabase",
+      authLevel: "aal2",
     } : null,
     req: { headers: {}, protocol: "https" } as TrpcContext["req"],
     res: {} as TrpcContext["res"],
@@ -41,6 +43,13 @@ describe("HKTUBE video contract", () => {
   it("does not let a viewer create a video record", async () => {
     const caller = appRouter.createCaller(contextFor("user"));
     await expect(caller.videos.create(baseVideo)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("requires signed-in administrators to complete a second factor before publishing", async () => {
+    const context = contextFor("admin");
+    if (context.user) { context.user.authProvider = "supabase"; context.user.authLevel = "aal1"; }
+    const caller = appRouter.createCaller(context);
+    await expect(caller.videos.create(baseVideo)).rejects.toMatchObject({ code: "FORBIDDEN", message: expect.stringContaining("Two-step verification") });
   });
 
   it("does not let an anonymous visitor delete a video record", async () => {

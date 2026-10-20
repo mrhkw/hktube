@@ -67,10 +67,23 @@ export default function Auth() {
   const [pending, setPending] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const otpInputRef = useRef<HTMLInputElement>(null);
-  const authFlowRef = useRef<"idle" | "login-otp">("idle");
+  const authFlowRef = useRef<"idle" | "login-otp" | "auth-pending" | "complete">("idle");
   const country = COUNTRIES.find(item => item.code === countryCode) || COUNTRIES[0];
   const identity = method === "email" ? email.trim().toLowerCase() : normalizePhone(country, phone);
   const identityLabel = method === "email" ? email.trim().toLowerCase() : `${country.dial} ${phone}`;
+
+  async function continueAfterAuthentication() {
+    if (authFlowRef.current === "complete") return;
+    authFlowRef.current = "complete";
+    try {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!error && data.currentLevel !== "aal2" && data.nextLevel === "aal2") {
+        navigate("/settings/security?challenge=1");
+        return;
+      }
+    } catch { /* server-side AAL2 enforcement still protects sensitive operations */ }
+    navigate("/menu");
+  }
 
   useEffect(() => {
     let active = true;
@@ -78,8 +91,8 @@ export default function Auth() {
       const saved = JSON.parse(window.localStorage.getItem("hkw-pending-signup") || "null") as { name?: string; email?: string; phone?: string; method?: AuthMethod; countryCode?: string } | null;
       if (saved && ((saved.email && saved.method !== "phone") || saved.phone)) { setMode("register"); setRegisterStep("otp"); setName(saved.name || ""); setMethod(saved.method || (saved.phone ? "phone" : "email")); setCountryCode(saved.countryCode || "PK"); setEmail(saved.email || ""); setPhone(saved.phone || ""); }
     } catch { window.localStorage.removeItem("hkw-pending-signup"); }
-    supabase.auth.getSession().then(({ data }) => { if (!active || !data.session) return; if (window.location.hash.includes("type=recovery")) setRecoveryMode(true); else navigate("/menu"); });
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => { if (!active || !session) return; if (event === "PASSWORD_RECOVERY") { setRecoveryMode(true); return; } if (authFlowRef.current !== "login-otp" && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) navigate("/menu"); });
+    supabase.auth.getSession().then(({ data }) => { if (!active || !data.session) return; if (window.location.hash.includes("type=recovery")) setRecoveryMode(true); else if (authFlowRef.current === "idle") void continueAfterAuthentication(); });
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => { if (!active || !session) return; if (event === "PASSWORD_RECOVERY") { setRecoveryMode(true); return; } if (authFlowRef.current === "idle" && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) void continueAfterAuthentication(); });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [navigate]);
   useEffect(() => { if (!resendIn) return; const timer = window.setInterval(() => setResendIn(value => Math.max(0, value - 1)), 1000); return () => window.clearInterval(timer); }, [resendIn]);
@@ -98,29 +111,32 @@ export default function Auth() {
     if (!validPassword(password)) { toast.error(`Password rules missing: ${missingPasswordRules(password).join(", ")}.`); return; }
     if (password !== confirmPassword) { toast.error("Passwords match nahi karte."); return; }
     setPending(true);
+    authFlowRef.current = "auth-pending";
     try {
       const request = method === "email"
         ? supabase.auth.signUp({ email: identity, password, options: { emailRedirectTo: authRedirectUrl(), data: { display_name: name.trim(), full_name: name.trim() } } })
         : supabase.auth.signUp({ phone: identity, password, options: { data: { display_name: name.trim(), full_name: name.trim() } } });
       const { data, error } = await withTimeout(request, "OTP request is taking too long. Dobara try karein.");
       if (error) throw error;
-      if (data.session) { toast.success("HKW account ready. Welcome!"); navigate("/menu"); return; }
-      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) { setMode("login"); setRegisterStep("details"); setLoginStep("details"); setPassword(""); setConfirmPassword(""); toast.error("Is email/phone par account pehle se bana hua hai. Signup nahi, Login use karein."); return; }
+      if (data.session) { toast.success("HKW account ready. Welcome!"); await continueAfterAuthentication(); return; }
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) { authFlowRef.current = "idle"; setMode("login"); setRegisterStep("details"); setLoginStep("details"); setPassword(""); setConfirmPassword(""); toast.error("Is email/phone par account pehle se bana hua hai. Signup nahi, Login use karein."); return; }
+      authFlowRef.current = "idle";
       window.localStorage.setItem("hkw-pending-signup", JSON.stringify({ name: name.trim(), email: method === "email" ? identity : "", phone: method === "phone" ? phone : "", method, countryCode }));
       setRegisterStep("otp"); setOtp(""); setResendIn(45); toast.success(`${method === "email" ? "Verification email" : "SMS OTP"} ${identityLabel} par bhej diya gaya.`);
-    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "OTP send nahi ho saka.")); } finally { setPending(false); }
+    } catch (error) { authFlowRef.current = "idle"; toast.error(readableAuthError(error instanceof Error ? error.message : "OTP send nahi ho saka.")); } finally { setPending(false); }
   }
 
   async function verifySignupOtp(event: React.FormEvent) {
     event.preventDefault();
     if (!/^\d{6}$/.test(otp)) { toast.error("6-digit OTP enter karein."); return; }
     setPending(true);
+    authFlowRef.current = "auth-pending";
     try {
       const request = method === "email" ? supabase.auth.verifyOtp({ email: identity, token: otp, type: "signup" }) : supabase.auth.verifyOtp({ phone: identity, token: otp, type: "sms" });
       const { error } = await withTimeout(request, "OTP verification is taking too long.");
       if (error) throw error;
-      window.localStorage.removeItem("hkw-pending-signup"); toast.success("HKW account ready. Welcome!"); navigate("/menu");
-    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "OTP verify nahi ho saka.")); } finally { setPending(false); }
+      window.localStorage.removeItem("hkw-pending-signup"); toast.success("HKW account ready. Welcome!"); await continueAfterAuthentication();
+    } catch (error) { authFlowRef.current = "idle"; toast.error(readableAuthError(error instanceof Error ? error.message : "OTP verify nahi ho saka.")); } finally { setPending(false); }
   }
 
   async function sendLoginOtp() {
@@ -156,7 +172,8 @@ export default function Auth() {
       if (error) throw error;
       toast.success("Password update ho gaya. Welcome back to HKW.");
       setRecoveryMode(false);
-      navigate("/menu");
+      authFlowRef.current = "auth-pending";
+      await continueAfterAuthentication();
     } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Password update nahi ho saka.")); } finally { setPending(false); }
   }
 
@@ -165,26 +182,27 @@ export default function Auth() {
     if (!validateIdentity()) return;
     if (!password) { toast.error("Password enter karein."); return; }
     setPending(true);
+    authFlowRef.current = "auth-pending";
     try {
       const request = method === "email" ? supabase.auth.signInWithPassword({ email: identity, password }) : supabase.auth.signInWithPassword({ phone: identity, password });
       const { error } = await withTimeout(request, "Login is taking too long. Check your connection.");
       if (error) throw error;
-      authFlowRef.current = "idle";
       toast.success("Welcome back to HKW.");
-      navigate("/menu");
-    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login failed.")); } finally { setPending(false); }
+      await continueAfterAuthentication();
+    } catch (error) { authFlowRef.current = "idle"; toast.error(readableAuthError(error instanceof Error ? error.message : "Login failed.")); } finally { setPending(false); }
   }
 
   async function verifyLoginOtp(event: React.FormEvent) {
     event.preventDefault();
     if (!/^\d{6}$/.test(otp)) { toast.error("6-digit OTP enter karein."); return; }
     setPending(true);
+    authFlowRef.current = "auth-pending";
     try {
       const request = method === "email" ? supabase.auth.verifyOtp({ email: identity, token: otp, type: "email" }) : supabase.auth.verifyOtp({ phone: identity, token: otp, type: "sms" });
       const { error } = await withTimeout(request, "Login OTP verification is taking too long.");
       if (error) throw error;
-      authFlowRef.current = "idle"; toast.success("Welcome back to HKW."); navigate("/menu");
-    } catch (error) { toast.error(readableAuthError(error instanceof Error ? error.message : "Login OTP verify nahi ho saka.")); } finally { setPending(false); }
+      toast.success("Welcome back to HKW."); await continueAfterAuthentication();
+    } catch (error) { authFlowRef.current = "login-otp"; toast.error(readableAuthError(error instanceof Error ? error.message : "Login OTP verify nahi ho saka.")); } finally { setPending(false); }
   }
 
   async function resendOtp() {

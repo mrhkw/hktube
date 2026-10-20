@@ -33,7 +33,7 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 ## Verification completed
 
 - `pnpm check` — passed.
-- `pnpm test -- --reporter=dot` — **25 test files, 95 tests passed**, including admin-identity regression cases and Express-level forwarded-header spoofing/CORS tests.
+- `pnpm test -- --reporter=dot` — **26 test files, 100 tests passed** on the current MFA follow-up branch, including server-side AAL2 denial tests, admin-identity regressions, and Express-level forwarded-header spoofing/CORS tests.
 - `pnpm build` — passed; Vite produced route chunks and the server/API bundles.
 - `pnpm audit --audit-level low` — passed; **no known vulnerabilities in the full production and development dependency graph** on 2026-10-19.
 - `vercel.json` and `package.json` JSON parse — passed.
@@ -42,6 +42,12 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 - Express origin tests — configured preflight returned 204; unknown origin returned 403; forged forwarded-host/proto on a cookie-authenticated mutation returned 403.
 - Live production smoke test after merge — `/api/health` 200; trusted-origin preflight 204; forged cross-origin POST with spoofed `X-Forwarded-Host` 403; `/api/providers/health` 200.
 - [GitHub Actions main run](https://github.com/mrhkw/hktube/actions/runs/39226878275) — succeeded on merge commit `f840e38`, including full dependency audit, Gitleaks, typecheck, tests, and production build.
+
+## MFA follow-up (review branch only; not yet in production)
+
+The `security/mfa-step-up-2026-10-20` branch reads the signed Supabase `aal` claim only after asymmetric JWT signature verification against the project JWKS. It requires AAL2 for media-upload presigns, video create/delete, channel create/update, creator posts, tRPC admin actions, and direct admin AI/verification endpoints. The sign-in flow routes accounts with an enrolled factor to Security Center; the user can verify a fresh challenge there. Legacy HkTube sessions deliberately cannot satisfy these high-impact gates.
+
+Local verification on this branch: `pnpm check`, the full 100-test suite, `pnpm audit --audit-level low`, and `pnpm build` passed. No authenticated live MFA challenge was run, and this branch has not yet passed GitHub/Vercel checks or been deployed. Before merge, verify a real test account on the Vercel preview and confirm the Supabase project uses an asymmetric signing key exposed through its JWKS endpoint. If it still uses a legacy HS256 key, the AAL2 gate fails closed for high-impact actions until signing-key migration; ordinary login remains available.
 
 ## Remaining production risks / follow-up
 
@@ -52,7 +58,7 @@ Reviewed the Vite/React client, Express/tRPC API, Supabase integration, settings
 5. The SPA updates SEO metadata client-side. Public channel/video pages should eventually be prerendered or server-rendered for crawler-visible route metadata.
 6. The response CSP should be validated against every intentionally enabled third-party feature in production (especially optional advertising and embedded media) before enabling those integrations broadly.
 7. Current direct-upload flow validates declared MIME, extension, and declared size; it still does not inspect file signatures or prove malware scanning/quarantine before publish. A safe scanner/processing pipeline must be verified before claiming those controls.
-8. No supported challenge provider is wired into this pass, so `CHALLENGE`/CAPTCHA, MFA/passkey, revocable device sessions, and two-account live authorization tests remain follow-up work.
+8. `CHALLENGE`/CAPTCHA, passkeys, stronger revocable-device-session checks, and two-account live authorization tests remain follow-up work. TOTP/AAL2 enforcement is in the review branch above, not production; Supabase passkeys are experimental and require separate project-level RP-ID/origin configuration.
 9. This is not a full OWASP ASVS 5.0.0 / OWASP Top 10 / API Top 10 assessment. A focused admin-role escalation regression is now covered, but no complete two-account IDOR/BOLA matrix or external penetration test was performed.
 10. Vercel production environment metadata did not list `OWNER_OPEN_ID`. If the owner signs in through the custom/Manus OAuth session rather than a verified Supabase identity, admin access will intentionally fail closed until the exact trusted subject is configured as `OWNER_OPEN_ID`.
 11. Vercel marks the legacy `SUPABASE_KEY` variable with a `readable-secret` security issue; the repository code does not reference that variable and its Vercel comment says it is deprecated. It was not deleted because external build/deployment consumers were not independently verified; review and remove/rotate it in Vercel.
