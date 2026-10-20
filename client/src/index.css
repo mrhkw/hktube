@@ -1783,3 +1783,41 @@ body [class*="min-h-[100dvh]"] aside a:focus-visible {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Accessibility regression fix: white/light surfaces must always use dark readable text.
+   Scope by explicit light-surface utility classes so the dark app theme and colored buttons remain intact. */
+[class~="bg-white"],
+[class~="bg-gray-50"],
+[class~="bg-slate-50"],
+[class~="bg-neutral-50"],
+[class~="bg-zinc-50"],
+[class~="bg-stone-50"] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+[class~="bg-white"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
+[class~="bg-gray-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
+[class~="bg-slate-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
+[class~="bg-neutral-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
+[class~="bg-zinc-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
+[class~="bg-stone-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend) {
+  color: #111827 !important;
+}
+:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(.text-white,.text-slate-100,.text-slate-200,.text-slate-300,.text-gray-100,.text-gray-200,.text-gray-300,.text-neutral-100,.text-neutral-200,.text-neutral-300,.text-zinc-100,.text-zinc-200,.text-zinc-300,.text-violet-100,.text-violet-200,.text-purple-100,.text-purple-200) {
+  color: #111827 !important;
+}
+:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(input,textarea,select) {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #cbd5e1 !important;
+}
+:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(input,textarea)::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+/* Keep primary colored actions legible even when placed on a white card. */
+:is([class*="bg-violet-"],[class*="bg-purple-"],[class*="bg-indigo-"],[class*="bg-blue-"],[class*="bg-red-"],[class*="bg-emerald-"],[class*="bg-fuchsia-"]):is(button,a,[role="button"]),
+:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(button,a,[role="button"]):is([class*="bg-violet-"],[class*="bg-purple-"],[class*="bg-indigo-"],[class*="bg-blue-"],[class*="bg-red-"],[class*="bg-emerald-"],[class*="bg-fuchsia-"]) {
+  color: #ffffff !important;
+}
