@@ -101,3 +101,46 @@ html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(.text-slate-400, 
 html[data-hktube-mode] body .hktube-clips-page video {
   background-color: #000 !important;
 }
+
+/* Neutralize older route CSS with stronger selectors; those rules hard-coded
+   dark cards and purple gradients even when the user selected Light. */
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-gradient-"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-white"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-gray-"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-slate-"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-neutral-"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-zinc-"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-[#"] {
+  background: var(--hktube-mode-surface) !important;
+  background-image: none !important;
+  border-color: var(--hktube-mode-border) !important;
+  color: var(--hktube-mode-foreground) !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="text-"] {
+  color: var(--hktube-mode-foreground) !important;
+}
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(h1, h2, h3, h4, label) {
+  color: var(--hktube-mode-foreground) !important;
+}
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(p, [class*="text-slate-400"], [class*="text-slate-500"], [class*="text-gray-400"], [class*="text-gray-500"]) {
+  color: var(--hktube-mode-muted) !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside nav a[aria-current="page"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside nav a[class*="bg-violet"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside nav a[class*="bg-purple"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main nav:not(.fixed) a:first-child {
+  background: var(--hktube-mode-surface-raised) !important;
+  border-color: var(--hktube-mode-border) !important;
+  color: var(--hktube-mode-foreground) !important;
+  box-shadow: none !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] footer {
+  border-color: var(--hktube-mode-border) !important;
+  color: var(--hktube-mode-muted) !important;
+}
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] footer a {
+  color: var(--hktube-mode-muted) !important;
+}
