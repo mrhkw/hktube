@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { extractBearerToken, isAllowedAdminIdentity } from "./adminAgent";
 import { ENV } from "./env";
+import { isSupabaseAal2Token } from "./sdk";
 
 type AuthUser = { id?: unknown; email?: unknown };
 type ChannelTarget = { id: string; owner_id: string; name: string; handle: string; verification_status: string };
@@ -20,7 +21,8 @@ async function verifyOwner(req: Request): Promise<AuthUser | null> {
   });
   if (!response.ok) return null;
   const user = await response.json() as AuthUser;
-  return isAllowedAdminIdentity(user) ? user : null;
+  if (!isAllowedAdminIdentity(user) || typeof user.id !== "string") return null;
+  return await isSupabaseAal2Token(token, user.id) ? user : null;
 }
 
 async function adminRest(path: string, current: ReturnType<typeof config>, init?: RequestInit) {
@@ -60,7 +62,7 @@ export function registerAdminVerificationRoute(app: Express) {
     try {
       const owner = await verifyOwner(req);
       const current = config();
-      if (!owner || !current) { res.status(owner ? 503 : 403).json({ error: { message: owner ? "Admin verification is not configured yet." : "Only an authorized HkTube admin can manage verification." } }); return; }
+      if (!owner || !current) { res.status(owner ? 503 : 403).json({ error: { message: owner ? "Admin verification is not configured yet." : "Only an authorized HkTube admin with verified two-step authentication can manage verification." } }); return; }
       const [users, channels] = await Promise.all([listUsers(current), listChannels(current)]);
       const usersById = new Map(users.map(user => [String(user.id ?? ""), user]));
       const targets = channels.map(channel => {
@@ -88,7 +90,7 @@ async function updateVerification(req: Request, res: Response, status: "verified
   try {
     const owner = await verifyOwner(req);
     const current = config();
-    if (!owner || !current) { res.status(owner ? 503 : 403).json({ error: { message: owner ? "Admin verification is not configured yet." : "Only an authorized HkTube admin can manage verification." } }); return; }
+    if (!owner || !current) { res.status(owner ? 503 : 403).json({ error: { message: owner ? "Admin verification is not configured yet." : "Only an authorized HkTube admin with verified two-step authentication can manage verification." } }); return; }
     const targetEmail = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const channelId = typeof req.body?.channelId === "string" ? req.body.channelId.trim() : "";
     if (!targetEmail || !targetEmail.includes("@") || !channelId) { res.status(400).json({ error: { message: "Target Gmail aur channel select karna zaroori hai." } }); return; }

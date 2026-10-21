@@ -63,4 +63,16 @@ describe("Express origin/CSRF security gate", () => {
     expect(denied.status).toBe(403);
     expect(denied.headers.get("access-control-allow-origin")).toBeNull();
   });
+
+  it("enforces the smaller media-presign body limit before the global JSON parser", async () => {
+    const body = JSON.stringify({ padding: "x".repeat(40_000) });
+    const response = await fetch(`${baseUrl}/api/media-upload/presign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({ error: { message: "Request body exceeds the allowed size." } });
+  });
 });

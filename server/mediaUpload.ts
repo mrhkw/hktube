@@ -1,6 +1,7 @@
 import type { Express, Request } from "express";
 import express from "express";
 import { sdk } from "./_core/sdk";
+import { hasVerifiedSecondFactor, MFA_REQUIRED_MESSAGE } from "./_core/securityAssurance";
 import { archiveStoragePresignPut } from "./archiveStorage";
 
 const MAX_UPLOAD_BYTES = 900 * 1024 * 1024;
@@ -47,6 +48,7 @@ export function registerMediaUploadRoute(app: Express) {
     try {
       const user = await requireAuthenticatedUser(req);
       if (!user) return res.status(403).json({ message: "Sign in to upload media to HkTube." });
+      if (!hasVerifiedSecondFactor(user)) return res.status(403).json({ message: MFA_REQUIRED_MESSAGE });
       const kind = req.body?.kind === "thumbnail" ? "thumbnail" : req.body?.kind === "video" ? "video" : req.body?.kind === "caption" ? "caption" : null;
       const filename = typeof req.body?.filename === "string" ? safeFilename(req.body.filename) : "";
       const contentType = typeof req.body?.contentType === "string" ? req.body.contentType : "";

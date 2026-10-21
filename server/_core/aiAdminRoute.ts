@@ -4,6 +4,7 @@ import { runBoundedAIAgent } from "./aiAgent";
 import { loadAIMemory, listAIConversations, loadAIConversation, saveAIAgentLog, saveAIMemories, saveAIConversation, searchWeb, shouldSearchWeb } from "./aiKnowledge";
 import { extractBearerToken, isAllowedAdminIdentity } from "./adminAgent";
 import { ENV } from "./env";
+import { isSupabaseAal2Token } from "./sdk";
 import { parseAIChatOutput, presentAIError } from "./aiResponse";
 import type { Message } from "./llm";
 
@@ -29,7 +30,7 @@ function writeEvent(res: Response, event: string, data: unknown) {
 }
 
 type VerifiedUser = { id?: unknown; email?: unknown; email_confirmed_at?: unknown; confirmed_at?: unknown };
-type AdminVerification = { ok: true; user: VerifiedUser } | { ok: false; reason: "missing-token" | "supabase-rejected" | "email-not-allowlisted" };
+type AdminVerification = { ok: true; user: VerifiedUser } | { ok: false; reason: "missing-token" | "supabase-rejected" | "email-not-allowlisted" | "mfa-required" };
 
 async function verifiedAdmin(req: Request, signal: AbortSignal): Promise<AdminVerification> {
   const token = extractBearerToken(req.headers.authorization);
@@ -43,7 +44,9 @@ async function verifiedAdmin(req: Request, signal: AbortSignal): Promise<AdminVe
   let user: VerifiedUser;
   try { user = await response.json() as VerifiedUser; }
   catch { return { ok: false, reason: "supabase-rejected" }; }
-  return isAllowedAdminIdentity(user) ? { ok: true, user } : { ok: false, reason: "email-not-allowlisted" };
+  if (!isAllowedAdminIdentity(user)) return { ok: false, reason: "email-not-allowlisted" };
+  if (typeof user.id !== "string" || !(await isSupabaseAal2Token(token, user.id))) return { ok: false, reason: "mfa-required" };
+  return { ok: true, user };
 }
 
 function logSafeError(error: unknown) {
@@ -74,7 +77,9 @@ export function registerAIAdminRoute(app: Express) {
           ? "Your HkTube session token did not reach the AI endpoint. Sign in once and try again."
           : verification.reason === "supabase-rejected"
             ? "Supabase rejected this session. Sign out and sign in once with the HkTube Gmail account."
-            : "This signed-in email is not one of the two HkTube admin emails." } });
+            : verification.reason === "mfa-required"
+              ? "Admin AI requires a verified authenticator code. Open Security Center and complete two-step verification."
+              : "This signed-in email is not one of the two HkTube admin emails." } });
         return;
       }
 

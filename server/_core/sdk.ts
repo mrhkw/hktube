@@ -10,10 +10,17 @@ import { ENV } from "./env";
 import type { ExchangeTokenRequest, ExchangeTokenResponse, GetUserInfoResponse, GetUserInfoWithJwtRequest, GetUserInfoWithJwtResponse } from "./types/manusTypes";
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
 export type SessionPayload = { openId: string; appId: string; name: string };
+export type AuthenticatedUser = User & { taskUid?: string; isCron?: boolean; authProvider?: "supabase" | "legacy" | "cron"; authLevel?: "aal1" | "aal2" };
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 const GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
 const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
 const supabaseJwks = createRemoteJWKSet(new URL(`${ENV.supabaseUrl}/auth/v1/.well-known/jwks.json`));
+export async function isSupabaseAal2Token(token: string, expectedSubject?: string): Promise<boolean> {
+  try {
+    const { payload } = await jwtVerify(token, supabaseJwks, { algorithms: ["ES256", "RS256"] });
+    return payload.aal === "aal2" && typeof payload.sub === "string" && (!expectedSubject || payload.sub === expectedSubject);
+  } catch { return false; }
+}
 async function syncSupabaseIdentity(identity: { subject: string; email: string | null; emailVerified?: boolean; metadata?: Record<string, unknown> }): Promise<User | null> {
   const displayName = typeof identity.metadata?.display_name === "string" ? identity.metadata.display_name : typeof identity.metadata?.full_name === "string" ? identity.metadata.full_name : identity.email?.split("@")[0] ?? "HkTube creator";
   const avatarUrl = typeof identity.metadata?.avatar_url === "string" ? identity.metadata.avatar_url : undefined;
@@ -21,14 +28,24 @@ async function syncSupabaseIdentity(identity: { subject: string; email: string |
   await db.upsertUser({ openId, name: displayName, email: identity.email, emailVerified: identity.emailVerified === true, avatarUrl, loginMethod: "supabase-email", lastSignedIn: new Date() });
   return (await db.getUserByOpenId(openId)) ?? null;
 }
-async function authenticateSupabaseToken(token: string): Promise<User | null> {
+async function authenticateSupabaseToken(token: string): Promise<AuthenticatedUser | null> {
   if (!token) return null;
   if (ENV.supabaseAnonKey) {
     try {
       const response = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, Authorization: `Bearer ${token}` } });
+      if (response.status === 401 || response.status === 403) return null;
       if (response.ok) {
         const data = await response.json() as { id?: string; email?: string; email_confirmed_at?: string | null; confirmed_at?: string | null; user_metadata?: Record<string, unknown> };
-        if (data.id) return syncSupabaseIdentity({ subject: data.id, email: data.email ?? null, emailVerified: Boolean(data.email_confirmed_at || data.confirmed_at), metadata: data.user_metadata });
+        if (data.id) {
+          let authLevel: "aal1" | "aal2" = "aal1";
+          try {
+            const { payload } = await jwtVerify(token, supabaseJwks, { algorithms: ["ES256", "RS256"] });
+            if (payload.sub !== data.id) return null;
+            if (payload.aal === "aal2") authLevel = "aal2";
+          } catch { /* Keep ordinary auth working, but never trust unverified AAL for sensitive actions. */ }
+          const user = await syncSupabaseIdentity({ subject: data.id, email: data.email ?? null, emailVerified: Boolean(data.email_confirmed_at || data.confirmed_at), metadata: data.user_metadata });
+          return user ? { ...user, authProvider: "supabase", authLevel } : null;
+        }
       }
     } catch { /* use JWT fallback */ }
   }
@@ -38,7 +55,8 @@ async function authenticateSupabaseToken(token: string): Promise<User | null> {
     if (!subject) return null;
     const email = typeof payload.email === "string" ? payload.email : null;
     const metadata = payload.user_metadata && typeof payload.user_metadata === "object" ? payload.user_metadata as Record<string, unknown> : undefined;
-    return syncSupabaseIdentity({ subject, email, emailVerified: payload.email_verified === true, metadata });
+    const user = await syncSupabaseIdentity({ subject, email, emailVerified: payload.email_verified === true, metadata });
+    return user ? { ...user, authProvider: "supabase", authLevel: payload.aal === "aal2" ? "aal2" : "aal1" } : null;
   } catch { return null; }
 }
 class OAuthService {
@@ -74,10 +92,9 @@ class SDKServer {
     if (!user) { try { const userInfo = await this.getUserInfoWithJwt(sessionToken ?? ""); await db.upsertUser({ openId: userInfo.openId, name: userInfo.name || null, email: userInfo.email ?? null, emailVerified: false, loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null, lastSignedIn: signedInAt }); user = await db.getUserByOpenId(userInfo.openId); } catch { throw ForbiddenError("Failed to sync user info"); } }
     if (!user) throw ForbiddenError("User not found");
     await db.upsertUser({ openId: user.openId, email: user.email, emailVerified: false, loginMethod: user.loginMethod, lastSignedIn: signedInAt });
-    return (await db.getUserByOpenId(user.openId)) ?? user;
+    return { ...((await db.getUserByOpenId(user.openId)) ?? user), authProvider: "legacy", authLevel: "aal1" };
   }
 }
 const CRON_OPEN_ID_PREFIX = "cron_";
-export type AuthenticatedUser = User & { taskUid?: string; isCron?: boolean };
-function buildCronUser(userInfo: GetUserInfoWithJwtResponse): AuthenticatedUser { const now = new Date(); return { id: -1, openId: userInfo.openId, name: userInfo.name || "Manus Scheduled Task", email: null, loginMethod: null, role: "user", createdAt: now, updatedAt: now, lastSignedIn: now } as AuthenticatedUser; }
+function buildCronUser(userInfo: GetUserInfoWithJwtResponse): AuthenticatedUser { const now = new Date(); return { id: -1, openId: userInfo.openId, name: userInfo.name || "Manus Scheduled Task", email: null, loginMethod: null, role: "user", createdAt: now, updatedAt: now, lastSignedIn: now, authProvider: "cron", authLevel: "aal1" } as AuthenticatedUser; }
 export const sdk = new SDKServer();

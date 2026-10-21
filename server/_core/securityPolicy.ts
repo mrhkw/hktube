@@ -34,3 +34,12 @@ export function shouldFailClosedOnRateLimitStoreFailure(
 export function rateLimitDecision(allowed: boolean): SecurityRateLimitDecision {
   return allowed ? "ALLOW" : "TEMPORARILY_LIMIT";
 }
+
+/** Reject new limiter identities at capacity rather than growing memory without bound. */
+export function shouldRejectNewLocalRateLimitBucket(
+  bucketCount: number,
+  maxBuckets: number,
+  alreadyTracked: boolean,
+): boolean {
+  return !alreadyTracked && bucketCount >= maxBuckets;
+}

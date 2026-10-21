@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { ENV } from "./env";
+import { isSupabaseAal2Token } from "./sdk";
 
 const ALLOWED_ADMIN_EMAILS = new Set([
   "hanifnazamdin30@gmail.com",
@@ -14,6 +15,7 @@ const GEMINI_TIMEOUT_MS = 18_000;
 export type AdminChatMessage = { role: "user" | "assistant"; content: string };
 
 type SupabaseUser = {
+  id?: unknown;
   email?: unknown;
   email_confirmed_at?: unknown;
   confirmed_at?: unknown;
@@ -83,7 +85,9 @@ async function verifiedAdminFromRequest(req: Request): Promise<boolean> {
   });
   if (!response.ok) return false;
   const user = await response.json() as SupabaseUser;
-  return isAllowedAdminIdentity(user);
+  if (!isAllowedAdminIdentity(user)) return false;
+  const subject = typeof user.id === "string" ? user.id : "";
+  return Boolean(subject) && isSupabaseAal2Token(token, subject);
 }
 
 const SYSTEM_INSTRUCTION = [
@@ -104,7 +108,7 @@ export function registerAdminAgentRoute(app: Express) {
         return;
       }
       if (!(await verifiedAdminFromRequest(req))) {
-        res.status(403).json({ error: { message: "This signed-in email is not authorized for the admin AI agent." } });
+        res.status(403).json({ error: { message: "Admin AI access requires an authorized admin account and verified two-step authentication." } });
         return;
       }
     } catch {

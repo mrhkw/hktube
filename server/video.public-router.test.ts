@@ -29,6 +29,8 @@ function contextFor(role: "user" | "admin" | null): TrpcContext {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
+      authProvider: "supabase",
+      authLevel: "aal2",
     } : null,
     req: { headers: {}, protocol: "https" } as TrpcContext["req"],
     res: {} as TrpcContext["res"],
@@ -94,5 +96,14 @@ describe("HKTUBE public video router", () => {
       uploadedById: 15,
       category: "regular",
     }));
+  });
+
+  it("requires a verified second factor before any admin procedure", async () => {
+    const context = contextFor("admin");
+    if (context.user) context.user.authLevel = "aal1";
+    await expect(appRouter.createCaller(context).videos.adminList()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: expect.stringContaining("Two-step verification"),
+    });
   });
 });
