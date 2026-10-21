@@ -1907,3 +1907,252 @@ body:has(.hktube-home-feed) .hktube-home-feed button[aria-pressed] {
     min-height: 40px;
   }
 }
+
+
+/* Global display theme. Keep media pixels untouched; normalize application surfaces and controls. */
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #4b5563;
+  --border: #e5e7eb;
+  --input: #d1d5db;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+html[data-theme="light"] body,
+html[data-theme="light"] #root {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] body [class*="min-h-[100dvh]"] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+html[data-theme="light"] body [class*="min-h-[100dvh]"] :is(header, aside, main, section, article, dialog, [role="dialog"], [role="menu"], [role="listbox"]) {
+  border-color: #e5e7eb;
+}
+html[data-theme="light"] body [class*="min-h-[100dvh]"] :is(aside, main, section, article) {
+  color: #111827;
+}
+html[data-theme="light"] body [class*="bg-[#090c14]"],
+html[data-theme="light"] body [class*="bg-[#0b0d13]"],
+html[data-theme="light"] body [class*="bg-[#0b0d13]/"],
+html[data-theme="light"] body [class*="bg-[#0d111a]"],
+html[data-theme="light"] body [class*="bg-[#0d111b]"],
+html[data-theme="light"] body [class*="bg-[#10141d]"],
+html[data-theme="light"] body [class*="bg-[#111723]"],
+html[data-theme="light"] body [class*="bg-[#151a25]"],
+html[data-theme="light"] body [class*="bg-black"],
+html[data-theme="light"] body [class*="bg-slate-950"],
+html[data-theme="light"] body [class*="bg-slate-900"],
+html[data-theme="light"] body [class*="bg-gray-950"],
+html[data-theme="light"] body [class*="bg-gray-900"],
+html[data-theme="light"] body [class*="bg-zinc-950"],
+html[data-theme="light"] body [class*="bg-zinc-900"],
+html[data-theme="light"] body [class*="bg-neutral-950"],
+html[data-theme="light"] body [class*="bg-neutral-900"] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html[data-theme="light"] body [class*="bg-white/"],
+html[data-theme="light"] body [class*="bg-slate-800"],
+html[data-theme="light"] body [class*="bg-slate-900/"],
+html[data-theme="light"] body [class*="bg-gray-800"],
+html[data-theme="light"] body [class*="bg-zinc-800"],
+html[data-theme="light"] body [class*="bg-neutral-800"] {
+  background-color: #f8fafc !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html[data-theme="light"] body [class*="text-white"],
+html[data-theme="light"] body [class*="text-slate-100"],
+html[data-theme="light"] body [class*="text-slate-200"],
+html[data-theme="light"] body [class*="text-slate-300"],
+html[data-theme="light"] body [class*="text-gray-100"],
+html[data-theme="light"] body [class*="text-gray-200"],
+html[data-theme="light"] body [class*="text-gray-300"],
+html[data-theme="light"] body [class*="text-zinc-100"],
+html[data-theme="light"] body [class*="text-zinc-200"],
+html[data-theme="light"] body [class*="text-neutral-100"],
+html[data-theme="light"] body [class*="text-neutral-200"] {
+  color: #111827 !important;
+}
+html[data-theme="light"] body [class*="text-slate-400"],
+html[data-theme="light"] body [class*="text-slate-500"],
+html[data-theme="light"] body [class*="text-gray-400"],
+html[data-theme="light"] body [class*="text-gray-500"],
+html[data-theme="light"] body [class*="text-zinc-400"],
+html[data-theme="light"] body [class*="text-zinc-500"],
+html[data-theme="light"] body [class*="text-neutral-400"],
+html[data-theme="light"] body [class*="text-neutral-500"] {
+  color: #4b5563 !important;
+}
+html[data-theme="light"] body [class*="bg-violet-500"],
+html[data-theme="light"] body [class*="bg-violet-600"],
+html[data-theme="light"] body [class*="bg-purple-500"],
+html[data-theme="light"] body [class*="bg-purple-600"],
+html[data-theme="light"] body [class*="bg-fuchsia-500"],
+html[data-theme="light"] body [class*="bg-indigo-600"],
+html[data-theme="light"] body [class*="bg-blue-600"],
+html[data-theme="light"] body [class*="bg-emerald-600"],
+html[data-theme="light"] body [class*="bg-red-600"] {
+  color: #ffffff !important;
+}
+html[data-theme="light"] body :is(input, textarea, select) {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #cbd5e1 !important;
+}
+html[data-theme="light"] body :is(input, textarea)::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+html[data-theme="light"] body :is(button, a, [role="button"]):focus-visible {
+  outline-color: #6d28d9 !important;
+}
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] > a,
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] > button {
+  color: #374151 !important;
+}
+html[data-theme="light"] body nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
+  color: #6d28d9 !important;
+}
+html[data-theme="light"] body :is(.hktube-clips-view, [data-hktube-player="clips"], video) {
+  color-scheme: dark;
+}
+html[data-theme="light"] body video {
+  background: #000000;
+}
+html[data-theme="light"] body [role="dialog"],
+html[data-theme="light"] body [role="menu"],
+html[data-theme="light"] body [role="listbox"] {
+  background-color: #ffffff;
+  color: #111827;
+}
+html[data-theme="light"] body [role="dialog"] [class*="text-white"],
+html[data-theme="light"] body [role="menu"] [class*="text-white"],
+html[data-theme="light"] body [role="listbox"] [class*="text-white"] {
+  color: #111827 !important;
+}
+
+
+/* Explicit Dark mode wins over legacy light-default selectors from earlier UI passes. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #090c14;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
+  --secondary: #1f2937;
+  --secondary-foreground: #f3f4f6;
+  --muted: #1f2937;
+  --muted-foreground: #a8b3c7;
+  --border: #293244;
+  --input: #374151;
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] body #root,
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] {
+  background-color: #090c14 !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] :is(header, aside, main, section, article) {
+  color: #f8fafc;
+  border-color: #293244;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] :is(header, aside) {
+  background-color: #0d111b !important;
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main,
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main :is(h1,h2,h3,h4,h5,h6,label,strong) {
+  color: #f8fafc !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main p,
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main [class*="text-slate-500"],
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] main [class*="text-gray-500"] {
+  color: #a8b3c7 !important;
+}
+html[data-theme="dark"] body [class*="min-h-[100dvh]"] :is(input,textarea,select) {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border-color: #374151 !important;
+}
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] {
+  background: #090d16 !important;
+  color: #f8fafc !important;
+  border-color: #30394a !important;
+}
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > a,
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > button {
+  color: #cbd5e1 !important;
+}
+html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
+  color: #c4b5fd !important;
+}
+
+
+/* Global YouTube-inspired typography: prioritize legibility without forcing every label to the same size. */
+:root {
+  font-family: Roboto, "Arial", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  --hktube-text-primary: #0f0f0f;
+  --hktube-text-secondary: #606060;
+}
+
+html, body, button, input, textarea, select {
+  font-family: Roboto, "Arial", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: normal;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+/* Preserve a clear hierarchy for titles and section headings across routes. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: Roboto, "Arial", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  text-wrap: pretty;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+p, label, li, small, figcaption {
+  text-wrap: pretty;
+}
+
+button, [role="button"], input, textarea, select {
+  line-height: 1.4;
+}
+
+/* Prevent tiny utility labels from becoming difficult to read on phones. */
+@media (max-width: 767px) {
+  body { -webkit-text-size-adjust: 100%; }
+  small, [class*="text-[10px]"], [class*="text-[11px]"] {
+    letter-spacing: 0.005em;
+  }
+}

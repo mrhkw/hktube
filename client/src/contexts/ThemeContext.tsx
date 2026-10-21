@@ -1,56 +1,74 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+export type ThemeMode = "system" | "light" | "dark";
+type ResolvedTheme = "light" | "dark";
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: ResolvedTheme;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
   toggleTheme?: () => void;
   switchable: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const STORAGE_KEY = "hktube-display-theme";
 
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  switchable?: boolean;
-}
-
-function safeGetTheme(defaultTheme: Theme): Theme {
-  if (typeof window === "undefined") return defaultTheme;
+function safeGetThemeMode(): ThemeMode {
+  if (typeof window === "undefined") return "system";
   try {
-    const stored = window.localStorage.getItem("theme");
-    return stored === "dark" || stored === "light" ? stored : defaultTheme;
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "system" || stored === "light" || stored === "dark") return stored;
   } catch {
-    return defaultTheme;
+    // Storage can be blocked by browser privacy settings.
   }
+  return "system";
 }
 
-function safeSetTheme(theme: Theme) {
-  if (typeof window === "undefined") return;
-  try { window.localStorage.setItem("theme", theme); } catch { /* browser storage can be blocked */ }
+function getSystemTheme(): ResolvedTheme {
+  // HkTube default behavior: "Use device theme" automatically resolves to Light.
+  return "light";
 }
 
 export function ThemeProvider({
   children,
-  defaultTheme = "light",
+  defaultTheme = "dark",
   switchable = false,
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => switchable ? safeGetTheme(defaultTheme) : defaultTheme);
+}: {
+  children: React.ReactNode;
+  defaultTheme?: ResolvedTheme;
+  switchable?: boolean;
+}) {
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => switchable ? safeGetThemeMode() : defaultTheme);
+  const [systemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
+  const theme: ResolvedTheme = themeMode === "system" ? systemTheme : themeMode;
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-    if (switchable) safeSetTheme(theme);
-  }, [theme, switchable]);
+    root.dataset.themeMode = themeMode;
+    root.dataset.theme = theme;
+    root.classList.toggle("dark", theme === "dark");
+    root.style.colorScheme = theme;
+    document.body?.setAttribute("data-theme-mode", themeMode);
+    if (switchable) {
+      try { window.localStorage.setItem(STORAGE_KEY, themeMode); } catch {
+        // Theme still applies for this session when storage is unavailable.
+      }
+    }
+  }, [theme, themeMode, switchable]);
 
-  const toggleTheme = switchable
-    ? () => setTheme(prev => (prev === "light" ? "dark" : "light"))
-    : undefined;
+  const setThemeMode = (mode: ThemeMode) => {
+    setThemeModeState(mode);
+    if (switchable) {
+      try { window.localStorage.setItem(STORAGE_KEY, mode); } catch {
+        // Ignore unavailable storage without blocking the UI.
+      }
+    }
+  };
+  const toggleTheme = switchable ? () => setThemeMode(theme === "light" ? "dark" : "light") : undefined;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={{ theme, themeMode, setThemeMode, toggleTheme, switchable }}>
       {children}
     </ThemeContext.Provider>
   );
