@@ -19,8 +19,6 @@ function safeGetThemeMode(): ThemeMode {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "system" || stored === "light" || stored === "dark") return stored;
-    const legacy = window.localStorage.getItem("theme");
-    if (legacy === "light" || legacy === "dark") return legacy;
   } catch {
     // Storage can be blocked by browser privacy settings.
   }
