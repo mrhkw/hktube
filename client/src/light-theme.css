@@ -1,14 +1,44 @@
-/* HkTube clean light theme: white backgrounds and black UI text/icons. */
+/* Shared HkTube light/dark surfaces. The resolved mode is set before React paints. */
+:root {
+  --hktube-mode-background: #f9f9f9;
+  --hktube-mode-surface: #ffffff;
+  --hktube-mode-surface-raised: #f2f2f2;
+  --hktube-mode-foreground: #0f0f0f;
+  --hktube-mode-muted: #606060;
+  --hktube-mode-border: #e5e5e5;
+  --hktube-mode-input: #ffffff;
+  --hktube-mode-hover: #f2f2f2;
+}
+
+html[data-hktube-mode="dark"] {
+  --hktube-mode-background: #0f0f0f;
+  --hktube-mode-surface: #212121;
+  --hktube-mode-surface-raised: #272727;
+  --hktube-mode-foreground: #f1f1f1;
+  --hktube-mode-muted: #aaaaaa;
+  --hktube-mode-border: #303030;
+  --hktube-mode-input: #121212;
+  --hktube-mode-hover: #303030;
+}
+
 html,
 body,
 #root {
-  background: #ffffff !important;
-  color: #111111 !important;
+  color-scheme: light;
+  background-color: var(--hktube-mode-background) !important;
+  color: var(--hktube-mode-foreground) !important;
 }
 
-/* Neutralize legacy dark/purple Tailwind UI surfaces. */
+html[data-hktube-mode="dark"],
+html[data-hktube-mode="dark"] body,
+html[data-hktube-mode="dark"] #root {
+  color-scheme: dark;
+}
+
+/* Legacy pages use many fixed Tailwind colors. Normalize them to the selected
+   neutral platform palette; semantic accent colors remain available in icons. */
 [class*="bg-"] {
-  background-color: #ffffff !important;
+  background-color: var(--hktube-mode-surface) !important;
 }
 [class*="bg-gradient-"] {
   background-image: none !important;
@@ -17,39 +47,45 @@ body,
   box-shadow: none !important;
 }
 [class*="border-"] {
-  border-color: #e5e7eb !important;
+  border-color: var(--hktube-mode-border) !important;
 }
 [class*="text-"] {
-  color: #111111 !important;
+  color: var(--hktube-mode-foreground) !important;
 }
-[class*="hover\\:bg-"]:hover,
-[class*="focus\\:bg-"]:focus,
-[class*="active\\:bg-"]:active {
-  background-color: #f3f4f6 !important;
+:is(
+  [class*="text-slate-400"], [class*="text-slate-500"],
+  [class*="text-gray-400"], [class*="text-gray-500"],
+  [class*="text-neutral-400"], [class*="text-neutral-500"],
+  [class*="text-zinc-400"], [class*="text-zinc-500"]
+) {
+  color: var(--hktube-mode-muted) !important;
 }
 
 input,
 textarea,
 select {
-  background: #ffffff !important;
-  color: #111111 !important;
-  border-color: #d1d5db !important;
+  background-color: var(--hktube-mode-input) !important;
+  color: var(--hktube-mode-foreground) !important;
+  border-color: var(--hktube-mode-border) !important;
+  color-scheme: inherit;
 }
-
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280 !important;
+  color: var(--hktube-mode-muted) !important;
+  opacity: 1;
+}
+select option {
+  background-color: var(--hktube-mode-surface);
+  color: var(--hktube-mode-foreground);
 }
 
 button,
 a {
-  color: #111111;
+  color: var(--hktube-mode-foreground);
 }
-
 svg {
   color: currentColor;
 }
-
 img,
 video,
 iframe {
