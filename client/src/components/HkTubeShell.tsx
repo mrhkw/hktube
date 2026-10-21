@@ -375,7 +375,7 @@ export function HkTubeShell({
             href="/settings"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/[.045] hover:text-white"
           >
-            <Settings2 className="size-6" />
+            <Settings2 className="size-5" />
             Settings
           </Link>
           <Link
