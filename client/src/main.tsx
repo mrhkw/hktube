@@ -10,15 +10,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { recoverFromAssetLoadFailure } from "./lib/runtimeRecovery";
 import "./index.css";
 import "./light-theme.css";
-import "./theme-runtime.css";
 import "./hktube-brand.css";
 import "./hkw-loader.css";
+import "./appearance.css";
+import { initializeHkTubeAppearance } from "./lib/appearance";
 
-const THEME_IDS = new Set(["violet", "blue", "cyan", "teal", "green", "lime", "amber", "orange", "red", "pink", "fuchsia", "indigo"]);
-try {
-  const savedTheme = window.localStorage.getItem("hktube-theme") || "violet";
-  document.documentElement.dataset.hktubeTheme = THEME_IDS.has(savedTheme) ? savedTheme : "violet";
-} catch { document.documentElement.dataset.hktubeTheme = "violet"; }
+initializeHkTubeAppearance();
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, refetchOnWindowFocus: false, retry: 1 } } });
 

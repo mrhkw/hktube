@@ -1,8 +1,7 @@
 import { useEffect } from "react";
-import { applyHkLanguage, applyHkTheme } from "@/components/ThemeManager";
+import { applyHkLanguage } from "@/components/ThemeManager";
 
 const LANGUAGE_KEY = "hktube-language-code";
-const THEME_KEY = "hktube-theme";
 
 export const HKTUBE_ALL_LANGUAGES = [
   ["en","English","English"],["ur","Urdu","اردو"],["hi","Hindi","हिन्दी"],["ar","Arabic","العربية"],
@@ -55,7 +54,6 @@ function syncPreferences() {
     const language = readLanguage();
     const translationCode = TRANSLATION_FALLBACK[language] || language;
     try { applyHkLanguage(translationCode); } catch { /* keep core UI usable */ }
-    try { applyHkTheme(safeGet(THEME_KEY, "violet")); } catch { /* keep core UI usable */ }
     document.documentElement.lang = language;
     document.documentElement.dir = RTL_LANGUAGES.has(language) ? "rtl" : "ltr";
     document.documentElement.dataset.hktubeLanguage = language;
@@ -69,10 +67,9 @@ export function LanguageRuntime() {
     const onPreferenceChange = () => syncPreferences();
     window.addEventListener("hktube-language-change", onPreferenceChange);
     window.addEventListener("hktube-language-updated", onPreferenceChange);
-    window.addEventListener("hktube-theme-change", onPreferenceChange);
     window.addEventListener("storage", onPreferenceChange);
     const interval = window.setInterval(syncPreferences, 1200);
-    return () => { window.clearInterval(interval); window.removeEventListener("hktube-language-change", onPreferenceChange); window.removeEventListener("hktube-language-updated", onPreferenceChange); window.removeEventListener("hktube-theme-change", onPreferenceChange); window.removeEventListener("storage", onPreferenceChange); };
+    return () => { window.clearInterval(interval); window.removeEventListener("hktube-language-change", onPreferenceChange); window.removeEventListener("hktube-language-updated", onPreferenceChange); window.removeEventListener("storage", onPreferenceChange); };
   }, []);
   return null;
 }

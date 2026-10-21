@@ -1,9 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-type Theme = "light" | "dark";
+import {
+  getHkTubeAppearance,
+  HKTUBE_APPEARANCE_EVENT,
+  initializeHkTubeAppearance,
+  resolveHkTubeAppearance,
+  setHkTubeAppearance,
+  type HkTubeAppearance,
+  type HkTubeColorMode,
+} from "@/lib/appearance";
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: HkTubeColorMode;
+  appearance: HkTubeAppearance;
+  setAppearance: (appearance: HkTubeAppearance) => void;
   toggleTheme?: () => void;
   switchable: boolean;
 }
@@ -12,45 +21,63 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  defaultTheme?: Theme;
+  defaultTheme?: HkTubeAppearance;
   switchable?: boolean;
 }
 
-function safeGetTheme(defaultTheme: Theme): Theme {
-  if (typeof window === "undefined") return defaultTheme;
-  try {
-    const stored = window.localStorage.getItem("theme");
-    return stored === "dark" || stored === "light" ? stored : defaultTheme;
-  } catch {
-    return defaultTheme;
-  }
-}
-
-function safeSetTheme(theme: Theme) {
-  if (typeof window === "undefined") return;
-  try { window.localStorage.setItem("theme", theme); } catch { /* browser storage can be blocked */ }
+function getSystemPrefersDark(): boolean {
+  return typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
 export function ThemeProvider({
   children,
-  defaultTheme = "light",
+  defaultTheme = "system",
   switchable = false,
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => switchable ? safeGetTheme(defaultTheme) : defaultTheme);
+  const [appearance, setAppearanceState] = useState<HkTubeAppearance>(
+    () => switchable ? getHkTubeAppearance() : defaultTheme,
+  );
+  const [theme, setTheme] = useState<HkTubeColorMode>(
+    () => resolveHkTubeAppearance(switchable ? getHkTubeAppearance() : defaultTheme, getSystemPrefersDark()),
+  );
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-    if (switchable) safeSetTheme(theme);
-  }, [theme, switchable]);
+    initializeHkTubeAppearance();
+    const syncAppearance = (event: Event) => {
+      const detail = (event as CustomEvent<{ appearance?: HkTubeAppearance; mode?: HkTubeColorMode }>).detail;
+      if (detail?.appearance) setAppearanceState(detail.appearance);
+      if (detail?.mode) setTheme(detail.mode);
+    };
+    window.addEventListener(HKTUBE_APPEARANCE_EVENT, syncAppearance);
+    return () => window.removeEventListener(HKTUBE_APPEARANCE_EVENT, syncAppearance);
+  }, []);
+
+  useEffect(() => {
+    if (!switchable) {
+      const fixedAppearance = defaultTheme;
+      const mode = resolveHkTubeAppearance(fixedAppearance, getSystemPrefersDark());
+      document.documentElement.dataset.hktubeAppearance = fixedAppearance;
+      document.documentElement.dataset.hktubeMode = mode;
+      document.documentElement.classList.toggle("dark", mode === "dark");
+      document.documentElement.style.colorScheme = mode;
+      setAppearanceState(fixedAppearance);
+      setTheme(mode);
+    }
+  }, [defaultTheme, switchable]);
+
+  const updateAppearance = (value: HkTubeAppearance) => {
+    if (!switchable) return;
+    setHkTubeAppearance(value);
+  };
 
   const toggleTheme = switchable
-    ? () => setTheme(prev => (prev === "light" ? "dark" : "light"))
+    ? () => updateAppearance(theme === "dark" ? "light" : "dark")
     : undefined;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={{ theme, appearance, setAppearance: updateAppearance, toggleTheme, switchable }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,0 +1,103 @@
+/* This file is loaded last so every route and portal uses the same appearance. */
+html[data-hktube-mode],
+html[data-hktube-mode] body,
+html[data-hktube-mode] #root {
+  background-color: var(--hktube-mode-background) !important;
+  color: var(--hktube-mode-foreground) !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"],
+html[data-hktube-mode] body [data-hktube-app-shell] {
+  background-color: var(--hktube-mode-background) !important;
+  color: var(--hktube-mode-foreground) !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] header,
+html[data-hktube-mode] body [data-hktube-app-shell] header,
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside,
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] nav.fixed {
+  background-color: var(--hktube-mode-surface) !important;
+  border-color: var(--hktube-mode-border) !important;
+  color: var(--hktube-mode-foreground) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main {
+  background-color: var(--hktube-mode-background) !important;
+  color: var(--hktube-mode-foreground) !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] header input,
+html[data-hktube-mode] body [data-hktube-app-shell] header input {
+  background-color: var(--hktube-mode-input) !important;
+  color: var(--hktube-mode-foreground) !important;
+  border-color: var(--hktube-mode-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] [role="menu"],
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] [role="dialog"],
+html[data-hktube-mode] body [role="menu"],
+html[data-hktube-mode] body [role="dialog"],
+html[data-hktube-mode] body [role="listbox"],
+html[data-hktube-mode] body [data-radix-popper-content-wrapper] > *,
+html[data-hktube-mode] body [data-sonner-toaster] [data-sonner-toast] {
+  background-color: var(--hktube-mode-surface) !important;
+  color: var(--hktube-mode-foreground) !important;
+  border-color: var(--hktube-mode-border) !important;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 18%) !important;
+}
+
+html[data-hktube-mode] body [role="menu"] :is(a, button, [role="menuitem"]),
+html[data-hktube-mode] body [role="dialog"] :is(a, button, [role="menuitem"]) {
+  color: var(--hktube-mode-foreground) !important;
+}
+html[data-hktube-mode] body [role="menu"] :is(a, button, [role="menuitem"]):hover,
+html[data-hktube-mode] body [role="dialog"] :is(a, button, [role="menuitem"]):hover {
+  background-color: var(--hktube-mode-hover) !important;
+}
+
+html[data-hktube-mode] body input,
+html[data-hktube-mode] body textarea,
+html[data-hktube-mode] body select {
+  background-color: var(--hktube-mode-input) !important;
+  color: var(--hktube-mode-foreground) !important;
+  border-color: var(--hktube-mode-border) !important;
+}
+
+html[data-hktube-mode] body .hktube-app-shell {
+  background-color: var(--hktube-mode-background) !important;
+  color: var(--hktube-mode-foreground) !important;
+}
+html[data-hktube-mode] body .hktube-reference-header {
+  background-color: var(--hktube-mode-surface) !important;
+  color: var(--hktube-mode-foreground) !important;
+  border-color: var(--hktube-mode-border) !important;
+}
+html[data-hktube-mode] body .hktube-account-menu {
+  background-color: var(--hktube-mode-surface) !important;
+  color: var(--hktube-mode-foreground) !important;
+  border-color: var(--hktube-mode-border) !important;
+}
+html[data-hktube-mode] body .hktube-account-menu :is(a, button) {
+  color: var(--hktube-mode-foreground) !important;
+}
+html[data-hktube-mode] body .hktube-account-menu :is(a, button):hover {
+  background-color: var(--hktube-mode-hover) !important;
+}
+
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(h1, h2, h3, h4, p, label),
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside :is(a, button),
+html[data-hktube-mode] body nav.fixed :is(a, button, span, svg) {
+  color: var(--hktube-mode-foreground) !important;
+}
+html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500) {
+  color: var(--hktube-mode-muted) !important;
+}
+
+/* The video canvas itself remains black in immersive playback; its app chrome
+   and dialogs continue to follow the user's selected light/dark appearance. */
+html[data-hktube-mode] body .hktube-clips-page video {
+  background-color: #000 !important;
+}

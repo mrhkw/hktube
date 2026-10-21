@@ -2,7 +2,7 @@
 // ╔═══════════════════════════════════════════════════════════╗
 // ║   HkTube — App UI v4  |  YouTube-style · No Zoom        ║
 // ║   Nav: Home · Shorts · ➕ · Feeds · Menu                 ║
-// ║   Themes: Dark · AMOLED · Light  |  Creator tools     ║
+// ║   Themes: System (Auto) · Dark · Light  |  Creator tools ║
 // ╚═══════════════════════════════════════════════════════════╝
 
 import { useState, useEffect, useRef } from "react";
@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
 import { formatDate, formatDuration, formatViews } from "@/lib/video";
 import { useLocation } from "wouter";
+import { getHkTubeAppearance, HKTUBE_APPEARANCE_EVENT, resolveHkTubeAppearance, setHkTubeAppearance } from "@/lib/appearance";
 import {
   Home, Play, Search, Bell, Plus, Users, Heart,
   MessageCircle, Share2, Bookmark, MoreVertical,
@@ -36,19 +37,6 @@ const T = {
     bdr:"#272727", bdrH:"rgba(123,94,255,0.5)",
     ok:"#00C980", okD:"rgba(0,201,128,0.14)",
     warn:"#FFA000", warnD:"rgba(255,160,0,0.14)",
-    danger:"#FF0000", dangerD:"rgba(255,0,0,0.14)",
-  },
-  amoled: {
-    id:"amoled", name:"AMOLED Dark",
-    bg:"#000000", surf:"#000000", card:"#000000",
-    elev:"#0D0D0D", hover:"#1A1A1A", input:"#080808",
-    pri:"#8866FF", priDim:"rgba(136,102,255,0.14)", priGlow:"rgba(136,102,255,0.30)",
-    sec:"#FF55AA", secDim:"rgba(255,85,170,0.14)",
-    gold:"#FFAA00", goldDim:"rgba(255,170,0,0.14)",
-    t1:"#FFFFFF", t2:"#AAAAAA", t3:"#606060",
-    bdr:"#1A1A1A", bdrH:"rgba(136,102,255,0.5)",
-    ok:"#00BB77", okD:"rgba(0,187,119,0.14)",
-    warn:"#FF9900", warnD:"rgba(255,153,0,0.14)",
     danger:"#FF0000", dangerD:"rgba(255,0,0,0.14)",
   },
   light: {
@@ -85,7 +73,7 @@ const SETTINGS_GROUPS = [
   ]},
   {group:"Preferences",items:[
     {id:"language",icon:"🌐",label:"Language & Region",desc:"App language"},
-    {id:"theme",icon:"🎨",label:"Theme",desc:"System, Dark, Light, AMOLED"},
+    {id:"theme",icon:"🎨",label:"Theme",desc:"System (Auto), Dark, Light"},
     {id:"playback",icon:"▶️",label:"Playback",desc:"Autoplay, quality, speed"},
     {id:"data",icon:"📶",label:"Data Usage",desc:"Mobile data controls"},
     {id:"captions",icon:"💬",label:"Captions",desc:"Subtitle settings"},
@@ -933,7 +921,7 @@ function SettingsPage({ t, themeId, onTheme, setPage }) {
     content:[{l:"Personalized Recommendations",k:"personalized",d:"Use your activity to order the feed"},{l:"Restricted Mode",k:"restricted",d:"Limit potentially mature discovery content"}],
     family:[{l:"Family Mode",k:"restricted",d:"Hide Shorts and discovery surfaces on this browser"}],
   };
-  const themes=[{id:"system",icon:"🌓",l:"System",d:"Follow device appearance"},{id:"dark",icon:"🌙",l:"Dark",d:"HkTube dark theme"},{id:"amoled",icon:"⚡",l:"AMOLED",d:"True black theme"},{id:"light",icon:"☀️",l:"Light",d:"Bright theme"}];
+  const themes=[{id:"system",icon:"🌓",l:"System (Auto)",d:"Follow device appearance"},{id:"dark",icon:"🌙",l:"Dark",d:"Dark appearance"},{id:"light",icon:"☀️",l:"Light",d:"Light appearance"}];
   if(active) return <div style={{paddingBottom:100}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${t.bdr}`,padding:"10px 16px"}}><button type="button" onClick={()=>setActiveId(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",color:t.t2,fontSize:14,cursor:"pointer",padding:"4px 0"}}><ChevronLeft size={18}/> Settings</button><button type="button" onClick={()=>setPage("home")} aria-label="Close settings" style={{width:36,height:36,display:"grid",placeItems:"center",borderRadius:"50%",background:t.hover,border:"none",color:t.t1,cursor:"pointer"}}><X size={19}/></button></div>
     <div style={{padding:"0 16px 16px"}}><h2 style={{color:t.t1,fontSize:20,fontWeight:700,margin:"0 0 16px"}}>{active.icon} {active.label}</h2>
@@ -1068,9 +1056,8 @@ function NotifPanel({ t, onClose, items=[] }) {
 // ─────────────────────────────────────────
 function MenuModal({ t, curTheme, onTheme, onClose, setPage, user, navigate }) {
   const themes=[
-    {id:"system",icon:"🌓",l:"System"},
+    {id:"system",icon:"🌓",l:"System (Auto)"},
     {id:"dark",icon:"🌙",l:"Dark"},
-    {id:"amoled",icon:"⚡",l:"AMOLED"},
     {id:"light",icon:"☀️",l:"Light"},
   ];
   const items=[
@@ -1237,8 +1224,17 @@ function toDisplayShort(video, index) {
 // 🚀  ROOT APP
 // ─────────────────────────────────────────
 export default function HkTube() {
-  const [themeId,setThemeId]=useState(()=>{try{return localStorage.getItem("hktube-theme")||"light";}catch{return "light";}});
-  const changeTheme=id=>{setThemeId(id);try{localStorage.setItem("hktube-theme",id);}catch{}};
+  const [themeId,setThemeId]=useState(()=>getHkTubeAppearance());
+  const [systemPrefersDark,setSystemPrefersDark]=useState(()=>typeof window!=="undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const changeTheme=id=>{setHkTubeAppearance(id);};
+  useEffect(()=>{
+    const syncAppearance=event=>{
+      if(event.detail?.appearance) setThemeId(event.detail.appearance);
+      if(event.detail?.mode) setSystemPrefersDark(event.detail.mode==="dark");
+    };
+    window.addEventListener(HKTUBE_APPEARANCE_EVENT,syncAppearance);
+    return ()=>window.removeEventListener(HKTUBE_APPEARANCE_EVENT,syncAppearance);
+  },[]);
   const [page,setPage]=useState("home");
   const [showMenu,setShowMenu]=useState(false);
   const [showCreate,setShowCreate]=useState(false);
@@ -1250,8 +1246,8 @@ export default function HkTube() {
   const shortsQuery=trpc.videos.shorts.useQuery({limit:20});
   const videos=(videoQuery.data??[]).map(toDisplayVideo);
   const shorts=(shortsQuery.data??[]).map(toDisplayShort);
-  const resolvedThemeId=themeId==="system" ? (typeof window!=="undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : themeId;
-  const t=T[resolvedThemeId]||T.dark;
+  const resolvedThemeId=resolveHkTubeAppearance(themeId,systemPrefersDark);
+  const t=T[resolvedThemeId];
   const notifications=notificationsQuery.data??[];
   const unread=notifications.filter(n=>!n.readAt).length;
 
