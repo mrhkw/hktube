@@ -12,7 +12,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { CONTENT_SECURITY_POLICY, SECURITY_HEADERS } from "@shared/security";
 import { captureSentryException, providerStatus, upstashFixedWindow } from "../providerIntegrations";
-import { rateLimitDecision, shouldFailClosedOnRateLimitStoreFailure } from "./securityPolicy";
+import { rateLimitDecision, shouldFailClosedOnRateLimitStoreFailure, shouldRejectNewLocalRateLimitBucket } from "./securityPolicy";
 import { isAllowedSecurityOrigin } from "./securityOrigins";
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -130,10 +130,17 @@ async function rateLimit(req: express.Request, res: express.Response) {
   }
   const now = Date.now();
   const existing = rateBuckets.get(key);
+  if (rateBuckets.size >= MAX_RATE_BUCKETS && !existing) {
+    rateBuckets.forEach((entry, entryKey) => { if (entry.resetAt <= now) rateBuckets.delete(entryKey); });
+    if (shouldRejectNewLocalRateLimitBucket(rateBuckets.size, MAX_RATE_BUCKETS, rateBuckets.has(key))) {
+      res.set({ "Retry-After": "30", "X-HkTube-Security-Decision": "TEMPORARILY_LIMIT" });
+      res.status(503).json({ error: { message: "Local request protection is temporarily at capacity. Please retry shortly." } });
+      return false;
+    }
+  }
   const current = !existing || existing.resetAt <= now ? { count: 0, resetAt: now + windowMs } : existing;
   current.count += 1;
   rateBuckets.set(key, current);
-  if (rateBuckets.size > MAX_RATE_BUCKETS) rateBuckets.forEach((entry, entryKey) => { if (entry.resetAt <= now) rateBuckets.delete(entryKey); });
   if (current.count > limit) {
     res.set("Retry-After", String(Math.max(1, Math.ceil((current.resetAt - now) / 1000))));
     res.set("X-HkTube-Security-Decision", rateLimitDecision(false));
@@ -182,18 +189,20 @@ export function createApiApp(): Express {
   });
   app.use((req, res, next) => { void rateLimit(req, res).then(allowed => { if (allowed) next(); }); });
   registerProviderRoutes(app);
+  // Mount this route before the global parser so its 32 KB JSON limit applies.
+  registerMediaUploadRoute(app);
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ limit: "256kb", extended: false }));
   app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "hktube", providers: providerStatus(), timestamp: new Date().toISOString() }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
-  registerMediaUploadRoute(app);
   registerAdminAgentRoute(app);
   registerAdminVerificationRoute(app);
   registerAIAdminRoute(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const parserError = error as { type?: string; status?: number };
+    if (parserError.type === "entity.too.large") { if (!res.headersSent) res.status(413).json({ error: { message: "Request body exceeds the allowed size." } }); return; }
     if (parserError.type === "entity.parse.failed" || parserError.status === 400) { if (!res.headersSent) res.status(400).json({ error: { message: "Invalid request data. Please try again." } }); return; }
     console.error("[API] Unhandled request error:", error);
     void captureSentryException(error, { operation: "unhandled_api_error", path: _req.path });

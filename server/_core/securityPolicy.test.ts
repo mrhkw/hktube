@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   rateLimitDecision,
   shouldFailClosedOnRateLimitStoreFailure,
+  shouldRejectNewLocalRateLimitBucket,
 } from "./securityPolicy";
 
 describe("HkTube rate-limit security decisions", () => {
@@ -29,5 +30,11 @@ describe("HkTube rate-limit security decisions", () => {
     expect(shouldFailClosedOnRateLimitStoreFailure("search", true)).toBe(false);
     expect(shouldFailClosedOnRateLimitStoreFailure("general", true)).toBe(false);
     expect(shouldFailClosedOnRateLimitStoreFailure("upload", false)).toBe(false);
+  });
+
+  it("bounds local fallback memory without rejecting already tracked clients", () => {
+    expect(shouldRejectNewLocalRateLimitBucket(4999, 5000, false)).toBe(false);
+    expect(shouldRejectNewLocalRateLimitBucket(5000, 5000, false)).toBe(true);
+    expect(shouldRejectNewLocalRateLimitBucket(5000, 5000, true)).toBe(false);
   });
 });
