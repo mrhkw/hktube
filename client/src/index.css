@@ -2107,3 +2107,52 @@ html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > button {
 html[data-theme="dark"] body nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
   color: #c4b5fd !important;
 }
+
+
+/* Global YouTube-inspired typography: prioritize legibility without forcing every label to the same size. */
+:root {
+  font-family: Roboto, "Arial", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  --hktube-text-primary: #0f0f0f;
+  --hktube-text-secondary: #606060;
+}
+
+html, body, button, input, textarea, select {
+  font-family: Roboto, "Arial", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: normal;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+/* Preserve a clear hierarchy for titles and section headings across routes. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: Roboto, "Arial", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  text-wrap: pretty;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+p, label, li, small, figcaption {
+  text-wrap: pretty;
+}
+
+button, [role="button"], input, textarea, select {
+  line-height: 1.4;
+}
+
+/* Prevent tiny utility labels from becoming difficult to read on phones. */
+@media (max-width: 767px) {
+  body { -webkit-text-size-adjust: 100%; }
+  small, [class*="text-[10px]"], [class*="text-[11px]"] {
+    letter-spacing: 0.005em;
+  }
+}
