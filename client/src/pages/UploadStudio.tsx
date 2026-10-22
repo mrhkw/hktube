@@ -342,7 +342,12 @@ export default function UploadStudioPage() {
                 onChooseGallery={() => setGalleryOpen(true)}
               />}
 
-              {stage === "edit" && file && info && <div className="space-y-4">
+              {stage === "edit" && file && info && <div className="fixed inset-0 z-[110] flex h-[100dvh] w-full flex-col overflow-y-auto overscroll-contain bg-[#070910] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(.75rem,env(safe-area-inset-top))] text-white sm:px-6">
+                <div className="mx-auto w-full max-w-6xl space-y-4">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-violet-300">HKTUBE STUDIO · FULL SCREEN</p><h2 className="mt-1 text-lg font-black sm:text-2xl">Edit your {mode === "clip" ? "Clip" : "Video"}</h2></div>
+                    <button type="button" disabled={busy} onClick={() => setStage("select")} aria-label="Back to media selection" className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 hover:bg-white/10"><X className="size-5" /></button>
+                  </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0"><p className="text-sm font-black text-white">Review and edit your video</p><p className="mt-1 truncate text-xs text-slate-500">{file.name} · {info.width} × {info.height} · {durationLabel(info.duration)}</p></div>
                   <button type="button" disabled={busy} onClick={() => setStage("select")} className="rounded-full border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/[.05]">Replace video</button>
@@ -351,6 +356,7 @@ export default function UploadStudioPage() {
                 <div className="flex flex-wrap justify-end gap-2 rounded-2xl border border-white/10 bg-black/15 p-4">
                   <button type="button" disabled={busy} onClick={() => setStage("details")} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-bold text-slate-300 hover:bg-white/[.05]">Skip editing</button>
                   <button type="button" disabled={busy} onClick={() => setStage("details")} className="min-h-11 rounded-full bg-violet-600 px-5 text-sm font-black text-white hover:bg-violet-500">Continue to details <span aria-hidden="true">→</span></button>
+                </div>
                 </div>
               </div>}
 
