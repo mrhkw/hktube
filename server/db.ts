@@ -1,9 +1,8 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { InsertChannel, InsertUser, InsertVideo, auditLogs, channels, comments, localAccounts, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory } from "../drizzle/schema";
+import { InsertChannel, InsertUser, InsertVideo, auditLogs, channels, comments, localAccounts, notifications, playlists, playlistItems, posts, postLikes, reports, savedVideos, subscriptions, users, videoLikes, videos, watchHistory, runtimeTeams, runtimeTasks, runtimeAuditLogs } from "../drizzle/schema";
 import { ENV, isOwnerEmail } from './_core/env';
-import { isTrustedAdminIdentity } from "./_core/adminIdentity";
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: ReturnType<typeof mysql.createPool> | null = null;
 export async function getDb() {
@@ -15,17 +14,15 @@ export async function getDb() {
   }
   return _db;
 }
-type UserUpsertInput = InsertUser & { emailVerified?: boolean };
-export async function upsertUser(user: UserUpsertInput): Promise<void> {
+export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb(); if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
   const values: InsertUser = { openId: user.openId }; const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod", "avatarUrl", "bio"] as const;
   for (const field of textFields) { const value = user[field]; if (value !== undefined) { values[field] = value ?? null; updateSet[field] = value ?? null; } }
   if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
-  const isOwner = isTrustedAdminIdentity({ source: user.loginMethod === "hktube-local" ? "local" : "external", openId: user.openId, email: user.email, emailVerified: user.emailVerified }, ENV.ownerOpenId);
+  const isOwner = isOwnerEmail(user.email) || (Boolean(ENV.ownerOpenId) && user.openId === ENV.ownerOpenId);
   if (isOwner) { values.role = 'admin'; updateSet.role = 'admin'; }
-  else if (isOwnerEmail(user.email)) { values.role = 'user'; updateSet.role = 'user'; }
   else if (user.role !== undefined && user.role !== 'admin') { values.role = user.role; updateSet.role = user.role; }
   if (user.language !== undefined) { values.language = user.language; updateSet.language = user.language; }
   if (!values.lastSignedIn) values.lastSignedIn = new Date(); if (!Object.keys(updateSet).length) updateSet.lastSignedIn = new Date();
@@ -33,7 +30,7 @@ export async function upsertUser(user: UserUpsertInput): Promise<void> {
 }
 export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1); return result[0]; }
 export async function getLocalAccount(identifier: string) { const db = await getDb(); if (!db) return undefined; const result = await db.select({ account: localAccounts, user: users }).from(localAccounts).innerJoin(users, eq(localAccounts.userId, users.id)).where(eq(localAccounts.identifier, identifier)).limit(1); return result[0]; }
-export async function createLocalAccount(input: { openId: string; name: string; email: string; identifier: string; passwordHash: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); return db.transaction(async tx => { const userResult = await tx.insert(users).values({ openId: input.openId, name: input.name, email: input.email, loginMethod: "hktube-local", role: "user" }); const userId = Number(userResult[0].insertId); await tx.insert(localAccounts).values({ userId, identifier: input.identifier, passwordHash: input.passwordHash }); const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1); return rows[0]; }); }
+export async function createLocalAccount(input: { openId: string; name: string; email: string; identifier: string; passwordHash: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); return db.transaction(async tx => { const userResult = await tx.insert(users).values({ openId: input.openId, name: input.name, email: input.email, loginMethod: "hktube-local", role: isOwnerEmail(input.email) ? "admin" : "user" }); const userId = Number(userResult[0].insertId); await tx.insert(localAccounts).values({ userId, identifier: input.identifier, passwordHash: input.passwordHash }); const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1); return rows[0]; }); }
 export async function listChannelsByOwner(ownerId: number) { const db = await getDb(); if (!db) return []; return db.select().from(channels).where(eq(channels.ownerId, ownerId)).orderBy(desc(channels.createdAt)); }
 export async function createChannel(channel: InsertChannel) {
   const db = await getDb();
@@ -51,13 +48,12 @@ export async function listVideos(options: { category?: "regular" | "shorts"; mod
   if (options.category) filters.push(eq(videos.category, options.category)); const search = options.search?.trim();
   if (search) { const term = `%${escapeLike(search)}%`; filters.push(or(like(videos.title, term), like(videos.description, term))!); }
   const where = filters.length ? and(...filters) : undefined; const score = sql<number>`(${videos.viewCount} * 2) - (timestampdiff(hour, ${videos.uploadedAt}, now()) / 24)`;
-  const rows = await db.select({ video: videos, channelName: channels.displayName, channelAvatarUrl: channels.avatarUrl, channelVerified: channels.verificationStatus }).from(videos).leftJoin(channels, eq(videos.channelId, channels.id)).where(where).orderBy(...(options.mode === "trending" ? [desc(score), desc(videos.viewCount), desc(videos.uploadedAt)] : [desc(videos.uploadedAt)])).limit(Math.min(options.limit ?? 24, 60));
-  return rows.map(row => ({ ...row.video, channelName: row.channelName, channelAvatarUrl: row.channelAvatarUrl, channelVerified: row.channelVerified === "verified" }));
+  return db.select().from(videos).where(where).orderBy(...(options.mode === "trending" ? [desc(score), desc(videos.viewCount), desc(videos.uploadedAt)] : [desc(videos.uploadedAt)])).limit(Math.min(options.limit ?? 24, 60));
 }
 export async function getVideoById(id: number) { const db = await getDb(); if (!db) return undefined; const result = await db.select().from(videos).where(eq(videos.id, id)).limit(1); const video = result[0]; if (!video || !video.channelId) return video; const channelRows = await db.select({ id: channels.id, handle: channels.handle, displayName: channels.displayName, avatarUrl: channels.avatarUrl, subscriberCount: channels.subscriberCount, verificationStatus: channels.verificationStatus }).from(channels).where(eq(channels.id, video.channelId)).limit(1); return { ...video, channel: channelRows[0] ?? null }; }
 export async function createVideo(video: InsertVideo) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const result = await db.insert(videos).values(video); return getVideoById(Number(result[0].insertId)); }
 export async function incrementVideoView(id: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); await db.update(videos).set({ viewCount: sql`${videos.viewCount} + 1` }).where(eq(videos.id, id)); return getVideoById(id); }
-export async function getRelatedVideos(videoId: number, category: "regular" | "shorts") { const db = await getDb(); if (!db) return []; const rows = await db.select({ video: videos, channelName: channels.displayName, channelAvatarUrl: channels.avatarUrl, channelVerified: channels.verificationStatus }).from(videos).leftJoin(channels, eq(videos.channelId, channels.id)).where(and(eq(videos.category, category), sql`${videos.id} <> ${videoId}`)).orderBy(desc(videos.uploadedAt)).limit(8); return rows.map(row => ({ ...row.video, channelName: row.channelName, channelAvatarUrl: row.channelAvatarUrl, channelVerified: row.channelVerified === "verified" })); }
+export async function getRelatedVideos(videoId: number, category: "regular" | "shorts") { const db = await getDb(); if (!db) return []; return db.select().from(videos).where(and(eq(videos.category, category), sql`${videos.id} <> ${videoId}`)).orderBy(desc(videos.uploadedAt)).limit(8); }
 export async function listAdminVideos() { const db = await getDb(); if (!db) return []; return db.select().from(videos).orderBy(desc(videos.uploadedAt)).limit(100); }
 export async function getCreatorStudioDashboard(userId: number) { const db = await getDb(); if (!db) return { videos: [], analytics: { totalViews: 0, contentCount: 0, regularCount: 0, shortsCount: 0, watchHours: 0 } }; const creatorVideos = await db.select().from(videos).where(eq(videos.uploadedById, userId)).orderBy(desc(videos.uploadedAt)).limit(100); const [watchTime] = await db.select({ seconds: sql<number>`coalesce(sum(${watchHistory.watchedSeconds}), 0)` }).from(watchHistory).innerJoin(videos, eq(watchHistory.videoId, videos.id)).where(eq(videos.uploadedById, userId)); return { videos: creatorVideos, analytics: { totalViews: creatorVideos.reduce((sum, video) => sum + (video.viewCount || 0), 0), contentCount: creatorVideos.length, regularCount: creatorVideos.filter(video => video.category === "regular").length, shortsCount: creatorVideos.filter(video => video.category === "shorts").length, watchHours: Math.round((Number(watchTime?.seconds ?? 0) / 3600) * 10) / 10 } }; }
 export async function removeVideo(id: number) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); const existing = await getVideoById(id); if (!existing) return false; await db.delete(videos).where(eq(videos.id, id)); return true; }
@@ -87,3 +83,63 @@ export async function listSavedVideos(userId: number) { const db = await getDb()
 export async function listReports() { const db = await getDb(); if (!db) return []; return db.select().from(reports).orderBy(desc(reports.createdAt)).limit(200); }
 export async function listAuditLogs() { const db = await getDb(); if (!db) return []; return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(200); }
 export async function writeAuditLog(input: { actorId: number; action: string; entityType: string; entityId?: number; metadata?: string }) { const db = await getDb(); if (!db) throw new Error("Database is unavailable."); await db.insert(auditLogs).values({ ...input, entityId: input.entityId ?? null, metadata: input.metadata ?? null }); }
+
+
+export async function upsertRuntimeTeam(input: { teamKey: string; displayName: string; risk: "low" | "medium" | "high"; config?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  await db.insert(runtimeTeams).values({ teamKey: input.teamKey, displayName: input.displayName, risk: input.risk, config: input.config ?? null }).onDuplicateKeyUpdate({ set: { displayName: input.displayName, risk: input.risk, config: input.config ?? null, updatedAt: new Date() } });
+  const rows = await db.select().from(runtimeTeams).where(eq(runtimeTeams.teamKey, input.teamKey)).limit(1);
+  return rows[0];
+}
+
+export async function listRuntimeTeams() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(runtimeTeams).orderBy(runtimeTeams.teamKey);
+}
+
+export async function enqueueRuntimeTask(input: { taskKey: string; teamId: number; agentId?: number; taskType: string; source: string; idempotencyKey: string; status: "NEW" | "QUEUED" | "WAITING_FOR_APPROVAL"; priority: number; payload: string; maxAttempts: number; approvalRequired: boolean; approvalStatus: "NOT_REQUIRED" | "PENDING" }) {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  await db.insert(runtimeTasks).values({ ...input, agentId: input.agentId ?? null, approvalRequired: input.approvalRequired ? 1 : 0 }).onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
+  const rows = await db.select().from(runtimeTasks).where(eq(runtimeTasks.idempotencyKey, input.idempotencyKey)).limit(1);
+  return rows[0];
+}
+
+export async function listRuntimeTasks(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(runtimeTasks).orderBy(desc(runtimeTasks.createdAt)).limit(Math.min(Math.max(limit, 1), 100));
+}
+
+export async function getRuntimeTask(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  const rows = await db.select().from(runtimeTasks).where(eq(runtimeTasks.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function writeRuntimeAudit(input: { taskId?: number; teamKey: string; agentKey?: string; action: string; outcome: string; metadata?: Record<string, unknown> }) {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  await db.insert(runtimeAuditLogs).values({ taskId: input.taskId ?? null, teamKey: input.teamKey, agentKey: input.agentKey ?? null, action: input.action, outcome: input.outcome, metadata: input.metadata ? JSON.stringify(input.metadata).slice(0, 4000) : null });
+}
+
+export async function updateRuntimeTaskState(id: number, patch: { status: "NEW" | "QUEUED" | "PROCESSING" | "WAITING" | "WAITING_FOR_APPROVAL" | "APPROVED" | "RETRYING" | "SUCCESS" | "FAILED" | "BLOCKED" | "CANCELLED" | "EXPIRED"; attemptCount?: number; result?: string | null; sanitizedError?: string | null; verificationResult?: string | null; startedAt?: Date | null; completedAt?: Date | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  await db.update(runtimeTasks).set(patch).where(eq(runtimeTasks.id, id));
+}
+
+export async function touchRuntimeTeamHeartbeat(teamKey: string, status: "CATALOG" | "READY" | "RUNNING" | "WAITING" | "WAITING_FOR_APPROVAL" | "BLOCKED" | "FAILED" | "RETRYING" | "SUCCESS" | "PAUSED" | "DISABLED") {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  await db.update(runtimeTeams).set({ status, lastHeartbeatAt: new Date() }).where(eq(runtimeTeams.teamKey, teamKey));
+}
+
+export async function decideRuntimeTaskApproval(id: number, approved: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Runtime database is unavailable.");
+  await db.update(runtimeTasks).set({ status: approved ? "APPROVED" : "BLOCKED", approvalStatus: approved ? "APPROVED" : "REJECTED", sanitizedError: approved ? null : "Approval rejected by an authorized admin.", updatedAt: new Date() }).where(eq(runtimeTasks.id, id));
+}

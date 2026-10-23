@@ -461,7 +461,7 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
 /* Mobile: prevent cramped controls, keep cards readable and reserve space for the bottom dock. */
 @media (max-width: 767px) {
   body {
-    padding-bottom: 0;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
   nav.fixed[aria-label="Mobile navigation"] {
     height: 76px !important;
@@ -505,10 +505,10 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
   body [class*="min-h-[100dvh]"] {
   }
-  body [class*="min-h-[100dvh]"] > main {
+  body [class*="min-h-[100dvh]"] main {
     padding-left: 12px !important;
     padding-right: 12px !important;
-    padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 88px !important;
   }
   body [class*="min-h-[100dvh]"] main section:first-child {
     padding-top: 14px !important;
@@ -575,12 +575,12 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
   }
 }
 @media (min-width: 768px) {
-  body [class*="min-h-[100dvh]"] > main {
+  body [class*="min-h-[100dvh]"] main {
     padding-bottom: 64px !important;
   }
 }
 @media (min-width: 1280px) {
-  body [class*="min-h-[100dvh]"] > main {
+  body [class*="min-h-[100dvh]"] main {
     padding-left: 32px !important;
     padding-right: 32px !important;
   }
@@ -764,11 +764,12 @@ select {
   }
 }
 
-
 /* Pixel-perfect watch player contract. This block intentionally comes last so
    the legacy global mobile video max-height cannot shrink the player. */
 .hktube-watch-layout,
-.hktube-watch-layout > * { min-width: 0; }
+.hktube-watch-layout > * {
+  min-width: 0;
+}
 .hktube-watch-layout .hktube-watch-frame {
   position: relative;
   overflow: hidden;
@@ -790,14 +791,25 @@ select {
   aspect-ratio: 9 / 16;
   border-radius: 0;
 }
-.hktube-watch-layout .hktube-watch-frame--short .hktube-watch-video { object-fit: cover; }
-.hktube-watch-layout .hktube-watch-frame--long { aspect-ratio: 16 / 9; }
-.hktube-watch-layout .hktube-watch-frame--long .hktube-watch-video { object-fit: contain; }
+.hktube-watch-layout .hktube-watch-frame--short .hktube-watch-video {
+  object-fit: cover;
+}
+.hktube-watch-layout .hktube-watch-frame--long {
+  aspect-ratio: 16 / 9;
+}
+.hktube-watch-layout .hktube-watch-frame--long .hktube-watch-video {
+  object-fit: contain;
+}
 @media (max-width: 1023px) {
   .hktube-watch-layout,
   .hktube-watch-layout > section,
-  .hktube-watch-layout .hktube-watch-frame { width: 100vw; max-width: 100vw; }
-  .hktube-watch-layout .hktube-watch-frame--long { border-radius: 0; }
+  .hktube-watch-layout .hktube-watch-frame {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  .hktube-watch-layout .hktube-watch-frame--long {
+    border-radius: 0;
+  }
 }
 @media (orientation: landscape) and (max-width: 1199px) {
   .hktube-watch-layout .hktube-watch-frame--long {
@@ -830,7 +842,6 @@ select {
     border-radius: 1rem;
   }
 }
-
 
 /* Clips viewport contract: the feed itself owns the full screen; header and
    action rail float above the media instead of creating document-flow gaps. */
@@ -868,7 +879,9 @@ body:has(.hktube-clips-page) main:has(.hktube-clips-page) {
   overscroll-behavior-y: contain;
   scrollbar-width: none;
 }
-.hktube-clips-page > .hktube-clips-stage::-webkit-scrollbar { display: none; }
+.hktube-clips-page > .hktube-clips-stage::-webkit-scrollbar {
+  display: none;
+}
 .hktube-clips-viewport {
   height: 100% !important;
   width: 100%;
@@ -886,14 +899,24 @@ body:has(.hktube-clips-page) main:has(.hktube-clips-page) {
   object-fit: cover;
   background: #000;
 }
-.hktube-clips-page > :not(.hktube-clips-stage) { z-index: 20; }
-.hktube-clips-page .hktube-clips-stage { isolation: isolate; }
-.hktube-clips-page .clips-action-rail { right: 0.25rem !important; }
+.hktube-clips-page > :not(.hktube-clips-stage) {
+  z-index: 20;
+}
+.hktube-clips-page .hktube-clips-stage {
+  isolation: isolate;
+}
+.hktube-clips-page .clips-action-rail {
+  right: 0.25rem !important;
+}
 @media (max-width: 767px) {
   body:has(.hktube-clips-page),
   body:has(.hktube-clips-page) #root,
-  body:has(.hktube-clips-page) main { overflow: hidden !important; }
-  body:has(.hktube-clips-page) main { padding: 0 !important; }
+  body:has(.hktube-clips-page) main {
+    overflow: hidden !important;
+  }
+  body:has(.hktube-clips-page) main {
+    padding: 0 !important;
+  }
   body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     display: grid !important;
     visibility: visible !important;
@@ -906,11 +929,18 @@ body:has(.hktube-clips-page) main:has(.hktube-clips-page) {
     max-width: none !important;
     min-width: 100vw !important;
   }
-  .hktube-clips-page .hktube-clips-viewport { max-width: none; }
-  .hktube-clips-page .clips-action { min-width: 56px; min-height: 56px; }
-  .hktube-clips-page .clips-action > span:first-child { width: 48px; height: 48px; }
+  .hktube-clips-page .hktube-clips-viewport {
+    max-width: none;
+  }
+  .hktube-clips-page .clips-action {
+    min-width: 56px;
+    min-height: 56px;
+  }
+  .hktube-clips-page .clips-action > span:first-child {
+    width: 48px;
+    height: 48px;
+  }
 }
-
 
 /* Keep Clips controls visually independent from the light site theme. */
 .hktube-clips-page .clips-action,
@@ -947,9 +977,15 @@ body:has(.hktube-clips-page) .hktube-clips-page video {
   object-fit: cover !important;
   background: #000 !important;
 }
-body:has(.hktube-clips-page) .hktube-clips-page .clips-action > span:first-child,
+body:has(.hktube-clips-page)
+  .hktube-clips-page
+  .clips-action
+  > span:first-child,
 body:has(.hktube-clips-page) .hktube-clips-page .clips-action span:first-child,
-body:has(.hktube-clips-page) .hktube-clips-page .clips-action-active span:first-child {
+body:has(.hktube-clips-page)
+  .hktube-clips-page
+  .clips-action-active
+  span:first-child {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -1019,70 +1055,13 @@ body:has(.hktube-clips-page) .hktube-clips-page .clips-top-tabs button {
 }
 body:has(.hktube-clips-page)
   .hktube-clips-page
-  .clips-top-tabs button[aria-pressed="true"] {
+  .clips-top-tabs
+  button[aria-pressed="true"] {
   color: #fff !important;
 }
 body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
-  display: grid !important;
-  visibility: visible !important;
-  z-index: 10000 !important;
-  height: 60px !important;
-  min-height: 60px !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: stretch !important;
-  background: rgb(11 13 19 / 0.97) !important;
-  border-top: 1px solid rgb(255 255 255 / 0.12) !important;
-  color: #fff !important;
-  box-shadow: 0 -8px 28px rgb(0 0 0 / 0.26) !important;
-}
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a,
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button {
-  height: 56px !important;
-  min-height: 56px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 3px !important;
-  color: rgb(255 255 255 / 0.78) !important;
-}
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a[aria-current="page"] {
-  color: #fff !important;
-}
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] svg {
-  color: currentColor !important;
-}
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
-  color: inherit !important;
-  font-size: 10px !important;
-  line-height: 13px !important;
-}
-body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button > span:first-child {
-  background: rgb(255 255 255 / 0.16) !important;
-  color: #fff !important;
-  box-shadow: none !important;
-}
-@media (max-width: 767px) {
-  body:has(.hktube-clips-page) .clips-top-tabs {
-    top: calc(env(safe-area-inset-top) + 0.5rem) !important;
-    width: min(92vw, 360px) !important;
-    justify-content: center !important;
-    gap: 4px !important;
-  }
-  body:has(.hktube-clips-page) .clips-top-tabs button {
-    min-width: 0 !important;
-    min-height: 32px !important;
-    flex: 1 1 0 !important;
-    padding: 4px 6px !important;
-    border-radius: 999px !important;
-    font-size: 12px !important;
-    line-height: 16px !important;
-    white-space: nowrap !important;
-  }
-}
-@media (min-width: 768px) {
-  body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
-    display: none !important;
-  }
+  display: none !important;
+  visibility: hidden !important;
 }
 
 /* Android Home reference layout: one social post per row, full-width media. */
@@ -1113,7 +1092,9 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
   color: #16181d;
   font-size: 0.82rem;
   font-weight: 650;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
 }
 .home-action:hover,
 .home-action:focus-visible {
@@ -1223,29 +1204,6 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
   }
-  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] {
-    height: 76px !important;
-    padding-top: 10px !important;
-    padding-bottom: max(0.2rem, env(safe-area-inset-bottom)) !important;
-  }
-  body:has(.hktube-home-feed) main {
-    padding-bottom: 62px !important;
-  }
-  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] a,
-  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button {
-    height: 56px !important;
-    min-height: 56px !important;
-    gap: 0.125rem !important;
-    font-size: 0.62rem !important;
-  }
-  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button span {
-    width: 2.125rem !important;
-    height: 2.125rem !important;
-  }
-  body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] button span svg {
-    width: 18px !important;
-    height: 18px !important;
-  }
 }
 
 /* Compact primary navigation for Home, Create/Upload, Library, and Profile.
@@ -1264,9 +1222,17 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
   }
 
   body:has(nav[data-hktube-navigation-layout="primary"])
-    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > a,
+    [class*="min-h-[100dvh]"]
+    main {
+    padding-bottom: 60px !important;
+  }
+
   body:has(nav[data-hktube-navigation-layout="primary"])
-    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > button {
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"]
+    > a,
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"]
+    > button {
     height: 56px !important;
     min-height: 56px !important;
     gap: 2px !important;
@@ -1274,636 +1240,33 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] > button 
   }
 
   body:has(nav[data-hktube-navigation-layout="primary"])
-    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > a svg,
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"]
+    > a
+    svg,
   body:has(nav[data-hktube-navigation-layout="primary"])
-    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > button svg {
-    width: 18px !important;
-    height: 18px !important;
-    flex-basis: 18px !important;
-  }
-
-  body:has(nav[data-hktube-navigation-layout="primary"])
-    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"] > button[aria-label="Create content"] > span {
-    width: 32px !important;
-    height: 32px !important;
-  }
-}
-
-/* Clips interaction polish: smaller lower action rail and a controlled swipe transition. */
-.hktube-clips-stage {
-  touch-action: none;
-  overscroll-behavior: none;
-  user-select: none;
-}
-.hktube-clips-page .clips-action {
-  min-width: 44px !important;
-  min-height: 44px !important;
-}
-.hktube-clips-page .clips-action > span:first-child,
-.hktube-clips-page .clips-action span:first-child {
-  width: 42px !important;
-  height: 42px !important;
-}
-.hktube-clips-page .clips-action > span:first-child svg {
-  width: 22px !important;
-  height: 22px !important;
-}
-.hktube-clips-viewport.clips-swipe-in {
-  animation: clips-swipe-in 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
-}
-@keyframes clips-swipe-in {
-  from { opacity: 0.72; transform: scale(0.985); }
-  to { opacity: 1; transform: scale(1); }
-}
-@media (max-width: 767px) {
-  .hktube-clips-page .clips-action-rail {
-    bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
-    gap: 0.35rem !important;
-  }
-}
-
-@media (min-width: 768px) {
-  body:has(.hktube-clips-page),
-  #root:has(.hktube-clips-page) {
-    background: #070910 !important;
-  }
-  .hktube-clips-page > .hktube-clips-stage {
-    position: relative !important;
-    inset: auto !important;
-    display: grid;
-    place-items: center;
-    width: 100% !important;
-    height: 100% !important;
-  }
-  .hktube-clips-page .hktube-clips-viewport {
-    width: min(620px, calc((100dvh - 2rem) * 0.5625), calc(100vw - 2rem)) !important;
-    height: auto !important;
-    aspect-ratio: 9 / 16;
-    max-width: none !important;
-    border-radius: 1.5rem;
-    box-shadow: 0 24px 80px rgb(0 0 0 / 48%);
-  }
-  .hktube-clips-page .hktube-clips-viewport > video,
-  .hktube-clips-page .hktube-clips-viewport > img {
-    width: 100% !important;
-    height: 100% !important;
-  }
-}
-
-/* One mobile navigation contract for Home, Clips, Library, Profile and settings. */
-@media (max-width: 767px) {
-  body {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
-  }
-  nav.fixed[aria-label="Mobile navigation"] {
-    height: calc(60px + env(safe-area-inset-bottom)) !important;
-    min-height: calc(60px + env(safe-area-inset-bottom)) !important;
-    padding: 0 8px env(safe-area-inset-bottom) !important;
-    align-items: center !important;
-  }
-  nav.fixed[aria-label="Mobile navigation"] > a,
-  nav.fixed[aria-label="Mobile navigation"] > button {
-    height: 56px !important;
-    min-height: 56px !important;
-    gap: 2px !important;
-    padding: 3px 2px !important;
-  }
-  nav.fixed[aria-label="Mobile navigation"] > a svg,
-  nav.fixed[aria-label="Mobile navigation"] > button svg {
-    width: 18px !important;
-    height: 18px !important;
-    flex: 0 0 18px !important;
-  }
-  nav.fixed[aria-label="Mobile navigation"] > button > span:first-child {
-    width: 32px !important;
-    height: 32px !important;
-  }
-  nav.fixed[aria-label="Mobile navigation"] > a > span:last-child,
-  nav.fixed[aria-label="Mobile navigation"] > button > span:last-child {
-    font-size: 9px !important;
-    line-height: 12px !important;
-  }
-  .hktube-clips-page .clips-action-rail {
-    bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
-    gap: 0.1rem !important;
-  }
-  .hktube-clips-page .clips-action,
-  .hktube-clips-page .clips-sound-action {
-    min-width: 42px !important;
-    min-height: 46px !important;
-  }
-  .hktube-clips-page .clips-action > span:first-child,
-  .hktube-clips-page .clips-action span:first-child,
-  .hktube-clips-page .clips-sound-action > span:first-child {
-    width: 34px !important;
-    height: 34px !important;
-  }
-  .hktube-clips-page .clips-action > span:first-child svg,
-  .hktube-clips-page .clips-sound-action > span:first-child svg {
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"]
+    > button
+    svg {
     width: 20px !important;
     height: 20px !important;
-  }
-  .hktube-clips-page .clips-action > span:last-child,
-  .hktube-clips-page .clips-sound-action > span:last-child {
-    font-size: 10px !important;
-    line-height: 12px !important;
-  }
-}
-
-/* YouTube-style creator surfaces from the supplied mobile reference. */
-.hktube-create-sheet [data-radix-dialog-close] { color: #6b7280; }
-.hktube-create-sheet svg { color: #7c3aed; }
-.hktube-create-option { min-height: 64px; }
-.hktube-upload-reference { color-scheme: light; }
-@media (max-width: 767px) {
-  .hktube-upload-reference { background: #f8fafc !important; color: #111827 !important; }
-  .hktube-upload-reference > main { padding: 16px 12px 88px !important; }
-  .hktube-upload-reference .hktube-upload-card { border-color: #e5e7eb !important; background: #fff !important; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
-  .hktube-upload-reference .hktube-upload-card h2,
-  .hktube-upload-reference .hktube-upload-card h1,
-  .hktube-upload-reference .hktube-upload-card label,
-  .hktube-upload-reference .hktube-upload-card span { color: #111827; }
-  .hktube-upload-reference .hktube-upload-card p,
-  .hktube-upload-reference .hktube-upload-card .text-slate-500,
-  .hktube-upload-reference .hktube-upload-card .text-slate-400 { color: #6b7280 !important; }
-  .hktube-upload-reference input,
-  .hktube-upload-reference textarea,
-  .hktube-upload-reference select { border-color: #d1d5db !important; background: #fff !important; color: #111827 !important; }
-  .hktube-upload-reference .hktube-upload-mode { border-color: #ddd6fe !important; background: #f5f3ff !important; }
-  .hktube-upload-reference .hktube-upload-mode span { color: #111827 !important; }
-  .hktube-upload-reference .hktube-gallery-drop { min-height: 170px; border-color: #c4b5fd !important; background: #faf5ff !important; }
-  .hktube-upload-reference .hktube-sticky-upload { position: sticky; bottom: 72px; z-index: 10; background: #111827 !important; color: #fff !important; box-shadow: 0 10px 24px rgba(15,23,42,.22); }
-}
-
-/* Upload reference interaction: white gallery picker and short staged transitions. */
-.hktube-gallery-picker { animation: hktube-picker-in .22s ease-out both; }
-.hktube-picker-source, .hktube-picker-tile { transition: transform .18s ease, background-color .18s ease, border-color .18s ease; }
-.hktube-picker-source:active, .hktube-picker-tile:active { transform: scale(.97); }
-.hktube-upload-stage-preview, .hktube-upload-stage-details { animation: hktube-upload-stage-in .24s ease-out both; }
-@keyframes hktube-picker-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes hktube-upload-stage-in { from { opacity: .35; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { .hktube-gallery-picker, .hktube-upload-stage-preview, .hktube-upload-stage-details { animation: none; } }
-
-/* Large-screen layout polish: use 4K space without stretching cards or controls. */
-.hktube-wide-container {
-  width: min(100%, 1480px);
-}
-
-@media (min-width: 1920px) {
-  .hktube-shell-header-inner,
-  .hktube-shell-content,
-  .hktube-wide-container {
-    max-width: 2240px;
+    flex-basis: 20px !important;
+    transform: translateY(-1px);
   }
 
-  .hktube-shell-header-inner {
-    padding-inline: 2.5rem;
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"]
+    > a:nth-child(2)
+    img {
+    width: 27px !important;
+    height: 27px !important;
+    transform: translateY(-1px);
   }
 
-  .hktube-shell-sidebar {
-    width: 280px;
-    padding-inline: 1.25rem;
-    padding-top: 1.75rem;
-  }
-
-  .hktube-shell-main {
-    padding-left: 280px;
-  }
-
-  .hktube-shell-content {
-    margin-inline: auto;
-  }
-
-  .hktube-wide-container {
-    width: min(100%, 2240px);
-  }
-
-  .hktube-home-grid {
-    gap: 1.5rem;
-  }
-}
-
-@media (min-width: 3000px) {
-  .hktube-shell-header-inner,
-  .hktube-shell-content,
-  .hktube-wide-container {
-    max-width: 3360px;
-  }
-
-  .hktube-shell-header-inner {
-    height: 5rem;
-    padding-inline: 3.5rem;
-  }
-
-  .hktube-shell-sidebar {
-    width: 320px;
-    padding-inline: 1.5rem;
-    padding-top: 2.25rem;
-  }
-
-  .hktube-shell-main {
-    padding-left: 320px;
-  }
-
-  .hktube-shell-content {
-    padding-inline: 3.5rem;
-    padding-top: 2.25rem;
-  }
-
-  .hktube-wide-container {
-    width: min(100%, 3360px);
-  }
-
-  .hktube-home-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 1.75rem;
-  }
-}
-
-@media (min-width: 3800px) {
-  .hktube-shell-content {
-    padding-inline: 5rem;
-  }
-
-  .hktube-home-grid {
-    gap: 2rem;
-  }
-}
-
-@media (min-width: 1920px) {
-  .hktube-home-feed {
-    max-width: 1320px !important;
-  }
-}
-
-@media (min-width: 3000px) {
-  .hktube-home-feed {
-    max-width: 1680px !important;
-  }
-}
-
-
-/* HkTube Ultra Pro Max design pass — coherent premium dark system. */
-:root {
-  --background: #080b12;
-  --foreground: #f5f7fb;
-  --card: #111723;
-  --card-foreground: #f5f7fb;
-  --popover: #111723;
-  --popover-foreground: #f5f7fb;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #1a2231;
-  --secondary-foreground: #f5f7fb;
-  --muted: #1a2231;
-  --muted-foreground: #9aa6ba;
-  --accent: #251b43;
-  --accent-foreground: #ddd6fe;
-  --border: #273144;
-  --input: #202a3a;
-  --ring: #a78bfa;
-  --sidebar: #0b1019;
-  --sidebar-foreground: #f5f7fb;
-  --sidebar-accent: #21183a;
-  --sidebar-accent-foreground: #ddd6fe;
-  --sidebar-border: #222b3b;
-  --sidebar-ring: #a78bfa;
-}
-html, body, #root {
-  background: #080b12 !important;
-  color: #f5f7fb;
-}
-body {
-  background: radial-gradient(ellipse at 50% -18%, rgba(91, 33, 182, .18), transparent 48%), #080b12 !important;
-  color: #f5f7fb !important;
-}
-body [class*="min-h-[100dvh]"] {
-  background: #080b12 !important;
-  color: #f5f7fb !important;
-}
-body [class*="min-h-[100dvh]"] header {
-  background: rgba(9, 13, 22, .92) !important;
-  border-color: rgba(148, 163, 184, .14) !important;
-  color: #f5f7fb !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,.025), 0 12px 36px rgba(0,0,0,.16) !important;
-}
-body [class*="min-h-[100dvh]"] header .text-neutral-950,
-body [class*="min-h-[100dvh]"] header .text-slate-700,
-body [class*="min-h-[100dvh]"] header .text-slate-300,
-body [class*="min-h-[100dvh]"] header .text-slate-200 {
-  color: #f5f7fb !important;
-}
-body [class*="min-h-[100dvh]"] header input {
-  background: #111827 !important;
-  border-color: #293348 !important;
-  color: #f5f7fb !important;
-  box-shadow: none !important;
-}
-body [class*="min-h-[100dvh]"] header input::placeholder { color: #8793a7 !important; }
-body [class*="min-h-[100dvh]"] aside {
-  background: rgba(10, 15, 24, .96) !important;
-  border-color: rgba(148, 163, 184, .12) !important;
-  color: #e8edf7 !important;
-}
-body [class*="min-h-[100dvh]"] aside a,
-body [class*="min-h-[100dvh]"] aside button { color: #9aa6ba !important; }
-body [class*="min-h-[100dvh]"] aside a:hover,
-body [class*="min-h-[100dvh]"] aside button:hover {
-  background: rgba(139, 92, 246, .12) !important;
-  color: #f5f3ff !important;
-}
-body [class*="min-h-[100dvh]"] aside [class*="bg-violet-500"],
-body [class*="min-h-[100dvh]"] aside a[class*="bg-violet"] {
-  background: rgba(139, 92, 246, .16) !important;
-  color: #ddd6fe !important;
-}
-body [class*="min-h-[100dvh]"] aside [class*="text-white"] { color: #f5f7fb !important; }
-body [class*="min-h-[100dvh]"] main { color: #f5f7fb !important; }
-body [class*="min-h-[100dvh]"] main h1,
-body [class*="min-h-[100dvh]"] main h2,
-body [class*="min-h-[100dvh]"] main h3,
-body [class*="min-h-[100dvh]"] main h4,
-body [class*="min-h-[100dvh]"] main .text-white { color: #f5f7fb !important; }
-body [class*="min-h-[100dvh]"] main p { color: #a3aec0 !important; }
-body [class*="min-h-[100dvh]"] main .text-slate-100,
-body [class*="min-h-[100dvh]"] main .text-slate-200,
-body [class*="min-h-[100dvh]"] main .text-slate-300 { color: #d1d8e5 !important; }
-body [class*="min-h-[100dvh]"] main .text-slate-400,
-body [class*="min-h-[100dvh]"] main .text-slate-500 { color: #94a0b4 !important; }
-body [class*="min-h-[100dvh]"] main [class*="border-white/"],
-body [class*="min-h-[100dvh]"] main [class*="border-zinc-"] { border-color: #273144 !important; }
-body [class*="min-h-[100dvh]"] main [class*="bg-white"] {
-  background-color: #111723 !important;
-}
-body [class*="min-h-[100dvh]"] main [class*="bg-neutral-50"],
-body [class*="min-h-[100dvh]"] main [class*="bg-zinc-50"],
-body [class*="min-h-[100dvh]"] main [class*="bg-slate-50"],
-body [class*="min-h-[100dvh]"] main [class*="bg-gray-50"] {
-  background-color: #0e1420 !important;
-}
-body [class*="min-h-[100dvh]"] main [class*="bg-white/[.03]"],
-body [class*="min-h-[100dvh]"] main [class*="bg-white/[.035]"],
-body [class*="min-h-[100dvh]"] main [class*="bg-white/[.04]"],
-body [class*="min-h-[100dvh]"] main [class*="bg-black/15"],
-body [class*="min-h-[100dvh]"] main [class*="bg-black/20"] {
-  background: #111723 !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,.14) !important;
-}
-body [class*="min-h-[100dvh]"] main [class*="bg-gradient-to-r"] {
-  border-color: rgba(167,139,250,.2) !important;
-  background: linear-gradient(100deg, #21183a, #17182c) !important;
-}
-body [class*="min-h-[100dvh]"] main nav:not(.fixed) a {
-  background: #111723 !important;
-  border-color: #273144 !important;
-  color: #c4cddd !important;
-  box-shadow: none !important;
-}
-body [class*="min-h-[100dvh]"] main nav:not(.fixed) a:hover {
-  border-color: rgba(167,139,250,.55) !important;
-  background: #1b2031 !important;
-  color: #f5f3ff !important;
-}
-body [class*="min-h-[100dvh]"] main nav:not(.fixed) a:first-child {
-  background: #6d28d9 !important;
-  border-color: #7c3aed !important;
-  color: #fff !important;
-}
-body [class*="min-h-[100dvh]"] main article,
-body [class*="min-h-[100dvh]"] main [class*="rounded-3xl"],
-body [class*="min-h-[100dvh]"] main [class*="rounded-[28px]"],
-body [class*="min-h-[100dvh]"] main [class*="rounded-[26px]"] {
-  border-color: #273144;
-  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-}
-body [class*="min-h-[100dvh]"] main article:hover {
-  border-color: rgba(167,139,250,.32);
-}
-body [class*="min-h-[100dvh]"] nav.fixed[aria-label="Mobile navigation"] {
-  background: rgba(9,13,22,.96) !important;
-  border-color: rgba(148,163,184,.15) !important;
-  color: #f5f7fb !important;
-  box-shadow: 0 -10px 32px rgba(0,0,0,.22) !important;
-}
-body [class*="min-h-[100dvh]"] nav.fixed[aria-label="Mobile navigation"] span,
-body [class*="min-h-[100dvh]"] nav.fixed[aria-label="Mobile navigation"] svg {
-  color: #aeb9cb !important;
-}
-body [class*="min-h-[100dvh]"] nav.fixed[aria-label="Mobile navigation"] a[aria-current="page"] span,
-body [class*="min-h-[100dvh]"] nav.fixed[aria-label="Mobile navigation"] a[aria-current="page"] svg {
-  color: #c4b5fd !important;
-}
-body [class*="min-h-[100dvh]"] nav.fixed[aria-label="Mobile navigation"] button > span:first-child {
-  background: linear-gradient(135deg,#8b5cf6,#c026d3) !important;
-  color: #fff !important;
-  box-shadow: 0 6px 20px rgba(139,92,246,.28) !important;
-}
-body [class*="min-h-[100dvh]"] [role="dialog"] {
-  background: #111723 !important;
-  color: #f5f7fb !important;
-  border-color: #273144 !important;
-  box-shadow: 0 30px 80px rgba(0,0,0,.45) !important;
-}
-body [class*="min-h-[100dvh]"] [role="dialog"] .text-white { color: #f5f7fb !important; }
-body [class*="min-h-[100dvh]"] [role="dialog"] button {
-  background: #182131 !important;
-  border-color: #2a3549 !important;
-  color: #e6ebf4 !important;
-}
-body [class*="min-h-[100dvh]"] footer,
-body [class*="min-h-[100dvh]"] footer a { border-color: #273144 !important; color: #8c99ae !important; }
-.hktube-shell-content { min-width: 0; }
-.hktube-shell-header-inner { max-width: 1760px; }
-.hktube-home-grid { align-items: start; }
-.hktube-home-feed { width: 100%; }
-.hktube-upload-reference { color-scheme: dark; }
-@media (prefers-reduced-motion: reduce) {
-  body [class*="min-h-[100dvh]"] main article,
-  body [class*="min-h-[100dvh]"] main [class*="rounded-3xl"],
-  body [class*="min-h-[100dvh]"] main [class*="rounded-[28px]"] { transition: none !important; }
-}
-
-
-/* Reference-design correction: preserve the dark HkTube look and keep text crisp/readable. */
-html, body, #root {
-  color-scheme: dark;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-body [class*="min-h-[100dvh]"] main .text-black,
-body [class*="min-h-[100dvh]"] main .text-neutral-900,
-body [class*="min-h-[100dvh]"] main .text-neutral-800,
-body [class*="min-h-[100dvh]"] main .text-gray-900,
-body [class*="min-h-[100dvh]"] main .text-zinc-900 {
-  color: #f5f7fb !important;
-}
-body [class*="min-h-[100dvh]"] main .text-neutral-700,
-body [class*="min-h-[100dvh]"] main .text-gray-700,
-body [class*="min-h-[100dvh]"] main .text-zinc-700 {
-  color: #c4cddd !important;
-}
-body [class*="min-h-[100dvh]"] main input,
-body [class*="min-h-[100dvh]"] main textarea,
-body [class*="min-h-[100dvh]"] main select {
-  color: #f5f7fb;
-  background-color: #111723;
-  border-color: #354158;
-}
-body [class*="min-h-[100dvh]"] main input::placeholder,
-body [class*="min-h-[100dvh]"] main textarea::placeholder {
-  color: #94a0b4;
-  opacity: 1;
-}
-body [class*="min-h-[100dvh]"] [role="menu"],
-body [class*="min-h-[100dvh]"] [role="listbox"],
-body [class*="min-h-[100dvh]"] [data-radix-popper-content-wrapper] > * {
-  color: #f5f7fb;
-}
-body [class*="min-h-[100dvh]"] main button:focus-visible,
-body [class*="min-h-[100dvh]"] main a:focus-visible,
-body [class*="min-h-[100dvh]"] header button:focus-visible,
-body [class*="min-h-[100dvh]"] aside a:focus-visible {
-  outline: 2px solid #a78bfa;
-  outline-offset: 3px;
-}
-@media (max-width: 767px) {
-  body [class*="min-h-[100dvh]"] main {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  }
-  body [class*="min-h-[100dvh]"] main video {
-    max-width: 100%;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    scroll-behavior: auto !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
-}
-
-
-/* Accessibility regression fix: white/light surfaces must always use dark readable text.
-   Scope by explicit light-surface utility classes so the dark app theme and colored buttons remain intact. */
-[class~="bg-white"],
-[class~="bg-gray-50"],
-[class~="bg-slate-50"],
-[class~="bg-neutral-50"],
-[class~="bg-zinc-50"],
-[class~="bg-stone-50"] {
-  background-color: #ffffff !important;
-  color: #111827 !important;
-}
-[class~="bg-white"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
-[class~="bg-gray-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
-[class~="bg-slate-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
-[class~="bg-neutral-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
-[class~="bg-zinc-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend),
-[class~="bg-stone-50"] :is(h1,h2,h3,h4,h5,h6,p,label,small,strong,em,span,li,dt,dd,td,th,legend) {
-  color: #111827 !important;
-}
-:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(.text-white,.text-slate-100,.text-slate-200,.text-slate-300,.text-gray-100,.text-gray-200,.text-gray-300,.text-neutral-100,.text-neutral-200,.text-neutral-300,.text-zinc-100,.text-zinc-200,.text-zinc-300,.text-violet-100,.text-violet-200,.text-purple-100,.text-purple-200) {
-  color: #111827 !important;
-}
-:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(input,textarea,select) {
-  background-color: #ffffff !important;
-  color: #111827 !important;
-  border-color: #cbd5e1 !important;
-}
-:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(input,textarea)::placeholder {
-  color: #64748b !important;
-  opacity: 1 !important;
-}
-/* Keep primary colored actions legible even when placed on a white card. */
-:is([class*="bg-violet-"],[class*="bg-purple-"],[class*="bg-indigo-"],[class*="bg-blue-"],[class*="bg-red-"],[class*="bg-emerald-"],[class*="bg-fuchsia-"]):is(button,a,[role="button"]),
-:is([class~="bg-white"],[class~="bg-gray-50"],[class~="bg-slate-50"],[class~="bg-neutral-50"],[class~="bg-zinc-50"],[class~="bg-stone-50"]) :is(button,a,[role="button"]):is([class*="bg-violet-"],[class*="bg-purple-"],[class*="bg-indigo-"],[class*="bg-blue-"],[class*="bg-red-"],[class*="bg-emerald-"],[class*="bg-fuchsia-"]) {
-  color: #ffffff !important;
-}
-
-
-/* Screenshot-driven Home corrections: each surface gets a matching text/icon contrast.
-   Keep the toolbar light with dark icons; keep feed and mobile dock dark with light labels. */
-.hktube-reference-header {
-  background: #f8fafc !important;
-  border-bottom: 1px solid #dbe2ec !important;
-  color: #111827 !important;
-}
-.hktube-reference-header .hktube-reference-logo > span:last-child {
-  color: #111827 !important;
-}
-.hktube-reference-header > div > button:first-child {
-  background: #ffffff !important;
-  color: #111827 !important;
-  border: 1px solid #d1d9e5 !important;
-}
-.hktube-reference-header > div > button:first-child span span {
-  background: #111827 !important;
-}
-.hktube-reference-header .hktube-header-action {
-  background: #ffffff !important;
-  color: #111827 !important;
-  border: 1px solid #d1d9e5 !important;
-}
-.hktube-reference-header .hktube-header-action svg {
-  color: #111827 !important;
-  stroke: #111827 !important;
-  opacity: 1 !important;
-}
-.hktube-reference-header .hktube-header-action:hover {
-  background: #eef2f7 !important;
-}
-.hktube-reference-header .hktube-reference-logo img {
-  background: #111827;
-}
-body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] {
-  background: #090d16 !important;
-  border-top: 1px solid #30394a !important;
-  color: #f8fafc !important;
-}
-body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > a,
-body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > button {
-  color: #cbd5e1 !important;
-  background: transparent !important;
-}
-body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > a[aria-current="page"] {
-  color: #c4b5fd !important;
-}
-body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > a[aria-current="page"] svg {
-  color: #c4b5fd !important;
-  stroke: #c4b5fd !important;
-}
-body:has(.hktube-home-feed) nav[aria-label="Mobile navigation"] > button[aria-label="Create content"] > span {
-  background: linear-gradient(135deg,#8b5cf6,#c026d3) !important;
-  color: #fff !important;
-}
-body:has(.hktube-home-feed) .hktube-home-feed {
-  background: #0d111b !important;
-  color: #f8fafc !important;
-}
-body:has(.hktube-home-feed) .hktube-home-feed h1,
-body:has(.hktube-home-feed) .hktube-home-feed h2,
-body:has(.hktube-home-feed) .hktube-home-feed h3,
-body:has(.hktube-home-feed) .hktube-home-feed a,
-body:has(.hktube-home-feed) .hktube-home-feed p {
-  text-shadow: none !important;
-}
-body:has(.hktube-home-feed) .hktube-home-feed .text-slate-400,
-body:has(.hktube-home-feed) .hktube-home-feed .text-slate-500,
-body:has(.hktube-home-feed) .hktube-home-feed .text-gray-500 {
-  color: #a8b3c7 !important;
-}
-body:has(.hktube-home-feed) .hktube-home-feed .hktube-video-card-follow,
-body:has(.hktube-home-feed) .hktube-home-feed button[aria-pressed] {
-  color: #ffffff;
-}
-@media (max-width: 767px) {
-  .hktube-reference-header > div {
-    min-height: 64px;
-  }
-  .hktube-reference-header .hktube-header-action {
-    min-width: 40px;
-    min-height: 40px;
+  body:has(nav[data-hktube-navigation-layout="primary"])
+    nav.fixed[aria-label="Mobile navigation"][data-hktube-navigation-layout="primary"]
+    > button[aria-label="Create content"]
+    > span {
+    width: 32px !important;
+    height: 32px !important;
   }
 }

@@ -53,8 +53,14 @@ html[data-hktube-mode] body [role="menu"] :is(a, button, [role="menuitem"]),
 html[data-hktube-mode] body [role="dialog"] :is(a, button, [role="menuitem"]) {
   color: var(--hktube-mode-foreground) !important;
 }
-html[data-hktube-mode] body [role="menu"] :is(a, button, [role="menuitem"]):hover,
-html[data-hktube-mode] body [role="dialog"] :is(a, button, [role="menuitem"]):hover {
+html[data-hktube-mode]
+  body
+  [role="menu"]
+  :is(a, button, [role="menuitem"]):hover,
+html[data-hktube-mode]
+  body
+  [role="dialog"]
+  :is(a, button, [role="menuitem"]):hover {
   background-color: var(--hktube-mode-hover) !important;
 }
 
@@ -87,12 +93,20 @@ html[data-hktube-mode] body .hktube-account-menu :is(a, button):hover {
   background-color: var(--hktube-mode-hover) !important;
 }
 
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(h1, h2, h3, h4, p, label),
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  :is(h1, h2, h3, h4, p, label),
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside :is(a, button),
 html[data-hktube-mode] body nav.fixed :is(a, button, span, svg) {
   color: var(--hktube-mode-foreground) !important;
 }
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500) {
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  :is(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500) {
   color: var(--hktube-mode-muted) !important;
 }
 
@@ -104,11 +118,19 @@ html[data-hktube-mode] body .hktube-clips-page video {
 
 /* Neutralize older route CSS with stronger selectors; those rules hard-coded
    dark cards and purple gradients even when the user selected Light. */
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-gradient-"],
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  [class*="bg-gradient-"],
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-white"],
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-gray-"],
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-slate-"],
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-neutral-"],
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  [class*="bg-neutral-"],
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-zinc-"],
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-[#"] {
   background: var(--hktube-mode-surface) !important;
@@ -120,17 +142,51 @@ html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="bg-[#"] {
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] main [class*="text-"] {
   color: var(--hktube-mode-foreground) !important;
 }
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(h1, h2, h3, h4, label) {
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  :is(h1, h2, h3, h4, label) {
   color: var(--hktube-mode-foreground) !important;
 }
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main :is(p, [class*="text-slate-400"], [class*="text-slate-500"], [class*="text-gray-400"], [class*="text-gray-500"]) {
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  :is(
+    p,
+    [class*="text-slate-400"],
+    [class*="text-slate-500"],
+    [class*="text-gray-400"],
+    [class*="text-gray-500"]
+  ) {
   color: var(--hktube-mode-muted) !important;
 }
 
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside nav a[aria-current="page"],
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside nav a[class*="bg-violet"],
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] aside nav a[class*="bg-purple"],
-html[data-hktube-mode] body [class*="min-h-[100dvh]"] main nav:not(.fixed) a:first-child {
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  aside
+  nav
+  a[aria-current="page"],
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  aside
+  nav
+  a[class*="bg-violet"],
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  aside
+  nav
+  a[class*="bg-purple"],
+html[data-hktube-mode]
+  body
+  [class*="min-h-[100dvh]"]
+  main
+  nav:not(.fixed)
+  a:first-child {
   background: var(--hktube-mode-surface-raised) !important;
   border-color: var(--hktube-mode-border) !important;
   color: var(--hktube-mode-foreground) !important;
@@ -143,4 +199,81 @@ html[data-hktube-mode] body [class*="min-h-[100dvh]"] footer {
 }
 html[data-hktube-mode] body [class*="min-h-[100dvh]"] footer a {
   color: var(--hktube-mode-muted) !important;
+}
+
+/* Final readability pass: keep body copy crisp without flattening semantic
+   accent colors such as status pills, links and brand icons. */
+html[data-hktube-mode],
+html[data-hktube-mode] body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+
+html[data-hktube-mode]
+  body
+  :is(h1, h2, h3, h4, h5, h6, button, label, strong, b) {
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+html[data-hktube-mode]
+  body
+  :is(p, li, dt, dd, input, textarea, select, option) {
+  line-height: 1.55;
+}
+
+html[data-hktube-mode="light"] body [class*="text-slate-500"],
+html[data-hktube-mode="light"] body [class*="text-slate-400"],
+html[data-hktube-mode="light"] body [class*="text-gray-500"],
+html[data-hktube-mode="light"] body [class*="text-gray-400"] {
+  color: #526071 !important;
+}
+
+html[data-hktube-mode="dark"] body [class*="text-slate-600"],
+html[data-hktube-mode="dark"] body [class*="text-slate-500"],
+html[data-hktube-mode="dark"] body [class*="text-gray-600"],
+html[data-hktube-mode="dark"] body [class*="text-gray-500"] {
+  color: #b8c0cc !important;
+}
+
+html[data-hktube-mode="dark"] body [class*="text-slate-400"],
+html[data-hktube-mode="dark"] body [class*="text-gray-400"] {
+  color: #cbd3df !important;
+}
+
+html[data-hktube-mode]
+  body
+  :is(
+    .text-fuchsia-200,
+    .text-violet-200,
+    .text-cyan-200,
+    .text-emerald-200,
+    .text-amber-200,
+    .text-amber-100,
+    .text-rose-200
+  ) {
+  filter: saturate(1.08);
+  font-weight: 700;
+}
+
+html[data-hktube-mode="light"]
+  body
+  :is(
+    .text-fuchsia-200,
+    .text-violet-200,
+    .text-cyan-200,
+    .text-emerald-200,
+    .text-amber-200,
+    .text-amber-100,
+    .text-rose-200
+  ) {
+  filter: brightness(0.72) saturate(1.15);
+}
+
+html[data-hktube-mode] body :is(code, pre) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
 }

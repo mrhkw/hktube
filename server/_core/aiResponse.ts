@@ -62,7 +62,7 @@ export function presentAIError(error: unknown): AIErrorPresentation {
   if (candidate.code === "AI_EMPTY_RESPONSE" || /empty answer|no usable response/i.test(raw)) {
     return { category: "empty_response", status: 502, message: "AI ne koi response nahi diya, dobara try karein." };
   }
-  if (/OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw)) {
+  if (/GROQ_API_KEY|OPENAI_API_KEY|GEMINI_API_KEY|BUILT_IN_FORGE_API_KEY|not configured/i.test(raw)) {
     return { category: "configuration", status: 503, message: "HkTube AI server par configure nahi hai. Thori dair baad dobara try karein." };
   }
   if (status === 401 || status === 403 || /invalid api key|unauthorized|authentication failed/i.test(raw)) {

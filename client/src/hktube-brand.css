@@ -12,11 +12,6 @@
 }
 
 /* The global light theme neutralizes utility colors; reapply brand colors only to these controls. */
-.hktube-home-post {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 560px;
-}
-
 .hktube-home-post .hktube-channel-name {
   color: #8f1d1d !important;
 }

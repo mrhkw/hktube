@@ -30,6 +30,7 @@ describe("AI response validation", () => {
 
   it("classifies provider failures with safe actionable messages and HTTP statuses", () => {
     expect(presentAIError(Object.assign(new Error("quota exceeded"), { status: 429 }))).toMatchObject({ category: "rate_limit", status: 429 });
+    expect(presentAIError(new Error("GROQ_API_KEY is not configured"))).toMatchObject({ category: "configuration", status: 503 });
     expect(presentAIError(Object.assign(new Error("429 insufficient_quota credit_balance_exhausted"), { status: 429 }))).toMatchObject({
       category: "rate_limit", status: 429, message: "AI provider ke API credits khatam hain. Admin provider account ka quota ya credits check karein.",
     });

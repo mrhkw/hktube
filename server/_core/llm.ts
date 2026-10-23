@@ -30,7 +30,6 @@ export type Message = {
   content: MessageContent | MessageContent[];
   name?: string;
   tool_call_id?: string;
-  tool_calls?: ToolCall[];
 };
 
 export type Tool = {
@@ -76,8 +75,6 @@ export type InvokeParams = {
   timeoutMs?: number;
   /** Override the default bounded retry count for latency-sensitive routes. */
   maxRetries?: number;
-  /** Force a provider for a capability-specific request, e.g. Gemini vision. */
-  provider?: "groq" | "gemini" | "openai" | "forge";
 };
 
 export type ToolCall = {
@@ -149,7 +146,7 @@ const normalizeContentPart = (
 };
 
 const normalizeMessage = (message: Message) => {
-  const { role, name, tool_call_id, tool_calls } = message;
+  const { role, name, tool_call_id } = message;
 
   if (role === "tool" || role === "function") {
     const content = ensureArray(message.content)
@@ -171,7 +168,6 @@ const normalizeMessage = (message: Message) => {
     return {
       role,
       name,
-      ...(tool_calls ? { tool_calls } : {}),
       content: contentParts[0].text,
     };
   }
@@ -179,7 +175,6 @@ const normalizeMessage = (message: Message) => {
   return {
     role,
     name,
-    ...(tool_calls ? { tool_calls } : {}),
     content: contentParts,
   };
 };
@@ -228,8 +223,7 @@ type LLMProvider = "groq" | "gemini" | "openai" | "forge";
 // Groq's free GPT-OSS endpoint is preferred when its key is configured. Keep
 // Gemini as a free-provider fallback, then preserve the existing Gemini/OpenAI
 // selection for deployments that have not opted into Groq.
-const resolvePrimaryProvider = (override?: LLMProvider): LLMProvider => {
-  if (override) return override;
+const resolvePrimaryProvider = (): LLMProvider => {
   if (ENV.groqApiKey.trim()) return "groq";
   if (ENV.geminiApiKey.trim()) return "gemini";
   if (ENV.openAiApiKey.trim()) return "openai";
@@ -267,9 +261,13 @@ const resolveProviderConfig = (provider: LLMProvider) => {
 const resolveApiKey = () => resolveProviderConfig(resolvePrimaryProvider()).key;
 const providerDisplayName = (provider: LLMProvider) => provider === "openai" ? "OpenAI" : provider === "groq" ? "Groq" : provider === "gemini" ? "Gemini" : "Forge";
 const resolveFallbackProvider = (primary: LLMProvider): LLMProvider | undefined => {
-  if (primary === "groq" && ENV.geminiApiKey.trim()) return "gemini";
-  if (primary === "gemini" && ENV.openAiApiKey.trim()) return "openai";
-  return undefined;
+  const configured = [
+    ENV.groqApiKey.trim() ? "groq" : undefined,
+    ENV.geminiApiKey.trim() ? "gemini" : undefined,
+    ENV.openAiApiKey.trim() ? "openai" : undefined,
+    ENV.forgeApiKey.trim() ? "forge" : undefined,
+  ].filter((provider): provider is LLMProvider => Boolean(provider));
+  return configured[configured.indexOf(primary) + 1];
 };
 
 const assertApiKey = () => {
@@ -445,7 +443,6 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     signal,
     timeoutMs,
     maxRetries,
-    provider: providerOverride,
   } = params;
 
   const payload: Record<string, unknown> = {
@@ -455,7 +452,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   if (model) {
     payload.model = model;
   } else {
-    const defaultModel = resolveProviderConfig(resolvePrimaryProvider(providerOverride)).model;
+    const defaultModel = resolveProviderConfig(resolvePrimaryProvider()).model;
     if (defaultModel) payload.model = defaultModel;
   }
 
@@ -501,7 +498,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     ? AbortSignal.any([signal, invocationTimeout])
     : invocationTimeout;
   const remainingBudgetMs = () => Math.max(1, invocationBudgetMs - (Date.now() - invocationStartedAt));
-  const primaryProvider = resolvePrimaryProvider(providerOverride);
+  const primaryProvider = resolvePrimaryProvider();
   const fallbackProvider = resolveFallbackProvider(primaryProvider);
   const canFailOver = Boolean(fallbackProvider);
   let primaryFailureDetails: { status?: number; kind: string } | undefined;
@@ -555,7 +552,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = (await response.text())
+      .replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]")
+      .replace(/(api[_ -]?key|token|authorization)\s*[:=]\s*[^\s,}]+/gi, "$1=[REDACTED]")
+      .slice(0, 1_000);
     const error = new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`) as Error & {
       status: number;
       providerFailures?: {

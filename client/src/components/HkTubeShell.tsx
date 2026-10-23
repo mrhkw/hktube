@@ -8,9 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  Album,
   Bell,
   BookOpen,
   Compass,
@@ -23,18 +25,23 @@ import {
   MonitorPlay,
   Plus,
   Search,
+  Settings,
   Settings2,
   Sparkles,
   UserRound,
   Video,
   HelpCircle,
-  Camera,
+  Menu,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { ReactNode, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
-import { HkTubeCreateGallery, type CreateMediaMode } from "@/components/HkTubeCreateGallery";
+import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
+import {
+  HkTubeCreateGallery,
+  type CreateMediaMode,
+} from "@/components/HkTubeCreateGallery";
 import { setPendingCreateMedia } from "@/lib/pendingCreateMedia";
 
 type HkTubeShellProps = {
@@ -48,10 +55,18 @@ type HkTubeShellProps = {
 const primaryNav = [
   { label: "Home", href: "/", icon: Home },
   { label: "Explore", href: "/explore", icon: Compass },
-  { label: "Clips", href: "/clips", icon: MonitorPlay },
+  { label: "Clips", href: "/clips", icon: ClipsBrandIcon },
   { label: "Posts", href: "/posts", icon: Sparkles },
   { label: "Trending", href: "/trending", icon: Flame },
   { label: "Following", href: "/subscriptions", icon: UserRound },
+];
+const topicFilters = [
+  { label: "For you", href: "/" },
+  { label: "Explore", href: "/explore" },
+  { label: "Music", href: "/search?q=music" },
+  { label: "Gaming", href: "/search?q=gaming" },
+  { label: "Education", href: "/search?q=education" },
+  { label: "Trending", href: "/trending" },
 ];
 function ProfileGlyph({ className }: { className?: string }) {
   return <UserRound className={className} aria-hidden="true" />;
@@ -68,16 +83,40 @@ export function HkTubeShell({
 }: HkTubeShellProps) {
   const [location, navigate] = useLocation();
   const { user, isAuthenticated, loading, logout } = useAuth();
-  const compactClipsDock = immersive && location.startsWith("/clips");
   const notificationsQuery = trpc.notifications.mine.useQuery(undefined, {
     enabled: isAuthenticated,
     staleTime: 30000,
   });
+  const [search, setSearch] = useState("");
   const [familyMode, setFamilyMode] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<"menu" | "post" | "story">(
+    "menu"
+  );
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [postBody, setPostBody] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
-
+  const utils = trpc.useUtils();
+  const createPost = trpc.posts.create.useMutation({
+    onSuccess: () => {
+      setPostBody("");
+      setCreateOpen(false);
+      setCreateMode("menu");
+      void utils.posts.latest.invalidate();
+      navigate("/posts");
+      toast.success("Post published.");
+    },
+    onError: error => {
+      if (
+        error.data?.code === "UNAUTHORIZED" ||
+        /sign in|login|unauthorized|session/i.test(error.message)
+      ) {
+        startLogin();
+        return;
+      }
+      toast.error(error.message);
+    },
+  });
   useEffect(() => {
     setFamilyMode(localStorage.getItem("hktube-family-mode") === "enabled");
   }, []);
@@ -86,32 +125,32 @@ export function HkTubeShell({
     window.addEventListener("hktube-open-create", onOpenCreate);
     return () => window.removeEventListener("hktube-open-create", onOpenCreate);
   }, [isAuthenticated]);
-  useEffect(() => {
-    if (!location.startsWith("/profile")) setProfileSettingsOpen(false);
-  }, [location]);
-  useEffect(() => {
-    if (!profileSettingsOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setProfileSettingsOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [profileSettingsOpen]);
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = search.trim();
+    if (query) navigate(`/search?q=${encodeURIComponent(query)}`);
+  }
   function openCreate() {
     if (!isAuthenticated) {
       startLogin();
       return;
     }
-
+    setCreateMode("menu");
     setCreateOpen(true);
   }
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
-    const nextMode = category === "shorts" ? "clip" : "video";
-    window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
-    navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
+    navigate(category === "shorts" ? "/clips/create" : "/upload");
   }
-
+  function openCreatorGallery() {
+    setCreateOpen(false);
+    setGalleryOpen(true);
+  }
+  function submitPost(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const body = postBody.trim();
+    if (body) createPost.mutate({ body });
+  }
   const visiblePrimaryNav = familyMode
     ? primaryNav.filter(item => item.href !== "/clips")
     : primaryNav;
@@ -132,133 +171,172 @@ export function HkTubeShell({
     <div
       className={cn(
         immersive
-          ? "flex h-[100dvh] flex-col overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
-          : "flex min-h-[100dvh] flex-col bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
-        )}
-      >
-        <header
+          ? "h-[100dvh] overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
+          : "min-h-[100dvh] bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
+      )}
+    >
+      <header
         className={cn(
           "hktube-reference-header sticky top-0 z-40 border-b border-white/8 bg-[#0d111a]/95 backdrop-blur-xl",
           referenceHeader &&
-            "max-md:border-white/10 max-md:bg-[#0d111a]/98 max-md:text-white",
+            "max-md:border-black/10 max-md:bg-white max-md:text-neutral-950",
           immersive && "max-lg:hidden"
         )}
-        >
-          <div className="hktube-shell-header-inner mx-auto flex h-14 w-full items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
-            {location === "/" && (
+      >
+        <div className="flex h-14 items-center gap-2 px-3 sm:px-5 lg:h-16 lg:px-7">
+          {referenceHeader && (
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="grid size-10 shrink-0 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:hidden"
+              aria-label="Open menu"
+            >
+              <Menu className="size-5" />
+            </button>
+          )}
+          {minimalHeader && title ? (
+            <div className="min-w-0 max-w-[45vw] flex-1 truncate text-[18px] font-black tracking-[-.02em] text-white sm:max-w-none">
+              {title}
+            </div>
+          ) : (
+            <Link
+              href="/"
+              className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
+              aria-label="Go to HkTube homepage"
+            >
+              <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">
+                <span className="text-neutral-950">Hk</span>
+                <span className="text-red-600">Tube</span>
+              </span>
+            </Link>
+          )}
+          <form
+            onSubmit={submitSearch}
+            className="hidden min-w-0 flex-1 lg:mx-auto lg:block lg:max-w-md"
+          >
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+              <Input
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="Search HkTube"
+                aria-label="Search HkTube"
+                className="h-9 rounded-full border border-white/10 bg-white/[.045] pl-9 pr-4 text-sm text-white placeholder:text-slate-500 shadow-none focus-visible:border-violet-400/60 focus-visible:ring-violet-400/15"
+              />
+            </div>
+          </form>
+          {!referenceHeader && (
+            <Link
+              href="/search"
+              className="hktube-header-action hktube-search-action ml-1 grid size-11 place-items-center rounded-full text-slate-300 hover:bg-white/[.07] hover:text-white lg:hidden"
+              aria-label="Open search"
+            >
+              <Search className={SHELL_ICON_CLASS} />
+            </Link>
+          )}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <Link
+              href="/settings"
+              className={cn(
+                "grid size-11 place-items-center rounded-full text-slate-300 transition hover:bg-white/[.07] hover:text-white",
+                (referenceHeader || minimalHeader) && "hidden sm:grid"
+              )}
+              aria-label="Open Settings"
+            >
+              <Settings className={SHELL_ICON_CLASS} />
+            </Link>
+            {!minimalHeader && (
               <button
                 type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                className="group grid size-10 shrink-0 place-items-center rounded-full bg-white text-neutral-950 transition hover:bg-slate-100 active:scale-95"
-                aria-label="Open HkTube menu"
+                onClick={openCreate}
+                className={cn(
+                  "grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-violet-500 text-white shadow-[0_6px_18px_rgba(124,92,255,.25)] transition hover:bg-violet-400 active:scale-95",
+                  referenceHeader && "hidden sm:grid"
+                )}
+                aria-label="Create content"
               >
-                <span className="grid w-6 gap-[4px]" aria-hidden="true">
-                  <span className="h-[2.5px] w-6 rounded-full bg-neutral-950 transition-transform group-hover:translate-x-[1px]" />
-                  <span className="h-[2.5px] w-6 rounded-full bg-neutral-950 transition-transform group-hover:-translate-x-[1px]" />
-                  <span className="h-[2.5px] w-6 rounded-full bg-neutral-950 transition-transform group-hover:translate-x-[1px]" />
-                </span>
+                <Plus className="size-5" />
               </button>
             )}
             <Link
-              href="/"
-              className="hktube-reference-logo flex min-w-0 shrink-0 items-center"
-                aria-label="Go to HkTube homepage"
-            >
-              <img src="/brand/hkw-mark.webp" alt="HKW" className="size-8 rounded-lg object-cover shadow-sm" />
-              <span className="ml-2 whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950 md:text-white">HkTube</span>
-            </Link>
-            <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={openCreate}
-              className="hidden h-10 items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 text-sm font-bold text-white shadow-lg shadow-violet-950/25 transition hover:-translate-y-0.5 hover:from-violet-500 hover:to-fuchsia-500 md:inline-flex"
-              aria-label="Create content"
-            >
-              <Plus className="size-4" strokeWidth={2.5} />
-              Create
-            </button>
-            <Link
               href="/notifications"
-              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full bg-white text-slate-900 transition hover:bg-slate-100 hover:text-black md:bg-white/[.06] md:text-slate-200 md:hover:bg-white/[.12] md:hover:text-white"
+              className="hktube-header-action hktube-notification-action relative grid size-11 place-items-center rounded-full text-slate-700 transition hover:bg-black/5 hover:text-black md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
               aria-label="Notifications"
             >
-              <Bell className={SHELL_ICON_CLASS} strokeWidth={2.35} />
+              <Bell className={SHELL_ICON_CLASS} />
               {unread > 0 && (
                 <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
                   {Math.min(unread, 9)}
                   {unread > 9 ? "+" : ""}
                 </span>
-                )}
+              )}
             </Link>
-            {location === "/profile" ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileSettingsOpen(value => !value)}
-                  className="hktube-header-action grid size-11 place-items-center rounded-full bg-white text-neutral-900 transition hover:bg-slate-100 md:bg-white/[.06] md:text-slate-200 md:hover:bg-white/[.12] md:hover:text-white"
-                  aria-label="Open profile settings"
-                  aria-expanded={profileSettingsOpen}
-                  aria-haspopup="menu"
-                  title="Settings"
-                >
-                  <Settings2 className={SHELL_ICON_CLASS} strokeWidth={2.35} />
-                </button>
-                {profileSettingsOpen && (
-                  <div
-                    role="menu"
-                    aria-label="HkTube settings"
-                    className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-white/10 bg-[#151a25] p-2 text-white shadow-2xl shadow-black/30"
-                  >
-                    <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-violet-300">
-                      Account & settings
-                    </p>
-                    {[
-                      ["Notifications", "/notifications"],
-                      ["Settings", "/settings"],
-                      ["Account security", "/settings/security"],
-                    ].map(([label, href]) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        role="menuitem"
-                        onClick={() => setProfileSettingsOpen(false)}
-                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setProfileSettingsOpen(false);
-                        void logout();
-                      }}
-                      className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-200 transition hover:bg-white/[.08] hover:text-white"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
+            {referenceHeader && (
               <Link
                 href="/search"
-                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full bg-white text-neutral-900 hover:bg-slate-100 md:bg-white/[.06] md:text-slate-200 md:hover:bg-white/[.12] md:hover:text-white"
+                className="hktube-header-action hktube-search-action grid size-11 place-items-center rounded-full text-neutral-900 hover:bg-black/5 md:text-slate-300 md:hover:bg-white/[.07] md:hover:text-white"
                 aria-label="Open search"
               >
-                <Search className={SHELL_ICON_CLASS} strokeWidth={2.35} />
+                <Search className={SHELL_ICON_CLASS} />
               </Link>
             )}
-            </div>
+            <Link
+              href={isAuthenticated ? "/profile" : "/auth"}
+              className={cn(
+                "grid size-11 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[.06] text-sm font-black text-white transition hover:border-violet-300/50 hover:bg-violet-500/20",
+                referenceHeader && "hidden sm:grid"
+              )}
+              aria-label={
+                isAuthenticated ? "Open profile" : "Sign in or create account"
+              }
+            >
+              {headerAvatarUrl || user?.avatarUrl ? (
+                <img
+                  src={headerAvatarUrl || user?.avatarUrl || ""}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                <ProfileGlyph className={SHELL_ICON_CLASS} />
+              )}
+            </Link>
           </div>
+        </div>
+        <nav
+          className={cn(
+            "flex gap-2 overflow-x-auto border-t border-white/6 px-3 py-2 [scrollbar-width:none] md:hidden",
+            minimalHeader && "hidden",
+            location === "/" && "hidden",
+            location !== "/" && !location.startsWith("/explore") && "hidden"
+          )}
+          aria-label="Topics"
+        >
+          {topicFilters.map(filter => {
+            const active =
+              filter.href === "/" ? location === "/" : location === filter.href;
+            return (
+              <Link
+                key={filter.label}
+                href={filter.href}
+                className={cn(
+                  "shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                  active
+                    ? "border-violet-400/70 bg-violet-500 text-white"
+                    : "border-white/8 bg-white/[.04] text-slate-300 hover:bg-white/[.08]"
+                )}
+              >
+                {filter.label}
+              </Link>
+            );
+          })}
+        </nav>
       </header>
 
       <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <DialogContent className="max-w-sm border-slate-200 bg-white text-slate-900">
           <DialogHeader>
-            <DialogTitle>HKW navigation</DialogTitle>
-            <DialogDescription>Jump to any part of HKW.</DialogDescription>
+            <DialogTitle>HkTube navigation</DialogTitle>
+            <DialogDescription>Jump to any part of HkTube.</DialogDescription>
           </DialogHeader>
           <nav className="grid gap-1" aria-label="Mobile menu">
             {[
@@ -271,6 +349,7 @@ export function HkTubeShell({
               ["History", "/history"],
               ["Notifications", "/notifications"],
               ["Profile", isAuthenticated ? "/profile" : "/auth"],
+              ["Settings", "/settings"],
             ].map(([label, href]) => (
               <Link
                 key={href}
@@ -286,25 +365,147 @@ export function HkTubeShell({
       </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="hktube-create-gallery-dialog max-w-4xl overflow-hidden border-white/10 bg-[#0d1019] p-0 text-white shadow-2xl max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[24px]">
-          <HkTubeCreateGallery
-            onCancel={() => setCreateOpen(false)}
-            onSelect={(mode: CreateMediaMode, file: File) => {
-              setPendingCreateMedia(mode, file);
-              setCreateOpen(false);
-              if (mode === "post") navigate("/upload/post");
-              else {
-                const category = mode === "clip" ? "shorts" : "regular";
-                const nextMode = mode === "clip" ? "clip" : "video";
-                window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
-                navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
-              }
-            }}
-          />
+        <DialogContent className="border-white/10 bg-[#141925] text-white max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {createMode === "menu"
+                ? "Create on HkTube"
+                : createMode === "post"
+                  ? "Create a post"
+                  : "Create a story"}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              {createMode === "menu"
+                ? "Choose what you want to publish."
+                : createMode === "post"
+                  ? "Share something with your audience."
+                  : "Share a story that expires after 24 hours."}
+            </DialogDescription>
+          </DialogHeader>
+          {createMode === "menu" ? (
+            <div className="grid gap-3">
+              <button
+                type="button"
+                onClick={() => startUpload("regular")}
+                className="flex min-h-[92px] items-center gap-5 rounded-2xl border border-white/10 bg-white/[.035] p-5 text-left transition hover:border-violet-300/35 hover:bg-violet-500/[.08]"
+              >
+                <span className="grid size-12 place-items-center rounded-2xl bg-violet-500/15 text-violet-200">
+                  <Video className="size-6" strokeWidth={2.25} />
+                </span>
+                <span>
+                  <span className="block text-base font-black text-white">
+                    Long Video
+                  </span>
+                  <span className="mt-1 block text-sm text-slate-400">
+                    Publish a full-length video
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => startUpload("shorts")}
+                className="flex min-h-[92px] items-center gap-5 rounded-2xl border border-white/10 bg-white/[.035] p-5 text-left transition hover:border-fuchsia-300/35 hover:bg-fuchsia-500/[.08]"
+              >
+                <span className="grid size-12 place-items-center overflow-hidden rounded-2xl bg-fuchsia-500/15 text-fuchsia-200">
+                  <ClipsBrandIcon className="size-9" />
+                </span>
+                <span>
+                  <span className="block text-base font-black text-white">
+                    Clips
+                  </span>
+                  <span className="mt-1 block text-sm text-slate-400">
+                    Create a vertical short video in Clips Studio
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateMode("post")}
+                className="flex min-h-[92px] items-center gap-5 rounded-2xl border border-white/10 bg-white/[.035] p-5 text-left transition hover:border-cyan-300/35 hover:bg-cyan-400/[.06]"
+              >
+                <span className="grid size-12 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+                  <FileText className="size-6" strokeWidth={2.25} />
+                </span>
+                <span>
+                  <span className="block text-base font-black text-white">
+                    Post
+                  </span>
+                  <span className="mt-1 block text-sm text-slate-400">
+                    Share a text update
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={openCreatorGallery}
+                className="flex min-h-[84px] items-center gap-5 rounded-2xl border border-emerald-300/20 bg-emerald-400/[.06] p-5 text-left transition hover:border-emerald-300/40 hover:bg-emerald-400/[.1]"
+              >
+                <span className="grid size-12 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200">
+                  <Album className="size-6" strokeWidth={2.25} />
+                </span>
+                <span>
+                  <span className="block text-base font-black text-white">
+                    Your Gallery
+                  </span>
+                  <span className="mt-1 block text-sm text-slate-400">
+                    Open your private media library directly
+                  </span>
+                </span>
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={submitPost} className="space-y-4">
+              <Textarea
+                value={postBody}
+                onChange={event => setPostBody(event.target.value)}
+                maxLength={5000}
+                placeholder="Write something..."
+                className="min-h-32 border-white/10 bg-black/20 text-white placeholder:text-slate-500"
+              />
+              <div className="flex items-center justify-between gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setCreateMode("menu")}
+                  className="text-slate-300 hover:bg-white/5 hover:text-white"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!postBody.trim() || createPost.isPending}
+                  className="bg-violet-500 text-white hover:bg-violet-400"
+                >
+                  {createPost.isPending ? "Publishing..." : "Publish"}
+                </Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
-      <aside className="hktube-shell-sidebar fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
+      {galleryOpen && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 backdrop-blur-sm sm:p-6">
+          <div className="relative mx-auto min-h-full max-w-5xl sm:my-2 sm:min-h-0">
+            <HkTubeCreateGallery
+              onCancel={() => setGalleryOpen(false)}
+              onSelect={(mode: CreateMediaMode, file: File) => {
+                setGalleryOpen(false);
+                setPendingCreateMedia(mode, file);
+                navigate(
+                  mode === "post"
+                    ? "/upload/post"
+                    : mode === "clip"
+                      ? "/clips/create"
+                      : "/upload"
+                );
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <aside className="fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
         <nav className="space-y-1" aria-label="Primary navigation">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-slate-600">
             Discover
@@ -442,7 +643,7 @@ export function HkTubeShell({
 
       <main
         className={cn(
-          "hktube-shell-main relative flex min-h-[calc(100dvh-58px)] flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))] md:min-h-[calc(100dvh-64px)] md:pb-14 md:pl-60",
+          "relative pb-[94px] md:pb-14 md:pl-60",
           immersive && "max-md:p-0 max-md:pb-0"
         )}
       >
@@ -460,7 +661,7 @@ export function HkTubeShell({
         )}
         <div
           className={cn(
-            "hktube-shell-content w-full flex-1 px-0 py-0 sm:px-8 sm:py-6 lg:px-10",
+            "px-0 py-0 sm:px-8 sm:py-6 lg:px-10",
             immersive && "max-lg:p-0"
           )}
         >
@@ -504,40 +705,28 @@ export function HkTubeShell({
       <nav
         className={cn(
           "fixed inset-x-0 bottom-0 z-[100] grid grid-cols-5 border-t border-white/10 bg-[#0b0d13]/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 text-white backdrop-blur-xl md:hidden",
-          compactClipsDock && "!h-[60px] !px-2 !pb-[max(0.2rem,env(safe-area-inset-bottom))] !pt-0.5",
-          usesPrimaryNavigation && "border-white/10 bg-[#0b0d13]/98 text-white",
+          usesPrimaryNavigation && "border-black/10 bg-white text-neutral-950",
           immersive &&
             !location.startsWith("/clips") &&
             !location.startsWith("/shorts") &&
             "max-lg:hidden"
         )}
         aria-label="Mobile navigation"
-        data-hktube-navigation-layout={usesPrimaryNavigation ? "primary" : undefined}
+        data-hktube-navigation-layout={
+          usesPrimaryNavigation ? "primary" : undefined
+        }
       >
-        {(compactClipsDock
-          ? [
-              { label: "Home", href: "/", icon: Home },
-              { label: "Clips", href: "/clips", icon: MonitorPlay },
-              { label: "Create", href: "#create", icon: Plus },
-              { label: "Library", href: "/library", icon: Library },
-              {
-                label: "Profile",
-                href: isAuthenticated ? "/profile" : "/auth",
-                icon: ProfileGlyph,
-              },
-            ]
-          : [
-              { label: "Home", href: "/", icon: Home },
-              { label: "Clips", href: "/clips", icon: MonitorPlay },
-              { label: "Create", href: "#create", icon: Plus },
-              { label: "Library", href: "/library", icon: Library },
-              {
-                label: "Profile",
-                href: isAuthenticated ? "/profile" : "/auth",
-                icon: ProfileGlyph,
-              },
-            ]
-        ).map(item => {
+        {[
+          { label: "Home", href: "/", icon: Home },
+          { label: "Clips", href: "/clips", icon: ClipsBrandIcon },
+          { label: "Create", href: "#create", icon: Plus },
+          { label: "Library", href: "/library", icon: Library },
+          {
+            label: "Profile",
+            href: isAuthenticated ? "/profile" : "/auth",
+            icon: ProfileGlyph,
+          },
+        ].map(item => {
           const active =
             item.href === "/"
               ? location === "/"
@@ -548,20 +737,16 @@ export function HkTubeShell({
               type="button"
               onClick={openCreate}
               aria-label="Create content"
-              className={cn(
-                "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300",
-                compactClipsDock && "!min-h-12 !gap-0.5 !text-[9px]"
-              )}
+              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-slate-300"
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_5px_18px_rgba(139,92,246,.32)]",
-                  compactClipsDock && "!size-8",
+                  "grid size-9 place-items-center rounded-full bg-red-600 text-white shadow-[0_5px_18px_rgba(220,38,38,.24)]",
                   usesPrimaryNavigation &&
-                    "rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_5px_18px_rgba(139,92,246,.32)]"
+                    "rounded-full bg-red-50 text-red-700 shadow-none"
                 )}
               >
-                <Plus className={cn(SHELL_ICON_CLASS, compactClipsDock && "!size-4")} />
+                <Plus className={SHELL_ICON_CLASS} />
               </span>
             </button>
           ) : (
@@ -571,7 +756,6 @@ export function HkTubeShell({
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold",
-                compactClipsDock && "!min-h-12 !gap-0.5 !text-[9px]",
                 active
                   ? "text-red-700"
                   : usesPrimaryNavigation
@@ -581,8 +765,7 @@ export function HkTubeShell({
             >
               <item.icon
                 className={cn(
-                  SHELL_ICON_CLASS,
-                  compactClipsDock && "!size-4",
+                  item.label === "Clips" ? "size-7" : SHELL_ICON_CLASS,
                   active && "fill-red-600/10"
                 )}
               />

@@ -18,11 +18,16 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
 import { VerifiedChannelBadge } from "@/components/ChannelBadge";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { type SupabaseVideo } from "@/lib/supabaseVideos";
-import { rankPublicVideos, recordDiscoveryEvent, setRecommendationFeedback } from "@/lib/supabaseDiscovery";
+import {
+  rankPublicVideos,
+  recordDiscoveryEvent,
+  setRecommendationFeedback,
+} from "@/lib/supabaseDiscovery";
 import {
   addVideoComment,
   listVideoComments,
@@ -102,32 +107,7 @@ function rank(
   );
 }
 function ClipsLogo({ className = "size-9" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id="clips-logo-gradient" x1="4" y1="4" x2="44" y2="44">
-          <stop stopColor="#8b5cf6" />
-          <stop offset="1" stopColor="#ec4899" />
-        </linearGradient>
-      </defs>
-      <rect
-        x="3"
-        y="3"
-        width="42"
-        height="42"
-        rx="13"
-        fill="url(#clips-logo-gradient)"
-      />
-      <path d="M20 15.5 34 24 20 32.5V15.5Z" fill="white" />
-      <path
-        d="M11 16.5a7 7 0 0 1 7-7h8M11 31.5a7 7 0 0 0 7 7h8"
-        fill="none"
-        stroke="white"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <ClipsBrandIcon className={className} />;
 }
 
 export default function ClipsPage() {
@@ -136,7 +116,9 @@ export default function ClipsPage() {
   const [videos, setVideos] = useState<SupabaseVideo[]>([]);
   const [channels, setChannels] = useState<Record<string, Channel>>({});
   const [active, setActive] = useState(0);
-  const [tab, setTab] = useState<"all" | "for-you" | "following" | "explore" | "trending">("for-you");
+  const [tab, setTab] = useState<
+    "all" | "for-you" | "following" | "explore" | "trending"
+  >("for-you");
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [feedError, setFeedError] = useState("");
@@ -188,15 +170,33 @@ export default function ClipsPage() {
     setLoading(true);
     setFeedError("");
     try {
-      const data = await rankPublicVideos({ shorts: true, limit: 48, query: search.trim() || undefined, userId: user?.id == null ? undefined : String(user.id) });
+      const data = await rankPublicVideos({
+        shorts: true,
+        limit: 48,
+        query: search.trim() || undefined,
+        userId: user?.id == null ? undefined : String(user.id),
+      });
       setVideos(data);
-      const requestedClip = new URLSearchParams(window.location.search).get("video");
-      const requestedIndex = requestedClip ? data.findIndex(video => video.id === requestedClip) : -1;
+      const requestedClip = new URLSearchParams(window.location.search).get(
+        "video"
+      );
+      const requestedIndex = requestedClip
+        ? data.findIndex(video => video.id === requestedClip)
+        : -1;
       setActive(requestedIndex >= 0 ? requestedIndex : 0);
       const ids = [...new Set(data.map(v => v.channelId).filter(Boolean))];
       if (ids.length) {
-        const { data: rows } = await supabase.from("channels").select("id,owner_id,handle,name,avatar_url,subscriber_count,verification_status").in("id", ids);
-        setChannels(Object.fromEntries((rows ?? []).map(r => [String(r.id), r as Channel])));
+        const { data: rows } = await supabase
+          .from("channels")
+          .select(
+            "id,owner_id,handle,name,avatar_url,subscriber_count,verification_status"
+          )
+          .in("id", ids);
+        setChannels(
+          Object.fromEntries(
+            (rows ?? []).map(r => [String(r.id), r as Channel])
+          )
+        );
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Clips could not load";
@@ -206,7 +206,9 @@ export default function ClipsPage() {
       setLoading(false);
     }
   }
-  useEffect(() => { void loadClips(); }, [user?.id]);
+  useEffect(() => {
+    void loadClips();
+  }, [user?.id]);
   useEffect(() => {
     try {
       localStorage.setItem("hktube-clips-autoplay-next", String(autoplayNext));
@@ -238,14 +240,33 @@ export default function ClipsPage() {
       .sort((a, b) => b.s - a.s)
       .map(x => x.v);
     if (tab === "following") return list.filter(v => followed.has(v.channelId));
-    if (tab === "all" || tab === "explore") return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    if (tab === "trending") return [...list].sort((a, b) => (b.viewCount + b.likesCount * 8) - (a.viewCount + a.likesCount * 8));
+    if (tab === "all" || tab === "explore")
+      return [...list].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    if (tab === "trending")
+      return [...list].sort(
+        (a, b) =>
+          b.viewCount + b.likesCount * 8 - (a.viewCount + a.likesCount * 8)
+      );
     return list;
   }, [videos, liked, saved, followed, hidden, tab]);
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = category === "all" ? ranked : ranked.filter(v => String(v.category || "general").toLowerCase() === category);
-    return q ? filtered.filter(v => (v.title + " " + (v.description || "") + " " + v.tags.join(" ")).toLowerCase().includes(q)) : filtered;
+    const filtered =
+      category === "all"
+        ? ranked
+        : ranked.filter(
+            v => String(v.category || "general").toLowerCase() === category
+          );
+    return q
+      ? filtered.filter(v =>
+          (v.title + " " + (v.description || "") + " " + v.tags.join(" "))
+            .toLowerCase()
+            .includes(q)
+        )
+      : filtered;
   }, [ranked, search, category]);
   const current = visible[active];
   const channel = current ? channels[current.channelId] : undefined;
@@ -317,7 +338,11 @@ export default function ClipsPage() {
       setHeartBurst(true);
       window.setTimeout(() => setHeartBurst(false), 620);
       const r = await toggleVideoLike(current.id);
-      void recordDiscoveryEvent({ eventType: r.liked ? "like" : "unlike", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: r.liked ? "like" : "unlike",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
       setLiked(p => {
         const n = new Set(p);
         r.liked ? n.add(current.id) : n.delete(current.id);
@@ -331,7 +356,11 @@ export default function ClipsPage() {
     if (!current || !(await auth())) return;
     try {
       const r = await toggleVideoSave(current.id);
-      void recordDiscoveryEvent({ eventType: r ? "save" : "unsave", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: r ? "save" : "unsave",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
       setSaved(p => {
         const n = new Set(p);
         r ? n.add(current.id) : n.delete(current.id);
@@ -346,7 +375,11 @@ export default function ClipsPage() {
     if (!current || !(await auth())) return;
     try {
       const r = await toggleChannelSubscription(current.channelId);
-      void recordDiscoveryEvent({ eventType: r.subscribed ? "follow" : "unfollow", objectType: "channel", objectId: current.channelId }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: r.subscribed ? "follow" : "unfollow",
+        objectType: "channel",
+        objectId: current.channelId,
+      }).catch(() => undefined);
       setFollowed(p => {
         const n = new Set(p);
         r.subscribed ? n.add(current.channelId) : n.delete(current.channelId);
@@ -365,7 +398,11 @@ export default function ClipsPage() {
         await navigator.clipboard.writeText(url);
         toast.success("Clip link copied");
       }
-      void recordDiscoveryEvent({ eventType: "share", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: "share",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
     } catch (e) {
       if ((e as DOMException).name !== "AbortError")
         toast.error("Share failed");
@@ -377,7 +414,11 @@ export default function ClipsPage() {
       setCommentsLoading(true);
       setCommentsOpen(true);
       setComments(await listVideoComments(current.id));
-      void recordDiscoveryEvent({ eventType: "comment_open", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: "comment_open",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Comments could not load");
     } finally {
@@ -388,7 +429,11 @@ export default function ClipsPage() {
     if (!current || !(await auth()) || !comment.trim()) return;
     try {
       await addVideoComment(current.id, comment.trim(), replyTo?.id ?? null);
-      void recordDiscoveryEvent({ eventType: replyTo ? "comment_reply" : "comment", objectType: "short", objectId: current.id }).catch(() => undefined);
+      void recordDiscoveryEvent({
+        eventType: replyTo ? "comment_reply" : "comment",
+        objectType: "short",
+        objectId: current.id,
+      }).catch(() => undefined);
       setComment("");
       setReplyTo(null);
       setComments(await listVideoComments(current.id));
@@ -413,7 +458,9 @@ export default function ClipsPage() {
       setHidden(p => new Set(p).add(current.id));
       setMore(false);
       toast.success("Creator hidden from your recommendations");
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not hide creator"); }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not hide creator");
+    }
   }
   async function blockCreator() {
     if (!current || !(await auth())) return;
@@ -423,19 +470,35 @@ export default function ClipsPage() {
       return;
     }
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData.user) throw new Error("Your session expired. Please sign in again.");
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
+      if (authError || !authData.user)
+        throw new Error("Your session expired. Please sign in again.");
       if (creator.owner_id === authData.user.id) {
         toast.error("You cannot block your own account.");
         return;
       }
-      const { error } = await supabase.from("user_blocks").upsert(
-        { blocker_id: authData.user.id, blocked_id: creator.owner_id },
-        { onConflict: "blocker_id,blocked_id", ignoreDuplicates: true }
-      );
+      const { error } = await supabase
+        .from("user_blocks")
+        .upsert(
+          { blocker_id: authData.user.id, blocked_id: creator.owner_id },
+          { onConflict: "blocker_id,blocked_id", ignoreDuplicates: true }
+        );
       if (error) throw new Error(error.message);
-      const blockedChannelIds = new Set(Object.values(channels).filter(item => item.owner_id === creator.owner_id).map(item => item.id));
-      setHidden(previous => new Set([...previous, ...videos.filter(video => blockedChannelIds.has(video.channelId)).map(video => video.id)]));
+      const blockedChannelIds = new Set(
+        Object.values(channels)
+          .filter(item => item.owner_id === creator.owner_id)
+          .map(item => item.id)
+      );
+      setHidden(
+        previous =>
+          new Set([
+            ...previous,
+            ...videos
+              .filter(video => blockedChannelIds.has(video.channelId))
+              .map(video => video.id),
+          ])
+      );
       setMore(false);
       setActive(index => Math.min(index + 1, Math.max(visible.length - 1, 0)));
       toast.success("Creator blocked and removed from your recommendations.");
@@ -447,16 +510,26 @@ export default function ClipsPage() {
     if (!current) return;
     if (user) {
       try {
-        await setRecommendationFeedback(current.id, "not_interested", current.category);
+        await setRecommendationFeedback(
+          current.id,
+          "not_interested",
+          current.category
+        );
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Could not save recommendation feedback");
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : "Could not save recommendation feedback"
+        );
         return;
       }
     }
     setHidden(p => new Set(p).add(current.id));
     setMore(false);
     setActive(i => Math.min(i + 1, Math.max(visible.length - 1, 0)));
-    toast.success(user ? "Recommendation feedback saved" : "Clip hidden for this session");
+    toast.success(
+      user ? "Recommendation feedback saved" : "Clip hidden for this session"
+    );
   }
   function retryMedia() {
     const v = media.current;
@@ -505,7 +578,13 @@ export default function ClipsPage() {
   }
   return (
     <HkTubeShell immersive minimalHeader>
-      <div className="hktube-clips-page fixed inset-x-0 top-0 z-10 overflow-hidden bg-black text-white" style={{ height: "100dvh", paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div
+        className="hktube-clips-page fixed inset-x-0 top-0 z-10 overflow-hidden bg-black text-white"
+        style={{
+          height: "100dvh",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
         <div className="clips-top-bar absolute inset-x-0 top-0 z-30 flex items-center justify-end px-3 pb-2 pt-[max(8px,env(safe-area-inset-top))] bg-gradient-to-b from-black/55 to-transparent">
           <div className="flex items-center gap-2">
             <button
@@ -521,12 +600,81 @@ export default function ClipsPage() {
           </div>
         </div>
         <div className="clips-top-tabs absolute left-1/2 top-[calc(env(safe-area-inset-top)+0.25rem)] z-40 flex -translate-x-1/2 items-center gap-5 text-white sm:gap-6">
-          <button type="button" aria-pressed={tab === "for-you"} onClick={() => { setTab("for-you"); setActive(0); }} className={"whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " + (tab === "for-you" ? "border-white text-white" : "border-transparent text-white/70")}>For You</button>
-          <button type="button" aria-pressed={tab === "following"} onClick={() => { setTab("following"); setActive(0); }} className={"whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " + (tab === "following" ? "border-white text-white" : "border-transparent text-white/70")}>Following</button>
-          <button type="button" aria-pressed={tab === "trending"} onClick={() => { setTab("trending"); setActive(0); }} className={"whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " + (tab === "trending" ? "border-white text-white" : "border-transparent text-white/70")}>Trending</button>
+          <button
+            type="button"
+            aria-pressed={tab === "for-you"}
+            onClick={() => {
+              setTab("for-you");
+              setActive(0);
+            }}
+            className={
+              "whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " +
+              (tab === "for-you"
+                ? "border-white text-white"
+                : "border-transparent text-white/70")
+            }
+          >
+            For You
+          </button>
+          <button
+            type="button"
+            aria-pressed={tab === "following"}
+            onClick={() => {
+              setTab("following");
+              setActive(0);
+            }}
+            className={
+              "whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " +
+              (tab === "following"
+                ? "border-white text-white"
+                : "border-transparent text-white/70")
+            }
+          >
+            Following
+          </button>
+          <button
+            type="button"
+            aria-pressed={tab === "trending"}
+            onClick={() => {
+              setTab("trending");
+              setActive(0);
+            }}
+            className={
+              "whitespace-nowrap border-b-2 px-1 py-2 text-[15px] font-bold transition-colors " +
+              (tab === "trending"
+                ? "border-white text-white"
+                : "border-transparent text-white/70")
+            }
+          >
+            Trending
+          </button>
         </div>
         <div className="clips-category-strip absolute left-0 right-0 top-[calc(env(safe-area-inset-top)+3.2rem)] z-30 hidden gap-2 overflow-x-auto px-4 pb-2 sm:flex sm:justify-center">
-          {["all", ...Array.from(new Set(videos.map(v => String(v.category || "general").toLowerCase()))).slice(0, 6)].map(item => <button key={item} type="button" onClick={() => { setCategory(item); setActive(0); }} className={"shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold capitalize backdrop-blur-md " + (category === item ? "border-white bg-white text-black" : "border-white/20 bg-black/30 text-white")}>{item === "all" ? "All topics" : item}</button>)}
+          {[
+            "all",
+            ...Array.from(
+              new Set(
+                videos.map(v => String(v.category || "general").toLowerCase())
+              )
+            ).slice(0, 6),
+          ].map(item => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => {
+                setCategory(item);
+                setActive(0);
+              }}
+              className={
+                "shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold capitalize backdrop-blur-md " +
+                (category === item
+                  ? "border-white bg-white text-black"
+                  : "border-white/20 bg-black/30 text-white")
+              }
+            >
+              {item === "all" ? "All topics" : item}
+            </button>
+          ))}
         </div>
         {searchOpen && (
           <div className="absolute left-4 right-4 top-16 z-50 flex items-center rounded-2xl border border-white/10 bg-black/85 p-2 backdrop-blur-xl">
@@ -578,14 +726,34 @@ export default function ClipsPage() {
                 </button>
               ))}
             </div>
-            <button type="button" role="switch" aria-checked={autoplayNext} onClick={() => setAutoplayNext(value => !value)} className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"><span>Auto-play next Clip</span><span className={"rounded-full px-2 py-1 text-xs " + (autoplayNext ? "bg-violet-500 text-white" : "bg-white/10 text-white/60")}>{autoplayNext ? "On" : "Off"}</span></button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoplayNext}
+              onClick={() => setAutoplayNext(value => !value)}
+              className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"
+            >
+              <span>Auto-play next Clip</span>
+              <span
+                className={
+                  "rounded-full px-2 py-1 text-xs " +
+                  (autoplayNext
+                    ? "bg-violet-500 text-white"
+                    : "bg-white/10 text-white/60")
+                }
+              >
+                {autoplayNext ? "On" : "Off"}
+              </span>
+            </button>
             <button
               type="button"
               onClick={() => void toggleSound()}
               className="mt-2 flex w-full items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-left font-bold hover:bg-white/15"
             >
               <span>{soundOn ? "Mute sound" : "Use sound"}</span>
-              <span className="text-xs text-white/55">{soundOn ? "On" : "Off"}</span>
+              <span className="text-xs text-white/55">
+                {soundOn ? "On" : "Off"}
+              </span>
             </button>
           </div>
         )}
@@ -600,12 +768,31 @@ export default function ClipsPage() {
           <div className="grid h-full place-items-center p-6 text-center">
             <ClipsLogo className="mx-auto size-16" />
             <h2 className="mt-5 text-xl font-black">
-              {feedError ? "Clips could not load" : tab === "following" ? "No Clips from followed creators" : "No Clips available"}
+              {feedError
+                ? "Clips could not load"
+                : tab === "following"
+                  ? "No Clips from followed creators"
+                  : "No Clips available"}
             </h2>
             <p className="mt-2 max-w-sm text-sm text-slate-400">
               Publish a vertical Clip or follow creators to build the feed.
             </p>
-            {feedError ? <button type="button" onClick={() => void loadClips()} className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black">Retry</button> : <Link href="/upload?category=shorts" className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black">Create a Clip</Link>}
+            {feedError ? (
+              <button
+                type="button"
+                onClick={() => void loadClips()}
+                className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black"
+              >
+                Retry
+              </button>
+            ) : (
+              <Link
+                href="/upload?category=shorts"
+                className="mt-5 inline-flex rounded-full bg-violet-500 px-5 py-3 text-sm font-black"
+              >
+                Create a Clip
+              </Link>
+            )}
           </div>
         ) : (
           <div
@@ -635,7 +822,10 @@ export default function ClipsPage() {
               stepClip(e.deltaY > 0 ? 1 : -1);
             }}
           >
-            <div key={current.id} className="hktube-clips-viewport clips-swipe-in relative mx-auto h-full w-full max-w-[620px] bg-black">
+            <div
+              key={current.id}
+              className="hktube-clips-viewport clips-swipe-in relative mx-auto h-full w-full max-w-[620px] bg-black"
+            >
               {current.thumbnailUrl && (
                 <img
                   src={current.thumbnailUrl}
@@ -661,7 +851,11 @@ export default function ClipsPage() {
                   setMediaError(false);
                   setMediaReady(true);
                   setPlaying(true);
-                  void recordDiscoveryEvent({ eventType: "play_start", objectType: "short", objectId: current.id }).catch(() => undefined);
+                  void recordDiscoveryEvent({
+                    eventType: "play_start",
+                    objectType: "short",
+                    objectId: current.id,
+                  }).catch(() => undefined);
                 }}
                 onCanPlay={() => setMediaReady(true)}
                 onLoadedData={() => setMediaReady(true)}
@@ -689,12 +883,32 @@ export default function ClipsPage() {
                     );
                   if (v.duration > 0) {
                     const ratio = v.currentTime / v.duration;
-                    const eventType = ratio >= 0.9 ? "watch_90_percent" : ratio >= 0.75 ? "watch_75_percent" : ratio >= 0.5 ? "watch_50_percent" : ratio >= 0.25 ? "watch_25_percent" : null;
-                    if (eventType) void recordDiscoveryEvent({ eventType, objectType: "short", objectId: current.id, watchSeconds: v.currentTime, positionSeconds: v.currentTime }).catch(() => undefined);
+                    const eventType =
+                      ratio >= 0.9
+                        ? "watch_90_percent"
+                        : ratio >= 0.75
+                          ? "watch_75_percent"
+                          : ratio >= 0.5
+                            ? "watch_50_percent"
+                            : ratio >= 0.25
+                              ? "watch_25_percent"
+                              : null;
+                    if (eventType)
+                      void recordDiscoveryEvent({
+                        eventType,
+                        objectType: "short",
+                        objectId: current.id,
+                        watchSeconds: v.currentTime,
+                        positionSeconds: v.currentTime,
+                      }).catch(() => undefined);
                   }
                 }}
                 onEnded={() => {
-                  void recordDiscoveryEvent({ eventType: "complete", objectType: "short", objectId: current.id }).catch(() => undefined);
+                  void recordDiscoveryEvent({
+                    eventType: "complete",
+                    objectType: "short",
+                    objectId: current.id,
+                  }).catch(() => undefined);
                   if (autoplayNext) stepClip(1);
                 }}
               />
@@ -760,7 +974,9 @@ export default function ClipsPage() {
                   </Link>
                   <span className="flex min-w-0 items-center gap-1 truncate font-black text-sm text-white drop-shadow-[0_2px_6px_rgba(0,0,0,.9)]">
                     {channel ? "@" + channel.handle : "HkTube Creator"}
-                    {channel?.verification_status === "verified" && <VerifiedChannelBadge label="Verified creator" />}
+                    {channel?.verification_status === "verified" && (
+                      <VerifiedChannelBadge label="Verified creator" />
+                    )}
                   </span>
                   <button
                     onClick={() => void follow()}
@@ -868,10 +1084,21 @@ export default function ClipsPage() {
               {more && (
                 <div className="absolute bottom-44 right-16 z-40 w-56 rounded-2xl border border-white/10 bg-[#10131b]/95 p-2 text-sm shadow-2xl backdrop-blur-xl">
                   <div className="px-3 py-2 text-xs font-semibold text-white/60">
-                    {compact(current.viewCount)} views · {ago(current.createdAt)}
+                    {compact(current.viewCount)} views ·{" "}
+                    {ago(current.createdAt)}
                   </div>
-                  <button onClick={hideCreator} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Hide creator from recommendations</button>
-                  <button onClick={() => void blockCreator()} className="w-full rounded-xl px-3 py-2.5 text-left text-rose-300 hover:bg-white/10">Block creator</button>
+                  <button
+                    onClick={hideCreator}
+                    className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
+                  >
+                    Hide creator from recommendations
+                  </button>
+                  <button
+                    onClick={() => void blockCreator()}
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-rose-300 hover:bg-white/10"
+                  >
+                    Block creator
+                  </button>
                   <button
                     onClick={() => void notInterested()}
                     className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
@@ -891,9 +1118,24 @@ export default function ClipsPage() {
                   >
                     Copyright concern
                   </button>
-                  <button onClick={() => void report("Harassment or bullying")} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Harassment or bullying</button>
-                  <button onClick={() => void report("Privacy violation")} className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10">Privacy violation</button>
-                  <button onClick={() => void report("Child safety concern")} className="w-full rounded-xl px-3 py-2.5 text-left text-rose-300 hover:bg-white/10">Child safety concern</button>
+                  <button
+                    onClick={() => void report("Harassment or bullying")}
+                    className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
+                  >
+                    Harassment or bullying
+                  </button>
+                  <button
+                    onClick={() => void report("Privacy violation")}
+                    className="w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
+                  >
+                    Privacy violation
+                  </button>
+                  <button
+                    onClick={() => void report("Child safety concern")}
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-rose-300 hover:bg-white/10"
+                  >
+                    Child safety concern
+                  </button>
                   <button
                     onClick={() => void share()}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left hover:bg-white/10"
@@ -920,7 +1162,10 @@ export default function ClipsPage() {
       {commentsOpen && (
         <div
           className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
-          onClick={() => { setCommentsOpen(false); setReplyTo(null); }}
+          onClick={() => {
+            setCommentsOpen(false);
+            setReplyTo(null);
+          }}
         >
           <section
             className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[75dvh] w-full max-w-2xl flex-col rounded-t-3xl border border-white/10 bg-[#10131b] p-4"
@@ -937,12 +1182,25 @@ export default function ClipsPage() {
             </div>
             {replyTo && (
               <div className="mt-3 flex items-center justify-between rounded-xl bg-violet-500/10 px-3 py-2 text-xs">
-                <span>Replying to @{replyTo.profiles?.[0]?.username ?? "user"}</span>
-                <button type="button" onClick={() => setReplyTo(null)} className="rounded-full p-1" aria-label="Cancel reply"><X className="size-4" /></button>
+                <span>
+                  Replying to @{replyTo.profiles?.[0]?.username ?? "user"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReplyTo(null)}
+                  className="rounded-full p-1"
+                  aria-label="Cancel reply"
+                >
+                  <X className="size-4" />
+                </button>
               </div>
             )}
             <div className="mt-4 flex-1 overflow-y-auto space-y-4">
-              {commentsLoading ? <p className="py-10 text-center text-sm text-slate-500">Loading comments…</p> : comments.length ? (
+              {commentsLoading ? (
+                <p className="py-10 text-center text-sm text-slate-500">
+                  Loading comments…
+                </p>
+              ) : comments.length ? (
                 comments.map(c => (
                   <div key={c.id} className="flex gap-3">
                     <div className="grid size-9 shrink-0 place-items-center rounded-full bg-violet-500 font-black">
@@ -953,7 +1211,13 @@ export default function ClipsPage() {
                         @{c.profiles?.[0]?.username ?? "user"}
                       </p>
                       <p className="mt-1 text-sm text-white">{c.body}</p>
-                      <button type="button" onClick={() => setReplyTo(c)} className="mt-1 text-xs font-semibold text-violet-300 hover:text-violet-200">Reply</button>
+                      <button
+                        type="button"
+                        onClick={() => setReplyTo(c)}
+                        className="mt-1 text-xs font-semibold text-violet-300 hover:text-violet-200"
+                      >
+                        Reply
+                      </button>
                     </div>
                   </div>
                 ))
@@ -1017,7 +1281,8 @@ function Action({
       >
         <Icon
           className={
-            "size-6 stroke-[1.8] " + (active && Icon === Heart ? "fill-current" : "")
+            "size-6 stroke-[1.8] " +
+            (active && Icon === Heart ? "fill-current" : "")
           }
         />
       </span>

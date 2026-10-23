@@ -116,4 +116,20 @@ describe("LLM provider configuration", () => {
       messages: [{ role: "user", content: "hello" }],
     });
   });
+
+  it("uses OpenAI as the fallback when Groq is configured without Gemini", async () => {
+    vi.stubEnv("GROQ_API_KEY", "test-groq-key");
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: "rate limit exceeded" } }), { status: 429 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: "fallback" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { invokeLLM } = await import("./llm");
+    await invokeLLM({ messages: [{ role: "user", content: "hello" }] });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("https://api.groq.com/openai/v1/chat/completions");
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe("https://api.openai.com/v1/chat/completions");
+  });
 });

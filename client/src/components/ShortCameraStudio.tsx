@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CameraOff, FlipHorizontal, GalleryHorizontal, RotateCcw, Sparkles, Timer, Video, X } from "lucide-react";
+import {
+  CameraOff,
+  FlipHorizontal,
+  GalleryHorizontal,
+  RotateCcw,
+  Sparkles,
+  Timer,
+  Video,
+  X,
+} from "lucide-react";
 
 type Filter = { name: string; css: string };
 const FILTERS: Filter[] = [
@@ -18,7 +27,12 @@ type ShortCameraStudioProps = {
   isShort?: boolean;
 };
 
-export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = false, isShort = true }: ShortCameraStudioProps) {
+export function ShortCameraStudio({
+  onSelectFile,
+  onChooseGallery,
+  disabled = false,
+  isShort = true,
+}: ShortCameraStudioProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -42,9 +56,11 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   const [busy, setBusy] = useState(false);
 
   const stopCamera = useCallback(() => {
-    if (stopTimerRef.current !== null) window.clearInterval(stopTimerRef.current);
+    if (stopTimerRef.current !== null)
+      window.clearInterval(stopTimerRef.current);
     stopTimerRef.current = null;
-    if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current);
+    if (countdownTimerRef.current !== null)
+      window.clearInterval(countdownTimerRef.current);
     countdownTimerRef.current = null;
     window.cancelAnimationFrame(animationRef.current);
     streamRef.current?.getTracks().forEach(track => track.stop());
@@ -52,37 +68,44 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
     setCameraReady(false);
   }, []);
 
-  const startCamera = useCallback(async (nextFacing: "user" | "environment") => {
-    setCameraError("");
-    setCameraReady(false);
-    streamRef.current?.getTracks().forEach(track => track.stop());
-    streamRef.current = null;
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Camera access needs HTTPS and a browser that supports camera capture. Use Add to select an existing video.");
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: {
-          facingMode: { ideal: nextFacing },
-          width: { ideal: isShort ? 1080 : 1920 },
-          height: { ideal: isShort ? 1920 : 1080 },
-        },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+  const startCamera = useCallback(
+    async (nextFacing: "user" | "environment") => {
+      setCameraError("");
+      setCameraReady(false);
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError(
+          "Camera access needs HTTPS and a browser that supports camera capture. Use Add to select an existing video."
+        );
+        return;
       }
-      setCameraReady(true);
-    } catch (cause) {
-      const name = cause instanceof DOMException ? cause.name : "";
-      setCameraError(name === "NotAllowedError"
-        ? "Camera or microphone permission was denied. Allow access in browser settings, or choose a video from your gallery."
-        : "Camera could not start on this device. Use Add to choose a video from your gallery.");
-    }
-  }, [isShort]);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: {
+            facingMode: { ideal: nextFacing },
+            width: { ideal: isShort ? 1080 : 1920 },
+            height: { ideal: isShort ? 1920 : 1080 },
+          },
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setCameraReady(true);
+      } catch (cause) {
+        const name = cause instanceof DOMException ? cause.name : "";
+        setCameraError(
+          name === "NotAllowedError"
+            ? "Camera or microphone permission was denied. Allow access in browser settings, or choose a video from your gallery."
+            : "Camera could not start on this device. Use Add to choose a video from your gallery."
+        );
+      }
+    },
+    [isShort]
+  );
 
   useEffect(() => {
     setDuration(isShort ? 15 : null);
@@ -91,7 +114,8 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   useEffect(() => {
     if (!disabled) void startCamera(facing);
     return () => {
-      if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
+      if (recorderRef.current && recorderRef.current.state !== "inactive")
+        recorderRef.current.stop();
       stopCamera();
     };
   }, [disabled, facing, startCamera, stopCamera]);
@@ -100,7 +124,12 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d", { alpha: false });
-    if (!video || !canvas || !context || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+    if (
+      !video ||
+      !canvas ||
+      !context ||
+      video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
+    ) {
       animationRef.current = window.requestAnimationFrame(drawFrames);
       return;
     }
@@ -119,24 +148,40 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
     }
-    const scale = Math.max(canvas.width / sourceWidth, canvas.height / sourceHeight);
+    const scale = Math.max(
+      canvas.width / sourceWidth,
+      canvas.height / sourceHeight
+    );
     const drawWidth = sourceWidth * scale;
     const drawHeight = sourceHeight * scale;
-    context.drawImage(video, (canvas.width - drawWidth) / 2, (canvas.height - drawHeight) / 2, drawWidth, drawHeight);
+    context.drawImage(
+      video,
+      (canvas.width - drawWidth) / 2,
+      (canvas.height - drawHeight) / 2,
+      drawWidth,
+      drawHeight
+    );
     context.restore();
     animationRef.current = window.requestAnimationFrame(drawFrames);
   }, [facing, filter, isShort]);
 
   useEffect(() => {
     window.cancelAnimationFrame(animationRef.current);
-    if (cameraReady) animationRef.current = window.requestAnimationFrame(drawFrames);
+    if (cameraReady)
+      animationRef.current = window.requestAnimationFrame(drawFrames);
     return () => window.cancelAnimationFrame(animationRef.current);
   }, [cameraReady, drawFrames]);
 
   const startRecording = useCallback(async () => {
-    if (disabled || busy || recording || !streamRef.current || !cameraReady) return;
-    if (typeof MediaRecorder === "undefined" || !canvasRef.current?.captureStream) {
-      setCameraError("This browser cannot record filtered video. Use a recent Chrome browser or select a video from your gallery.");
+    if (disabled || busy || recording || !streamRef.current || !cameraReady)
+      return;
+    if (
+      typeof MediaRecorder === "undefined" ||
+      !canvasRef.current?.captureStream
+    ) {
+      setCameraError(
+        "This browser cannot record filtered video. Use a recent Chrome browser or select a video from your gallery."
+      );
       return;
     }
     if (timerSeconds > 0) {
@@ -145,7 +190,8 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
       countdownTimerRef.current = window.setInterval(() => {
         remaining -= 1;
         if (remaining <= 0) {
-          if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current);
+          if (countdownTimerRef.current !== null)
+            window.clearInterval(countdownTimerRef.current);
           countdownTimerRef.current = null;
           setCountdown(null);
           void recordNowRef.current();
@@ -162,10 +208,15 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
     const cameraStream = streamRef.current;
     const canvas = canvasRef.current;
     if (!cameraStream || !canvas || !canvas.captureStream) return;
-    const supported = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
-      .find(type => MediaRecorder.isTypeSupported(type));
+    const supported = [
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm",
+    ].find(type => MediaRecorder.isTypeSupported(type));
     if (!supported) {
-      setCameraError("This browser does not support WebM recording. Choose an existing MP4 or WebM video instead.");
+      setCameraError(
+        "This browser does not support WebM recording. Choose an existing MP4 or WebM video instead."
+      );
       return;
     }
     try {
@@ -185,7 +236,8 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
         output.getTracks().forEach(track => track.stop());
       };
       recorder.onstop = () => {
-        if (stopTimerRef.current !== null) window.clearInterval(stopTimerRef.current);
+        if (stopTimerRef.current !== null)
+          window.clearInterval(stopTimerRef.current);
         stopTimerRef.current = null;
         output.getTracks().forEach(track => track.stop());
         setRecording(false);
@@ -194,8 +246,14 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
           setCameraError("No video was captured. Please try again.");
           return;
         }
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "video/webm" });
-        const file = new File([blob], (isShort ? "hktube-clip-" : "hktube-video-") + Date.now() + ".webm", { type: "video/webm", lastModified: Date.now() });
+        const blob = new Blob(chunksRef.current, {
+          type: recorder.mimeType || "video/webm",
+        });
+        const file = new File(
+          [blob],
+          (isShort ? "hktube-clip-" : "hktube-video-") + Date.now() + ".webm",
+          { type: "video/webm", lastModified: Date.now() }
+        );
         onSelectFile(file);
       };
       recorder.start(250);
@@ -211,7 +269,9 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
         }
       }, 100);
     } catch {
-      setCameraError("Could not start recording. Check camera and microphone permissions.");
+      setCameraError(
+        "Could not start recording. Check camera and microphone permissions."
+      );
       setRecording(false);
       setBusy(false);
     }
@@ -219,47 +279,241 @@ export function ShortCameraStudio({ onSelectFile, onChooseGallery, disabled = fa
   recordNowRef.current = recordNow;
 
   const stopRecording = () => {
-    if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
+    if (recorderRef.current && recorderRef.current.state !== "inactive")
+      recorderRef.current.stop();
   };
 
   return (
-    <section className={"mx-auto w-full overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-2xl " + (isShort ? "max-w-md" : "max-w-4xl")}>
-      <div className={"relative overflow-hidden bg-[#171820] " + (isShort ? "mx-auto aspect-[9/16] max-h-[72dvh] min-h-[420px] max-w-md" : "aspect-video max-h-[72dvh] min-h-[300px]")}>
-        <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 size-full object-cover" style={{ transform: facing === "user" ? "scaleX(-1)" : undefined, filter: filter.css }} />
-        <canvas ref={canvasRef} className="pointer-events-none absolute -left-[10000px] top-0" aria-hidden="true" />
+    <section
+      className={
+        "mx-auto w-full overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-2xl " +
+        (isShort ? "max-w-md" : "max-w-4xl")
+      }
+    >
+      <div
+        className={
+          "relative overflow-hidden bg-[#171820] " +
+          (isShort
+            ? "mx-auto aspect-[9/16] max-h-[72dvh] min-h-[420px] max-w-md"
+            : "aspect-video max-h-[72dvh] min-h-[300px]")
+        }
+      >
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="absolute inset-0 size-full object-cover"
+          style={{
+            transform: facing === "user" ? "scaleX(-1)" : undefined,
+            filter: filter.css,
+          }}
+        />
+        <canvas
+          ref={canvasRef}
+          className="pointer-events-none absolute -left-[10000px] top-0"
+          aria-hidden="true"
+        />
         <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
-          <button type="button" disabled={disabled || recording} onClick={stopCamera} className="grid size-11 place-items-center rounded-full bg-black/55 text-2xl text-white disabled:opacity-50" aria-label="Turn camera off"><X className="size-5" /></button>
-          <span className="rounded-full bg-black/55 px-4 py-2 text-sm font-bold">HkTube <span className="text-violet-300">{isShort ? "Clips" : "Video"}</span></span>
-          <button type="button" disabled={disabled || recording} onClick={() => setFacing(value => value === "user" ? "environment" : "user")} className="grid size-11 place-items-center rounded-full bg-black/55 disabled:opacity-50" aria-label="Flip camera"><FlipHorizontal className="size-5" /></button>
+          <button
+            type="button"
+            disabled={disabled || recording}
+            onClick={stopCamera}
+            className="grid size-11 place-items-center rounded-full bg-black/55 text-2xl text-white disabled:opacity-50"
+            aria-label="Turn camera off"
+          >
+            <X className="size-5" />
+          </button>
+          <span className="rounded-full bg-black/55 px-4 py-2 text-sm font-bold">
+            HkTube{" "}
+            <span className="text-violet-300">
+              {isShort ? "Clips" : "Video"}
+            </span>
+          </span>
+          <button
+            type="button"
+            disabled={disabled || recording}
+            onClick={() =>
+              setFacing(value => (value === "user" ? "environment" : "user"))
+            }
+            className="grid size-11 place-items-center rounded-full bg-black/55 disabled:opacity-50"
+            aria-label="Flip camera"
+          >
+            <FlipHorizontal className="size-5" />
+          </button>
         </div>
 
         <div className="absolute right-3 top-[25%] flex flex-col gap-1 rounded-full bg-black/55 p-1.5">
-          <button type="button" disabled={recording} onClick={() => setTimerSeconds(value => value === 0 ? 3 : value === 3 ? 10 : 0)} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50" aria-label="Recording countdown"><Timer className="size-5" /><span>{timerSeconds ? timerSeconds + "s" : "Timer"}</span></button>
-          <button type="button" disabled={recording} onClick={() => setDuration(value => isShort ? (value === 15 ? 60 : value === 60 ? 180 : 15) : (value === null ? 60 : value === 60 ? 180 : null))} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"><Video className="size-5" /><span>{duration === null ? "Manual" : duration === 180 ? "3 min" : duration + "s"}</span></button>
-          <button type="button" disabled={recording} onClick={() => setFilterMenu(value => !value)} className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"><Sparkles className="size-5" /><span>Filters</span></button>
+          <button
+            type="button"
+            disabled={recording}
+            onClick={() =>
+              setTimerSeconds(value => (value === 0 ? 3 : value === 3 ? 10 : 0))
+            }
+            className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"
+            aria-label="Recording countdown"
+          >
+            <Timer className="size-5" />
+            <span>{timerSeconds ? timerSeconds + "s" : "Timer"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={recording}
+            onClick={() =>
+              setDuration(value =>
+                isShort
+                  ? value === 15
+                    ? 60
+                    : value === 60
+                      ? 180
+                      : 15
+                  : value === null
+                    ? 60
+                    : value === 60
+                      ? 180
+                      : null
+              )
+            }
+            className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"
+          >
+            <Video className="size-5" />
+            <span>
+              {duration === null
+                ? "Manual"
+                : duration === 180
+                  ? "3 min"
+                  : duration + "s"}
+            </span>
+          </button>
+          <button
+            type="button"
+            disabled={recording}
+            onClick={() => setFilterMenu(value => !value)}
+            className="flex min-h-12 flex-col items-center justify-center px-2 text-xs disabled:opacity-50"
+          >
+            <Sparkles className="size-5" />
+            <span>Filters</span>
+          </button>
         </div>
 
-        {filterMenu && <div className="absolute bottom-5 left-3 right-3 grid grid-cols-3 gap-2 rounded-2xl bg-black/75 p-3 backdrop-blur">
-          {FILTERS.map(item => <button key={item.name} type="button" onClick={() => setFilter(item)} className={"rounded-xl border px-2 py-3 text-xs font-bold " + (filter.name === item.name ? "border-violet-300 bg-violet-500/30 text-white" : "border-white/15 bg-white/5 text-slate-200")}>{item.name}</button>)}
-        </div>}
+        {filterMenu && (
+          <div className="absolute bottom-5 left-3 right-3 grid grid-cols-3 gap-2 rounded-2xl bg-black/75 p-3 backdrop-blur">
+            {FILTERS.map(item => (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => setFilter(item)}
+                className={
+                  "rounded-xl border px-2 py-3 text-xs font-bold " +
+                  (filter.name === item.name
+                    ? "border-violet-300 bg-violet-500/30 text-white"
+                    : "border-white/15 bg-white/5 text-slate-200")
+                }
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {countdown !== null && <div className="absolute inset-0 grid place-items-center bg-black/20 text-7xl font-black">{countdown}</div>}
-        {recording && <div className="absolute left-4 top-20 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black"><span className="mr-2 inline-block size-2 rounded-full bg-white" />REC {Math.floor(elapsed)}s</div>}
-        {!cameraReady && <div className="absolute inset-0 grid place-items-center bg-black/80 p-8 text-center"><div><CameraOff className="mx-auto size-10 text-slate-400" /><p className="mt-3 text-sm text-slate-200">{cameraError || "Starting camera…"}</p><button type="button" onClick={() => void startCamera(facing)} className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-black text-black"><RotateCcw className="mr-2 inline size-4" />Retry camera</button></div></div>}
-        {cameraError && cameraReady && <div role="alert" className="absolute bottom-20 left-3 right-3 rounded-xl bg-red-950/90 p-3 text-xs text-red-100">{cameraError}</div>}
+        {countdown !== null && (
+          <div className="absolute inset-0 grid place-items-center bg-black/20 text-7xl font-black">
+            {countdown}
+          </div>
+        )}
+        {recording && (
+          <div className="absolute left-4 top-20 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black">
+            <span className="mr-2 inline-block size-2 rounded-full bg-white" />
+            REC {Math.floor(elapsed)}s
+          </div>
+        )}
+        {!cameraReady && (
+          <div className="absolute inset-0 grid place-items-center bg-black/80 p-8 text-center">
+            <div>
+              <CameraOff className="mx-auto size-10 text-slate-400" />
+              <p className="mt-3 text-sm text-slate-200">
+                {cameraError || "Starting camera…"}
+              </p>
+              <button
+                type="button"
+                onClick={() => void startCamera(facing)}
+                className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-black text-black"
+              >
+                <RotateCcw className="mr-2 inline size-4" />
+                Retry camera
+              </button>
+            </div>
+          </div>
+        )}
+        {cameraError && cameraReady && (
+          <div
+            role="alert"
+            className="absolute bottom-20 left-3 right-3 rounded-xl bg-red-950/90 p-3 text-xs text-red-100"
+          >
+            {cameraError}
+          </div>
+        )}
       </div>
 
       <div className="bg-black px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
         <div className="flex items-center justify-between gap-3">
-          <button type="button" disabled={disabled || recording} onClick={onChooseGallery} className="flex min-w-20 flex-col items-center gap-2 text-xs font-bold disabled:opacity-50"><span className="grid size-14 place-items-center overflow-hidden rounded-xl border border-white/15 bg-white/10"><GalleryHorizontal className="size-6" /></span>Add</button>
-          <button type="button" disabled={!cameraReady || disabled || busy || countdown !== null} onClick={() => recording ? stopRecording() : void startRecording()} className={"grid size-[78px] place-items-center rounded-full border-[5px] border-white p-1 disabled:opacity-50 " + (recording ? "bg-red-600" : "bg-white")} aria-label={recording ? "Stop recording" : "Start recording"}>
-            <span className={"block size-full bg-red-600 " + (recording ? "scale-50 rounded-lg" : "rounded-full")} />
+          <button
+            type="button"
+            disabled={disabled || recording}
+            onClick={onChooseGallery}
+            className="flex min-w-20 flex-col items-center gap-2 text-xs font-bold disabled:opacity-50"
+          >
+            <span className="grid size-14 place-items-center overflow-hidden rounded-xl border border-white/15 bg-white/10">
+              <GalleryHorizontal className="size-6" />
+            </span>
+            Add
           </button>
-          <div className="flex min-w-20 flex-col items-center gap-1 text-xs text-slate-400"><span className="text-base font-bold text-white">{Math.floor(elapsed)}s</span><span>{recording ? "Recording" : duration === null ? "Manual stop" : `Max ${duration}s`}</span></div>
+          <button
+            type="button"
+            disabled={!cameraReady || disabled || busy || countdown !== null}
+            onClick={() =>
+              recording ? stopRecording() : void startRecording()
+            }
+            className={
+              "grid size-[78px] place-items-center rounded-full border-[5px] border-white p-1 disabled:opacity-50 " +
+              (recording ? "bg-red-600" : "bg-white")
+            }
+            aria-label={recording ? "Stop recording" : "Start recording"}
+          >
+            <span
+              className={
+                "block size-full bg-red-600 " +
+                (recording ? "scale-50 rounded-lg" : "rounded-full")
+              }
+            />
+          </button>
+          <div className="flex min-w-20 flex-col items-center gap-1 text-xs text-slate-400">
+            <span className="text-base font-bold text-white">
+              {Math.floor(elapsed)}s
+            </span>
+            <span>
+              {recording
+                ? "Recording"
+                : duration === null
+                  ? "Manual stop"
+                  : `Max ${duration}s`}
+            </span>
+          </div>
         </div>
-        <div className="mt-4 flex justify-center gap-2"><span className="rounded-full bg-white/15 px-5 py-2.5 text-sm font-bold text-white">{isShort ? "Clips camera" : "Long Video camera"}</span></div>
-        <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">Camera filters are rendered into the recorded file. Use the gallery button to choose an existing video, then review it in the editor.</p>
-        {cameraError && <p className="mt-2 text-center text-xs text-amber-200">{cameraError}</p>}
+        <div className="mt-4 flex justify-center gap-2">
+          <span className="rounded-full bg-white/15 px-5 py-2.5 text-sm font-bold text-white">
+            {isShort ? "Clips camera" : "Long Video camera"}
+          </span>
+        </div>
+        <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">
+          Camera filters are rendered into the recorded file. Use the gallery
+          button to choose an existing video, then review it in the editor.
+        </p>
+        {cameraError && (
+          <p className="mt-2 text-center text-xs text-amber-200">
+            {cameraError}
+          </p>
+        )}
       </div>
     </section>
   );
