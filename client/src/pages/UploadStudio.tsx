@@ -21,6 +21,10 @@ import {
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { HkTubeShell } from "@/components/HkTubeShell";
+import {
+  HkTubeCreatorGallery,
+  type CreatorGalleryMode,
+} from "@/components/HkTubeCreatorGallery";
 import { MediaEditor } from "@/components/MediaEditor";
 import { ShortCameraStudio } from "@/components/ShortCameraStudio";
 import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
@@ -221,6 +225,7 @@ export default function UploadStudioPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [stage, setStage] = useState<"select" | "edit" | "details">("select");
+  const [creatorGalleryOpen, setCreatorGalleryOpen] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<StudioMode>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -424,7 +429,7 @@ export default function UploadStudioPage() {
   }
 
   function openUploadGallery() {
-    galleryInputRef.current?.click();
+    setCreatorGalleryOpen(true);
   }
 
   function selectThumbnail(event: ChangeEvent<HTMLInputElement>) {
@@ -1149,6 +1154,28 @@ export default function UploadStudioPage() {
           </section>
         </main>
       </HkTubeShell>
+      {creatorGalleryOpen && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/90 backdrop-blur-sm sm:p-6">
+          <div className="relative mx-auto min-h-full max-w-5xl sm:my-2 sm:min-h-0">
+            <HkTubeCreatorGallery
+              initialMode={mode === "clip" ? "clip" : "video"}
+              onClose={() => setCreatorGalleryOpen(false)}
+              onContinue={(
+                selectedMode: CreatorGalleryMode,
+                selectedFile: File
+              ) => {
+                setCreatorGalleryOpen(false);
+                if (selectedMode === "post") {
+                  setPendingCreateMedia("post", selectedFile);
+                  navigate("/upload/post");
+                } else {
+                  void selectVideo(selectedFile, selectedMode);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
