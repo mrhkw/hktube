@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  Album,
   Bell,
   BookOpen,
   Compass,
@@ -38,11 +37,6 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
-import {
-  HkTubeCreateGallery,
-  type CreateMediaMode,
-} from "@/components/HkTubeCreateGallery";
-import { setPendingCreateMedia } from "@/lib/pendingCreateMedia";
 
 type HkTubeShellProps = {
   children: ReactNode;
@@ -93,7 +87,6 @@ export function HkTubeShell({
   const [createMode, setCreateMode] = useState<"menu" | "post" | "story">(
     "menu"
   );
-  const [galleryOpen, setGalleryOpen] = useState(false);
   const [postBody, setPostBody] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const utils = trpc.useUtils();
@@ -141,10 +134,6 @@ export function HkTubeShell({
   function startUpload(category: "regular" | "shorts") {
     setCreateOpen(false);
     navigate(category === "shorts" ? "/clips/create" : "/upload");
-  }
-  function openCreatorGallery() {
-    setCreateOpen(false);
-    setGalleryOpen(true);
   }
   function submitPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -435,23 +424,6 @@ export function HkTubeShell({
                   </span>
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={openCreatorGallery}
-                className="flex min-h-[84px] items-center gap-5 rounded-2xl border border-emerald-300/20 bg-emerald-400/[.06] p-5 text-left transition hover:border-emerald-300/40 hover:bg-emerald-400/[.1]"
-              >
-                <span className="grid size-12 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200">
-                  <Album className="size-6" strokeWidth={2.25} />
-                </span>
-                <span>
-                  <span className="block text-base font-black text-white">
-                    Your Gallery
-                  </span>
-                  <span className="mt-1 block text-sm text-slate-400">
-                    Open your private media library directly
-                  </span>
-                </span>
-              </button>
             </div>
           ) : (
             <form onSubmit={submitPost} className="space-y-4">
@@ -483,27 +455,6 @@ export function HkTubeShell({
           )}
         </DialogContent>
       </Dialog>
-
-      {galleryOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 backdrop-blur-sm sm:p-6">
-          <div className="relative mx-auto min-h-full max-w-5xl sm:my-2 sm:min-h-0">
-            <HkTubeCreateGallery
-              onCancel={() => setGalleryOpen(false)}
-              onSelect={(mode: CreateMediaMode, file: File) => {
-                setGalleryOpen(false);
-                setPendingCreateMedia(mode, file);
-                navigate(
-                  mode === "post"
-                    ? "/upload/post"
-                    : mode === "clip"
-                      ? "/clips/create"
-                      : "/upload"
-                );
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       <aside className="fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
         <nav className="space-y-1" aria-label="Primary navigation">

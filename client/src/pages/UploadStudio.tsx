@@ -21,7 +21,6 @@ import {
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { HkTubeShell } from "@/components/HkTubeShell";
-import { HkTubeCreateGallery } from "@/components/HkTubeCreateGallery";
 import { MediaEditor } from "@/components/MediaEditor";
 import { ShortCameraStudio } from "@/components/ShortCameraStudio";
 import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
@@ -222,7 +221,6 @@ export default function UploadStudioPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [stage, setStage] = useState<"select" | "edit" | "details">("select");
-  const [galleryOpen, setGalleryOpen] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<StudioMode>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -426,7 +424,7 @@ export default function UploadStudioPage() {
   }
 
   function openUploadGallery() {
-    setGalleryOpen(true);
+    galleryInputRef.current?.click();
   }
 
   function selectThumbnail(event: ChangeEvent<HTMLInputElement>) {
@@ -1151,25 +1149,6 @@ export default function UploadStudioPage() {
           </section>
         </main>
       </HkTubeShell>
-      {galleryOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 backdrop-blur-sm sm:p-6">
-          <div className="relative mx-auto min-h-full max-w-5xl sm:my-2 sm:min-h-0">
-            <HkTubeCreateGallery
-              initialMode={mode}
-              onCancel={() => setGalleryOpen(false)}
-              onSelect={(selectedMode, selectedFile) => {
-                setGalleryOpen(false);
-                if (selectedMode === "post") {
-                  setPendingCreateMedia("post", selectedFile);
-                  navigate("/upload/post");
-                } else {
-                  void selectVideo(selectedFile, selectedMode);
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
