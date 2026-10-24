@@ -233,7 +233,7 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
               <div className="absolute bottom-6 left-4 right-20 z-30 flex flex-col gap-2 text-white">
                 <div className="flex items-center gap-2">
                   <img
-                    src={video.avatar || "/brand/hkw-mark.webp"}
+                    src={video.avatar || "/brand/hktube-new-mark-transparent.png"}
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-full border border-white/40 object-cover"
                   />

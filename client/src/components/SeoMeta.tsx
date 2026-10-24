@@ -8,7 +8,7 @@ interface SeoMetaProps {
 }
 
 const DEFAULT_DESCRIPTION = "Watch and share high-quality videos on HKW.";
-const DEFAULT_IMAGE = "https://hkw.vercel.app/brand/hkw-mark.webp";
+const DEFAULT_IMAGE = "https://hktube.vercel.app/brand/hktube-new-mark-transparent.png";
 
 function setMeta(selector: string, content: string) {
   const element = document.querySelector<HTMLMetaElement>(selector);

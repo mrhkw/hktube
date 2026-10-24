@@ -203,9 +203,13 @@ export function HkTubeShell({
               className="hktube-reference-logo flex min-w-[104px] shrink-0 items-center gap-2.5"
               aria-label="Go to HkTube homepage"
             >
+              <img
+                src="/brand/hktube-new-mark-transparent.png"
+                alt="HkTube NEW"
+                className="size-9 shrink-0 object-contain"
+              />
               <span className="whitespace-nowrap text-[20px] font-black tracking-[-.045em] text-neutral-950">
-                <span className="text-neutral-950">Hk</span>
-                <span className="text-red-600">Tube</span>
+                Hk<span className="text-red-600">Tube</span>
               </span>
             </Link>
           )}

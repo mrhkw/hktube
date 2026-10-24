@@ -1,6 +1,6 @@
 const CACHE_NAME = "hkw-shell-v16-brand-2026-10-11";
 const OFFLINE_URL = "/offline.html";
-const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/icon-192.png", "/brand/hkw-mark.webp"];
+const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/icon-192.png", "/brand/hktube-new-mark-transparent.png"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
 
 self.addEventListener("install", event => {

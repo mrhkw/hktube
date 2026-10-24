@@ -60,7 +60,7 @@ export function InstallAppPrompt() {
   return (
     <div className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[70] mx-auto max-w-xl rounded-2xl border border-violet-300/20 bg-[#111625]/95 p-4 shadow-2xl shadow-violet-950/30 backdrop-blur-xl sm:inset-x-auto sm:right-6 sm:bottom-6 sm:ml-auto">
       <div className="flex items-start gap-3">
-        <img src="/brand/hkw-mark.webp" alt="HKW" className="size-10 shrink-0 rounded-xl object-cover" />
+        <img src="/brand/hktube-new-mark-transparent.png" alt="HkTube NEW" className="size-10 shrink-0 rounded-xl object-cover" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2"><Sparkles className="size-3.5 text-fuchsia-300" aria-hidden="true" /><p className="text-sm font-bold text-white">Install HKW</p></div>
           <p className="mt-1 text-xs leading-5 text-slate-400">Add HKW to your home screen for a faster, app-like viewing experience.</p>
