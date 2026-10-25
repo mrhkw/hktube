@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowDownToLine, CheckCircle2, CircleAlert, Trash2, WifiOff, Play, HardDriveDownload } from "lucide-react";
 import { Link } from "wouter";
 import { HkTubeShell } from "@/components/HkTubeShell";
@@ -38,10 +38,10 @@ export default function OfflineVideos() {
   const [progress,setProgress]=useState(0);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
-  const objectUrls=useRef<string[]>([]);
+  const objectUrls=useRef<Map<string,string>>(new Map());
   async function refresh(){ try { setItems(await allItems()); } catch { setError("Is browser mein offline storage available nahi hai."); } }
-  useEffect(()=>{ void refresh(); return ()=>objectUrls.current.forEach(URL.revokeObjectURL); },[]);
-  async function saveVideo(e:React.FormEvent){
+  useEffect(()=>{ void refresh(); return ()=>{ for (const src of objectUrls.current.values()) URL.revokeObjectURL(src); objectUrls.current.clear(); }; },[]);
+  async function saveVideo(e:FormEvent<HTMLFormElement>){
     e.preventDefault(); setError(""); setNotice("");
     let parsed:URL;
     try { parsed=new URL(url); if(parsed.protocol!=="https:" && parsed.hostname!=="localhost") throw new Error(); }
@@ -61,7 +61,7 @@ export default function OfflineVideos() {
     } catch(err) { setError(err instanceof Error ? err.message+" CORS ya server permissions ki wajah se kuch links save nahi ho sakte." : "Download fail ho gaya."); }
     finally { setBusy(false);window.setTimeout(()=>setProgress(0),900); }
   }
-  async function deleteSaved(id:string){ await removeItem(id);setItems(await allItems()); }
+  async function deleteSaved(id:string){ await removeItem(id); const src=objectUrls.current.get(id); if(src){URL.revokeObjectURL(src);objectUrls.current.delete(id);} setItems(await allItems()); }
   return <HkTubeShell title="Offline Videos" subtitle="Saved on this device">
     <main className="mx-auto w-full max-w-5xl px-4 py-6 text-white sm:px-6">
       <Link href="/library" className="text-sm text-violet-300 hover:text-violet-200">← Back to Library</Link>
@@ -78,7 +78,7 @@ export default function OfflineVideos() {
         <p className="mt-3 text-xs leading-5 text-slate-500">Note: direct video URL required. Some hosts block browser downloads using CORS. HkTube watch-page downloads require a compatible media endpoint before they can be offered here.</p>
       </section>
       <div className="mt-8 flex items-center justify-between gap-3"><div><h2 className="text-xl font-black">Saved on this device</h2><p className="mt-1 text-sm text-slate-400">{items.length} video{items.length===1?"":"s"} · no internet needed after saving</p></div><HardDriveDownload className="size-6 text-violet-300"/></div>
-      {items.length ? <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map(item=>{const src=URL.createObjectURL(item.blob);objectUrls.current.push(src);return <article key={item.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]"><video controls playsInline preload="metadata" src={src} className="aspect-video w-full bg-black"/><div className="p-4"><h3 className="truncate font-bold">{item.title}</h3><p className="mt-1 text-xs text-slate-400">{bytes(item.size)} · Saved {new Date(item.savedAt).toLocaleDateString()}</p><button onClick={()=>void deleteSaved(item.id)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-rose-200 hover:bg-rose-500/10"><Trash2 className="size-4"/> Remove download</button></div></article>})}</div> : <div className="mt-4 grid place-items-center rounded-2xl border border-dashed border-white/15 px-6 py-12 text-center"><Play className="size-8 text-slate-500"/><p className="mt-3 font-bold">No offline videos yet</p><p className="mt-1 max-w-sm text-sm leading-6 text-slate-400">Save a compatible direct video file above. It will appear here for offline playback.</p></div>}
+      {items.length ? <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map(item=>{let src=objectUrls.current.get(item.id);if(!src){src=URL.createObjectURL(item.blob);objectUrls.current.set(item.id,src);}return <article key={item.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]"><video controls playsInline preload="metadata" src={src} className="aspect-video w-full bg-black"/><div className="p-4"><h3 className="truncate font-bold">{item.title}</h3><p className="mt-1 text-xs text-slate-400">{bytes(item.size)} · Saved {new Date(item.savedAt).toLocaleDateString()}</p><button onClick={()=>void deleteSaved(item.id)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-rose-200 hover:bg-rose-500/10"><Trash2 className="size-4"/> Remove download</button></div></article>})}</div> : <div className="mt-4 grid place-items-center rounded-2xl border border-dashed border-white/15 px-6 py-12 text-center"><Play className="size-8 text-slate-500"/><p className="mt-3 font-bold">No offline videos yet</p><p className="mt-1 max-w-sm text-sm leading-6 text-slate-400">Save a compatible direct video file above. It will appear here for offline playback.</p></div>}
     </main>
   </HkTubeShell>;
 }
