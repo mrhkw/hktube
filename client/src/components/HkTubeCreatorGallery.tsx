@@ -2,10 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
   Film,
   ImagePlus,
-  MoreHorizontal,
   Play,
   Search,
   Sparkles,
@@ -130,13 +128,6 @@ export function HkTubeCreatorGallery({
               Select media
             </h1>
           </div>
-          <button
-            type="button"
-            aria-label="More options"
-            className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[.04] transition hover:bg-white/10"
-          >
-            <MoreHorizontal className="size-5" />
-          </button>
         </div>
 
       </header>
@@ -222,12 +213,6 @@ export function HkTubeCreatorGallery({
               className="h-11 w-full rounded-2xl border border-white/10 bg-white/[.045] pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-400"
             />
           </div>
-          <button
-            type="button"
-            className="grid size-11 place-items-center rounded-2xl border border-white/10 bg-white/[.045] text-slate-300"
-          >
-            <ChevronDown className="size-5" />
-          </button>
         </div>
 
         {error && (
