@@ -665,11 +665,12 @@ export default function UploadStudioPage() {
                 )}
 
                 {stage === "edit" && file && info && (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="fixed inset-0 z-[100] h-[100dvh] overflow-y-auto overscroll-contain bg-[#070910] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(.75rem,env(safe-area-inset-top))] text-white sm:px-6">
+                    <div className="mx-auto w-full max-w-6xl space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
                       <div className="min-w-0">
                         <p className="text-sm font-black text-white">
-                          Review and edit your video
+                          Edit your video
                         </p>
                         <p className="mt-1 truncate text-xs text-slate-500">
                           {file.name} · {info.width} × {info.height} ·{" "}
@@ -709,6 +710,7 @@ export default function UploadStudioPage() {
                       >
                         Continue to details <span aria-hidden="true">→</span>
                       </button>
+                    </div>
                     </div>
                   </div>
                 )}
