@@ -1,4 +1,4 @@
-const CACHE_NAME = "hkw-shell-v16-brand-2026-10-11";
+const CACHE_NAME = "hkw-shell-v17-offline-navigation-2026-10-25";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [OFFLINE_URL, "/manifest.webmanifest", "/icon-192.png", "/brand/hkw-mark.webp"];
 const STATIC_ASSET = /\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$/i;
@@ -51,10 +51,14 @@ self.addEventListener("fetch", event => {
       try {
         const preloaded = await event.preloadResponse;
         if (preloaded) return preloaded;
-        return await fetchNetworkFirst(event.request);
+        const response = await fetchNetworkFirst(event.request);
+        if (response.ok && response.type === "basic") {
+          event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone())).catch(() => undefined));
+        }
+        return response;
       } catch {
         const cache = await caches.open(CACHE_NAME);
-        return await cache.match(OFFLINE_URL) || new Response(
+        return await cache.match(event.request) || await cache.match("/") || await cache.match(OFFLINE_URL) || new Response(
           "HKW is temporarily offline. Please try again.",
           { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
