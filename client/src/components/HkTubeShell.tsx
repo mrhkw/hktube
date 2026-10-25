@@ -488,8 +488,6 @@ export function HkTubeShell({
       </Dialog>
 
       {creatorGalleryOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/90 backdrop-blur-sm sm:p-6">
-          <div className="relative mx-auto min-h-full max-w-5xl sm:my-2 sm:min-h-0">
             <HkTubeCreatorGallery
               onClose={() => setCreatorGalleryOpen(false)}
               onContinue={(mode: CreatorGalleryMode, file: File) => {
@@ -507,8 +505,6 @@ export function HkTubeShell({
                 );
               }}
             />
-          </div>
-        </div>
       )}
 
       <aside className="fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
