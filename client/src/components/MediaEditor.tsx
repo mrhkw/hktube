@@ -251,22 +251,22 @@ export function MediaEditor({ file, isShort, onApply }: MediaEditorProps) {
   }
 
   return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-violet-300/15 bg-[#101321]">
-      <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+    <section className="fixed inset-0 z-[110] h-[100dvh] w-screen overflow-y-auto overscroll-contain rounded-none border-0 bg-[#080a12] pb-[max(16px,env(safe-area-inset-bottom))] text-white sm:inset-3 sm:h-[calc(100dvh-24px)] sm:w-auto sm:rounded-2xl sm:border sm:border-violet-300/15">
+      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-[#101321]/95 px-4 py-3 backdrop-blur">
         <span className="grid size-9 place-items-center rounded-xl bg-violet-500/15 text-violet-200">
           <Scissors className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-black text-white">Edit video before publishing</h3>
-          <p className="text-xs text-slate-400">Trim, apply a filter and burn text into the exported video.</p>
+          <h3 className="text-sm font-black text-white">Edit your video</h3>
+          <p className="text-xs text-slate-400">Trim, preview filters and add text before continuing.</p>
         </div>
         <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-bold text-slate-300">
           {isShort ? "CLIP EDITOR" : "VIDEO EDITOR"}
         </span>
       </div>
 
-      <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_240px]">
-        <div className={isShort ? "mx-auto w-full max-w-[300px]" : "w-full"}>
+      <div className="grid gap-4 p-3 sm:p-4 md:grid-cols-[minmax(0,1fr)_280px]">
+        <div className={isShort ? "mx-auto w-full max-w-[min(44dvh,360px)] sm:max-w-[min(68dvh,420px)]" : "mx-auto w-full max-w-5xl"}>
           <div className={"relative " + (isShort ? "aspect-[9/16] overflow-hidden rounded-xl bg-black" : "aspect-video overflow-hidden rounded-xl bg-black")}>
             <video
               ref={videoRef}
