@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   Check,
@@ -105,12 +106,12 @@ export function HkTubeCreatorGallery({
     setError("");
   }
 
-  return (
-    <section className="fixed inset-0 z-[110] flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-[#08090d] text-white">
+  return createPortal(
+    <section className="fixed inset-0 z-[2147483000] flex h-[100dvh] min-h-0 w-screen max-w-none flex-col overflow-hidden overscroll-none bg-[#08090d] text-white" style={{ inset: 0, width: "100vw", height: "100dvh" }}>
       <div className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-violet-600/20 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 top-40 size-72 rounded-full bg-red-600/10 blur-3xl" />
 
-      <header className="relative z-10 border-b border-white/10 bg-[#08090d]/80 px-5 pb-4 pt-[max(16px,env(safe-area-inset-top))] backdrop-blur-xl sm:px-7">
+      <header className="relative z-10 shrink-0 border-b border-white/10 bg-[#08090d] px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] sm:px-7">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -124,15 +125,15 @@ export function HkTubeCreatorGallery({
             <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.24em] text-violet-300">
               <Sparkles className="size-3" /> HkTube Creator
             </p>
-            <h1 className="mt-0.5 truncate text-2xl font-black tracking-tight">
-              Select media
+            <h1 className="mt-0.5 truncate text-xl font-bold tracking-tight sm:text-2xl">
+              Gallery
             </h1>
           </div>
         </div>
 
       </header>
 
-      <main className="relative z-10 min-h-0 flex-1 overflow-y-auto px-4 pb-36 pt-4 sm:px-7">
+      <main className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-4 [scrollbar-width:none] sm:px-7 sm:pt-5">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[.18em] text-slate-500">
@@ -159,7 +160,7 @@ export function HkTubeCreatorGallery({
           />
         </div>
 
-        <div className="mb-5 flex gap-3 overflow-x-auto pb-1">
+        <div className="mb-4 hidden gap-3 overflow-x-auto pb-1 sm:flex">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -204,7 +205,7 @@ export function HkTubeCreatorGallery({
         </div>
 
         <div className="mb-4 flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
             <input
               value={query}
@@ -225,7 +226,7 @@ export function HkTubeCreatorGallery({
         )}
 
         {visibleAssets.length ? (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 md:grid-cols-5 lg:grid-cols-6">
             {visibleAssets.map(asset => (
               <button
                 key={asset.id}
@@ -331,6 +332,7 @@ export function HkTubeCreatorGallery({
           </div>
         </div>
       </footer>
-    </section>
+    </section>,
+    document.body
   );
 }
