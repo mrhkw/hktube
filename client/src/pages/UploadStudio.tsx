@@ -318,7 +318,7 @@ export default function UploadStudioPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-400/[.06] px-3 py-2 text-xs font-bold text-emerald-200"><ShieldCheck className="size-4" />Secure upload · account ownership</div>
         </div>
 
-        <section className={`hktube-upload-card hktube-upload-stage-${stage} overflow-hidden rounded-[28px] border border-white/10 bg-[#101321] shadow-2xl shadow-black/20`}>
+        <section className={`hktube-upload-card hktube-upload-stage-${stage} border border-white/10 bg-[#101321] shadow-2xl shadow-black/20 ${stage === "details" ? "fixed inset-0 z-[105] h-[100dvh] w-screen overflow-y-auto overscroll-contain rounded-none pb-[max(16px,env(safe-area-inset-bottom))] sm:inset-3 sm:h-[calc(100dvh-24px)] sm:w-auto sm:rounded-2xl" : "overflow-hidden rounded-[28px]"}` }>
           <header className="border-b border-white/10 bg-gradient-to-r from-violet-500/15 via-transparent to-cyan-400/[.08] p-4 sm:p-6">
             <p className="text-[11px] font-black uppercase tracking-[.22em] text-cyan-300">STEP {stage === "select" ? "1 OF 3 · CAPTURE" : stage === "edit" ? "2 OF 3 · EDIT" : "3 OF 3 · DETAILS & PUBLISH"}</p>
             <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{mode === "clip" ? "Create a Clip" : "Upload a video"}</h1>
