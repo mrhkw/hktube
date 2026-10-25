@@ -43,7 +43,6 @@ export function HkTubeCreatorGallery({
   const inputRef = useRef<HTMLInputElement>(null);
   const urls = useRef<string[]>([]);
   const [mode, setMode] = useState<CreatorGalleryMode>(initialMode);
-  const [source, setSource] = useState<"device" | "library">("device");
   const [assets, setAssets] = useState<GalleryAsset[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [query, setQuery] = useState("");
@@ -109,7 +108,7 @@ export function HkTubeCreatorGallery({
   }
 
   return (
-    <section className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#08090d] text-white sm:min-h-0 sm:max-h-[94dvh] sm:rounded-[30px]">
+    <section className="fixed inset-0 z-[110] flex h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-[#08090d] text-white">
       <div className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-violet-600/20 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 top-40 size-72 rounded-full bg-red-600/10 blur-3xl" />
 
@@ -128,7 +127,7 @@ export function HkTubeCreatorGallery({
               <Sparkles className="size-3" /> HkTube Creator
             </p>
             <h1 className="mt-0.5 truncate text-2xl font-black tracking-tight">
-              Create something people remember
+              Select media
             </h1>
           </div>
           <button
@@ -139,28 +138,17 @@ export function HkTubeCreatorGallery({
             <MoreHorizontal className="size-5" />
           </button>
         </div>
-        <div className="mt-5 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[.035] p-1">
-          {(["device", "library"] as const).map(value => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setSource(value)}
-              className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-black transition ${source === value ? "bg-white text-black" : "text-slate-400 hover:text-white"}`}
-            >
-              {value === "device" ? "Device media" : "HkTube library"}
-            </button>
-          ))}
-        </div>
+
       </header>
 
       <main className="relative z-10 min-h-0 flex-1 overflow-y-auto px-4 pb-36 pt-4 sm:px-7">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[.18em] text-slate-500">
-              {source === "device" ? "Your device" : "Your private library"}
+              Your device
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-300">
-              Choose a starting point for your next upload
+              Import videos or photos from your device
             </p>
           </div>
           <button
@@ -259,7 +247,7 @@ export function HkTubeCreatorGallery({
                 type="button"
                 onClick={() => setSelectedId(asset.id)}
                 aria-pressed={selectedId === asset.id}
-                className={`group relative aspect-square overflow-hidden rounded-2xl border bg-white/[.04] text-left transition hover:-translate-y-0.5 ${selectedId === asset.id ? "border-violet-300 ring-2 ring-violet-400/70" : "border-white/10"}`}
+                className={`group relative ${mode === "clip" ? "aspect-[9/16]" : mode === "video" ? "aspect-video" : "aspect-square"} overflow-hidden rounded-2xl border bg-white/[.04] text-left transition ${selectedId === asset.id ? "border-violet-300 ring-2 ring-violet-400/70" : "border-white/10"}`}
               >
                 {asset.type === "video" ? (
                   <video
