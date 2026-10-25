@@ -52,6 +52,7 @@ const primaryNav = [
   { label: "Posts", href: "/posts", icon: Sparkles },
   { label: "Trending", href: "/trending", icon: Flame },
   { label: "Following", href: "/subscriptions", icon: UserRound },
+  { label: "Offline Videos", href: "/offline-videos", icon: Video },
 ];
 function ProfileGlyph({ className }: { className?: string }) {
   return <UserRound className={className} aria-hidden="true" />;
