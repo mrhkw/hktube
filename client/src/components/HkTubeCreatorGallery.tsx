@@ -286,7 +286,7 @@ export function HkTubeCreatorGallery({
         )}
       </main>
 
-      <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#0d0f16]/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl sm:absolute sm:px-7">
+      <footer className="relative z-20 shrink-0 border-t border-white/10 bg-[#0d0f16]/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl sm:px-7">
         <div className="mx-auto max-w-5xl">
           <div className="mb-3 grid grid-cols-3 gap-2">
             {MODES.map(([key, label, caption]) => {
