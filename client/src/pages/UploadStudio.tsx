@@ -1157,8 +1157,6 @@ export default function UploadStudioPage() {
         </main>
       </HkTubeShell>
       {creatorGalleryOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/90 backdrop-blur-sm sm:p-6">
-          <div className="relative mx-auto min-h-full max-w-5xl sm:my-2 sm:min-h-0">
             <HkTubeCreatorGallery
               initialMode={mode === "clip" ? "clip" : "video"}
               onClose={() => setCreatorGalleryOpen(false)}
@@ -1175,8 +1173,6 @@ export default function UploadStudioPage() {
                 }
               }}
             />
-          </div>
-        </div>
       )}
     </div>
   );
