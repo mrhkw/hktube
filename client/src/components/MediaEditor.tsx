@@ -277,10 +277,10 @@ export function MediaEditor({ file, isShort, onApply }: MediaEditorProps) {
               style={{ filter: FILTERS[filter].css }}
               className="size-full object-contain"
             />
+            {overlay.trim() && (
+              <div className="pointer-events-none absolute inset-x-3 bottom-[18%] z-10 rounded-lg bg-black/60 px-3 py-2 text-center text-sm font-black text-white">{overlay.slice(0, 120)}</div>
+            )}
           </div>
-          {overlay.trim() && (
-            <div className="pointer-events-none absolute inset-x-3 bottom-[20%] rounded-lg bg-black/60 px-3 py-2 text-center text-sm font-black text-white">{overlay.slice(0, 120)}</div>
-          )}
         </div>
 
         <div className="space-y-4">
