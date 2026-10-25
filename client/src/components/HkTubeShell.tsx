@@ -285,24 +285,20 @@ export function HkTubeShell({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="hktube-create-gallery-dialog max-w-4xl overflow-hidden border-white/10 bg-[#0d1019] p-0 text-white shadow-2xl max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[24px]">
-          <HkTubeCreateGallery
-            onCancel={() => setCreateOpen(false)}
-            onSelect={(mode: CreateMediaMode, file: File) => {
-              setPendingCreateMedia(mode, file);
-              setCreateOpen(false);
-              if (mode === "post") navigate("/upload/post");
-              else {
-                const category = mode === "clip" ? "shorts" : "regular";
-                const nextMode = mode === "clip" ? "clip" : "video";
-                window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
-                navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
-              }
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {createOpen && <HkTubeCreateGallery
+        onCancel={() => setCreateOpen(false)}
+        onSelect={(mode: CreateMediaMode, file: File) => {
+          setPendingCreateMedia(mode, file);
+          setCreateOpen(false);
+          if (mode === "post") navigate("/upload/post");
+          else {
+            const category = mode === "clip" ? "shorts" : "regular";
+            const nextMode = mode === "clip" ? "clip" : "video";
+            window.dispatchEvent(new CustomEvent("hktube-upload-mode", { detail: nextMode }));
+            navigate(category === "shorts" ? "/upload?category=shorts" : "/upload?mode=video");
+          }
+        }}
+      />}
 
       <aside className="hktube-shell-sidebar fixed inset-y-16 left-0 z-30 hidden w-60 border-r border-white/7 bg-[#0b0f17]/96 px-3 py-5 backdrop-blur-xl md:block">
         <nav className="space-y-1" aria-label="Primary navigation">
