@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
 import {
   Heart,
   MessageCircle,
@@ -169,9 +170,12 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-64 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
               {/* Header Navigation */}
-              <header className="absolute inset-x-0 top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center px-4 pt-[max(14px,env(safe-area-inset-top))] text-white">
-                <div />
-                <div className="flex items-center justify-center gap-5 text-[17px] font-semibold">
+              <header className="absolute inset-x-0 top-0 z-30 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 pt-[max(14px,env(safe-area-inset-top))] text-white">
+                <a href="/" aria-label="HkTube home" className="flex min-w-0 items-center gap-1.5 rounded-lg bg-black/25 px-2 py-1.5 backdrop-blur-sm">
+                  <ClipsBrandIcon className="size-7 shrink-0" />
+                  <span className="whitespace-nowrap text-sm font-black tracking-tight">HkTube <span className="text-violet-300">Clips</span></span>
+                </a>
+                <div className="flex items-center justify-center gap-2 text-[14px] font-semibold sm:gap-3 sm:text-[15px]">
                   <button
                     type="button"
                     onClick={() => setFollowing(true)}
@@ -187,7 +191,7 @@ export default function ClipsView({ videos = [] }: TikTokFeedProps) {
                     For You
                   </button>
                 </div>
-                <button type="button" aria-label="Search" className="ml-auto flex h-10 w-10 items-center justify-center">
+                <button type="button" aria-label="Search" className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/25 backdrop-blur-sm">
                   <Search className="h-7 w-7" strokeWidth={2} />
                 </button>
               </header>
