@@ -251,7 +251,7 @@ export function MediaEditor({ file, isShort, onApply }: MediaEditorProps) {
   }
 
   return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-violet-300/15 bg-[#101321]">
+    <section className="flex min-h-0 flex-col gap-4 overflow-visible border-0 bg-transparent">
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
         <span className="grid size-9 place-items-center rounded-xl bg-violet-500/15 text-violet-200">
           <Scissors className="size-4" />
