@@ -666,7 +666,7 @@ export default function UploadStudioPage() {
 
                 {stage === "edit" && file && info && (
                   <div className="fixed inset-0 z-[100] h-[100dvh] overflow-y-auto overscroll-contain bg-[#070910] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(.75rem,env(safe-area-inset-top))] text-white sm:px-6">
-                    <div className="mx-auto w-full max-w-6xl space-y-4">
+                    <div className="mx-auto flex min-h-full w-full max-w-none flex-col gap-4">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
                       <div className="min-w-0">
                         <p className="text-sm font-black text-white">
