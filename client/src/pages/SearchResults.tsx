@@ -24,7 +24,7 @@ export default function SearchResults() {
   const aiSearch = trpc.videos.aiSearch.useMutation();
   useEffect(() => {
     if (!aiMode || query.length < 2) return;
-    aiSearch.mutate({ query, category, limit: 48 });
+    aiSearch.mutate({ query, category, limit: 20 });
     // The query and selected category intentionally trigger a fresh AI ranking.
   }, [aiMode, query, category]);
   const videos = (aiMode ? (aiSearch.data?.results ?? []) : (resultsQuery.data ?? [])) as VideoRecord[];
