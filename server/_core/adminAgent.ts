@@ -30,7 +30,8 @@ export function isAllowedAdminIdentity(user: unknown): boolean {
   // can legitimately have missing/stale confirmation metadata, so the exact
   // canonical Auth email is the only admin gate here. User metadata is never
   // used as an email fallback.
-  return ALLOWED_ADMIN_EMAILS.has(email);
+  const emailVerified = Boolean(candidate.email_confirmed_at || candidate.confirmed_at);
+  return emailVerified && ALLOWED_ADMIN_EMAILS.has(email);
 }
 
 export function extractBearerToken(authorization: unknown): string | null {
