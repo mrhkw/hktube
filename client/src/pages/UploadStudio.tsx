@@ -14,12 +14,14 @@ import {
   ImagePlus,
   Loader2,
   ShieldCheck,
+  Sparkles,
   UploadCloud,
   Video,
   X,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import { HkTubeShell } from "@/components/HkTubeShell";
 import {
   HkTubeCreatorGallery,
@@ -167,6 +169,49 @@ async function readVideoInfo(file: File): Promise<VideoInfo> {
     URL.revokeObjectURL(url);
   }
 }
+async function extractVideoFrames(file: File, count = 4): Promise<string[]> {
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.muted = true;
+  video.playsInline = true;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error("Video analysis timed out while reading the file.")), 12000);
+      video.onloadedmetadata = () => { window.clearTimeout(timeout); resolve(); };
+      video.onerror = () => { window.clearTimeout(timeout); reject(new Error("Browser could not read this video for AI analysis.")); };
+      video.src = url;
+    });
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    if (!duration || video.videoWidth < 1 || video.videoHeight < 1) throw new Error("This video has no readable frames.");
+    const frames: string[] = [];
+    for (let index = 0; index < count; index++) {
+      const timestamp = Math.min(Math.max(duration * ((index + 1) / (count + 1)), 0.05), Math.max(duration - 0.05, 0.05));
+      await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => reject(new Error("Video frame extraction timed out.")), 8000);
+        const done = (error?: Error) => { window.clearTimeout(timeout); error ? reject(error) : resolve(); };
+        video.onseeked = () => done();
+        video.onerror = () => done(new Error("Could not extract a video frame."));
+        try { video.currentTime = timestamp; } catch { done(new Error("Could not seek within this video.")); }
+      });
+      const scale = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Video frame processing is not supported by this browser.");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      frames.push(canvas.toDataURL("image/jpeg", 0.68));
+    }
+    return frames;
+  } finally {
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function thumbnailAt(file: File, fraction = 0.12): Promise<File | null> {
   const url = URL.createObjectURL(file);
   const video = document.createElement("video");
@@ -262,6 +307,8 @@ export default function UploadStudioPage() {
   const [draggingFile, setDraggingFile] = useState(false);
   const [error, setError] = useState("");
   const [resultMessage, setResultMessage] = useState("");
+  const [generatingMetadata, setGeneratingMetadata] = useState(false);
+  const generateVideoMetadata = trpc.creator_studio.generateVideoMetadata.useMutation();
   const abortRef = useRef<AbortController | null>(null);
   const videoUrl = useMemo(
     () => (file ? URL.createObjectURL(file) : ""),
@@ -396,6 +443,36 @@ export default function UploadStudioPage() {
     const expectedMode: StudioMode = pending.mode === "clip" ? "clip" : "video";
     void selectVideo(pending.file, expectedMode);
   }, []);
+
+  async function generateMetadataFromVideo() {
+    if (!file || !info || generatingMetadata || busy) return;
+    setGeneratingMetadata(true);
+    setError("");
+    try {
+      const frames = await extractVideoFrames(file, 4);
+      const result = await generateVideoMetadata.mutateAsync({
+        frames,
+        mode,
+        durationSeconds: Math.floor(info.duration),
+        width: info.width,
+        height: info.height,
+        category,
+        filename: file.name.slice(0, 160),
+      });
+      setTitle(result.title.slice(0, 100));
+      setDescription(result.description.slice(0, 5000));
+      setDescriptionEdited(true);
+      setTags(result.tags.slice(0, 30).join(", ").slice(0, 1000));
+      if (CATEGORIES.includes(result.category)) setCategory(result.category);
+      toast.success("AI ne video frames se title, description aur tags generate kar diye. Publish se pehle review kar lo.");
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "AI metadata generate nahi ho saka.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setGeneratingMetadata(false);
+    }
+  }
 
   async function applyEditedVideo(next: File) {
     try {
@@ -719,6 +796,19 @@ export default function UploadStudioPage() {
                   <section className="hktube-upload-card rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
                     <h2 className="font-black text-white">Add details</h2>
                     <div className="mt-4 space-y-4">
+                      <div className="rounded-2xl border border-violet-300/20 bg-gradient-to-r from-violet-500/10 to-cyan-500/[.06] p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="flex items-center gap-2 text-sm font-black text-white"><Sparkles className="size-4 text-violet-300" /> AI Video Metadata</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-400">AI selected video ke 4 frames analyze karke title, description, tags aur category suggest karega.</p>
+                          </div>
+                          <button type="button" onClick={() => void generateMetadataFromVideo()} disabled={!file || generatingMetadata || busy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-xs font-black text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50">
+                            {generatingMetadata ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                            {generatingMetadata ? "Video analyze ho rahi hai..." : "Generate with AI"}
+                          </button>
+                        </div>
+                        <p className="mt-2 text-[11px] leading-5 text-slate-500">AI output ko publish se pehle review karo. Yeh sampled visual frames par based hai, full audio transcription nahi.</p>
+                      </div>
                       <label className="block">
                         <span className="flex items-center justify-between gap-3 text-sm font-bold text-white">
                           <span>Title *</span>
