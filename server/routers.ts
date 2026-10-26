@@ -174,7 +174,7 @@ export const appRouter = router({
         return { title, description, tags, category, checks, model };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        if (error instanceof DOMException && error.name === "AbortError") throw new TRPCError({ code: "TIMEOUT", message: "Gemini video analysis timed out. No metadata was changed." });
+        if (error instanceof DOMException && error.name === "AbortError") throw new TRPCError({ code: "GATEWAY_TIMEOUT", message: "Gemini video analysis timed out. No metadata was changed." });
         console.error("[AI] video metadata request failed", error instanceof Error ? error.name : "UnknownError");
         throw new TRPCError({ code: "BAD_GATEWAY", message: "Gemini video analysis is temporarily unavailable. No metadata was changed." });
       } finally {
