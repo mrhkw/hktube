@@ -377,7 +377,8 @@ export default function UploadStudioPage() {
       setThumbnailSource("automatic");
       setThumbnail(await thumbnailAt(next));
 
-      setStage("edit");
+      // Long videos go straight to details; Clips retain the editing stage.
+      setStage(selectedMode === "video" ? "details" : "edit");
       setResultMessage("");
     } catch (cause) {
       setFile(null);
