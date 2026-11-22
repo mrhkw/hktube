@@ -1421,3 +1421,28 @@ html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header nav a.bg-vi
     transition-duration: 160ms;
   }
 }
+
+
+/* Navigation and immersive Clips retain readable contrast in both modes. */
+html[data-hktube-mode="dark"] .hktube-shell nav[aria-label="Mobile navigation"] {
+  background: rgb(10 11 14 / 0.97) !important;
+  border-color: #252830 !important;
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell nav[aria-label="Mobile navigation"] a:not([aria-current="page"]) {
+  color: #a6abb4 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell nav[aria-label="Mobile navigation"] a[aria-current="page"] {
+  color: #ef4444 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-feed .text-neutral-500,
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-feed .text-slate-500 {
+  color: #a0a5ae !important;
+}
+html[data-hktube-mode="light"] .hktube-shell:has(.hktube-clips-page) [class~="text-white"] {
+  color: #fff !important;
+}
+html[data-hktube-mode="light"] .hktube-shell:has(.hktube-clips-page) .hktube-clips-page {
+  background: #000 !important;
+  color: #fff !important;
+}
