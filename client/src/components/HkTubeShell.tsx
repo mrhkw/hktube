@@ -722,9 +722,9 @@ export function HkTubeShell({
       >
         {[
           { label: "Home", href: "/", icon: Home },
-          { label: "Explore", href: "/explore", icon: Compass },
-          { label: "Create", href: "#create", icon: Plus },
           { label: "Clips", href: "/clips", icon: ClipsBrandIcon },
+          { label: "Create", href: "#create", icon: Plus },
+          { label: "Explore", href: "/explore", icon: Compass },
           {
             label: "Profile",
             href: isAuthenticated ? "/profile" : "/auth",
