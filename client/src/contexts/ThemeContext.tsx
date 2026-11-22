@@ -27,7 +27,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "dark",
   switchable = false,
 }: ThemeProviderProps) {
   const [appearance, setAppearanceState] = useState<HkTubeAppearance>(
