@@ -25,12 +25,6 @@ interface ThemeProviderProps {
   switchable?: boolean;
 }
 
-function getSystemPrefersDark(): boolean {
-  return typeof window !== "undefined"
-    && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -40,7 +34,7 @@ export function ThemeProvider({
     () => switchable ? getHkTubeAppearance() : defaultTheme,
   );
   const [theme, setTheme] = useState<HkTubeColorMode>(
-    () => resolveHkTubeAppearance(switchable ? getHkTubeAppearance() : defaultTheme, getSystemPrefersDark()),
+    () => resolveHkTubeAppearance(switchable ? getHkTubeAppearance() : defaultTheme),
   );
 
   useEffect(() => {
@@ -57,7 +51,7 @@ export function ThemeProvider({
   useEffect(() => {
     if (!switchable) {
       const fixedAppearance = defaultTheme;
-      const mode = resolveHkTubeAppearance(fixedAppearance, getSystemPrefersDark());
+      const mode = resolveHkTubeAppearance(fixedAppearance);
       document.documentElement.dataset.hktubeAppearance = fixedAppearance;
       document.documentElement.dataset.hktubeMode = mode;
       document.documentElement.classList.toggle("dark", mode === "dark");
