@@ -1270,3 +1270,154 @@ body:has(.hktube-clips-page) nav.fixed[aria-label="Mobile navigation"] {
     height: 32px !important;
   }
 }
+
+
+/* HkTube's two intentional appearances: clean Light and true Black. */
+html[data-hktube-mode="dark"] body {
+  background: #08090c;
+  color: #f5f5f5;
+}
+html[data-hktube-mode="light"] body {
+  background: #f5f6f8;
+  color: #17181b;
+}
+.hktube-appearance-toggle {
+  min-width: 40px;
+  min-height: 40px;
+}
+html[data-hktube-mode="light"] .hktube-shell {
+  background: #f5f6f8 !important;
+  color: #17181b !important;
+}
+html[data-hktube-mode="light"] .hktube-shell > header {
+  background: rgb(255 255 255 / 0.96) !important;
+  border-color: #e6e8ec !important;
+  color: #17181b !important;
+}
+html[data-hktube-mode="light"] .hktube-shell > aside {
+  background: #fff !important;
+  border-color: #e6e8ec !important;
+}
+html[data-hktube-mode="light"] .hktube-shell > main {
+  color: #17181b;
+}
+html[data-hktube-mode="light"] .hktube-shell [class*="bg-[#0"],
+html[data-hktube-mode="light"] .hktube-shell [class*="bg-[#1"],
+html[data-hktube-mode="light"] .hktube-shell [class*="bg-white/[.0"] {
+  background-color: #fff !important;
+  border-color: #e6e8ec !important;
+}
+html[data-hktube-mode="light"] .hktube-shell [class*="bg-[radial-gradient"] {
+  background: #fff !important;
+  border-color: #e6e8ec !important;
+}
+html[data-hktube-mode="light"] .hktube-shell [class~="text-white"]:not(button):not(a):not(svg),
+html[data-hktube-mode="light"] .hktube-shell [class~="text-slate-100"],
+html[data-hktube-mode="light"] .hktube-shell [class~="text-slate-200"] {
+  color: #17181b !important;
+}
+html[data-hktube-mode="light"] .hktube-shell [class~="text-slate-300"],
+html[data-hktube-mode="light"] .hktube-shell [class~="text-slate-400"],
+html[data-hktube-mode="light"] .hktube-shell [class~="text-slate-500"],
+html[data-hktube-mode="light"] .hktube-shell [class~="text-slate-600"] {
+  color: #626873 !important;
+}
+html[data-hktube-mode="light"] .hktube-shell button[class~="text-white"],
+html[data-hktube-mode="light"] .hktube-shell a[class~="text-white"],
+html[data-hktube-mode="light"] .hktube-shell [role="button"][class~="text-white"] {
+  color: #fff !important;
+}
+html[data-hktube-mode="light"] .hktube-shell input,
+html[data-hktube-mode="light"] .hktube-shell textarea,
+html[data-hktube-mode="light"] .hktube-shell select {
+  background: #f5f6f8 !important;
+  border-color: #dfe2e7 !important;
+  color: #17181b !important;
+}
+html[data-hktube-mode="light"] .hktube-shell input::placeholder,
+html[data-hktube-mode="light"] .hktube-shell textarea::placeholder {
+  color: #858b95 !important;
+}
+html[data-hktube-mode="light"] .hktube-shell nav[aria-label="Primary navigation"] a,
+html[data-hktube-mode="light"] .hktube-shell nav[aria-label="Mobile menu"] a {
+  color: #343942 !important;
+}
+html[data-hktube-mode="light"] .hktube-shell nav[aria-label="Mobile navigation"] {
+  background: rgb(255 255 255 / 0.97) !important;
+  border-color: #e6e8ec !important;
+  color: #17181b !important;
+}
+html[data-hktube-mode="light"] .hktube-shell nav[aria-label="Mobile navigation"] a:not([aria-current="page"]) {
+  color: #656b75 !important;
+}
+html[data-hktube-mode="light"] .hktube-shell .hktube-home-feed {
+  background: #f5f6f8 !important;
+  color: #17181b !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-feed {
+  background: #08090c !important;
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-post {
+  background: #111318 !important;
+  border-color: #252830 !important;
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-post .text-neutral-950,
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-post .text-slate-600,
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-feed .text-neutral-950 {
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-feed .border-slate-200 {
+  border-color: #252830 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-home-feed .bg-white {
+  background: #111318 !important;
+}
+html[data-hktube-mode="light"] .hktube-shell .hktube-reference-header .hktube-reference-logo > span {
+  color: #17181b !important;
+}
+html[data-hktube-mode="light"] .hktube-shell .hktube-reference-header .hktube-reference-logo > span > span {
+  color: #dc2626 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header {
+  background: rgb(12 13 16 / 0.96) !important;
+  border-color: #252830 !important;
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header .hktube-reference-logo > span {
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header .hktube-reference-logo > span > span {
+  color: #ef4444 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header .hktube-header-action,
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header > div > button,
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header > div > a:not(.hktube-reference-logo) {
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header input {
+  background: #1a1c21 !important;
+  border-color: #30343c !important;
+  color: #f5f5f5 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header nav {
+  background: #0c0d10 !important;
+  border-color: #252830 !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header nav a {
+  background: #191b20 !important;
+  border-color: #30343c !important;
+  color: #d5d8de !important;
+}
+html[data-hktube-mode="dark"] .hktube-shell .hktube-reference-header nav a.bg-violet-500 {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #fff !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hktube-shell a,
+  .hktube-shell button {
+    transition-duration: 160ms;
+  }
+}
