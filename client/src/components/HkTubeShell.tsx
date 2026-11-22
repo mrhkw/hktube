@@ -312,7 +312,6 @@ export function HkTubeShell({
           className={cn(
             "flex gap-2 overflow-x-auto border-t border-white/6 px-3 py-2 [scrollbar-width:none] md:hidden",
             minimalHeader && "hidden",
-            location === "/" && "hidden",
             location !== "/" && !location.startsWith("/explore") && "hidden"
           )}
           aria-label="Topics"
