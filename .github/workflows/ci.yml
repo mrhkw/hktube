@@ -30,18 +30,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Full dependency audit
+        id: dependency_audit
         run: pnpm audit --audit-level high
 
       - name: Secret scan
+        if: ${{ success() || steps.dependency_audit.outcome == 'failure' }}
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: TypeScript check
+        if: ${{ success() || steps.dependency_audit.outcome == 'failure' }}
         run: pnpm check
 
       - name: Unit tests
+        if: ${{ success() || steps.dependency_audit.outcome == 'failure' }}
         run: pnpm test
 
       - name: Production build
+        if: ${{ success() || steps.dependency_audit.outcome == 'failure' }}
         run: pnpm build
