@@ -1,35 +1,28 @@
-export type HkTubeAppearance = "system" | "light" | "dark";
-export type HkTubeColorMode = Exclude<HkTubeAppearance, "system">;
+export type HkTubeAppearance = "light" | "dark";
+export type HkTubeColorMode = HkTubeAppearance;
 
 export const HKTUBE_APPEARANCE_KEY = "hktube-appearance";
 export const HKTUBE_APPEARANCE_EVENT = "hktube-appearance-change";
 const LEGACY_THEME_KEY = "hktube-theme";
 
 export function normalizeHkTubeAppearance(value: string | null | undefined): HkTubeAppearance {
-  if (value === "light" || value === "dark" || value === "system") return value;
-  if (value === "auto" || value === "automatic") return "system";
-  // AMOLED was the previous second dark palette; fold it into the one Dark mode.
-  if (value === "amoled") return "dark";
-  // Old palette ids (violet, blue, cyan, etc.) are no longer separate themes.
-  return "system";
+  if (value === "dark" || value === "amoled") return "dark";
+  // Previous System/Auto and old accent palettes now use the clean Light mode.
+  return "light";
 }
 
-export function resolveHkTubeAppearance(
-  appearance: HkTubeAppearance,
-  systemPrefersDark: boolean,
-): HkTubeColorMode {
-  if (appearance === "system") return systemPrefersDark ? "dark" : "light";
+export function resolveHkTubeAppearance(appearance: HkTubeAppearance): HkTubeColorMode {
   return appearance;
 }
 
 function readStoredAppearance(): HkTubeAppearance {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "light";
   try {
     const current = window.localStorage.getItem(HKTUBE_APPEARANCE_KEY);
     if (current !== null) return normalizeHkTubeAppearance(current);
     return normalizeHkTubeAppearance(window.localStorage.getItem(LEGACY_THEME_KEY));
   } catch {
-    return "system";
+    return "light";
   }
 }
 
@@ -37,22 +30,15 @@ export function getHkTubeAppearance(): HkTubeAppearance {
   return readStoredAppearance();
 }
 
-function prefersDark(): boolean {
-  return typeof window !== "undefined"
-    && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
 function applyAppearanceToDocument(appearance: HkTubeAppearance): HkTubeColorMode {
-  const mode = resolveHkTubeAppearance(appearance, prefersDark());
   if (typeof document !== "undefined") {
     const root = document.documentElement;
     root.dataset.hktubeAppearance = appearance;
-    root.dataset.hktubeMode = mode;
-    root.classList.toggle("dark", mode === "dark");
-    root.style.colorScheme = mode;
+    root.dataset.hktubeMode = appearance;
+    root.classList.toggle("dark", appearance === "dark");
+    root.style.colorScheme = appearance;
   }
-  return mode;
+  return appearance;
 }
 
 function publishAppearance(appearance: HkTubeAppearance): void {
@@ -75,7 +61,7 @@ export function setHkTubeAppearance(value: HkTubeAppearance): HkTubeAppearance {
 
 let initialized = false;
 
-/** Apply the saved appearance before React paints, and keep System mode in sync. */
+/** Apply the saved Light/Black appearance before React paints and sync other tabs. */
 export function initializeHkTubeAppearance(): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   const appearance = readStoredAppearance();
@@ -86,16 +72,7 @@ export function initializeHkTubeAppearance(): void {
 
   window.addEventListener("storage", event => {
     if (event.key !== HKTUBE_APPEARANCE_KEY && event.key !== null) return;
-    const next = event.key === null ? "system" : normalizeHkTubeAppearance(event.newValue);
+    const next = event.key === null ? "light" : normalizeHkTubeAppearance(event.newValue);
     publishAppearance(next);
   });
-
-  if (typeof window.matchMedia === "function") {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystemAppearanceChange = () => {
-      if (readStoredAppearance() === "system") publishAppearance("system");
-    };
-    if (typeof media.addEventListener === "function") media.addEventListener("change", onSystemAppearanceChange);
-    else media.addListener(onSystemAppearanceChange);
-  }
 }

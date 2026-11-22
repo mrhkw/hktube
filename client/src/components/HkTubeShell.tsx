@@ -37,6 +37,7 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { ClipsBrandIcon } from "@/components/ClipsBrandIcon";
+import { AppearanceToggle } from "@/components/AppearanceToggle";
 import {
   HkTubeCreatorGallery,
   type CreatorGalleryMode,
@@ -169,6 +170,7 @@ export function HkTubeShell({
   return (
     <div
       className={cn(
+        "hktube-shell",
         immersive
           ? "h-[100dvh] overflow-hidden bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
           : "min-h-[100dvh] bg-[#090c14] text-slate-100 selection:bg-violet-500/35"
@@ -238,6 +240,7 @@ export function HkTubeShell({
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <AppearanceToggle />
             <Link
               href="/settings"
               className={cn(
@@ -309,7 +312,6 @@ export function HkTubeShell({
           className={cn(
             "flex gap-2 overflow-x-auto border-t border-white/6 px-3 py-2 [scrollbar-width:none] md:hidden",
             minimalHeader && "hidden",
-            location === "/" && "hidden",
             location !== "/" && !location.startsWith("/explore") && "hidden"
           )}
           aria-label="Topics"
@@ -722,7 +724,7 @@ export function HkTubeShell({
           { label: "Home", href: "/", icon: Home },
           { label: "Clips", href: "/clips", icon: ClipsBrandIcon },
           { label: "Create", href: "#create", icon: Plus },
-          { label: "Library", href: "/library", icon: Library },
+          { label: "Explore", href: "/explore", icon: Compass },
           {
             label: "Profile",
             href: isAuthenticated ? "/profile" : "/auth",
